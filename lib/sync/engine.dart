@@ -22,6 +22,10 @@ enum ApplyOutcome {
   /// Verified, within skew, merged into the projection (won or lost LWW).
   applied,
 
+  /// `op_id` already seen — skipped as a replay (spec §8.5 step 1). The cursor
+  /// still advances past it upstream.
+  deduped,
+
   /// Observed clock too far in the future — quarantined (`reason="skew"`); not
   /// applied, clock NOT advanced (spec §8.3). The cursor still advances past it
   /// upstream (spec §8.8).

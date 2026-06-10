@@ -13,3 +13,4 @@ export 'hlc.dart';
 export 'snapshot.dart';
 export 'merge.dart';
 export 'engine.dart';
+export 'storage/storage.dart';

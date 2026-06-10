@@ -35,9 +35,16 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Local-first store — one SQLite DB file per device (spec §6.1).
+  sqflite: ^2.4.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Desktop/CI SQLite for tests that need a real DB (the sync storages are
+  # abstracted, so most tests use the in-memory impl and need neither).
+  sqflite_common_ffi: ^2.3.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
