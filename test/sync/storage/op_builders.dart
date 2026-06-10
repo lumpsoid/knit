@@ -56,6 +56,52 @@ Snapshot collection({
       content: {'title': title, 'cover_attachment_id': null},
     );
 
+Snapshot link({
+  String id = 'link-1',
+  String sourceId = 'card-1',
+  String targetId = 'col-1',
+  required int hlcMs,
+  bool deleted = false,
+  String? label,
+  String sig = 'sig',
+}) =>
+    Snapshot(
+      type: EntityType.link,
+      id: id,
+      author: 'aa',
+      createdBy: 'aa',
+      createdAt: 1000,
+      hlc: Hlc(hlcMs, 0),
+      deleted: deleted,
+      sig: '$sig$hlcMs',
+      content: {
+        'source_type': 'card',
+        'source_id': sourceId,
+        'target_type': 'collection',
+        'target_id': targetId,
+        'label': label,
+      },
+    );
+
+Snapshot profile({
+  String id = 'pk-mira',
+  required int hlcMs,
+  String nickname = 'mira',
+  bool deleted = false,
+  String sig = 'sig',
+}) =>
+    Snapshot(
+      type: EntityType.profile,
+      id: id,
+      author: id,
+      createdBy: id,
+      createdAt: 1000,
+      hlc: Hlc(hlcMs, 0),
+      deleted: deleted,
+      sig: '$sig$hlcMs',
+      content: {'nickname': nickname},
+    );
+
 Snapshot card({
   String id = 'card-1',
   String collectionId = 'col-1',
