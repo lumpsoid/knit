@@ -137,7 +137,7 @@ Opens "pick/create collection" (not an in-app screen).
 ## 6. Data model
 
 ### 6.1 Foundations (locked)
-- **Store:** SQLite via Drift. One DB file per device = source of truth.
+- **Store:** SQLite via sqflite. One DB file per device = source of truth.
 - **IDs:** `UUIDv7` (or ULID) as TEXT — globally unique with zero coordination, time-sortable
   (doubles as a creation-order fallback).
 - **Identity:** `Ed25519`; pubkey (hex) is identity; fingerprint as in §5.
