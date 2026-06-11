@@ -38,6 +38,10 @@ dependencies:
   # Local-first store — one SQLite DB file per device (spec §6.1).
   sqflite: ^2.4.1
 
+  # Schema migrations for the sqflite storages — local package.
+  sql_migrator:
+    path: packages/sql_migrator
+
   # Ed25519 keygen/sign/verify + SHA-256 for the identity layer (spec §5/§6.8).
   cryptography: ^2.7.0
   fcis_core:
