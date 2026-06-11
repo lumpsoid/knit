@@ -14,20 +14,22 @@ the storages, the §7.1 canonical serializer + Ed25519 signing,
 `SyncStore.create/edit/delete/reorder`, verify-on-apply, and the broken-link /
 links-out / home-timeline derivations.
 
-The **application is built** on the FCIS contract below — four features wired
-through abstractions (177 tests total): **App Launch** (init seam + destination
+The **application is built** on the FCIS contract below — five features wired
+through abstractions (191 tests total): **App Launch** (init seam + destination
 resolver), the **Onboard** identity ceremony (welcome → nickname → explain +
 Generate → generating → reveal `nickname#fingerprint`, writing the signed
 `profile` record), the **Timeline** (§4.1 home over `homeTimeline()`, with
-inline collection create + open), and the **Collection** screen (§4.2 —
+inline collection create + open), the **Collection** screen (§4.2 —
 chat-style feed, composer, "+"-block link card, per-card actions sheet, reorder
-mode, header rename). Two shared primitives back the write path: `newUuidV7`
+mode, header rename), and the **Connections** view (§4.4 — an entity's
+links-out + backlinks over `linksOut`/`backlinks`, a breadcrumb back-stack, and
+the §8.6.1 broken-link chip with clear). Two shared primitives back the write
+path: `newUuidV7`
 (`lib/core/ids/`) and `FractionalIndex` (`lib/core/ordering/`, the §8.7 card
 position keys). Cross-page data uses the route-args carrier (cross_feature §2).
 See `lib/app/` (composition) + `lib/features/`.
 
-**Not yet built:** the §4.4 Connections view (which is also where the §8.6.1
-broken-link chip renders — gate 4's visible half), the §4.3 card-edit page
+**Not yet built:** the §4.3 card-edit page
 (card edit is inline/text-only today), the sync indicator (§6.6), the rest of
 §4, and the relay. The app runs on the **in-memory graph by default**; flip
 `main.dart` to `AppConfig.prod` for the persistent sqflite graph (the §9.1
@@ -167,9 +169,13 @@ the `lib/sync/` core below.
 - `domain/` (ports + models + failures) + `infra/` (impls over `AppGraph.store`)
   + `presentation/` (state · action · effect · ui_effect · updater · shell ·
   loop · controller · module · scope · page). Built: `app_launch`, `onboard`,
-  `timeline`, `collection`. Per-feature **narrow** ports return `Result`
-  (result.md §9). `collection` adds a `*_route_args.dart` carrier
-  (cross_feature §2) the Timeline writes and the Collection page reads.
+  `timeline`, `collection`, `connections`. Per-feature **narrow** ports return
+  `Result` (result.md §9). `collection` adds a `*_route_args.dart` carrier
+  (cross_feature §2) the Timeline writes and the Collection page reads;
+  `connections` (§4.4) adds a second carrier the Collection page writes (card or
+  collection focus) and the Connections page reads, renders links-out +
+  backlinks with the §8.6.1 broken-link chip, and keeps an in-state breadcrumb
+  back-stack.
 
 ### `packages/` — extracted local packages (path deps)
 - `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod

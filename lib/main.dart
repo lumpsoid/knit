@@ -14,6 +14,11 @@ import 'package:knit/features/collection/infra/sync_store_collection_write_repos
 import 'package:knit/features/collection/presentation/collection_module.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
+import 'package:knit/features/connections/infra/sync_store_connections_read_repository.dart';
+import 'package:knit/features/connections/infra/sync_store_connections_write_repository.dart';
+import 'package:knit/features/connections/presentation/connections_module.dart';
+import 'package:knit/features/connections/presentation/connections_route_args.dart';
+import 'package:knit/features/connections/presentation/connections_scope.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
@@ -70,6 +75,12 @@ void main() {
   TimelineScope.setRouteArgsWriter(routeArgs);
   CollectionScope.setRouteArgs(routeArgs);
 
+  // A second carrier for the Connections view (§4.4): the Collection page writes
+  // the focused card/collection, the Connections page reads it on entry.
+  final connectionsRouteArgs = InMemoryConnectionsRouteArgsStore();
+  CollectionScope.setConnectionsRouteArgsWriter(connectionsRouteArgs);
+  ConnectionsScope.setRouteArgs(connectionsRouteArgs);
+
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
 
@@ -85,6 +96,12 @@ void main() {
       readRepository: SyncStoreCollectionReadRepository(graph: graph),
       writeRepository:
           SyncStoreCollectionWriteRepository(graph: graph, ids: ids),
+    ).controller,
+  );
+  ConnectionsScope.setFactory(
+    () => ConnectionsModule(
+      readRepository: SyncStoreConnectionsReadRepository(graph: graph),
+      writeRepository: SyncStoreConnectionsWriteRepository(graph: graph),
     ).controller,
   );
 

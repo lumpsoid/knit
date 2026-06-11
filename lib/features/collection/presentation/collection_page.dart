@@ -5,6 +5,8 @@ import 'package:knit/features/collection/presentation/collection_controller.dart
 import 'package:knit/features/collection/presentation/collection_scope.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
+import 'package:knit/features/connections/presentation/connections_page.dart';
 
 /// The Collection screen (§4.2) — a chat-style card feed (oldest at top), a
 /// bottom composer, a "+" add-block sheet, per-card actions, and drag-to-reorder
@@ -101,9 +103,39 @@ class _CollectionPageState extends State<CollectionPage> {
         _controller.dispatch(CardDeleteRequested(card.id));
       case _CardAction.link:
         await _openLinkFinder(card);
+      case _CardAction.connections:
+        _openConnections(
+          kind: ConnectedEntityKind.card,
+          id: card.id,
+          title: _cardLabel(card),
+        );
       case _CardAction.reorder:
         _controller.dispatch(const StartReorder());
     }
+  }
+
+  /// Hand the focused entity to the Connections carrier (cross_feature.md §2),
+  /// then navigate (§4.4). The carrier is the payload — navigation stays empty.
+  void _openConnections({
+    required ConnectedEntityKind kind,
+    required String id,
+    required String title,
+  }) {
+    CollectionScope.connectionsRouteArgsWriter
+        .open(kind: kind, id: id, title: title);
+    Navigator.of(context).push(ConnectionsPage.route());
+  }
+
+  /// A short label for a card, used to seed the Connections breadcrumb.
+  static String _cardLabel(FeedCard card) {
+    final text = card.text?.trim();
+    if (text != null && text.isNotEmpty) return text;
+    return switch (card.kind) {
+      CardKind.image => 'Photo',
+      CardKind.audio => 'Audio',
+      CardKind.link => 'Link',
+      CardKind.text || CardKind.unknown => 'Empty note',
+    };
   }
 
   Future<void> _openLinkFinder(FeedCard card) async {
@@ -183,6 +215,16 @@ class _CollectionPageState extends State<CollectionPage> {
               ),
             ),
             actions: [
+              if (state.status == CollectionStatus.ready && !state.reordering)
+                IconButton(
+                  tooltip: 'Connections',
+                  icon: const Icon(Icons.hub_outlined),
+                  onPressed: () => _openConnections(
+                    kind: ConnectedEntityKind.collection,
+                    id: state.collectionId,
+                    title: state.title,
+                  ),
+                ),
               if (state.status == CollectionStatus.ready && !state.isEmpty)
                 state.reordering
                     ? TextButton(
@@ -268,7 +310,7 @@ class _CollectionPageState extends State<CollectionPage> {
 
 // --- card kinds for the sheets ---------------------------------------------
 
-enum _CardAction { edit, delete, link, reorder }
+enum _CardAction { edit, delete, link, connections, reorder }
 
 // --- widgets ---------------------------------------------------------------
 
@@ -471,6 +513,11 @@ class _CardActionsSheet extends StatelessWidget {
             leading: const Icon(Icons.link),
             title: const Text('Link to a collection'),
             onTap: () => Navigator.of(context).pop(_CardAction.link),
+          ),
+          ListTile(
+            leading: const Icon(Icons.hub_outlined),
+            title: const Text('Connections'),
+            onTap: () => Navigator.of(context).pop(_CardAction.connections),
           ),
           ListTile(
             leading: const Icon(Icons.swap_vert),

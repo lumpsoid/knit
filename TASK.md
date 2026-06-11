@@ -3,11 +3,11 @@
 The sync core, persistence, the signed local write path, and the §8.6 read-side
 derivations are built and tested (131 sync tests). The **app is now built**: App
 Launch, the Onboard identity ceremony, the Timeline (now with inline collection
-create + open), and the **Collection screen** (§4.2) — the create → cards → edit
-→ reorder → link → delete surface the gate flow runs on (177 tests total). What
-remains for the §9.1 gate is **rendering the broken-link chip** (gate 4 needs a
-visible surface — the Connections view, §4.4) and running it on the **persistent
-sqflite graph** so gate 5 can be checked through the live app.
+create + open), the **Collection screen** (§4.2), and the **Connections view**
+(§4.4) — create → cards → edit → reorder → link → delete, and the links-out /
+backlinks surface that renders the broken-link chip (191 tests total). What
+remains for the §9.1 gate is running it on the **persistent sqflite graph** so
+gate 5 can be checked through the live app.
 
 ## Done
 
@@ -39,17 +39,21 @@ sqflite graph** so gate 5 can be checked through the live app.
    (`lib/core/ordering/`), and ids are minted with `newUuidV7`
    (`lib/core/ids/`). Card edit (§4.3) is inline (text only) from the actions
    sheet — the dedicated edit page (image + link management) is still open.
+7. **Connections view** (§4.4) — `lib/features/connections/`. An entity's
+   **links-out + linked-from** (backlinks, §8.6.2), each live one tappable to
+   jump (pushing an in-state **breadcrumb back-stack**, a crumb tap / hardware
+   back pops a hop via `PopScope`), each broken one rendered as the §8.6.1
+   **broken-link chip** that offers **clear** (a signed `link` delete) but never
+   vanishes. Reached from the Collection app-bar "hub" icon (collection focus)
+   and the card-actions sheet (card focus) through a second route-args carrier
+   (cross_feature §2). Endpoint liveness is the canonical `SyncStore.linkStatus`
+   derivation, never re-implemented. This is the visible half of **gate 4**.
 
 ## What's left for the §9.1 slice
 
-1. **Connections view** (§4.4: links-out + backlinks, breadcrumb back-stack)
-   and the **broken-link chip** rendering (§4.8 / §8.6.1). The resolver and the
-   link write path are done and tested end-to-end (`collection_repository_test`
-   proves a deleted endpoint reports broken); what's missing is the **UI
-   surface** that renders the chip — this is the visible half of **gate 4**.
-2. **Card edit page** (§4.3, image + per-card link management) and the **sync
+1. **Card edit page** (§4.3, image + per-card link management) and the **sync
    indicator** (`pendingCount`, §6.6).
-3. **Run on the persistent sqflite graph** — flip `main.dart` to `AppConfig.prod`
+2. **Run on the persistent sqflite graph** — flip `main.dart` to `AppConfig.prod`
    and wire the desktop/CI DB factory (sqflite needs ffi on desktop), so gate 5
    can be exercised through the real app lifecycle on a real DB file.
 
@@ -65,12 +69,14 @@ Drive the live flow (create → cards → reorder → link card→collection + a
       confirm on the prod graph.
 - [ ] **Gate 4**: deleting a link endpoint renders a **visible broken chip**
       (§8.6.1) — no crash, link not vanished. Resolver + link write proven end to
-      end (`collection_repository_test`); **needs the Connections-view UI** to
-      render the chip (left, item 1).
+      end; the **Connections view** now renders the chip and is driven by
+      `connections_repository_test` (delete a card → its backlink shows broken,
+      clear removes only the link). Confirm through the live app on the prod
+      graph.
 - [ ] **Gate 5**: kill & reopen → projection rebuilds from `change_log`
       byte-identical, device clock resumes strictly monotone. Engine-proven on
       sqflite (`write_rebuild_test`); **must hold through the real app lifecycle**
-      — requires running on the prod sqflite graph (left, item 3).
+      — requires running on the prod sqflite graph (left, item 2).
 
 ## After this
 
