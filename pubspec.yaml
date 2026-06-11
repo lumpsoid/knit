@@ -40,6 +40,26 @@ dependencies:
 
   # Ed25519 keygen/sign/verify + SHA-256 for the identity layer (spec §5/§6.8).
   cryptography: ^2.7.0
+  fcis_core:
+    git:
+      url: "https://github.com/lumpsoid/fcis_core_dart"
+      ref: "2fe7d6728ea17fd1835a5bd10fc83c3c3aa328ca"
+  external_signal:
+    git:
+      url: "https://github.com/lumpsoid/external_signal_dart"
+      ref: "1450c4867b26c59c98d8ad3ef949348043e79001"
+  result_dart:
+    git:
+      url: "https://github.com/lumpsoid/result_dart"
+      ref: "263a3da899e8bfc62fc32f3e4d3c5abe86461cf3"
+  selector_flutter:
+    git:
+      url: "https://github.com/lumpsoid/selector_flutter"
+      ref: "091a9b93af23525f9e81a9cd19839375e43e9666"
+  fetch_dart:
+    git:
+      url: "https://github.com/lumpsoid/fetch_dart"
+      ref: "0a6ee659f98292e8fec1627645c6cebe63a62e1e"
 
 dev_dependencies:
   flutter_test:

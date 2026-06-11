@@ -73,6 +73,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
+  external_signal:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "1450c4867b26c59c98d8ad3ef949348043e79001"
+      resolved-ref: "1450c4867b26c59c98d8ad3ef949348043e79001"
+      url: "https://github.com/lumpsoid/external_signal_dart"
+    source: git
+    version: "0.1.0"
   fake_async:
     dependency: transitive
     description:
@@ -81,6 +90,24 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.3"
+  fcis_core:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "2fe7d6728ea17fd1835a5bd10fc83c3c3aa328ca"
+      resolved-ref: "2fe7d6728ea17fd1835a5bd10fc83c3c3aa328ca"
+      url: "https://github.com/lumpsoid/fcis_core_dart"
+    source: git
+    version: "0.2.2"
+  fetch_dart:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "0a6ee659f98292e8fec1627645c6cebe63a62e1e"
+      resolved-ref: "0a6ee659f98292e8fec1627645c6cebe63a62e1e"
+      url: "https://github.com/lumpsoid/fetch_dart"
+    source: git
+    version: "0.1.0"
   ffi:
     dependency: transitive
     description:
@@ -131,6 +158,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.2"
+  http:
+    dependency: transitive
+    description:
+      name: http
+      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.6.0"
+  http_parser:
+    dependency: transitive
+    description:
+      name: http_parser
+      sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.2"
   leak_tracker:
     dependency: transitive
     description:
@@ -243,6 +286,24 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.0"
+  result_dart:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "263a3da899e8bfc62fc32f3e4d3c5abe86461cf3"
+      resolved-ref: "263a3da899e8bfc62fc32f3e4d3c5abe86461cf3"
+      url: "https://github.com/lumpsoid/result_dart"
+    source: git
+    version: "0.1.3+1"
+  selector_flutter:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "091a9b93af23525f9e81a9cd19839375e43e9666"
+      resolved-ref: "091a9b93af23525f9e81a9cd19839375e43e9666"
+      url: "https://github.com/lumpsoid/selector_flutter"
+    source: git
+    version: "0.1.0+1"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -402,4 +463,4 @@ packages:
     version: "3.1.3"
 sdks:
   dart: ">=3.11.5 <4.0.0"
-  flutter: ">=3.38.0"
+  flutter: ">=3.41.0"
