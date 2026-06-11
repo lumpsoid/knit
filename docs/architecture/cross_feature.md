@@ -404,8 +404,11 @@ handler in `initState`/`onAttach` and detaches it in `dispose`/`onDetach`.
 > **`EffectEmitter`** with an **`EffectPusher`** callback typedef; the old
 > names are legacy aliases — use the new names in all new code.
 
+This seam lives in its own local package, **`package:effect_emitter`**
+(`packages/effect_emitter/`); import it rather than redefining it per app.
+
 ```dart
-// lib/core/presentation/effect_emitter.dart
+// package:effect_emitter/effect_emitter.dart
 
 /// Handler the View registers to receive one-shot effects.
 typedef EffectPusher<T> = void Function(T effect);

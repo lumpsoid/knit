@@ -73,6 +73,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
+  effect_emitter:
+    dependency: "direct main"
+    description:
+      path: "packages/effect_emitter"
+      relative: true
+    source: path
+    version: "0.0.1"
   external_signal:
     dependency: "direct main"
     description:

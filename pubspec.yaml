@@ -42,6 +42,10 @@ dependencies:
   sql_migrator:
     path: packages/sql_migrator
 
+  # The UI side-effect seam (cross_feature.md §4) — local package.
+  effect_emitter:
+    path: packages/effect_emitter
+
   # Ed25519 keygen/sign/verify + SHA-256 for the identity layer (spec §5/§6.8).
   cryptography: ^2.7.0
   fcis_core:
