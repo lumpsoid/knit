@@ -8,9 +8,11 @@ here) is an optional dumb router for sync/sharing. Full product + protocol spec:
 
 ## Status
 
-The **sync core + persistence layer is built and tested** (65 tests). UI, the
-local write path (canonical serialization + signing), and the relay are not yet
-built. The next step is in **`TASK.md`**.
+The **sync core + persistence layer + the signed local write path are built and
+tested** (113 sync tests): merge-core + HLC, the storages, the §7.1 canonical
+serializer + Ed25519 signing, `SyncStore.create/edit/delete/reorder`, and
+verify-on-apply. The **UI and the relay are not yet built**. The next step — the
+§9.1 first vertical slice end-to-end — is in **`TASK.md`**.
 
 ## Conventions
 

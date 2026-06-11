@@ -1,66 +1,74 @@
-# Next step — the local write path (canonical serialization + signing)
+# Next step — the §9.1 first vertical slice (local-first, no relay)
 
-The sync **read/apply** path persists (merge-core + HLC + `change_log` /
-`device_clock` / `projection` storages, wired through `SyncStore`). The missing
-piece is the **upstream write path** that turns a local mutation into a signed,
-durable op. It is the seam every `applyRemote`/`rebuild` already assumes
-(`PersistedOp.payload` + `sig` are taken as given today).
+The sync core, persistence, **and the signed local write path** are built and
+tested (113 sync tests): merge-core + HLC, the `change_log` / `device_clock` /
+`projection` / `local_identity` / `quarantine` storages, the §7.1 canonical
+serializer + Ed25519 signing, and `SyncStore.create/edit/delete/reorder` +
+verify-on-apply.
 
-This closes spec **§9.1 gate 1** ("every mutation is one transaction: entity row
-+ signed `change_log` op + `device_clock` advance") and unblocks the §9.1 first
-vertical slice.
+What's missing is the **slice itself, end-to-end**: the read-side derivations the
+UI needs, a composition root that opens a real DB, and the Flutter UI that drives
+**create collection → add text cards → reorder a card → add a link → delete a
+card that is a link endpoint**. This is the spec **§9.1 local-first gate**;
+passing it — gate 5 especially, through the *live* app — is the pass/fail line
+before any relay work.
 
 ## Build (same domain/infra + abstracted pattern)
 
-1. **Identity** (`lib/sync/identity/` or `lib/core/crypto/`)
-   - Ed25519 keypair gen + sign/verify, abstracted behind an interface (real
-     impl + a deterministic fake for tests). Pubkey hex = identity; fingerprint
-     = first 4 hex of `SHA-256(pubkey)` (§5).
-   - `local_identity` storage (secret encrypted at rest) — abstracted, both
-     impls (§6.5). Local-only, never synced.
+1. **Read-side derivations** (§8.6 — pure, both-impl tested like the rest)
+   - **Broken-link chip** (§8.6.1): a resolver over `ProjectionStorage` that, for
+     a live link (`deleted=0`), checks each endpoint via its `*_type` table and
+     flags it broken when the row is missing or `deleted=1`. Closes gate 4.
+     Never auto-deletes the link.
+   - **Connections** (§4.4): `backlinks` (links where `target_id = id`) exists;
+     add the forward **links-out** query (`source_id = id`, live).
+   - **Home timeline** (§8.6.3): per-collection `card_count`, `last_card` preview
+     (greatest `created_at` live card; kind-based summary), and `last_updated`;
+     Home list sorted `last_updated DESC`. Computed on read (no cache table → no
+     invalidation bugs); editing a card does **not** resurface its collection
+     (flagged §8.6.3 limitation, MVP-acceptable).
 
-2. **Canonical serializer** (`lib/sync/wire/` — pure, no deps)
-   - `Snapshot → canonical UTF-8 bytes` per **§7.1**: sorted keys, no
-     whitespace, integers shortest-decimal, `deleted` as int 0/1, hex for
-     binary, fixed field set per entity (§7.4), `null` never omitted.
-   - Round-trip with `Snapshot.fromPayload`; match the §7.4 worked examples
-     **byte-for-byte** (table-driven golden tests).
+2. **Composition root** (`lib/` app entry)
+   - Open the per-device SQLite file; build the **sqflite** `SyncStore`
+     (`Sqflite*` storages + `SqfliteUnitOfWork` + `Ed25519Signer`) for production
+     and `SyncStore.inMemory()` for dev mode (CLAUDE.md). Call `open()` once at
+     startup (creates tables, restores the clock, provisions the identity).
+   - Expose the store to the widget tree.
 
-3. **`op_id` builder** (§7.3) — `"<id>@<hlc_ms>.<hlc_counter>.<sig16>"`,
-   `sig16` = first 16 hex of `sig`. (The test helper in `op_builders.dart`
-   already mints this shape — promote it to real code.)
+3. **Flutter UI** (§4)
+   - **Home / Collections timeline** (4.1) — vertical list, latest-updated first,
+     **not reorderable**; row = cover/title/last-card preview/count/last-updated;
+     inline title→create that opens the new Collection Screen.
+   - **Collection screen** (4.2) — chat-style feed (`position ASC, id ASC`, §8.7);
+     bottom text composer → `create` card; **"+" add-block** (link · photo-later)
+     → standalone card / link finder; tap-card **actions sheet**
+     (delete · edit · link · reorder); **reorder mode** (drag → `reorder`, a state
+     of this screen); header long-press → cover/title.
+   - **Card edit** (4.3) and **Connections view** (4.4: links-out + backlinks,
+     breadcrumb back-stack).
+   - **Sync indicator** (`pendingCount`, §6.6) and **broken-link chip** rendering
+     (§8.6.1 / §4.8).
 
-4. **Sign + verify on the wire path**
-   - Sign: `sig = Ed25519(secret, utf8(canonical(payload)))` (§6.8).
-   - Verify on apply: `Ed25519_verify(payload.author, utf8(op.payload), sig)`
-     **over received bytes, never re-canonicalized** → fail = quarantine
-     `bad_sig` (§8.5 step 2). Add this to `SyncStore.applyRemote` (today it
-     trusts the op) + the `quarantine` storage (§6.7/§8.8).
+## Acceptance (spec §9.1 gates — the pass/fail line)
 
-5. **`SyncStore.writeLocal(...)`** — the local mutation, one transaction:
-   - Stamp via the device clock onto the **correct slot** (§8.4: edit/delete →
-     content `hlc_*`, placement frozen; reorder → `position_*`, content frozen;
-     create → both).
-   - Preserve incoming `created_by` on edit; set `= author` on create (§6.2).
-   - Build canonical payload → sign → `PersistedOp` (`origin='local'`,
-     `acked=0`) → in one `UnitOfWork`: upsert projection + append op + save
-     clock.
+Drive the live flow above (create → cards → reorder → link card→collection + a
+"+"-block link card → delete a link endpoint).
 
-## Acceptance (spec §9.1 gates)
-
-- [ ] Every mutation = one txn: entity row + signed `change_log` op + clock
-      advance (gate 1).
-- [ ] A reorder of a just-edited card mints a **distinct** `op_id` from the edit
-      (gate 2 / §7.3 case 2).
-- [ ] Reorder leaves `hlc_*` unchanged, bumps `position_*`, text intact (gate 3).
-- [ ] Canonical bytes match the §7.4 examples; verify-over-received-bytes works
-      for a real signed op and rejects a tampered one.
-- [ ] **Kill & reopen → `rebuild()` projection byte-identical to pre-kill**,
-      clock resumes strictly monotone (gate 5 — the pass/fail line, §8.9).
+- [ ] **Gates 1–3** (one-txn mutation; sig-keyed **distinct** `op_id` for a
+      reorder of a just-edited card; reorder freezes `hlc_*`, bumps `position_*`,
+      text intact) — already engine-proven by the write-path tests; confirm they
+      still hold when driven through the UI.
+- [ ] **Gate 4**: deleting a link endpoint renders a **visible broken chip**
+      (§8.6.1) — no crash, link not vanished.
+- [ ] **Gate 5**: kill & reopen → projection rebuilds from `change_log`
+      byte-identical (rows, blended placements, feed order), device clock resumes
+      strictly monotone. Engine-proven on sqflite (`write_rebuild_test`); **must
+      hold through the real app lifecycle on a real DB file**.
 
 ## After this
 
-- §9.1 first vertical slice end-to-end (create → cards → reorder → link → delete
-  endpoint → broken-link chip), then the Flutter UI (§4).
-- Relay push/pull + `sync_state.cursor` + ack→`acked=1` (§7.5/§9.2), gated on
-  the share flow + capability tokens (§10).
+- **Relay push/pull** (§7.5/§9.2): the `origin='remote'` apply path + verify +
+  quarantine already exist; add `sync_state.cursor` (advance past applied **and**
+  quarantined ops, §8.8), push order by `seq`, ack→`acked=1`, and the optional
+  §8.5-step-3 `hint_mismatch` cross-check. Gated on the share flow + capability
+  tokens (§10).
