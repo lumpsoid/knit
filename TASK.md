@@ -1,71 +1,61 @@
-# Next step — the §9.1 first vertical slice (local-first, no relay)
+# Next step — finish the §9.1 first vertical slice (local-first, no relay)
 
-The sync core, persistence, **and the signed local write path** are built and
-tested (113 sync tests): merge-core + HLC, the `change_log` / `device_clock` /
-`projection` / `local_identity` / `quarantine` storages, the §7.1 canonical
-serializer + Ed25519 signing, and `SyncStore.create/edit/delete/reorder` +
-verify-on-apply.
+The sync core, persistence, the signed local write path, and the §8.6 read-side
+derivations are built and tested (131 sync tests). The **app shell is now built**
+too: App Launch, the Onboard identity ceremony, and the Timeline — three FCIS
+features wired through abstractions (146 tests total). What remains for the §9.1
+gate is the **Collection screen** (where the create → cards → reorder → link →
+delete flow actually happens) and running it on the **persistent sqflite graph**
+so gate 5 can be checked through the live app.
 
-What's missing is the **slice itself, end-to-end**: the read-side derivations the
-UI needs, a composition root that opens a real DB, and the Flutter UI that drives
-**create collection → add text cards → reorder a card → add a link → delete a
-card that is a link endpoint**. This is the spec **§9.1 local-first gate**;
-passing it — gate 5 especially, through the *live* app — is the pass/fail line
-before any relay work.
+## Done
 
-## Build (same domain/infra + abstracted pattern)
+1. **Read-side derivations** (§8.6 — pure, both-impl tested) — broken-link
+   resolver (§8.6.1/2), links-out (§4.4), home timeline (§8.6.3). In
+   `lib/sync/storage/derivations/`; surfaced via `SyncStore.linkStatus` /
+   `linksOut` / `homeTimeline`.
+2. **Composition root** (`lib/app/`) — `AppConfig` graph selector, `AppGraph`
+   cell, pure resolvers, `sql_migrator` v1 baseline. `SyncStore.open` gained
+   `ensureSchema` / `provisionIdentity` flags; `hasIdentity` / `provisionIdentity`
+   added. Wired in `main.dart`. **In-memory graph is the default**; prod sqflite
+   graph is implemented but not yet the default.
+3. **App Launch** feature (composition.md §1–3) — init seam +
+   `AppDestinationResolver`; splash → init → route first-run vs returning.
+4. **Onboard** feature (§5) — welcome → nickname → explain + Generate →
+   generating → reveal; the Generate step provisions the keypair and writes the
+   signed `profile` record.
+5. **Timeline** feature (§4.1) — home over `homeTimeline()`, empty/loading/error
+   states, pull-to-refresh. (Collection create + open are "coming soon" stubs.)
 
-1. **Read-side derivations** (§8.6 — pure, both-impl tested like the rest) ✅ **done**
-   - **Broken-link chip** (§8.6.1): `BrokenLinkResolver` over `ProjectionStorage`
-     that, for a live link (`deleted=0`), checks each endpoint via its `*_type`
-     table and flags it broken when the row is missing or `deleted=1`. Closes
-     gate 4. Never auto-deletes the link. → `SyncStore.linkStatus`.
-   - **Connections** (§4.4): `backlinks` (links where `target_id = id`) exists;
-     added the forward **links-out** query (`source_id = id`, live) on
-     `ProjectionStorage` (both impls). → `SyncStore.linksOut`.
-   - **Home timeline** (§8.6.3): pure `buildHomeTimeline` → `CollectionSummary`
-     (`card_count`, `last_card` preview = greatest-`created_at` live card carrying
-     `kind`+`text`, and `last_updated`); list sorted `last_updated DESC`. Computed
-     on read (no cache table → no invalidation bugs); editing a card does **not**
-     resurface its collection (flagged §8.6.3 limitation, MVP-acceptable). →
-     `SyncStore.homeTimeline`. Lives in `lib/sync/storage/derivations/`.
+## What's left for the §9.1 slice
 
-2. **Composition root** (`lib/` app entry)
-   - Open the per-device SQLite file; build the **sqflite** `SyncStore`
-     (`Sqflite*` storages + `SqfliteUnitOfWork` + `Ed25519Signer`) for production
-     and `SyncStore.inMemory()` for dev mode (CLAUDE.md). Call `open()` once at
-     startup (creates tables, restores the clock, provisions the identity).
-   - Expose the store to the widget tree.
-
-3. **Flutter UI** (§4)
-   - **Home / Collections timeline** (4.1) — vertical list, latest-updated first,
-     **not reorderable**; row = cover/title/last-card preview/count/last-updated;
-     inline title→create that opens the new Collection Screen.
-   - **Collection screen** (4.2) — chat-style feed (`position ASC, id ASC`, §8.7);
-     bottom text composer → `create` card; **"+" add-block** (link · photo-later)
-     → standalone card / link finder; tap-card **actions sheet**
-     (delete · edit · link · reorder); **reorder mode** (drag → `reorder`, a state
-     of this screen); header long-press → cover/title.
-   - **Card edit** (4.3) and **Connections view** (4.4: links-out + backlinks,
-     breadcrumb back-stack).
-   - **Sync indicator** (`pendingCount`, §6.6) and **broken-link chip** rendering
-     (§8.6.1 / §4.8).
+1. **Collection screen** (§4.2) — chat-style feed (`position ASC, id ASC`, §8.7);
+   bottom text composer → `create` card; **"+" add-block** (link · photo-later)
+   → standalone card / link finder; tap-card **actions sheet**
+   (delete · edit · link · reorder); **reorder mode** (drag → `reorder`, a state
+   of this screen); header long-press → cover/title. Inline title→create on the
+   Timeline opens it. This is the surface the gate flow runs on.
+2. **Card edit** (§4.3), **Connections view** (§4.4: links-out + backlinks,
+   breadcrumb back-stack), **broken-link chip** rendering (§4.8 / §8.6.1), and the
+   **sync indicator** (`pendingCount`, §6.6).
+3. **Run on the persistent sqflite graph** — flip `main.dart` to `AppConfig.prod`
+   and wire the desktop/CI DB factory (sqflite needs ffi on desktop), so gate 5
+   can be exercised through the real app lifecycle on a real DB file.
 
 ## Acceptance (spec §9.1 gates — the pass/fail line)
 
-Drive the live flow above (create → cards → reorder → link card→collection + a
+Drive the live flow (create → cards → reorder → link card→collection + a
 "+"-block link card → delete a link endpoint).
 
 - [ ] **Gates 1–3** (one-txn mutation; sig-keyed **distinct** `op_id` for a
       reorder of a just-edited card; reorder freezes `hlc_*`, bumps `position_*`,
-      text intact) — already engine-proven by the write-path tests; confirm they
-      still hold when driven through the UI.
+      text intact) — engine-proven by the write-path tests; confirm through the UI.
 - [ ] **Gate 4**: deleting a link endpoint renders a **visible broken chip**
-      (§8.6.1) — no crash, link not vanished.
+      (§8.6.1) — no crash, link not vanished. (Resolver done; needs UI rendering.)
 - [ ] **Gate 5**: kill & reopen → projection rebuilds from `change_log`
-      byte-identical (rows, blended placements, feed order), device clock resumes
-      strictly monotone. Engine-proven on sqflite (`write_rebuild_test`); **must
-      hold through the real app lifecycle on a real DB file**.
+      byte-identical, device clock resumes strictly monotone. Engine-proven on
+      sqflite (`write_rebuild_test`); **must hold through the real app lifecycle**
+      — requires running on the prod sqflite graph (left, item 3).
 
 ## After this
 
