@@ -8,3 +8,9 @@ class TimelineLoadFailure extends TimelineFailure {
   const TimelineLoadFailure(this.cause);
   final String cause;
 }
+
+/// Creating a new collection (inline create, §4.1) failed to persist.
+class TimelineWriteFailure extends TimelineFailure {
+  const TimelineWriteFailure(this.cause);
+  final String cause;
+}

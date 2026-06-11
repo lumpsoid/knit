@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_controller.dart';
 import 'package:knit/features/timeline/presentation/timeline_scope.dart';
@@ -37,13 +38,47 @@ class _TimelinePageState extends State<TimelinePage> {
     super.dispose();
   }
 
-  // No UiEffects yet (collection-screen nav arrives with §4.2).
-  void _onUiEffect(TimelineUiEffect effect) {}
+  void _onUiEffect(TimelineUiEffect effect) {
+    if (!mounted) return;
+    switch (effect) {
+      case TimelineOpenCollectionUiEffect(:final collectionId):
+        // Carrier is the payload (cross_feature.md §2): write, then navigate.
+        TimelineScope.routeArgsWriter.open(collectionId);
+        Navigator.of(context).push(CollectionPage.route());
+      case TimelineShowMessageUiEffect(:final message):
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
 
-  void _comingSoon(String what) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$what — coming soon')),
+  /// Inline collection creation (§4.1): a title/theme line → create → open.
+  Future<void> _createCollection() async {
+    final field = TextEditingController();
+    final title = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New collection'),
+        content: TextField(
+          controller: field,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Title or theme'),
+          onSubmitted: (v) => Navigator.of(ctx).pop(v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(field.text),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
     );
+    field.dispose();
+    if (title == null || title.trim().isEmpty || !mounted) return;
+    _controller.dispatch(CreateCollectionRequested(title));
   }
 
   @override
@@ -51,7 +86,7 @@ class _TimelinePageState extends State<TimelinePage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Knit')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _comingSoon('New collection'),
+        onPressed: _createCollection,
         icon: const Icon(Icons.add),
         label: const Text('Collection'),
       ),
@@ -88,7 +123,8 @@ class _TimelinePageState extends State<TimelinePage> {
         separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (context, i) => _CollectionTile(
           summary: state.collections[i],
-          onTap: () => _comingSoon('Collection screen'),
+          onTap: () => _controller
+              .dispatch(CollectionTapped(state.collections[i].collectionId)),
         ),
       ),
     );

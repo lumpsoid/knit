@@ -14,16 +14,23 @@ the storages, the §7.1 canonical serializer + Ed25519 signing,
 `SyncStore.create/edit/delete/reorder`, verify-on-apply, and the broken-link /
 links-out / home-timeline derivations.
 
-The **initial application is built** on the FCIS contract below — three features
-wired through abstractions (146 tests total): **App Launch** (init seam +
-destination resolver), the **Onboard** identity ceremony (welcome → nickname →
-explain + Generate → generating → reveal `nickname#fingerprint`, writing the
-signed `profile` record), and the **Timeline** (§4.1 home over `homeTimeline()`).
+The **application is built** on the FCIS contract below — four features wired
+through abstractions (177 tests total): **App Launch** (init seam + destination
+resolver), the **Onboard** identity ceremony (welcome → nickname → explain +
+Generate → generating → reveal `nickname#fingerprint`, writing the signed
+`profile` record), the **Timeline** (§4.1 home over `homeTimeline()`, with
+inline collection create + open), and the **Collection** screen (§4.2 —
+chat-style feed, composer, "+"-block link card, per-card actions sheet, reorder
+mode, header rename). Two shared primitives back the write path: `newUuidV7`
+(`lib/core/ids/`) and `FractionalIndex` (`lib/core/ordering/`, the §8.7 card
+position keys). Cross-page data uses the route-args carrier (cross_feature §2).
 See `lib/app/` (composition) + `lib/features/`.
 
-**Not yet built:** the §4.2 Collection screen (card feed/composer/reorder), the
-rest of §4, and the relay. The app runs on the **in-memory graph by default**;
-flip `main.dart` to `AppConfig.prod` for the persistent sqflite graph (the §9.1
+**Not yet built:** the §4.4 Connections view (which is also where the §8.6.1
+broken-link chip renders — gate 4's visible half), the §4.3 card-edit page
+(card edit is inline/text-only today), the sync indicator (§6.6), the rest of
+§4, and the relay. The app runs on the **in-memory graph by default**; flip
+`main.dart` to `AppConfig.prod` for the persistent sqflite graph (the §9.1
 gate-5 persistence check needs it). Current status + next step: **`TASK.md`**.
 
 ## Presentation architecture (UI layer)
@@ -140,6 +147,14 @@ the `lib/sync/` core below.
   `schema/knit_migrations.dart` — the `package:sql_migrator` v1 baseline for the
   prod sqflite graph.
 
+### `lib/core/ids/` + `lib/core/ordering/` — write-path primitives (shared)
+- `ids/` — the `IdGenerator` port (`newId()`) for minting time-ordered TEXT ids
+  (§6.1), with `UuidIdGenerator` (the `package:uuid` v7 impl) in the same dir;
+  the write repos inject it. A profile is the exception (its id is the pubkey).
+- `ordering/fractional_index.dart` — `FractionalIndex.between/keyAfter/keyBefore`,
+  the §8.7 lexicographic card position keys (the one intended string ordering),
+  pure; the Collection updater computes positions with it.
+
 ### `lib/core/` — presentation glue (shared, non-sync)
 - `fcis_flutter/` — `ValueListenableStateHolder` (fcis_core `StateHolder` ↔
   `ValueNotifier`, fcis.md §6.8). Logging uses `package:logging` directly — it
@@ -152,7 +167,9 @@ the `lib/sync/` core below.
 - `domain/` (ports + models + failures) + `infra/` (impls over `AppGraph.store`)
   + `presentation/` (state · action · effect · ui_effect · updater · shell ·
   loop · controller · module · scope · page). Built: `app_launch`, `onboard`,
-  `timeline`. Per-feature **narrow** ports return `Result` (result.md §9).
+  `timeline`, `collection`. Per-feature **narrow** ports return `Result`
+  (result.md §9). `collection` adds a `*_route_args.dart` carrier
+  (cross_feature §2) the Timeline writes and the Collection page reads.
 
 ### `packages/` — extracted local packages (path deps)
 - `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod

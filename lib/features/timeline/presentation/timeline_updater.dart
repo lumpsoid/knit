@@ -36,6 +36,17 @@ class TimelineUpdater
           ),
           null,
         );
+      case CollectionTapped(:final collectionId):
+        return (state, [OpenCollectionEffect(collectionId)]);
+      case CreateCollectionRequested(:final title):
+        final trimmed = title.trim();
+        if (trimmed.isEmpty) return (state, null);
+        return (state, [CreateCollectionEffect(trimmed)]);
+      case CollectionCreated(:final collectionId):
+        return (state, [OpenCollectionEffect(collectionId)]);
+      case CollectionCreateFailed():
+        // The shell surfaces a message; nothing changes in state.
+        return (state, null);
       case DeactivateFeature():
         return (state, null);
     }

@@ -72,6 +72,8 @@ dependencies:
     git:
       url: "https://github.com/lumpsoid/fetch_dart"
       ref: "0a6ee659f98292e8fec1627645c6cebe63a62e1e"
+  # UUIDv7 minting behind the IdGenerator port (spec §6.1) — time-ordered ids.
+  uuid: ^4.5.3
 
 dev_dependencies:
   flutter_test:

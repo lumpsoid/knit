@@ -23,6 +23,29 @@ class TimelineLoadFailed extends TimelineAction {
   final String message;
 }
 
+/// Tapped an existing collection row → open the Collection screen (§4.1).
+class CollectionTapped extends TimelineAction {
+  const CollectionTapped(this.collectionId);
+  final String collectionId;
+}
+
+/// Inline create submitted a title/theme line (§4.1).
+class CreateCollectionRequested extends TimelineAction {
+  const CreateCollectionRequested(this.title);
+  final String title;
+}
+
+/// A new collection persisted → open it with the composer ready (§4.1).
+class CollectionCreated extends TimelineAction {
+  const CollectionCreated(this.collectionId);
+  final String collectionId;
+}
+
+class CollectionCreateFailed extends TimelineAction {
+  const CollectionCreateFailed(this.message);
+  final String message;
+}
+
 class DeactivateFeature extends TimelineAction {
   const DeactivateFeature();
 }
