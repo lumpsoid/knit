@@ -30,6 +30,10 @@ enum ApplyOutcome {
   /// applied, clock NOT advanced (spec §8.3). The cursor still advances past it
   /// upstream (spec §8.8).
   quarantinedSkew,
+
+  /// Signature did not verify over the received bytes — quarantined
+  /// (`reason="bad_sig"`); not applied, clock NOT advanced (spec §8.5 step 2).
+  quarantinedBadSig,
 }
 
 /// Drives local writes and remote applies against one projection + device clock.

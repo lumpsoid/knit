@@ -2,36 +2,19 @@ import 'dart:convert';
 
 import 'package:knit/sync/sync.dart';
 
-/// Build the canonical-ish payload map for a snapshot (test stand-in for the
-/// real canonical serializer of spec §7.1 — key order/escaping don't matter
-/// here, only round-trip fidelity through [PersistedOp.toSnapshot]).
-Map<String, Object?> payloadMap(Snapshot s) {
-  final m = <String, Object?>{
-    't': s.type.name,
-    'id': s.id,
-    'author': s.author,
-    'created_by': s.createdBy,
-    'created_at': s.createdAt,
-    'hlc_ms': s.hlc.ms,
-    'hlc_counter': s.hlc.counter,
-    'deleted': s.deleted ? 1 : 0,
-    ...s.content,
-  };
-  if (s.isCard) {
-    m['position'] = s.position;
-    m['position_ms'] = s.placement!.ms;
-    m['position_counter'] = s.placement!.counter;
-  }
-  return m;
-}
-
-/// Wrap a snapshot in a durable [PersistedOp] with a sig-keyed op_id (spec §7.3).
+/// Wrap a snapshot in a durable [PersistedOp] with a real canonical payload
+/// (§7.1), a [FakeSigner]-compatible signature (so it verifies in
+/// `SyncStore.applyRemote`), and a sig-keyed op_id (§7.3). The signature is
+/// `fakeSignHex(utf8(author), utf8(payload))`, matching the in-memory signer's
+/// "secret == utf8(publicKeyHex)" convention.
 PersistedOp opOf(Snapshot s, {SyncOrigin origin = SyncOrigin.local}) {
-  final sig16 = s.sig.length >= 16 ? s.sig.substring(0, 16) : s.sig;
+  final payload = CanonicalSerializer.string(s);
+  final sig = fakeSignHex(utf8.encode(s.author), utf8.encode(payload));
+  final signed = s.copyWith(sig: sig);
   return PersistedOp.fromSnapshot(
-    s,
-    opId: '${s.id}@${s.hlc.ms}.${s.hlc.counter}.$sig16',
-    payload: jsonEncode(payloadMap(s)),
+    signed,
+    opId: OpId.ofSnapshot(signed),
+    payload: payload,
     origin: origin,
   );
 }
@@ -123,5 +106,10 @@ Snapshot card({
       sig: '$sig$id$hlcMs$posMs',
       placement: Hlc(posMs, 0),
       position: position,
-      content: {'collection_id': collectionId, 'kind': 'text', 'text': text},
+      content: {
+        'collection_id': collectionId,
+        'kind': 'text',
+        'text': text,
+        'attachment_id': null,
+      },
     );

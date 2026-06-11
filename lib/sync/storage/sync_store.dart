@@ -1,48 +1,65 @@
+import 'dart:convert';
+
 import 'package:knit/core/storage/domain/unit_of_work.dart';
 import 'package:knit/sync/engine.dart';
 import 'package:knit/sync/hlc.dart';
+import 'package:knit/sync/identity/identity.dart';
 import 'package:knit/sync/merge.dart';
 import 'package:knit/sync/snapshot.dart';
 import 'package:knit/sync/storage/change_log/change_log.dart';
 import 'package:knit/sync/storage/device_clock/device_clock.dart';
 import 'package:knit/sync/storage/projection/projection.dart';
+import 'package:knit/sync/storage/quarantine/quarantine.dart';
+import 'package:knit/sync/wire/wire.dart';
 
-/// The persistent apply orchestrator — ties the durable [ChangeLogStorage], the
-/// materialized [ProjectionStorage], and the [DeviceClockStorage] to the
-/// merge-core (spec §8.5 / §8.9), all through the storage abstractions so the
-/// same code runs on sqflite in production and on in-memory fakes in dev/tests.
+/// The persistent apply + write orchestrator — ties the durable
+/// [ChangeLogStorage], the materialized [ProjectionStorage], the
+/// [DeviceClockStorage], the [LocalIdentityStorage], and the [QuarantineStorage]
+/// to the merge-core (spec §8.5 / §8.9) and the upstream write path (§6.8), all
+/// through the storage abstractions so the same code runs on sqflite in
+/// production and on in-memory fakes in dev/tests.
 ///
-/// Crash-safety (spec §8.5): an apply commits the projection write, the
-/// change_log insert, and the device-clock save in **one** [UnitOfWork]
-/// transaction, so the persisted state is always internally consistent.
-///
-/// Out of scope (upstream write-path): canonical serialization + signing
-/// (§7.1), signature verification (§8.5 step 2), the quarantine table, and the
-/// `sync_state.cursor`. The local write path needs the canonical serializer to
-/// build a [PersistedOp], so it composes on top of this rather than living here.
+/// Crash-safety (spec §8.5/§6.8): every apply *and* every local write commits the
+/// projection write, the change_log insert, and the device-clock save in **one**
+/// [UnitOfWork] transaction, so the persisted state is always internally
+/// consistent.
 class SyncStore {
   SyncStore({
     required this.changeLog,
     required this.projection,
     required this.deviceClock,
+    required this.localIdentity,
+    required this.quarantine,
+    required this.signer,
     UnitOfWork unitOfWork = const NoOpUnitOfWork(),
+    SecretBox secretBox = const PlaintextSecretBox(),
     DeviceClock? clock,
     this.maxSkewMs = kMaxSkewMs,
   })  : _unitOfWork = unitOfWork,
+        _secretBox = secretBox,
         _clock = clock ?? DeviceClock();
 
-  /// Fully in-memory wiring for dev mode and tests — no SQLite, no transaction.
-  factory SyncStore.inMemory({int maxSkewMs = kMaxSkewMs}) => SyncStore(
+  /// Fully in-memory wiring for dev mode and tests — no SQLite, no transaction,
+  /// no real crypto (a deterministic [FakeSigner]).
+  factory SyncStore.inMemory({int maxSkewMs = kMaxSkewMs, Signer? signer}) =>
+      SyncStore(
         changeLog: InMemoryChangeLogStorage(),
         projection: InMemoryProjectionStorage(),
         deviceClock: InMemoryDeviceClockStorage(),
+        localIdentity: InMemoryLocalIdentityStorage(),
+        quarantine: InMemoryQuarantineStorage(),
+        signer: signer ?? FakeSigner(),
         maxSkewMs: maxSkewMs,
       );
 
   final ChangeLogStorage changeLog;
   final ProjectionStorage projection;
   final DeviceClockStorage deviceClock;
+  final LocalIdentityStorage localIdentity;
+  final QuarantineStorage quarantine;
+  final Signer signer;
   final UnitOfWork _unitOfWork;
+  final SecretBox _secretBox;
   final int maxSkewMs;
 
   DeviceClock _clock;
@@ -50,13 +67,20 @@ class SyncStore {
   /// The in-memory device HLC (loaded from [deviceClock] by [open]/[rebuild]).
   DeviceClock get clock => _clock;
 
-  /// Create tables and restore the persisted device clock. Call once at startup.
+  /// Cached identity: the public key (= `author`) and the decrypted secret key.
+  ({String pubkey, List<int> secret})? _identityCache;
+
+  /// Create tables, restore the persisted device clock, and provision the device
+  /// identity (spec §6.5). Call once at startup.
   Future<void> open() async {
     await changeLog.ensureSchema();
     await projection.ensureSchema();
     await deviceClock.ensureSchema();
+    await localIdentity.ensureSchema();
+    await quarantine.ensureSchema();
     final saved = await deviceClock.load();
     if (saved != null) _clock.restore(saved);
+    await _identity(); // ensure an identity exists before any write
   }
 
   // --- Reads (spec §8.6/§8.7) ------------------------------------------------
@@ -73,20 +97,47 @@ class SyncStore {
   /// Pending-sync indicator (spec §6.6) — local ops not yet acked.
   Future<int> pendingCount() => changeLog.pendingCount();
 
-  // --- Apply / rebuild -------------------------------------------------------
+  /// This device's public key (= `author`/`created_by` on local writes). Lazily
+  /// provisions the identity if [open] has not run.
+  Future<String> authorPubkey() async => (await _identity()).pubkey;
+
+  // --- Apply remote (spec §8.5) ----------------------------------------------
 
   /// Apply a verified remote op and persist it atomically — spec §8.5.
   ///
-  /// Dedup by `op_id` (step 1) → skew guard (step 4) → in one transaction: read
-  /// current, advance the clock (step 5), merge (step 6), write the winner,
-  /// record the op as `remote/acked` (step 7), and save the clock. A
-  /// skew-quarantined op is neither merged nor recorded (quarantine is upstream).
+  /// Dedup by `op_id` (step 1) → **verify the signature over the received bytes**
+  /// (step 2; fail → quarantine `bad_sig`) → skew guard (step 4; fail →
+  /// quarantine `skew`) → in one transaction: read current, advance the clock
+  /// (step 5), merge (step 6), write the winner, record the op as `remote/acked`
+  /// (step 7), and save the clock. A quarantined op is neither merged nor
+  /// recorded in `change_log`, and the device clock is not advanced.
   Future<ApplyOutcome> applyRemote(PersistedOp op, int physicalNowMs) async {
     if (await changeLog.hasOp(op.opId)) return ApplyOutcome.deduped;
+
+    // Step 2: verify over `utf8(op.payload)`, never re-canonicalized. Trust the
+    // payload's own author (the envelope `op.author` is only a hint, §7.2).
+    final author = _payloadAuthor(op.payload);
+    final verified =
+        await signer.verify(author, utf8.encode(op.payload), op.sig);
+    if (!verified) {
+      await quarantine.add(QuarantinedOp(
+        opId: op.opId,
+        reason: QuarantineReason.badSig,
+        rawOp: op.payload,
+        seenAt: physicalNowMs,
+      ));
+      return ApplyOutcome.quarantinedBadSig;
+    }
 
     final snapshot = op.toSnapshot();
     final observed = snapshot.observedClock;
     if (exceedsSkew(observed.ms, physicalNowMs, maxSkewMs: maxSkewMs)) {
+      await quarantine.add(QuarantinedOp(
+        opId: op.opId,
+        reason: QuarantineReason.skew,
+        rawOp: op.payload,
+        seenAt: physicalNowMs,
+      ));
       return ApplyOutcome.quarantinedSkew;
     }
 
@@ -104,10 +155,157 @@ class SyncStore {
     return ApplyOutcome.applied;
   }
 
+  // --- Local write path (spec §6.8/§8.4) -------------------------------------
+
+  /// Create a new entity. Cards require a [position] (the initial placement);
+  /// `created_by` and `author` are set to this device's key (§6.2). [content]
+  /// carries the §7.4 entity fields (missing optional fields default to null).
+  Future<PersistedOp> create(
+    EntityType type,
+    String id,
+    Map<String, Object?> content, {
+    String? position,
+    int? physicalNowMs,
+  }) {
+    assert(
+      (type == EntityType.card) == (position != null),
+      'cards need a position; non-cards must not pass one',
+    );
+    final filled = _withContentDefaults(type, content);
+    return _writeLocal(
+      type: type,
+      id: id,
+      physicalNowMs: physicalNowMs,
+      build: (stamp, prior, author) => Snapshot(
+        type: type,
+        id: id,
+        author: author,
+        createdBy: author, // §6.2: creator stamps created_by on create
+        createdAt: stamp.ms,
+        hlc: stamp,
+        deleted: false,
+        sig: '',
+        placement: type == EntityType.card ? stamp : null,
+        position: type == EntityType.card ? position : null,
+        content: filled,
+      ),
+    );
+  }
+
+  /// Edit an existing entity's content. New content stamp; placement frozen for
+  /// cards (§8.4); `created_by` preserved from the prior row (§6.2). [content]
+  /// overlays the prior content, so callers pass only changed fields.
+  Future<PersistedOp> edit(
+    EntityType type,
+    String id,
+    Map<String, Object?> content, {
+    int? physicalNowMs,
+  }) {
+    return _writeLocal(
+      type: type,
+      id: id,
+      physicalNowMs: physicalNowMs,
+      build: (stamp, prior, author) {
+        final base = _require(prior, 'edit', type, id);
+        return base.copyWith(
+          author: author,
+          createdBy: base.createdBy, // preserve, never restamp (§6.2)
+          hlc: stamp, // new content stamp
+          deleted: false,
+          sig: '',
+          // placement/position frozen (copyWith keeps prior).
+          content: {...base.content, ...content},
+        );
+      },
+    );
+  }
+
+  /// Soft-delete an entity (`deleted=1`) — a signed snapshot, not an unsigned op
+  /// (§7.0). New content stamp; placement unchanged for cards (§8.4).
+  Future<PersistedOp> delete(
+    EntityType type,
+    String id, {
+    int? physicalNowMs,
+  }) {
+    return _writeLocal(
+      type: type,
+      id: id,
+      physicalNowMs: physicalNowMs,
+      build: (stamp, prior, author) {
+        final base = _require(prior, 'delete', type, id);
+        return base.copyWith(
+          author: author,
+          hlc: stamp, // content-dimension event (§6.9)
+          deleted: true,
+          sig: '',
+        );
+      },
+    );
+  }
+
+  /// Reorder a card — fresh **placement** stamp, content `hlc_*` left frozen
+  /// (§8.4, or a stale drag would clobber a concurrent edit). Distinct `op_id`
+  /// from the edit it followed comes from the new `sig` (§7.3 case 2).
+  Future<PersistedOp> reorder(
+    String cardId,
+    String position, {
+    int? physicalNowMs,
+  }) {
+    return _writeLocal(
+      type: EntityType.card,
+      id: cardId,
+      physicalNowMs: physicalNowMs,
+      build: (stamp, prior, author) {
+        final base = _require(prior, 'reorder', EntityType.card, cardId);
+        return base.copyWith(
+          author: author,
+          // hlc frozen (copyWith keeps prior content stamp).
+          sig: '',
+          placement: stamp, // new placement stamp
+          position: position,
+        );
+      },
+    );
+  }
+
+  /// The shared one-transaction local write (spec §6.8 steps 1–3): read prior,
+  /// mint exactly one device stamp (§8.2), build → canonical (§7.1) → sign
+  /// (§6.8) → `op_id` (§7.3), then upsert projection + append op + save clock.
+  Future<PersistedOp> _writeLocal({
+    required EntityType type,
+    required String id,
+    required Snapshot Function(Hlc stamp, Snapshot? prior, String author) build,
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    return _unitOfWork.run((ctx) async {
+      final prior = await projection.get(type, id, ctx: ctx);
+      final stamp = _clock.localTick(now); // exactly one tick per write (§8.2)
+      final unsigned = build(stamp, prior, identity.pubkey);
+      final payload = CanonicalSerializer.string(unsigned);
+      final sig = await signer.sign(identity.secret, utf8.encode(payload));
+      final snap = unsigned.copyWith(sig: sig);
+      final op = PersistedOp.fromSnapshot(
+        snap,
+        opId: OpId.build(entityId: id, hlc: snap.hlc, sig: sig),
+        payload: payload,
+        origin: SyncOrigin.local, // acked defaults to false (§6.8 step 2)
+      );
+      await projection.upsert(snap, ctx: ctx);
+      await changeLog.append(op, ctx: ctx);
+      await deviceClock.save(_clock.now, ctx: ctx);
+      return op;
+    });
+  }
+
+  // --- Rebuild (spec §8.9) ---------------------------------------------------
+
   /// Rebuild-from-log — spec §8.9. Replay every op in `seq` order through the
-  /// merge-core (order-independent by construction), then, in one transaction,
-  /// truncate and re-materialize the projection and recover the device clock
-  /// (step 3) past the max stamp ever recorded.
+  /// merge-core (order-independent by construction, **no re-verify** — the log is
+  /// already-verified durable truth), then, in one transaction, truncate and
+  /// re-materialize the projection and recover the device clock (step 3) past the
+  /// max stamp ever recorded.
   Future<void> rebuild() async {
     final ops = await changeLog.readOrdered();
 
@@ -127,5 +325,54 @@ class SyncStore {
       }
       await deviceClock.save(_clock.now, ctx: ctx);
     });
+  }
+
+  // --- Helpers ---------------------------------------------------------------
+
+  /// Load (or, on a fresh device, provision and persist) the device identity
+  /// (§6.5). The secret is sealed by the [SecretBox] before storage.
+  Future<({String pubkey, List<int> secret})> _identity() async {
+    final cached = _identityCache;
+    if (cached != null) return cached;
+
+    final existing = await localIdentity.load();
+    if (existing != null) {
+      return _identityCache = (
+        pubkey: existing.publicKeyHex,
+        secret: _secretBox.open(existing.secretKeyEnc),
+      );
+    }
+
+    final keypair = await signer.generate();
+    await localIdentity.save(LocalIdentity(
+      publicKeyHex: keypair.publicKeyHex,
+      secretKeyEnc: _secretBox.seal(keypair.secretKey),
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+    ));
+    return _identityCache =
+        (pubkey: keypair.publicKeyHex, secret: keypair.secretKey);
+  }
+
+  static String _payloadAuthor(String payload) =>
+      (jsonDecode(payload) as Map<String, Object?>)['author'] as String;
+
+  static Snapshot _require(
+          Snapshot? prior, String op, EntityType type, String id) =>
+      prior ?? (throw StateError('$op of missing ${type.name} $id'));
+
+  /// Fill an entity's nullable content fields with explicit nulls so the
+  /// canonical field set (§7.4) is complete even when the caller omits them.
+  static Map<String, Object?> _withContentDefaults(
+    EntityType type,
+    Map<String, Object?> content,
+  ) {
+    final defaults = switch (type) {
+      EntityType.collection => const {'cover_attachment_id': null},
+      EntityType.card => const {'attachment_id': null, 'text': null},
+      EntityType.link => const {'label': null},
+      EntityType.profile => const {'nickname': null},
+      EntityType.attachment => const <String, Object?>{},
+    };
+    return {...defaults, ...content};
   }
 }

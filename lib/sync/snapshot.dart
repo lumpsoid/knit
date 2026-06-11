@@ -144,6 +144,37 @@ class Snapshot {
     );
   }
 
+  /// A copy with selected fields replaced. Used by the write path to inject the
+  /// `sig` once the canonical payload has been signed (§6.8). Nullable
+  /// `placement`/`position` follow the standard keep-if-omitted rule, which is
+  /// all the write path needs (cards always pass their placement explicitly).
+  Snapshot copyWith({
+    EntityType? type,
+    String? id,
+    String? author,
+    String? createdBy,
+    int? createdAt,
+    Hlc? hlc,
+    bool? deleted,
+    String? sig,
+    Hlc? placement,
+    String? position,
+    Map<String, Object?>? content,
+  }) =>
+      Snapshot(
+        type: type ?? this.type,
+        id: id ?? this.id,
+        author: author ?? this.author,
+        createdBy: createdBy ?? this.createdBy,
+        createdAt: createdAt ?? this.createdAt,
+        hlc: hlc ?? this.hlc,
+        deleted: deleted ?? this.deleted,
+        sig: sig ?? this.sig,
+        placement: placement ?? this.placement,
+        position: position ?? this.position,
+        content: content ?? this.content,
+      );
+
   /// Parse a verified canonical payload map (spec §7.4) into a [Snapshot].
   /// Pulls the fixed envelope + placement fields and bundles the rest into
   /// [content].

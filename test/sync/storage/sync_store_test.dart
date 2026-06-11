@@ -49,6 +49,61 @@ void main() {
     });
   });
 
+  group('SyncStore.applyRemote verify (spec §8.5 step 2 / §8.8)', () {
+    test('a locally-written op verifies and applies on another device', () async {
+      final a = SyncStore.inMemory();
+      await a.open();
+      final op = await a.create(
+        EntityType.collection,
+        'col-1',
+        {'title': 'hi'},
+        physicalNowMs: 5000,
+      );
+
+      final b = SyncStore.inMemory();
+      await b.open();
+      expect(await b.applyRemote(op, 5000), ApplyOutcome.applied);
+      expect((await b.get(EntityType.collection, 'col-1'))!.content['title'], 'hi');
+    });
+
+    test('a tampered op is quarantined bad_sig — not merged, not logged', () async {
+      final store = SyncStore.inMemory();
+      final good = opOf(collection(hlcMs: 100, title: 'x'));
+      final tampered = PersistedOp(
+        opId: good.opId,
+        entityType: good.entityType,
+        entityId: good.entityId,
+        op: good.op,
+        hlcMs: good.hlcMs,
+        hlcCounter: good.hlcCounter,
+        author: good.author,
+        payload: good.payload,
+        sig: 'deadbeefdeadbeef', // does not match the canonical bytes
+        origin: good.origin,
+      );
+
+      expect(await store.applyRemote(tampered, 100),
+          ApplyOutcome.quarantinedBadSig);
+      expect(await store.get(EntityType.collection, 'col-1'), isNull);
+      expect(await store.changeLog.readOrdered(), isEmpty);
+      expect(store.clock.now, Hlc.zero, reason: 'clock not advanced');
+
+      final q = (await store.quarantine.readAll()).single;
+      expect(q.reason, QuarantineReason.badSig);
+      expect(q.opId, good.opId);
+    });
+
+    test('a skew-quarantined op is retained in quarantine (§8.8)', () async {
+      final store = SyncStore.inMemory();
+      final far = opOf(collection(hlcMs: 1000 + kMaxSkewMs + 1, title: 'evil'));
+
+      expect(await store.applyRemote(far, 1000), ApplyOutcome.quarantinedSkew);
+      expect(await store.changeLog.readOrdered(), isEmpty);
+      final q = (await store.quarantine.readAll()).single;
+      expect(q.reason, QuarantineReason.skew);
+    });
+  });
+
   group('SyncStore.rebuild (spec §8.9)', () {
     test('replays the log into a projection equal to a direct merge replay',
         () async {

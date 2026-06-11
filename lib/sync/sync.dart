@@ -13,4 +13,6 @@ export 'hlc.dart';
 export 'snapshot.dart';
 export 'merge.dart';
 export 'engine.dart';
+export 'wire/wire.dart';
+export 'identity/identity.dart';
 export 'storage/storage.dart';
