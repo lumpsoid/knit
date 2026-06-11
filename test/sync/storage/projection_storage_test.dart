@@ -78,6 +78,15 @@ void main() {
         expect(ids, ['l1']);
       });
 
+      test('linksOut: live links from a source only (spec §4.4)', () async {
+        await store.upsert(link(id: 'l1', sourceId: 'card-1', hlcMs: 1));
+        await store.upsert(link(id: 'l2', sourceId: 'card-1', hlcMs: 1, deleted: true));
+        await store.upsert(link(id: 'l3', sourceId: 'card-9', hlcMs: 1));
+
+        final ids = (await store.linksOut('card-1')).map((s) => s.id).toList();
+        expect(ids, ['l1']);
+      });
+
       test('readAll spans every entity table', () async {
         await store.upsert(collection(hlcMs: 1));
         await store.upsert(card(hlcMs: 1));

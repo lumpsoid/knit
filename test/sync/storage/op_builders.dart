@@ -23,20 +23,22 @@ Snapshot collection({
   String id = 'col-1',
   String author = 'aa',
   required int hlcMs,
+  int createdAt = 1000,
   bool deleted = false,
   String sig = 'sig',
   String title = 't',
+  String? coverAttachmentId,
 }) =>
     Snapshot(
       type: EntityType.collection,
       id: id,
       author: author,
       createdBy: author,
-      createdAt: 1000,
+      createdAt: createdAt,
       hlc: Hlc(hlcMs, 0),
       deleted: deleted,
       sig: '$sig$hlcMs',
-      content: {'title': title, 'cover_attachment_id': null},
+      content: {'title': title, 'cover_attachment_id': coverAttachmentId},
     );
 
 Snapshot link({
@@ -89,8 +91,11 @@ Snapshot card({
   String id = 'card-1',
   String collectionId = 'col-1',
   required int hlcMs,
+  int createdAt = 1000,
   int posMs = 1000,
+  String kind = 'text',
   String text = '',
+  String? attachmentId,
   String position = 'a0',
   bool deleted = false,
   String sig = 'sig',
@@ -100,7 +105,7 @@ Snapshot card({
       id: id,
       author: 'aa',
       createdBy: 'aa',
-      createdAt: 1000,
+      createdAt: createdAt,
       hlc: Hlc(hlcMs, 0),
       deleted: deleted,
       sig: '$sig$id$hlcMs$posMs',
@@ -108,8 +113,8 @@ Snapshot card({
       position: position,
       content: {
         'collection_id': collectionId,
-        'kind': 'text',
+        'kind': kind,
         'text': text,
-        'attachment_id': null,
+        'attachment_id': attachmentId,
       },
     );

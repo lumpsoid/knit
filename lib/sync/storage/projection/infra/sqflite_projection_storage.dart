@@ -91,6 +91,21 @@ class SqfliteProjectionStorage implements ProjectionStorage {
   }
 
   @override
+  Future<List<Snapshot>> linksOut(
+    String sourceId, {
+    StorageContext? ctx,
+  }) async {
+    final rows = await _exec(ctx).query(
+      LinkSchema.table,
+      where: '${LinkSchema.colSourceId} = ? AND ${EnvelopeColumns.colDeleted} = 0',
+      whereArgs: [sourceId],
+    );
+    return rows
+        .map((r) => ProjectionRowMapper.fromRow(EntityType.link, r))
+        .toList();
+  }
+
+  @override
   Future<void> clear({StorageContext? ctx}) async {
     final db = _exec(ctx);
     for (final type in ProjectionTables.all) {

@@ -7,6 +7,7 @@ import 'package:knit/sync/identity/identity.dart';
 import 'package:knit/sync/merge.dart';
 import 'package:knit/sync/snapshot.dart';
 import 'package:knit/sync/storage/change_log/change_log.dart';
+import 'package:knit/sync/storage/derivations/derivations.dart';
 import 'package:knit/sync/storage/device_clock/device_clock.dart';
 import 'package:knit/sync/storage/projection/projection.dart';
 import 'package:knit/sync/storage/quarantine/quarantine.dart';
@@ -93,6 +94,20 @@ class SyncStore {
 
   Future<List<Snapshot>> backlinks(String targetId) =>
       projection.backlinks(targetId);
+
+  /// Live links originating at [sourceId] — forward connections (spec §4.4).
+  Future<List<Snapshot>> linksOut(String sourceId) =>
+      projection.linksOut(sourceId);
+
+  /// Endpoint liveness for a live [link] — the broken-link chip (spec §8.6.1).
+  /// Never auto-deletes; the UI offers repair/clear.
+  Future<LinkEndpointStatus> linkStatus(Snapshot link) =>
+      BrokenLinkResolver(projection).resolve(link);
+
+  /// The home timeline — per-collection counters, sorted `last_updated DESC`
+  /// (spec §8.6.3). Computed on read from the full projection (no cache table).
+  Future<List<CollectionSummary>> homeTimeline() async =>
+      buildHomeTimeline(await projection.readAll());
 
   /// Pending-sync indicator (spec §6.6) — local ops not yet acked.
   Future<int> pendingCount() => changeLog.pendingCount();

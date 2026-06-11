@@ -15,18 +15,20 @@ before any relay work.
 
 ## Build (same domain/infra + abstracted pattern)
 
-1. **Read-side derivations** (§8.6 — pure, both-impl tested like the rest)
-   - **Broken-link chip** (§8.6.1): a resolver over `ProjectionStorage` that, for
-     a live link (`deleted=0`), checks each endpoint via its `*_type` table and
-     flags it broken when the row is missing or `deleted=1`. Closes gate 4.
-     Never auto-deletes the link.
+1. **Read-side derivations** (§8.6 — pure, both-impl tested like the rest) ✅ **done**
+   - **Broken-link chip** (§8.6.1): `BrokenLinkResolver` over `ProjectionStorage`
+     that, for a live link (`deleted=0`), checks each endpoint via its `*_type`
+     table and flags it broken when the row is missing or `deleted=1`. Closes
+     gate 4. Never auto-deletes the link. → `SyncStore.linkStatus`.
    - **Connections** (§4.4): `backlinks` (links where `target_id = id`) exists;
-     add the forward **links-out** query (`source_id = id`, live).
-   - **Home timeline** (§8.6.3): per-collection `card_count`, `last_card` preview
-     (greatest `created_at` live card; kind-based summary), and `last_updated`;
-     Home list sorted `last_updated DESC`. Computed on read (no cache table → no
-     invalidation bugs); editing a card does **not** resurface its collection
-     (flagged §8.6.3 limitation, MVP-acceptable).
+     added the forward **links-out** query (`source_id = id`, live) on
+     `ProjectionStorage` (both impls). → `SyncStore.linksOut`.
+   - **Home timeline** (§8.6.3): pure `buildHomeTimeline` → `CollectionSummary`
+     (`card_count`, `last_card` preview = greatest-`created_at` live card carrying
+     `kind`+`text`, and `last_updated`); list sorted `last_updated DESC`. Computed
+     on read (no cache table → no invalidation bugs); editing a card does **not**
+     resurface its collection (flagged §8.6.3 limitation, MVP-acceptable). →
+     `SyncStore.homeTimeline`. Lives in `lib/sync/storage/derivations/`.
 
 2. **Composition root** (`lib/` app entry)
    - Open the per-device SQLite file; build the **sqflite** `SyncStore`

@@ -45,6 +45,13 @@ class InMemoryProjectionStorage implements ProjectionStorage {
           .toList();
 
   @override
+  Future<List<Snapshot>> linksOut(String sourceId, {StorageContext? ctx}) async =>
+      _tables[EntityType.link]!
+          .values
+          .where((s) => !s.deleted && s.content['source_id'] == sourceId)
+          .toList();
+
+  @override
   Future<void> clear({StorageContext? ctx}) async {
     for (final table in _tables.values) {
       table.clear();

@@ -31,6 +31,11 @@ abstract class ProjectionStorage {
   /// Endpoint liveness (the broken-link chip, §8.6.1) is resolved by the caller.
   Future<List<Snapshot>> backlinks(String targetId, {StorageContext? ctx});
 
+  /// Live links originating at [sourceId] — the forward links-out query
+  /// (spec §4.4). Mirror of [backlinks]; endpoint liveness (§8.6.1) is resolved
+  /// by the caller.
+  Future<List<Snapshot>> linksOut(String sourceId, {StorageContext? ctx});
+
   /// Truncate every entity table (rebuild step 1, spec §8.9).
   Future<void> clear({StorageContext? ctx});
 }
