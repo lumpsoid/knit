@@ -71,17 +71,28 @@ class SyncStore {
   /// Cached identity: the public key (= `author`) and the decrypted secret key.
   ({String pubkey, List<int> secret})? _identityCache;
 
-  /// Create tables, restore the persisted device clock, and provision the device
-  /// identity (spec §6.5). Call once at startup.
-  Future<void> open() async {
-    await changeLog.ensureSchema();
-    await projection.ensureSchema();
-    await deviceClock.ensureSchema();
-    await localIdentity.ensureSchema();
-    await quarantine.ensureSchema();
+  /// Create tables, restore the persisted device clock, and (by default)
+  /// provision the device identity (spec §6.5). Call once at startup.
+  ///
+  /// [ensureSchema] is skipped when the schema is owned by an external migrator
+  /// (the production graph runs `package:sql_migrator` first, §6.4). Set
+  /// [provisionIdentity] to `false` to defer keypair generation to an explicit
+  /// step — the first-run onboarding "Generate" moment ([provisionIdentity]) —
+  /// so a fresh device reports [hasIdentity] `false` until the user opts in.
+  Future<void> open({
+    bool ensureSchema = true,
+    bool provisionIdentity = true,
+  }) async {
+    if (ensureSchema) {
+      await changeLog.ensureSchema();
+      await projection.ensureSchema();
+      await deviceClock.ensureSchema();
+      await localIdentity.ensureSchema();
+      await quarantine.ensureSchema();
+    }
     final saved = await deviceClock.load();
     if (saved != null) _clock.restore(saved);
-    await _identity(); // ensure an identity exists before any write
+    if (provisionIdentity) await _identity();
   }
 
   // --- Reads (spec §8.6/§8.7) ------------------------------------------------
@@ -115,6 +126,16 @@ class SyncStore {
   /// This device's public key (= `author`/`created_by` on local writes). Lazily
   /// provisions the identity if [open] has not run.
   Future<String> authorPubkey() async => (await _identity()).pubkey;
+
+  /// Whether this device already has a provisioned identity (spec §6.5). The
+  /// onboarding gate: `false` on a fresh device until [provisionIdentity] runs.
+  Future<bool> hasIdentity() async =>
+      _identityCache != null || (await localIdentity.load()) != null;
+
+  /// Explicitly provision (or load) the device identity, returning its public
+  /// key (spec §5/§6.5). The deliberate first-run "Generate" step; idempotent —
+  /// returns the existing key if one is already provisioned.
+  Future<String> provisionIdentity() async => (await _identity()).pubkey;
 
   // --- Apply remote (spec §8.5) ----------------------------------------------
 

@@ -1,30 +1,63 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:knit/app/app_config.dart';
+import 'package:knit/app/app_graph.dart';
+import 'package:knit/app/composition.dart';
+import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
+import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
+import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
+import 'package:knit/features/onboard/presentation/onboard_module.dart';
+import 'package:knit/features/onboard/presentation/onboard_scope.dart';
+import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
+import 'package:knit/features/timeline/presentation/timeline_module.dart';
+import 'package:knit/features/timeline/presentation/timeline_scope.dart';
 import 'package:knit/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  /// Wire the global Scopes against a fresh in-memory graph, mirroring main().
+  void wire() {
+    final graph = AppGraph();
+    AppLaunchScope.setController(
+      AppLaunchModule(
+        initialization:
+            resolveInitializationRepository(AppConfig.dev, graph),
+        destinationResolver:
+            resolveAppDestinationResolver(AppConfig.dev, graph),
+      ).controller,
+    );
+    OnboardScope.setFactory(
+      () => OnboardModule(repository: SyncStoreOnboardRepository(graph: graph))
+          .controller,
+    );
+    TimelineScope.setFactory(
+      () => TimelineModule(
+              repository: SyncStoreTimelineRepository(graph: graph))
+          .controller,
+    );
+  }
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  tearDown(() {
+    AppLaunchScope.reset();
+    OnboardScope.reset();
+    TimelineScope.reset();
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('boots through the splash into onboarding on a fresh device',
+      (tester) async {
+    wire();
+    await tester.pumpWidget(const KnitApp());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // The splash shows first.
+    expect(find.text('Knit'), findsOneWidget);
+
+    // Init → destination resolve → navigation are microtask/animation driven;
+    // pump in bounded steps until the onboarding welcome lands.
+    for (var i = 0;
+        i < 40 && find.text('Get started').evaluate().isEmpty;
+        i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(find.text('Welcome to Knit'), findsOneWidget);
+    expect(find.text('Get started'), findsOneWidget);
   });
 }
