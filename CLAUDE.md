@@ -14,6 +14,48 @@ serializer + Ed25519 signing, `SyncStore.create/edit/delete/reorder`, and
 verify-on-apply. The **UI and the relay are not yet built**. The next step — the
 §9.1 first vertical slice end-to-end — is in **`TASK.md`**.
 
+## Presentation architecture (UI layer)
+
+The UI is not built yet; when it is, it follows a generalized,
+app-agnostic **FCIS** (Functional Core / Imperative Shell) contract built
+on `package:fcis_core` + `package:result_dart` (both already git deps).
+These docs are the source of truth for the presentation layer — cite their
+`§` sections like `app_spec.md`:
+
+- **`docs/architecture/fcis.md`** — the `<Feature>Scope` rule (§4), the
+  Controller (§5), and Functional Core / Imperative Shell (§6) incl. the
+  canonical `package:fcis_core` realization (§6.8: updater / shell / loop /
+  controller / module files).
+- **`docs/architecture/result.md`** — the `Result<S, F>` pattern (§9):
+  every fallible op returns a `Result`; the shell unwraps it, the updater
+  never sees it; per-area sealed failure types.
+- **`docs/architecture/composition.md`** — `InitializationRepository` (the
+  init seam), the immutable `AppConfig` graph selector, and App Launch:
+  `AppLaunchController` drives init, then the post-init
+  `AppDestinationResolver` decides navigation.
+- **`docs/architecture/cross_feature.md`** — the four cross-feature seams:
+  external signals (`ExternalSignalListener`/`Registrar`/`CancellationToken`),
+  the route-args carrier (data between pages, decoupled from navigation),
+  feature input channels, `EffectEmitter` (the UI side-effect seam,
+  renamed from `SideEffector`), and the feature-to-feature access facade
+  (§5: outside consumers may only observe a feature's state read-only and
+  pass intent via its `ActionSink` — nothing else crosses the boundary).
+- **`docs/architecture/widgets.md`** — widget inputs: shared widgets take
+  primitives (or a widget-owned view-model), never a feature's domain
+  type (§1); every widget/function takes only the data it uses, not whole
+  aggregates (§2).
+- **`docs/architecture/business_logic.md`** — where business decisions
+  live: shells orchestrate, the domain decides. The placement ladder
+  (value → entity → policy → use case), make-invalid-states-unrepresentable,
+  tell-don't-ask, and the self-check. A business `if` never belongs in a
+  shell/controller/repository. Also §5: inject **narrow, single-purpose
+  ports** named for what they do (`<Feature>ReadRepository`, …), never one
+  fat catch-all `<Feature>Repository` — keeps variants cheap and composable.
+
+These describe a *reusable* contract (generic `<Feature>` / `<app>`
+placeholders), so they read the same across apps; they govern UI code, not
+the `lib/sync/` core below.
+
 ## Conventions
 
 - **Layout:** every feature/module splits into `domain/` (abstractions, models,
