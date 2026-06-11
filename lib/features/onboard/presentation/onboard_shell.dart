@@ -1,6 +1,6 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
-import 'package:knit/core/logging/logger.dart';
+import 'package:logging/logging.dart';
 import 'package:knit/features/onboard/domain/onboard_failure.dart';
 import 'package:knit/features/onboard/domain/onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
@@ -18,11 +18,11 @@ class OnboardShell extends Shell<OnboardEffect, OnboardAction> {
     required Logger logger,
   })  : _repository = repository,
         _effectEmitter = effectEmitter,
-        _logger = logger;
+        _log = logger;
 
   final OnboardRepository _repository;
   final EffectEmitter<OnboardUiEffect> _effectEmitter;
-  final Logger _logger;
+  final Logger _log;
 
   @override
   Future<void> run(
@@ -35,7 +35,7 @@ class OnboardShell extends Shell<OnboardEffect, OnboardAction> {
         result.onTap(
           (card) => dispatch(IdentityCreated(card)),
           (failure) {
-            _logger.error('Identity creation failed: ${_cause(failure)}');
+            _log.severe('Identity creation failed: ${_cause(failure)}');
             dispatch(IdentityCreationFailed(_message(failure)));
           },
         );

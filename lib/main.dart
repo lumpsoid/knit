@@ -1,4 +1,7 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import 'package:knit/app/app_config.dart';
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/composition.dart';
@@ -14,6 +17,21 @@ import 'package:knit/features/timeline/presentation/timeline_scope.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Composition routes the single package:logging stream: every layer logs to
+  // a named Logger; here we drain Logger.root.onRecord into the Flutter/IDE
+  // console (via dart:developer). Other consumers can subscribe to react.
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    developer.log(
+      record.message,
+      name: record.loggerName,
+      level: record.level.value,
+      time: record.time,
+      error: record.error,
+      stackTrace: record.stackTrace,
+    );
+  });
 
   // composition.md §2 — the immutable graph selector. Dev (in-memory) by
   // default so the app runs on any platform with no SQLite setup; switch to

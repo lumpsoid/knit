@@ -1,5 +1,5 @@
 import 'package:fcis_core/fcis_core.dart';
-import 'package:knit/core/logging/logger.dart';
+import 'package:logging/logging.dart';
 import 'package:knit/features/timeline/domain/timeline_failure.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
@@ -12,10 +12,10 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
     required TimelineReadRepository repository,
     required Logger logger,
   })  : _repository = repository,
-        _logger = logger;
+        _log = logger;
 
   final TimelineReadRepository _repository;
-  final Logger _logger;
+  final Logger _log;
 
   @override
   Future<void> run(
@@ -28,7 +28,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
         result.onTap(
           (collections) => dispatch(CollectionsLoaded(collections)),
           (failure) {
-            _logger.error('Timeline load failed: ${_cause(failure)}');
+            _log.severe('Timeline load failed: ${_cause(failure)}');
             dispatch(const TimelineLoadFailed('Could not load your collections.'));
           },
         );

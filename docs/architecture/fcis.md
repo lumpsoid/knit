@@ -707,7 +707,7 @@ fcis_core just provides the runtime that drives them.
 | File | Class | Role |
 |---|---|---|
 | `<feature>_updater.dart` | `<F>Updater implements Updater<…>` | `const`, pure `update()` switch. `ViewAttached` lifecycle action returns the initial-load effect; `DeactivateFeature` is a no-op. Inline helpers become private methods. |
-| `<feature>_shell.dart` | `<F>Shell extends Shell<…>` | `const` ctor with injected deps + `required Logger logger`. Ping-pongs async results back via `dispatch(Action)`; pushes UI effects via injected `EffectEmitter`. Log catches, never swallow (`(e, st)`). |
+| `<feature>_shell.dart` | `<F>Shell extends Shell<…>` | ctor with injected deps incl. an injected `package:logging` `Logger` (the module defaults it to `Logger('<app>.<feature>')`; tests pass their own to assert/mute). Ping-pongs async results back via `dispatch(Action)`; pushes UI effects via injected `EffectEmitter`. Log catches as `severe`, never swallow (`(e, st)`). |
 | `<feature>_fcis_loop.dart` | `<F>FcisLoop extends FcisLoop<…>` | super-params only, no logic. |
 | `<feature>_controller.dart` | `<F>Controller` | **thin.** Holds public `stateHolder`, `_effectEmitter`, `_sink` (`ActionSink`), signals. `onAttach(pusher)` = effectEmitter.attach + signals.bind; `onDetach()` = signals.unbind + effectEmitter.detach; `dispatch` delegates to `_sink`. |
 | `<feature>_module.dart` | `<F>Module` | composition root. Takes external deps; `late final` wires stateHolder → effectEmitter → shell → loop(sink) → signal → controller; exposes `.controller`. |

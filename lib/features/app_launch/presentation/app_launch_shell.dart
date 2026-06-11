@@ -1,6 +1,6 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
-import 'package:knit/core/logging/logger.dart';
+import 'package:logging/logging.dart';
 import 'package:knit/features/app_launch/domain/app_destination.dart';
 import 'package:knit/features/app_launch/domain/initialization_repository.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_action.dart';
@@ -21,12 +21,12 @@ class AppLaunchShell extends Shell<AppLaunchEffect, AppLaunchAction> {
   })  : _initialization = initialization,
         _destinationResolver = destinationResolver,
         _effectEmitter = effectEmitter,
-        _logger = logger;
+        _log = logger;
 
   final InitializationRepository _initialization;
   final AppDestinationResolver _destinationResolver;
   final EffectEmitter<AppLaunchUiEffect> _effectEmitter;
-  final Logger _logger;
+  final Logger _log;
 
   @override
   Future<void> run(
@@ -41,7 +41,7 @@ class AppLaunchShell extends Shell<AppLaunchEffect, AppLaunchAction> {
           dispatch(const InitializationSucceeded());
           _effectEmitter.push(AppLaunchNavigateUiEffect(destination));
         } catch (e, st) {
-          _logger.error('App initialization failed', e, st);
+          _log.severe('App initialization failed', e, st);
           dispatch(InitializationFailed(e.toString()));
         }
     }

@@ -1,7 +1,7 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
+import 'package:logging/logging.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
-import 'package:knit/core/logging/logger.dart';
 import 'package:knit/features/app_launch/domain/app_destination.dart';
 import 'package:knit/features/app_launch/domain/initialization_repository.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_action.dart';
@@ -20,7 +20,7 @@ class AppLaunchModule {
   AppLaunchModule({
     required InitializationRepository initialization,
     required AppDestinationResolver destinationResolver,
-    Logger logger = const DevLogger(),
+    Logger? logger,
   }) {
     final stateHolder =
         ValueListenableStateHolder<AppLaunchState>(const AppLaunchState());
@@ -29,7 +29,7 @@ class AppLaunchModule {
       initialization: initialization,
       destinationResolver: destinationResolver,
       effectEmitter: effectEmitter,
-      logger: logger,
+      logger: logger ?? Logger('knit.app_launch'),
     );
     final loop = AppLaunchLoop(
       stateHolder: stateHolder,

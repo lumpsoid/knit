@@ -1,7 +1,7 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
+import 'package:logging/logging.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
-import 'package:knit/core/logging/logger.dart';
 import 'package:knit/features/onboard/domain/onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
 import 'package:knit/features/onboard/presentation/onboard_controller.dart';
@@ -16,7 +16,7 @@ import 'package:knit/features/onboard/presentation/onboard_updater.dart';
 class OnboardModule {
   OnboardModule({
     required OnboardRepository repository,
-    Logger logger = const DevLogger(),
+    Logger? logger,
   }) {
     final stateHolder =
         ValueListenableStateHolder<OnboardState>(const OnboardState());
@@ -24,7 +24,7 @@ class OnboardModule {
     final shell = OnboardShell(
       repository: repository,
       effectEmitter: effectEmitter,
-      logger: logger,
+      logger: logger ?? Logger('knit.onboard'),
     );
     final loop = OnboardLoop(
       stateHolder: stateHolder,

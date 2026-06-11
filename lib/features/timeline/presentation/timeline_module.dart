@@ -1,7 +1,7 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
+import 'package:logging/logging.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
-import 'package:knit/core/logging/logger.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_controller.dart';
@@ -16,12 +16,15 @@ import 'package:knit/features/timeline/presentation/timeline_updater.dart';
 class TimelineModule {
   TimelineModule({
     required TimelineReadRepository repository,
-    Logger logger = const DevLogger(),
+    Logger? logger,
   }) {
     final stateHolder =
         ValueListenableStateHolder<TimelineState>(const TimelineState());
     final effectEmitter = EffectEmitter<TimelineUiEffect>();
-    final shell = TimelineShell(repository: repository, logger: logger);
+    final shell = TimelineShell(
+      repository: repository,
+      logger: logger ?? Logger('knit.timeline'),
+    );
     final loop = TimelineLoop(
       stateHolder: stateHolder,
       updater: const TimelineUpdater(),
