@@ -8,19 +8,32 @@ here) is an optional dumb router for sync/sharing. Full product + protocol spec:
 
 ## Status
 
-The **sync core + persistence layer + the signed local write path are built and
-tested** (113 sync tests): merge-core + HLC, the storages, the §7.1 canonical
-serializer + Ed25519 signing, `SyncStore.create/edit/delete/reorder`, and
-verify-on-apply. The **UI and the relay are not yet built**. The next step — the
-§9.1 first vertical slice end-to-end — is in **`TASK.md`**.
+The **sync core, persistence, the signed local write path, and the §8.6
+read-side derivations are built and tested** (131 sync tests): merge-core + HLC,
+the storages, the §7.1 canonical serializer + Ed25519 signing,
+`SyncStore.create/edit/delete/reorder`, verify-on-apply, and the broken-link /
+links-out / home-timeline derivations.
+
+The **initial application is built** on the FCIS contract below — three features
+wired through abstractions (146 tests total): **App Launch** (init seam +
+destination resolver), the **Onboard** identity ceremony (welcome → nickname →
+explain + Generate → generating → reveal `nickname#fingerprint`, writing the
+signed `profile` record), and the **Timeline** (§4.1 home over `homeTimeline()`).
+See `lib/app/` (composition) + `lib/features/`.
+
+**Not yet built:** the §4.2 Collection screen (card feed/composer/reorder), the
+rest of §4, and the relay. The app runs on the **in-memory graph by default**;
+flip `main.dart` to `AppConfig.prod` for the persistent sqflite graph (the §9.1
+gate-5 persistence check needs it). Current status + next step: **`TASK.md`**.
 
 ## Presentation architecture (UI layer)
 
-The UI is not built yet; when it is, it follows a generalized,
-app-agnostic **FCIS** (Functional Core / Imperative Shell) contract built
-on `package:fcis_core` + `package:result_dart` (both already git deps).
-These docs are the source of truth for the presentation layer — cite their
-`§` sections like `app_spec.md`:
+The UI follows a generalized, app-agnostic **FCIS** (Functional Core /
+Imperative Shell) contract built on `package:fcis_core` + `package:result_dart`
+(both git deps). The initial features (`app_launch`, `onboard`, `timeline`)
+already realize it — copy their shape; new features MUST follow it too. These
+docs are the source of truth for the presentation layer — cite their `§`
+sections like `app_spec.md`:
 
 - **`docs/architecture/fcis.md`** — the `<Feature>Scope` rule (§4), the
   Controller (§5), and Functional Core / Imperative Shell (§6) incl. the
@@ -111,7 +124,40 @@ the `lib/sync/` core below.
   storages to the merge-core through a `UnitOfWork`. `applyRemote` (dedup → skew
   → one-txn: merge + persist projection/log/clock, §8.5), `rebuild` (§8.9),
   `open` (restore clock). `SyncStore.inMemory()` wires the in-memory impls for
-  dev/tests.
+  dev/tests. `open({ensureSchema, provisionIdentity})` — prod lets the migrator
+  own the schema and defers identity to onboarding; `hasIdentity` /
+  `provisionIdentity` are the onboarding gate + the explicit "Generate" step.
+
+### `lib/sync/storage/derivations/` — read-time derivations (§8.6, pure)
+- `broken_link.dart` (`BrokenLinkResolver`, §8.6.1/2), `home_timeline.dart`
+  (`buildHomeTimeline` → `CollectionSummary`/`CardPreview`, §8.6.3). Never
+  synced/signed; surfaced via `SyncStore.linkStatus` / `linksOut` / `homeTimeline`.
+
+### `lib/app/` — composition root (composition.md)
+- `app_config.dart` — immutable `AppConfig` graph selector (`AppEnvironment`
+  prod/dev, §2). `app_graph.dart` — the `AppGraph` cell the init seam populates.
+  `composition.dart` — pure `resolve*` functions of `AppConfig`.
+  `schema/knit_migrations.dart` — the `package:sql_migrator` v1 baseline for the
+  prod sqflite graph.
+
+### `lib/core/` — presentation glue (shared, non-sync)
+- `fcis_flutter/` — `ValueListenableStateHolder` (fcis_core `StateHolder` ↔
+  `ValueNotifier`, fcis.md §6.8). Logging uses `package:logging` directly — it
+  is itself the seam: shells take an **injected** `Logger` (the module defaults
+  it to `Logger('knit.<feature>')`, tests pass their own), logging catches as
+  `severe`; `main.dart` drains `Logger.root.onRecord` to the console (other
+  consumers can subscribe to react).
+
+### `lib/features/<feature>/` — FCIS features (fcis.md §4–6.8)
+- `domain/` (ports + models + failures) + `infra/` (impls over `AppGraph.store`)
+  + `presentation/` (state · action · effect · ui_effect · updater · shell ·
+  loop · controller · module · scope · page). Built: `app_launch`, `onboard`,
+  `timeline`. Per-feature **narrow** ports return `Result` (result.md §9).
+
+### `packages/` — extracted local packages (path deps)
+- `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod
+  graph). `effect_emitter/` — the `EffectEmitter` UI side-effect seam
+  (cross_feature.md §4).
 
 ## Key invariants (don't break)
 
