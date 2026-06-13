@@ -440,6 +440,101 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileOpen => 'Profile';
 
   @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsOpen => 'Settings';
+
+  @override
+  String get settingsDataTitle => 'Data';
+
+  @override
+  String get settingsDataSubtitle => 'Export, import, and manage your data';
+
+  @override
+  String get settingsThemeTitle => 'Theme';
+
+  @override
+  String get settingsThemeSystem => 'System default';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsLanguageTitle => 'Language';
+
+  @override
+  String get settingsLanguageSystem => 'System default';
+
+  @override
+  String get settingsLanguageEnglish => 'English';
+
+  @override
+  String get settingsLanguageRussian => 'Русский';
+
+  @override
+  String get settingsAboutTitle => 'About';
+
+  @override
+  String get settingsAboutSubtitle => 'Version and app info';
+
+  @override
+  String get settingsAboutTagline =>
+      'A local-first space for weaving your thoughts together.';
+
+  @override
+  String get settingsAboutVersionLabel => 'Version';
+
+  @override
+  String get settingsDataTransferSection => 'Backup & transfer';
+
+  @override
+  String get settingsExport => 'Export data';
+
+  @override
+  String get settingsExportSubtitle =>
+      'Save your collections and cards to a file';
+
+  @override
+  String get settingsImport => 'Import data';
+
+  @override
+  String get settingsImportSubtitle =>
+      'Restore from a previously exported file';
+
+  @override
+  String get settingsExportIdentity => 'Export identity';
+
+  @override
+  String get settingsExportIdentitySubtitle =>
+      'Back up your private key so you can restore \"you\"';
+
+  @override
+  String get settingsDangerSection => 'Danger zone';
+
+  @override
+  String get settingsWipeData => 'Wipe data';
+
+  @override
+  String get settingsWipeDataSubtitle =>
+      'Delete all collections and cards on this device';
+
+  @override
+  String get settingsResetIdentity => 'Reset identity';
+
+  @override
+  String get settingsResetIdentitySubtitle =>
+      'Discard this device\'s key and start over';
+
+  @override
+  String settingsComingSoon(String feature) {
+    return '$feature — coming soon';
+  }
+
+  @override
   String get syncAllSaved => 'All changes saved';
 
   @override

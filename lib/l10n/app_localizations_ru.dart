@@ -444,6 +444,100 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileOpen => 'Профиль';
 
   @override
+  String get settingsTitle => 'Настройки';
+
+  @override
+  String get settingsOpen => 'Настройки';
+
+  @override
+  String get settingsDataTitle => 'Данные';
+
+  @override
+  String get settingsDataSubtitle => 'Экспорт, импорт и управление данными';
+
+  @override
+  String get settingsThemeTitle => 'Тема';
+
+  @override
+  String get settingsThemeSystem => 'Как в системе';
+
+  @override
+  String get settingsThemeLight => 'Светлая';
+
+  @override
+  String get settingsThemeDark => 'Тёмная';
+
+  @override
+  String get settingsLanguageTitle => 'Язык';
+
+  @override
+  String get settingsLanguageSystem => 'Как в системе';
+
+  @override
+  String get settingsLanguageEnglish => 'English';
+
+  @override
+  String get settingsLanguageRussian => 'Русский';
+
+  @override
+  String get settingsAboutTitle => 'О приложении';
+
+  @override
+  String get settingsAboutSubtitle => 'Версия и сведения о приложении';
+
+  @override
+  String get settingsAboutTagline =>
+      'Локальное пространство, где сплетаются ваши мысли.';
+
+  @override
+  String get settingsAboutVersionLabel => 'Версия';
+
+  @override
+  String get settingsDataTransferSection => 'Резервное копирование и перенос';
+
+  @override
+  String get settingsExport => 'Экспорт данных';
+
+  @override
+  String get settingsExportSubtitle => 'Сохранить коллекции и карточки в файл';
+
+  @override
+  String get settingsImport => 'Импорт данных';
+
+  @override
+  String get settingsImportSubtitle =>
+      'Восстановить из ранее экспортированного файла';
+
+  @override
+  String get settingsExportIdentity => 'Экспорт ключа';
+
+  @override
+  String get settingsExportIdentitySubtitle =>
+      'Сохраните приватный ключ, чтобы восстановить «себя»';
+
+  @override
+  String get settingsDangerSection => 'Опасная зона';
+
+  @override
+  String get settingsWipeData => 'Стереть данные';
+
+  @override
+  String get settingsWipeDataSubtitle =>
+      'Удалить все коллекции и карточки на этом устройстве';
+
+  @override
+  String get settingsResetIdentity => 'Сбросить ключ';
+
+  @override
+  String get settingsResetIdentitySubtitle =>
+      'Удалить ключ этого устройства и начать заново';
+
+  @override
+  String settingsComingSoon(String feature) {
+    return '$feature — скоро';
+  }
+
+  @override
   String get syncAllSaved => 'Все изменения сохранены';
 
   @override

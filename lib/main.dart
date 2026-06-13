@@ -36,6 +36,12 @@ import 'package:knit/features/profile/infra/sync_store_profile_read_repository.d
 import 'package:knit/features/profile/infra/sync_store_profile_write_repository.dart';
 import 'package:knit/features/profile/presentation/profile_module.dart';
 import 'package:knit/features/profile/presentation/profile_scope.dart';
+import 'package:knit/features/settings/domain/app_preferences.dart';
+import 'package:knit/features/settings/infra/shared_preferences_settings_repository.dart';
+import 'package:knit/features/settings/presentation/settings_action.dart';
+import 'package:knit/features/settings/presentation/settings_module.dart';
+import 'package:knit/features/settings/presentation/settings_scope.dart';
+import 'package:knit/features/settings/presentation/settings_state.dart';
 import 'package:knit/features/sync_status/infra/sync_store_sync_status_read_repository.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_module.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
@@ -101,6 +107,18 @@ void main() {
     () => ProfileModule(
       readRepository: SyncStoreProfileReadRepository(graph: graph),
       writeRepository: SyncStoreProfileWriteRepository(graph: graph),
+    ).controller,
+  );
+
+  // App-wide UI preferences (theme + language, §4 settings): one shared, lazily
+  // built controller the root [KnitApp] observes and every settings page uses.
+  // Persisted in shared_preferences — device-local config, not synced graph
+  // data — so it's wired here regardless of the AppConfig graph selection.
+  const settingsRepository = SharedPreferencesSettingsRepository();
+  SettingsScope.setFactory(
+    () => SettingsModule(
+      readRepository: settingsRepository,
+      writeRepository: settingsRepository,
     ).controller,
   );
 
@@ -175,25 +193,68 @@ void main() {
   runApp(const KnitApp());
 }
 
-class KnitApp extends StatelessWidget {
+class KnitApp extends StatefulWidget {
   const KnitApp({super.key});
 
   @override
+  State<KnitApp> createState() => _KnitAppState();
+}
+
+class _KnitAppState extends State<KnitApp> {
+  static const _seedColor = Color(0xFF5B6CFF);
+
+  @override
+  void initState() {
+    super.initState();
+    // Load the persisted theme/language on launch; the ValueListenableBuilder
+    // below then rebuilds MaterialApp once they land (the first frame uses the
+    // system defaults, which is also the likely persisted value).
+    SettingsScope.controller.dispatch(const ViewAttached());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5B6CFF)),
-        useMaterial3: true,
-      ),
-      home: const AppLaunchPage(),
+    return ValueListenableBuilder<SettingsState>(
+      valueListenable: SettingsScope.controller.stateHolder,
+      builder: (context, state, _) {
+        final prefs = state.preferences;
+        return MaterialApp(
+          onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: _localeOf(prefs.language),
+          themeMode: _themeModeOf(prefs.themeMode),
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: _seedColor),
+            useMaterial3: true,
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+                seedColor: _seedColor, brightness: Brightness.dark),
+            useMaterial3: true,
+          ),
+          home: const AppLaunchPage(),
+        );
+      },
     );
   }
+
+  /// Map the domain preference enums to Flutter's types at the edge — the domain
+  /// stays free of `package:flutter/material`.
+  ThemeMode _themeModeOf(AppThemeMode mode) => switch (mode) {
+        AppThemeMode.system => ThemeMode.system,
+        AppThemeMode.light => ThemeMode.light,
+        AppThemeMode.dark => ThemeMode.dark,
+      };
+
+  Locale? _localeOf(AppLanguage language) => switch (language) {
+        AppLanguage.system => null,
+        AppLanguage.english => const Locale('en'),
+        AppLanguage.russian => const Locale('ru'),
+      };
 }

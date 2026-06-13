@@ -878,6 +878,180 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get profileOpen;
 
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsOpen;
+
+  /// No description provided for @settingsDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get settingsDataTitle;
+
+  /// No description provided for @settingsDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export, import, and manage your data'**
+  String get settingsDataSubtitle;
+
+  /// No description provided for @settingsThemeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsThemeTitle;
+
+  /// No description provided for @settingsThemeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get settingsThemeSystem;
+
+  /// No description provided for @settingsThemeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get settingsThemeLight;
+
+  /// No description provided for @settingsThemeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get settingsThemeDark;
+
+  /// No description provided for @settingsLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguageTitle;
+
+  /// No description provided for @settingsLanguageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get settingsLanguageSystem;
+
+  /// No description provided for @settingsLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get settingsLanguageEnglish;
+
+  /// No description provided for @settingsLanguageRussian.
+  ///
+  /// In en, this message translates to:
+  /// **'Русский'**
+  String get settingsLanguageRussian;
+
+  /// No description provided for @settingsAboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsAboutTitle;
+
+  /// No description provided for @settingsAboutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Version and app info'**
+  String get settingsAboutSubtitle;
+
+  /// No description provided for @settingsAboutTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'A local-first space for weaving your thoughts together.'**
+  String get settingsAboutTagline;
+
+  /// No description provided for @settingsAboutVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get settingsAboutVersionLabel;
+
+  /// No description provided for @settingsDataTransferSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & transfer'**
+  String get settingsDataTransferSection;
+
+  /// No description provided for @settingsExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export data'**
+  String get settingsExport;
+
+  /// No description provided for @settingsExportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save your collections and cards to a file'**
+  String get settingsExportSubtitle;
+
+  /// No description provided for @settingsImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import data'**
+  String get settingsImport;
+
+  /// No description provided for @settingsImportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from a previously exported file'**
+  String get settingsImportSubtitle;
+
+  /// No description provided for @settingsExportIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Export identity'**
+  String get settingsExportIdentity;
+
+  /// No description provided for @settingsExportIdentitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up your private key so you can restore \"you\"'**
+  String get settingsExportIdentitySubtitle;
+
+  /// No description provided for @settingsDangerSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger zone'**
+  String get settingsDangerSection;
+
+  /// No description provided for @settingsWipeData.
+  ///
+  /// In en, this message translates to:
+  /// **'Wipe data'**
+  String get settingsWipeData;
+
+  /// No description provided for @settingsWipeDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all collections and cards on this device'**
+  String get settingsWipeDataSubtitle;
+
+  /// No description provided for @settingsResetIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset identity'**
+  String get settingsResetIdentity;
+
+  /// No description provided for @settingsResetIdentitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this device\'s key and start over'**
+  String get settingsResetIdentitySubtitle;
+
+  /// No description provided for @settingsComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'{feature} — coming soon'**
+  String settingsComingSoon(String feature);
+
   /// No description provided for @syncAllSaved.
   ///
   /// In en, this message translates to:
