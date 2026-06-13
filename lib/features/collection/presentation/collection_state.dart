@@ -43,6 +43,8 @@ class CollectionState {
 
   bool get isEmpty => cards.isEmpty;
 
+  bool get canReorder => cards.length > 1;
+
   CollectionState copyWith({
     CollectionStatus? status,
     String? collectionId,

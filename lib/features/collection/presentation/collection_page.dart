@@ -221,7 +221,7 @@ class _CollectionPageState extends State<CollectionPage> {
                     title: state.title,
                   ),
                 ),
-              if (state.status == CollectionStatus.ready && !state.isEmpty)
+              if (state.status == CollectionStatus.ready && state.canReorder)
                 state.reordering
                     ? TextButton(
                         onPressed: () =>
