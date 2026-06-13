@@ -23,7 +23,14 @@ class _SyncStatusIndicatorState extends State<SyncStatusIndicator> {
   @override
   void initState() {
     super.initState();
-    SyncStatusScope.controller.dispatch(const RefreshRequested());
+    // Refresh on mount — but never synchronously during build. The controller
+    // is app-wide and shared across every page's marker, and dispatch updates
+    // its ValueNotifier synchronously; a bare dispatch here would notify
+    // another page's already-mounted marker mid-build (setState/markNeedsBuild
+    // called during build). Defer past the current frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) SyncStatusScope.controller.dispatch(const RefreshRequested());
+    });
   }
 
   @override

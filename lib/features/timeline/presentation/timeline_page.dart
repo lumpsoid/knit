@@ -54,30 +54,10 @@ class _TimelinePageState extends State<TimelinePage> {
 
   /// Inline collection creation (§4.1): a title/theme line → create → open.
   Future<void> _createCollection() async {
-    final field = TextEditingController();
     final title = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New collection'),
-        content: TextField(
-          controller: field,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Title or theme'),
-          onSubmitted: (v) => Navigator.of(ctx).pop(v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(field.text),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+      builder: (_) => const _NewCollectionDialog(),
     );
-    field.dispose();
     if (title == null || title.trim().isEmpty || !mounted) return;
     _controller.dispatch(CreateCollectionRequested(title));
   }
@@ -131,6 +111,50 @@ class _TimelinePageState extends State<TimelinePage> {
               .dispatch(CollectionTapped(state.collections[i].collectionId)),
         ),
       ),
+    );
+  }
+}
+
+/// The inline "new collection" prompt. Owns its [TextEditingController] so it's
+/// disposed when the dialog route is actually removed — disposing it the moment
+/// `showDialog` returns races the route's exit animation, which still rebuilds
+/// the `TextField` (TextEditingController used after being disposed).
+class _NewCollectionDialog extends StatefulWidget {
+  const _NewCollectionDialog();
+
+  @override
+  State<_NewCollectionDialog> createState() => _NewCollectionDialogState();
+}
+
+class _NewCollectionDialogState extends State<_NewCollectionDialog> {
+  final _field = TextEditingController();
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New collection'),
+      content: TextField(
+        controller: _field,
+        autofocus: true,
+        decoration: const InputDecoration(hintText: 'Title or theme'),
+        onSubmitted: (v) => Navigator.of(context).pop(v),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_field.text),
+          child: const Text('Create'),
+        ),
+      ],
     );
   }
 }
