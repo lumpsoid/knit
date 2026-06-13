@@ -69,6 +69,16 @@ so gate 5 can be checked through the live app.
    on this device", never an alarm); the reactive push-on-change refresh is
    deferred to the relay via the §1 `ExternalSignalListener` seam. Read-only
    FCIS feature (no UiEffect/EffectEmitter — no one-shot effects).
+10. **Profile screen** (§5/§7.4.7) — `lib/features/profile/`. A dedicated page,
+    reached from the **account icon** in the Timeline app bar, that shows the
+    device identity (avatar + `nickname#fingerprint` handle), lets the user
+    **edit the nickname** (the §5 "you can change it anytime" promise — a signed
+    `profile` edit over the same id, the device pubkey, then a re-read), and
+    surfaces the **full public key** with copy-to-clipboard. Built on the same
+    FCIS contract as the other features: narrow read + write ports
+    (`ProfileReadRepository` / `ProfileWriteRepository`) over `SyncStore.get` /
+    `edit` / `authorPubkey` / `signer.fingerprintOf`; a `ProfileShowMessageUiEffect`
+    for the rename-failed snackbar. The public key is immutable across a rename.
 
 ## What's left for the §9.1 slice
 

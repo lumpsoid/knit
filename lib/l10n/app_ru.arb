@@ -173,6 +173,18 @@
   "connectionsLoadError": "Не удалось загрузить связи.",
   "connectionsClearFailed": "Не удалось очистить. Попробуйте ещё раз.",
 
+  "profileTitle": "Профиль",
+  "profileNicknameLabel": "Никнейм",
+  "profileEditNickname": "Изменить никнейм",
+  "profileRenameTitle": "Изменить никнейм",
+  "profileRenameHint": "напр. mira",
+  "profileRenameFailed": "Не удалось обновить никнейм. Попробуйте ещё раз.",
+  "profilePublicKeyLabel": "Публичный ключ",
+  "profileCopyKey": "Скопировать публичный ключ",
+  "profileKeyCopied": "Публичный ключ скопирован",
+  "profileLoadError": "Не удалось загрузить профиль.",
+  "profileOpen": "Профиль",
+
   "syncAllSaved": "Все изменения сохранены",
   "syncUnavailable": "Статус синхронизации недоступен",
   "syncPending": "{count, plural, =1{1 изменение сохранено на этом устройстве — ещё не отправлено} few{{count} изменения сохранены на этом устройстве — ещё не отправлены} many{{count} изменений сохранены на этом устройстве — ещё не отправлены} other{{count} изменения сохранены на этом устройстве — ещё не отправлены}}",

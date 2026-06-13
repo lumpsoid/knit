@@ -176,6 +176,18 @@
   "connectionsLoadError": "Could not load connections.",
   "connectionsClearFailed": "That didn't clear. Please try again.",
 
+  "profileTitle": "Profile",
+  "profileNicknameLabel": "Nickname",
+  "profileEditNickname": "Edit nickname",
+  "profileRenameTitle": "Edit nickname",
+  "profileRenameHint": "e.g. mira",
+  "profileRenameFailed": "Couldn't update your nickname. Please try again.",
+  "profilePublicKeyLabel": "Public key",
+  "profileCopyKey": "Copy public key",
+  "profileKeyCopied": "Public key copied",
+  "profileLoadError": "Couldn't load your profile.",
+  "profileOpen": "Profile",
+
   "syncAllSaved": "All changes saved",
   "syncUnavailable": "Sync status unavailable",
   "syncPending": "{count, plural, =1{1 change saved on this device — not yet shared} other{{count} changes saved on this device — not yet shared}}",

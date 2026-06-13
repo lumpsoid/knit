@@ -812,6 +812,72 @@ abstract class AppLocalizations {
   /// **'That didn\'t clear. Please try again.'**
   String get connectionsClearFailed;
 
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @profileNicknameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname'**
+  String get profileNicknameLabel;
+
+  /// No description provided for @profileEditNickname.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit nickname'**
+  String get profileEditNickname;
+
+  /// No description provided for @profileRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit nickname'**
+  String get profileRenameTitle;
+
+  /// No description provided for @profileRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. mira'**
+  String get profileRenameHint;
+
+  /// No description provided for @profileRenameFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update your nickname. Please try again.'**
+  String get profileRenameFailed;
+
+  /// No description provided for @profilePublicKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Public key'**
+  String get profilePublicKeyLabel;
+
+  /// No description provided for @profileCopyKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy public key'**
+  String get profileCopyKey;
+
+  /// No description provided for @profileKeyCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Public key copied'**
+  String get profileKeyCopied;
+
+  /// No description provided for @profileLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your profile.'**
+  String get profileLoadError;
+
+  /// No description provided for @profileOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileOpen;
+
   /// No description provided for @syncAllSaved.
   ///
   /// In en, this message translates to:

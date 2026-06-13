@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
+import 'package:knit/features/profile/presentation/profile_page.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_controller.dart';
@@ -113,7 +114,14 @@ class _TimelinePageState extends State<TimelinePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.appTitle),
-        actions: const [SyncStatusIndicator()],
+        actions: [
+          IconButton(
+            tooltip: l10n.profileOpen,
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => Navigator.of(context).push(ProfilePage.route()),
+          ),
+          const SyncStatusIndicator(),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createCollection,

@@ -32,6 +32,10 @@ import 'package:knit/features/connections/presentation/connections_scope.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
+import 'package:knit/features/profile/infra/sync_store_profile_read_repository.dart';
+import 'package:knit/features/profile/infra/sync_store_profile_write_repository.dart';
+import 'package:knit/features/profile/presentation/profile_module.dart';
+import 'package:knit/features/profile/presentation/profile_scope.dart';
 import 'package:knit/features/sync_status/infra/sync_store_sync_status_read_repository.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_module.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
@@ -88,6 +92,15 @@ void main() {
   SyncStatusScope.setFactory(
     () => SyncStatusModule(
       readRepository: SyncStoreSyncStatusReadRepository(graph: graph),
+    ).controller,
+  );
+
+  // The Profile screen (§5/§7.4.7): reads the device identity and edits the
+  // nickname through a signed `profile` edit. Reached from the Timeline app bar.
+  ProfileScope.setFactory(
+    () => ProfileModule(
+      readRepository: SyncStoreProfileReadRepository(graph: graph),
+      writeRepository: SyncStoreProfileWriteRepository(graph: graph),
     ).controller,
   );
 

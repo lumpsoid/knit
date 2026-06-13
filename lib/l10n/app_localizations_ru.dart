@@ -410,6 +410,40 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось очистить. Попробуйте ещё раз.';
 
   @override
+  String get profileTitle => 'Профиль';
+
+  @override
+  String get profileNicknameLabel => 'Никнейм';
+
+  @override
+  String get profileEditNickname => 'Изменить никнейм';
+
+  @override
+  String get profileRenameTitle => 'Изменить никнейм';
+
+  @override
+  String get profileRenameHint => 'напр. mira';
+
+  @override
+  String get profileRenameFailed =>
+      'Не удалось обновить никнейм. Попробуйте ещё раз.';
+
+  @override
+  String get profilePublicKeyLabel => 'Публичный ключ';
+
+  @override
+  String get profileCopyKey => 'Скопировать публичный ключ';
+
+  @override
+  String get profileKeyCopied => 'Публичный ключ скопирован';
+
+  @override
+  String get profileLoadError => 'Не удалось загрузить профиль.';
+
+  @override
+  String get profileOpen => 'Профиль';
+
+  @override
   String get syncAllSaved => 'Все изменения сохранены';
 
   @override

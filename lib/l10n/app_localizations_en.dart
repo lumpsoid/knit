@@ -406,6 +406,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionsClearFailed => 'That didn\'t clear. Please try again.';
 
   @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get profileNicknameLabel => 'Nickname';
+
+  @override
+  String get profileEditNickname => 'Edit nickname';
+
+  @override
+  String get profileRenameTitle => 'Edit nickname';
+
+  @override
+  String get profileRenameHint => 'e.g. mira';
+
+  @override
+  String get profileRenameFailed =>
+      'Couldn\'t update your nickname. Please try again.';
+
+  @override
+  String get profilePublicKeyLabel => 'Public key';
+
+  @override
+  String get profileCopyKey => 'Copy public key';
+
+  @override
+  String get profileKeyCopied => 'Public key copied';
+
+  @override
+  String get profileLoadError => 'Couldn\'t load your profile.';
+
+  @override
+  String get profileOpen => 'Profile';
+
+  @override
   String get syncAllSaved => 'All changes saved';
 
   @override
