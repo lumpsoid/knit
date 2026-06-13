@@ -1,3 +1,4 @@
+import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
@@ -5,12 +6,14 @@ import 'package:knit/features/connections/presentation/connections_route_args.da
 /// Composition cell for the Collection screen (fcis.md §4). Holds the lazily
 /// built [CollectionController], the read side of the route-args carrier
 /// (cross_feature.md §2) the page reads its target collection from, and the
-/// write side of the Connections carrier the page hands off to (§4.4).
+/// write sides of the Connections carrier (§4.4) and the Card Edit carrier
+/// (§4.3) the page hands off to.
 abstract final class CollectionScope {
   static CollectionController? _controller;
   static CollectionController Function()? _factory;
   static CollectionRouteArgs? _routeArgs;
   static ConnectionsRouteArgsWriter? _connectionsWriter;
+  static CardEditRouteArgsWriter? _cardEditWriter;
 
   static void setFactory(CollectionController Function() factory) =>
       _factory = factory;
@@ -19,6 +22,8 @@ abstract final class CollectionScope {
     ConnectionsRouteArgsWriter writer,
   ) =>
       _connectionsWriter = writer;
+  static void setCardEditRouteArgsWriter(CardEditRouteArgsWriter writer) =>
+      _cardEditWriter = writer;
   static void reset() => _controller = null;
 
   static CollectionController get controller {
@@ -49,6 +54,18 @@ abstract final class CollectionScope {
       throw StateError(
         'CollectionScope.connectionsRouteArgsWriter is not initialized.\n'
         'Call CollectionScope.setConnectionsRouteArgsWriter() during '
+        'composition.',
+      );
+    }
+    return writer;
+  }
+
+  static CardEditRouteArgsWriter get cardEditRouteArgsWriter {
+    final writer = _cardEditWriter;
+    if (writer == null) {
+      throw StateError(
+        'CollectionScope.cardEditRouteArgsWriter is not initialized.\n'
+        'Call CollectionScope.setCardEditRouteArgsWriter() during '
         'composition.',
       );
     }

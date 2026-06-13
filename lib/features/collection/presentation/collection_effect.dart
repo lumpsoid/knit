@@ -27,12 +27,6 @@ class AddCardEffect extends CollectionEffect {
   final String? text;
 }
 
-class EditCardEffect extends CollectionEffect {
-  const EditCardEffect(this.cardId, this.text);
-  final String cardId;
-  final String text;
-}
-
 class DeleteCardEffect extends CollectionEffect {
   const DeleteCardEffect(this.cardId);
   final String cardId;

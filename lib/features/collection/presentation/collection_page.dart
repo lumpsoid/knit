@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_controller.dart';
@@ -91,14 +92,7 @@ class _CollectionPageState extends State<CollectionPage> {
     if (action == null || !mounted) return;
     switch (action) {
       case _CardAction.edit:
-        final text = await _promptText(
-          title: 'Edit card',
-          initial: card.text ?? '',
-          action: 'Save',
-        );
-        if (text != null) {
-          _controller.dispatch(CardEditSubmitted(card.id, text));
-        }
+        await _openCardEdit(card);
       case _CardAction.delete:
         _controller.dispatch(CardDeleteRequested(card.id));
       case _CardAction.link:
@@ -112,6 +106,16 @@ class _CollectionPageState extends State<CollectionPage> {
       case _CardAction.reorder:
         _controller.dispatch(const StartReorder());
     }
+  }
+
+  /// Hand the card to the Card Edit carrier (cross_feature.md §2), then navigate
+  /// to the dedicated edit page (§4.3). On return, resync from the projection so
+  /// the saved change shows in the feed (projection-is-truth — no push needed).
+  Future<void> _openCardEdit(FeedCard card) async {
+    CollectionScope.cardEditRouteArgsWriter
+        .open(cardId: card.id, initialText: card.text ?? '');
+    await Navigator.of(context).push(CardEditPage.route());
+    if (mounted) _controller.dispatch(const ReloadRequested());
   }
 
   /// Hand the focused entity to the Connections carrier (cross_feature.md §2),

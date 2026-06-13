@@ -84,24 +84,7 @@ void main() {
     });
   });
 
-  group('edit / delete / link', () {
-    test('edit with text emits EditCardEffect', () {
-      final (_, effects) = updater.update(
-        ready([card('c1', 'a0')]),
-        const CardEditSubmitted('c1', 'new body'),
-      );
-      final effect = effects!.single as EditCardEffect;
-      expect((effect.cardId, effect.text), ('c1', 'new body'));
-    });
-
-    test('blank edit is dropped', () {
-      final (_, effects) = updater.update(
-        ready([card('c1', 'a0')]),
-        const CardEditSubmitted('c1', '  '),
-      );
-      expect(effects, isNull);
-    });
-
+  group('delete / link', () {
     test('delete emits DeleteCardEffect', () {
       final (_, effects) = updater.update(
         ready([card('c1', 'a0')]),

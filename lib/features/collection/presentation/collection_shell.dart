@@ -59,13 +59,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           dispatch,
         );
 
-      case EditCardEffect(:final cardId, :final text):
-        await _runWrite(
-          () => _write.editCardText(cardId, text),
-          'edit card',
-          dispatch,
-        );
-
       case DeleteCardEffect(:final cardId):
         await _runWrite(
           () => _write.deleteCard(cardId),

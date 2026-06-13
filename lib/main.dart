@@ -9,6 +9,10 @@ import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_page.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
+import 'package:knit/features/card_edit/infra/sync_store_card_edit_write_repository.dart';
+import 'package:knit/features/card_edit/presentation/card_edit_module.dart';
+import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
+import 'package:knit/features/card_edit/presentation/card_edit_scope.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/collection/presentation/collection_module.dart';
@@ -81,6 +85,12 @@ void main() {
   CollectionScope.setConnectionsRouteArgsWriter(connectionsRouteArgs);
   ConnectionsScope.setRouteArgs(connectionsRouteArgs);
 
+  // A third carrier for the Card Edit page (§4.3): the Collection page writes the
+  // card to edit, the Card Edit page reads it on entry.
+  final cardEditRouteArgs = InMemoryCardEditRouteArgsStore();
+  CollectionScope.setCardEditRouteArgsWriter(cardEditRouteArgs);
+  CardEditScope.setRouteArgs(cardEditRouteArgs);
+
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
 
@@ -102,6 +112,11 @@ void main() {
     () => ConnectionsModule(
       readRepository: SyncStoreConnectionsReadRepository(graph: graph),
       writeRepository: SyncStoreConnectionsWriteRepository(graph: graph),
+    ).controller,
+  );
+  CardEditScope.setFactory(
+    () => CardEditModule(
+      writeRepository: SyncStoreCardEditWriteRepository(graph: graph),
     ).controller,
   );
 

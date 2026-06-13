@@ -85,11 +85,6 @@ class CollectionUpdater
           ],
         );
 
-      case CardEditSubmitted(:final cardId, :final text):
-        final body = text.trim();
-        if (body.isEmpty) return (state, null);
-        return (state, [EditCardEffect(cardId, body)]);
-
       case CardDeleteRequested(:final cardId):
         return (state, [DeleteCardEffect(cardId)]);
 

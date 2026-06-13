@@ -62,7 +62,7 @@ void main() {
     expect(data.cards.map((c) => c.text), ['grind finer', 'tamp level']);
   });
 
-  test('edit a card updates its body, reorder changes feed order', () async {
+  test('reorder changes feed order', () async {
     final colId = await createCollection('Espresso');
     final c1 = (await write.addCard(
       collectionId: colId,
@@ -78,14 +78,10 @@ void main() {
       text: 'second',
     );
 
-    await write.editCardText(c1, 'first (edited)');
-    var data = await load(colId);
-    expect(data.cards.first.text, 'first (edited)');
-
     // Move c1 to the end (position after 'a1').
     await write.reorderCard(c1, FractionalIndex.keyAfter('a1'));
-    data = await load(colId);
-    expect(data.cards.map((c) => c.text), ['second', 'first (edited)']);
+    final data = await load(colId);
+    expect(data.cards.map((c) => c.text), ['second', 'first']);
   });
 
   test('link a card to a collection; deleting the target breaks the link',

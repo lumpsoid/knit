@@ -39,16 +39,6 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
       });
 
   @override
-  Future<Result<String, CollectionFailure>> editCardText(
-    String cardId,
-    String text,
-  ) =>
-      _write(() async {
-        await _graph.store.edit(EntityType.card, cardId, {'text': text});
-        return cardId;
-      });
-
-  @override
   Future<Result<String, CollectionFailure>> deleteCard(String cardId) =>
       _write(() async {
         await _graph.store.delete(EntityType.card, cardId);

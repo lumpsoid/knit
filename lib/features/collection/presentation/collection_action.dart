@@ -39,13 +39,6 @@ class LinkCardSubmitted extends CollectionAction {
   final String url;
 }
 
-/// Card-edit sheet saved new body text (§4.3).
-class CardEditSubmitted extends CollectionAction {
-  const CardEditSubmitted(this.cardId, this.text);
-  final String cardId;
-  final String text;
-}
-
 /// Actions sheet → delete a card (§4.2). Links to it become broken, not gone.
 class CardDeleteRequested extends CollectionAction {
   const CardDeleteRequested(this.cardId);

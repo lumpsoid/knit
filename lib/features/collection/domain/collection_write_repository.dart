@@ -16,12 +16,6 @@ abstract interface class CollectionWriteRepository {
     String? text,
   });
 
-  /// Edit a card's body text (§4.3) — content stamp bumps, placement frozen.
-  Future<Result<String, CollectionFailure>> editCardText(
-    String cardId,
-    String text,
-  );
-
   /// Soft-delete a card (§6.1). Links to it become broken chips, never vanish.
   Future<Result<String, CollectionFailure>> deleteCard(String cardId);
 
