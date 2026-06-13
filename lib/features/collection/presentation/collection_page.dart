@@ -637,10 +637,13 @@ class _LinkFinderSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: targets.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('No other collections to link to yet.'),
-            )
+          ? SizedBox(
+            width: double.infinity,
+            child: const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('No other collections to link to yet.'),
+              ),
+          )
           : ListView(
               shrinkWrap: true,
               children: [
