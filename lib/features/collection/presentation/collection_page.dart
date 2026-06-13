@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -293,6 +296,7 @@ class _CollectionPageState extends State<CollectionPage> {
             key: ValueKey(card.id),
             card: card,
             index: i,
+            imageBytes: _bytesFor(state, card),
           );
         },
       );
@@ -307,11 +311,18 @@ class _CollectionPageState extends State<CollectionPage> {
           final card = state.cards[i];
           return _CardBubble(
             card: card,
+            imageBytes: _bytesFor(state, card),
             onTap: () => _openCardActions(card),
           );
         },
       ),
     );
+  }
+
+  /// The cached decoded bytes for a card's image, if any (null ⇒ placeholder).
+  static Uint8List? _bytesFor(CollectionState state, FeedCard card) {
+    final id = card.attachmentId;
+    return id == null ? null : state.imageBytes[id];
   }
 }
 
@@ -322,8 +333,15 @@ enum _CardAction { edit, delete, link, connections, reorder }
 // --- widgets ---------------------------------------------------------------
 
 class _CardBubble extends StatelessWidget {
-  const _CardBubble({required this.card, required this.onTap});
+  const _CardBubble({
+    required this.card,
+    required this.imageBytes,
+    required this.onTap,
+  });
   final FeedCard card;
+
+  /// Decoded bytes for an image card; null while loading or missing.
+  final Uint8List? imageBytes;
   final VoidCallback onTap;
 
   @override
@@ -369,7 +387,15 @@ class _CardBubble extends StatelessWidget {
           ],
         );
       case CardKind.image:
-        return _placeholder(theme, Icons.image_outlined, 'Photo');
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: AttachmentImage(
+            bytes: imageBytes,
+            width: 220,
+            height: 220,
+            placeholder: _placeholder(theme, Icons.image_outlined, 'Photo'),
+          ),
+        );
       case CardKind.audio:
         return _placeholder(theme, Icons.mic_none, 'Audio');
       case CardKind.text:
@@ -391,9 +417,17 @@ class _CardBubble extends StatelessWidget {
 }
 
 class _ReorderRow extends StatelessWidget {
-  const _ReorderRow({required this.card, required this.index, super.key});
+  const _ReorderRow({
+    required this.card,
+    required this.index,
+    required this.imageBytes,
+    super.key,
+  });
   final FeedCard card;
   final int index;
+
+  /// Decoded bytes for an image card; null while loading or missing.
+  final Uint8List? imageBytes;
 
   @override
   Widget build(BuildContext context) {
@@ -406,7 +440,17 @@ class _ReorderRow extends StatelessWidget {
     };
     return ListTile(
       key: ValueKey('tile-${card.id}'),
-      leading: const Icon(Icons.drag_handle),
+      leading: card.kind == CardKind.image
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: AttachmentImage(
+                bytes: imageBytes,
+                width: 40,
+                height: 40,
+                placeholder: const Icon(Icons.image_outlined),
+              ),
+            )
+          : const Icon(Icons.drag_handle),
       title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: ReorderableDragStartListener(
         index: index,

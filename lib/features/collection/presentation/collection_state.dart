@@ -15,6 +15,7 @@ class CollectionState {
     this.title = '',
     this.coverAttachmentId,
     this.cards = const [],
+    this.imageBytes = const {},
     this.linkTargets = const [],
     this.reordering = false,
     this.errorMessage,
@@ -25,6 +26,12 @@ class CollectionState {
   final String title;
   final String? coverAttachmentId;
   final List<FeedCard> cards;
+
+  /// Decoded bytes of image cards, keyed by `attachment_id`. Content-addressed,
+  /// so an id's bytes are immutable — cached here to avoid reloading on every
+  /// rebuild (and preserved across feed reloads). Absent ⇒ loading or missing,
+  /// which renders the placeholder fallback.
+  final Map<String, Uint8List> imageBytes;
 
   /// Other collections this card can be linked to, in the finder sheet (§4.2).
   final List<LinkCandidate> linkTargets;
@@ -42,6 +49,7 @@ class CollectionState {
     String? title,
     String? coverAttachmentId,
     List<FeedCard>? cards,
+    Map<String, Uint8List>? imageBytes,
     List<LinkCandidate>? linkTargets,
     bool? reordering,
     String? errorMessage,
@@ -52,6 +60,7 @@ class CollectionState {
         title: title ?? this.title,
         coverAttachmentId: coverAttachmentId ?? this.coverAttachmentId,
         cards: cards ?? this.cards,
+        imageBytes: imageBytes ?? this.imageBytes,
         linkTargets: linkTargets ?? this.linkTargets,
         reordering: reordering ?? this.reordering,
         errorMessage: errorMessage ?? this.errorMessage,

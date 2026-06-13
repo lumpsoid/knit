@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:knit/features/collection/domain/collection_models.dart';
 
 /// Intents + async-result deliveries for the Collection screen (fcis.md §6.4).
@@ -25,6 +27,14 @@ class CollectionLoaded extends CollectionAction {
 class LoadFailed extends CollectionAction {
   const LoadFailed(this.message);
   final String message;
+}
+
+/// An image card's decoded bytes finished loading. [bytes] is null when the
+/// attachment is missing/unreadable — the placeholder stays and nothing caches.
+class ImageBytesLoaded extends CollectionAction {
+  const ImageBytesLoaded(this.attachmentId, this.bytes);
+  final String attachmentId;
+  final Uint8List? bytes;
 }
 
 /// Bottom composer submitted a quick text card (§4.2).

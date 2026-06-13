@@ -110,6 +110,8 @@ void main() {
       readRepository: SyncStoreCollectionReadRepository(graph: graph),
       writeRepository:
           SyncStoreCollectionWriteRepository(graph: graph, ids: ids),
+      attachmentReadRepository:
+          SyncStoreAttachmentReadRepository(graph: graph),
     ).controller,
   );
   ConnectionsScope.setFactory(

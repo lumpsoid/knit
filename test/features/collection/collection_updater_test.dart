@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -45,6 +47,83 @@ void main() {
     expect(next.status, CollectionStatus.ready);
     expect(next.cards.single.id, 'c1');
     expect(effects, isNull);
+  });
+
+  group('image thumbnails', () {
+    CollectionData dataWith(List<FeedCard> cards) => CollectionData(
+          collectionId: 'col',
+          title: 'Notes',
+          coverAttachmentId: null,
+          cards: cards,
+          linkTargets: const [],
+        );
+
+    FeedCard imageCard(String id, String position, String? attachmentId) =>
+        FeedCard(
+          id: id,
+          kind: CardKind.image,
+          position: position,
+          attachmentId: attachmentId,
+        );
+
+    test('CollectionLoaded loads bytes for each uncached image card', () {
+      final data = dataWith([
+        card('c1', 'a0'),
+        imageCard('c2', 'a1', 'att-1'),
+        imageCard('c3', 'a2', 'att-2'),
+      ]);
+      final (_, effects) =
+          updater.update(const CollectionState(), CollectionLoaded(data));
+      final ids = effects!
+          .whereType<LoadImageBytesEffect>()
+          .map((e) => e.attachmentId)
+          .toList();
+      expect(ids, ['att-1', 'att-2']);
+    });
+
+    test('an image card without an attachment id loads nothing', () {
+      final data = dataWith([imageCard('c1', 'a0', null)]);
+      final (_, effects) =
+          updater.update(const CollectionState(), CollectionLoaded(data));
+      expect(effects, isNull);
+    });
+
+    test('already-cached bytes are not reloaded, and the cache survives', () {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      final state = const CollectionState().copyWith(
+        imageBytes: {'att-1': bytes},
+      );
+      final data = dataWith([
+        imageCard('c1', 'a0', 'att-1'),
+        imageCard('c2', 'a1', 'att-2'),
+      ]);
+      final (next, effects) = updater.update(state, CollectionLoaded(data));
+      final ids = effects!
+          .whereType<LoadImageBytesEffect>()
+          .map((e) => e.attachmentId)
+          .toList();
+      expect(ids, ['att-2'], reason: 'att-1 already cached');
+      expect(next.imageBytes['att-1'], same(bytes), reason: 'cache preserved');
+    });
+
+    test('ImageBytesLoaded caches the decoded bytes', () {
+      final bytes = Uint8List.fromList([9, 9]);
+      final (next, effects) = updater.update(
+        ready(const []),
+        ImageBytesLoaded('att-1', bytes),
+      );
+      expect(next.imageBytes['att-1'], same(bytes));
+      expect(effects, isNull);
+    });
+
+    test('a missing image (null bytes) is not cached', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const ImageBytesLoaded('att-1', null),
+      );
+      expect(next.imageBytes.containsKey('att-1'), isFalse);
+      expect(effects, isNull);
+    });
   });
 
   group('composer / append positions', () {

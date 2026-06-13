@@ -34,6 +34,9 @@ class CollectionUpdater
         return (state, [LoadCollectionEffect(state.collectionId)]);
 
       case CollectionLoaded(:final data):
+        // Preserve the decoded-bytes cache across reloads (ids are immutable),
+        // and load any image card whose bytes we don't already hold.
+        final toLoad = _uncachedImageAttachments(data.cards, state.imageBytes);
         return (
           CollectionState(
             status: CollectionStatus.ready,
@@ -41,7 +44,20 @@ class CollectionUpdater
             title: data.title,
             coverAttachmentId: data.coverAttachmentId,
             cards: data.cards,
+            imageBytes: state.imageBytes,
             linkTargets: data.linkTargets,
+          ),
+          toLoad.isEmpty
+              ? null
+              : [for (final id in toLoad) LoadImageBytesEffect(id)],
+        );
+
+      case ImageBytesLoaded(:final attachmentId, :final bytes):
+        // Cache only on success; a miss leaves the placeholder in place.
+        if (bytes == null) return (state, null);
+        return (
+          state.copyWith(
+            imageBytes: {...state.imageBytes, attachmentId: bytes},
           ),
           null,
         );
@@ -115,6 +131,21 @@ class CollectionUpdater
       case DeactivateFeature():
         return (state, null);
     }
+  }
+
+  /// Distinct `attachment_id`s of image cards whose bytes aren't cached yet.
+  static List<String> _uncachedImageAttachments(
+    List<FeedCard> cards,
+    Map<String, Object?> cache,
+  ) {
+    final ids = <String>{};
+    for (final card in cards) {
+      final id = card.attachmentId;
+      if (card.kind == CardKind.image && id != null && !cache.containsKey(id)) {
+        ids.add(id);
+      }
+    }
+    return ids.toList(growable: false);
   }
 
   /// Append key: after the last card, or the first key for an empty feed.

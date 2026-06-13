@@ -2,6 +2,7 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:result_dart/result_dart.dart';
+import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
@@ -19,15 +20,18 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   CollectionShell({
     required CollectionReadRepository readRepository,
     required CollectionWriteRepository writeRepository,
+    required AttachmentReadRepository attachmentReadRepository,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
     required Logger logger,
   })  : _read = readRepository,
         _write = writeRepository,
+        _attachmentRead = attachmentReadRepository,
         _effectEmitter = effectEmitter,
         _log = logger;
 
   final CollectionReadRepository _read;
   final CollectionWriteRepository _write;
+  final AttachmentReadRepository _attachmentRead;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
   final Logger _log;
 
@@ -46,6 +50,15 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
             dispatch(const LoadFailed('Could not load this collection.'));
           },
         );
+
+      case LoadImageBytesEffect(:final attachmentId):
+        final result = await _attachmentRead.bytesOf(attachmentId);
+        if (result.isFailure) {
+          _log.warning('Card image bytes missing for $attachmentId');
+          dispatch(ImageBytesLoaded(attachmentId, null));
+        } else {
+          dispatch(ImageBytesLoaded(attachmentId, result.getOrThrow().bytes));
+        }
 
       case AddCardEffect(:final collectionId, :final kind, :final position, :final text):
         await _runWrite(

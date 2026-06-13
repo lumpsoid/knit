@@ -13,6 +13,13 @@ class LoadCollectionEffect extends CollectionEffect {
   final String collectionId;
 }
 
+/// Load the decoded bytes for an image card's [attachmentId] (§7.4.3) so the
+/// feed can render the thumbnail. One per uncached image card.
+class LoadImageBytesEffect extends CollectionEffect {
+  const LoadImageBytesEffect(this.attachmentId);
+  final String attachmentId;
+}
+
 /// Append a card of [kind] at [position] (§8.4). [text] is the body or URL.
 class AddCardEffect extends CollectionEffect {
   const AddCardEffect({
