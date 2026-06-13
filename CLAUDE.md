@@ -66,6 +66,15 @@ sections like `app_spec.md`:
   renamed from `SideEffector`), and the feature-to-feature access facade
   (§5: outside consumers may only observe a feature's state read-only and
   pass intent via its `ActionSink` — nothing else crosses the boundary).
+  **The feature input channel (§3) is the default/main pattern for
+  cross-feature concerns here** — when one feature must nudge another to
+  act, prefer a feature-owned channel (sealed event family + Emitter /
+  Reader / Observer halves, folded into the consumer's Actions by a binder)
+  over reaching across boundaries. The Timeline realizes it: `TimelineChannel`
+  / `RefreshChannelEvent` (`lib/features/timeline/{domain,infra}/`) lets the
+  Collection (and future features) request a home-feed refresh after a write.
+  Reach for the access facade (§5) only when a feature must *observe another's
+  state*, not merely receive fire-and-forget intent.
 - **`docs/architecture/widgets.md`** — widget inputs: shared widgets take
   primitives (or a widget-owned view-model), never a feature's domain
   type (§1); every widget/function takes only the data it uses, not whole
