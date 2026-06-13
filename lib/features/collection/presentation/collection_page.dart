@@ -176,30 +176,15 @@ class _CollectionPageState extends State<CollectionPage> {
     String initial = '',
     String? hint,
   }) async {
-    final field = TextEditingController(text: initial);
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: field,
-          autofocus: true,
-          decoration: InputDecoration(hintText: hint),
-          onSubmitted: (v) => Navigator.of(ctx).pop(v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(field.text),
-            child: Text(action),
-          ),
-        ],
+      builder: (_) => _PromptDialog(
+        title: title,
+        action: action,
+        initial: initial,
+        hint: hint,
       ),
     );
-    field.dispose();
     final trimmed = result?.trim() ?? '';
     return trimmed.isEmpty ? null : trimmed;
   }
@@ -458,6 +443,61 @@ class _ReorderRow extends StatelessWidget {
         index: index,
         child: const Icon(Icons.drag_indicator),
       ),
+    );
+  }
+}
+
+/// A single-field text prompt that owns its [TextEditingController], so the
+/// controller is disposed when the dialog route is actually removed — disposing
+/// it the moment `showDialog` returns races the route's exit animation, which
+/// still rebuilds the `TextField` (TextEditingController used after dispose).
+class _PromptDialog extends StatefulWidget {
+  const _PromptDialog({
+    required this.title,
+    required this.action,
+    required this.initial,
+    required this.hint,
+  });
+
+  final String title;
+  final String action;
+  final String initial;
+  final String? hint;
+
+  @override
+  State<_PromptDialog> createState() => _PromptDialogState();
+}
+
+class _PromptDialogState extends State<_PromptDialog> {
+  late final TextEditingController _field =
+      TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _field,
+        autofocus: true,
+        decoration: InputDecoration(hintText: widget.hint),
+        onSubmitted: (v) => Navigator.of(context).pop(v),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_field.text),
+          child: Text(widget.action),
+        ),
+      ],
     );
   }
 }
