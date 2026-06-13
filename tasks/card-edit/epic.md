@@ -41,10 +41,21 @@ screen opens a single-field prompt —
   sheet's **Edit** now navigates to it and resyncs on return; the old inline
   `CardEditSubmitted`/`EditCardEffect`/`editCardText` path was removed. 6 new
   tests.
-- [ ] **3 · [Per-card links](links--card-source.md)** — view/add/remove the
-  card's links, incl. card→card, on the page.
-- [ ] **4 · [Card image](image--card-attachment.md)** — add/replace/remove the
-  card's image on the page.
+- [x] **3 · [Per-card links](links--card-source.md)** — view/add/remove the
+  card's links, incl. card→card, on the page. Built as three narrow card_edit
+  ports (`CardEditLinksReadRepository` → reuses `linksOut`/`linkStatus` and the
+  §4.4 `ConnectionItem` view-models for the list incl. the §8.6.1 broken row;
+  `CardEditLinksWriteRepository.addLink({targetKind, targetId})`/`removeLink` —
+  the generalized, generic-target write; `CardEditTargetsReadRepository` for the
+  two-level picker tree, self-excluded). The page gained a Links section + an
+  "Add link" sheet that browses collections and drills into a collection's cards.
+- [x] **4 · [Card image](image--card-attachment.md)** — add/replace/remove the
+  card's image on the page. `CardEditWriteRepository` gained `setCardImage`
+  (flip `kind`→`image`, set `attachment_id`) / `removeCardImage` (flip back,
+  clear it); the shell drives pick → store → attach → ref-counted GC of the
+  replaced/removed blob over subtask 1's foundation (`ImagePickerPort`,
+  `AttachmentWrite/ReadRepository`, `AttachmentImage`). The page renders the
+  current image with Replace/Remove controls; route-args carry the initial id.
 
 ### Dependency order
 

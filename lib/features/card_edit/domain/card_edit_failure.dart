@@ -4,8 +4,15 @@ sealed class CardEditFailure {
   const CardEditFailure();
 }
 
-/// A local write (edit card content) failed to persist.
+/// A local write (edit card content, add/remove a link, set/clear the image)
+/// failed to persist.
 class CardEditWriteFailure extends CardEditFailure {
   const CardEditWriteFailure(this.cause);
+  final String cause;
+}
+
+/// A read failed (loading the card's links or the link-target tree).
+class CardEditReadFailure extends CardEditFailure {
+  const CardEditReadFailure(this.cause);
   final String cause;
 }

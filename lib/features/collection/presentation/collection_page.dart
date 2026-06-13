@@ -112,8 +112,11 @@ class _CollectionPageState extends State<CollectionPage> {
   /// to the dedicated edit page (§4.3). On return, resync from the projection so
   /// the saved change shows in the feed (projection-is-truth — no push needed).
   Future<void> _openCardEdit(FeedCard card) async {
-    CollectionScope.cardEditRouteArgsWriter
-        .open(cardId: card.id, initialText: card.text ?? '');
+    CollectionScope.cardEditRouteArgsWriter.open(
+      cardId: card.id,
+      initialText: card.text ?? '',
+      initialAttachmentId: card.attachmentId,
+    );
     await Navigator.of(context).push(CardEditPage.route());
     if (mounted) _controller.dispatch(const ReloadRequested());
   }

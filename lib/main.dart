@@ -5,10 +5,14 @@ import 'package:logging/logging.dart';
 import 'package:knit/app/app_config.dart';
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/composition.dart';
+import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_page.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
+import 'package:knit/features/card_edit/infra/sync_store_card_edit_links_read_repository.dart';
+import 'package:knit/features/card_edit/infra/sync_store_card_edit_links_write_repository.dart';
+import 'package:knit/features/card_edit/infra/sync_store_card_edit_targets_read_repository.dart';
 import 'package:knit/features/card_edit/infra/sync_store_card_edit_write_repository.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_module.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
@@ -117,6 +121,17 @@ void main() {
   CardEditScope.setFactory(
     () => CardEditModule(
       writeRepository: SyncStoreCardEditWriteRepository(graph: graph),
+      linksReadRepository:
+          SyncStoreCardEditLinksReadRepository(graph: graph),
+      linksWriteRepository:
+          SyncStoreCardEditLinksWriteRepository(graph: graph, ids: ids),
+      targetsReadRepository:
+          SyncStoreCardEditTargetsReadRepository(graph: graph),
+      attachmentReadRepository:
+          SyncStoreAttachmentReadRepository(graph: graph),
+      attachmentWriteRepository:
+          SyncStoreAttachmentWriteRepository(graph: graph, ids: ids),
+      imagePicker: ImagePickerAdapter(),
     ).controller,
   );
 

@@ -12,11 +12,19 @@ abstract interface class CardEditRouteArgs {
 
   /// The card's current body text, used to seed the editor field.
   String get initialText;
+
+  /// The card's current image attachment id (§7.4.3), or null if it has none.
+  /// Seeds the image section without a second read.
+  String? get initialAttachmentId;
 }
 
 /// Write side — what an origin screen (Collection) sets before navigating.
 abstract interface class CardEditRouteArgsWriter {
-  void open({required String cardId, required String initialText});
+  void open({
+    required String cardId,
+    required String initialText,
+    String? initialAttachmentId,
+  });
 }
 
 /// The store implements both halves.
@@ -28,6 +36,7 @@ abstract interface class CardEditRouteArgsStore
 class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   String _cardId = '';
   String _initialText = '';
+  String? _initialAttachmentId;
 
   @override
   String get cardId => _cardId;
@@ -36,8 +45,16 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   String get initialText => _initialText;
 
   @override
-  void open({required String cardId, required String initialText}) {
+  String? get initialAttachmentId => _initialAttachmentId;
+
+  @override
+  void open({
+    required String cardId,
+    required String initialText,
+    String? initialAttachmentId,
+  }) {
     _cardId = cardId;
     _initialText = initialText;
+    _initialAttachmentId = initialAttachmentId;
   }
 }

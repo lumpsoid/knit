@@ -5,7 +5,8 @@ derivations are built and tested (131 sync tests). The **app is now built**: App
 Launch, the Onboard identity ceremony, the Timeline (now with inline collection
 create + open), the **Collection screen** (§4.2), and the **Connections view**
 (§4.4) — create → cards → edit → reorder → link → delete, and the links-out /
-backlinks surface that renders the broken-link chip (191 tests total). What
+backlinks surface that renders the broken-link chip, plus the **Card Edit page**
+(§4.3 — text + image + per-card links incl. card→card) (236 tests total). What
 remains for the §9.1 gate is running it on the **persistent sqflite graph** so
 gate 5 can be checked through the live app.
 
@@ -37,8 +38,8 @@ gate 5 can be checked through the live app.
    long-press → rename. All card positioning (append + reorder midpoints) is
    computed **purely in the updater** via the new `FractionalIndex` primitive
    (`lib/core/ordering/`), and ids are minted with `newUuidV7`
-   (`lib/core/ids/`). Card edit (§4.3) is inline (text only) from the actions
-   sheet — the dedicated edit page (image + link management) is still open.
+   (`lib/core/ids/`). The actions-sheet **Edit** now opens the dedicated Card
+   Edit page (item 8) rather than the old inline text prompt.
 7. **Connections view** (§4.4) — `lib/features/connections/`. An entity's
    **links-out + linked-from** (backlinks, §8.6.2), each live one tappable to
    jump (pushing an in-state **breadcrumb back-stack**, a crumb tap / hardware
@@ -48,11 +49,21 @@ gate 5 can be checked through the live app.
    and the card-actions sheet (card focus) through a second route-args carrier
    (cross_feature §2). Endpoint liveness is the canonical `SyncStore.linkStatus`
    derivation, never re-implemented. This is the visible half of **gate 4**.
+8. **Card Edit page** (§4.3) — `lib/features/card_edit/`. A dedicated page,
+   reached from the Collection actions-sheet **Edit**, that edits a card's
+   **text** (Save → signed edit, pop, resync), manages its **image** (add /
+   replace / remove over the §6.4/§7.4.8 attachments foundation — pick → hash →
+   content-addressed blob + signed `attachment` record, flipping the card
+   `kind`/`attachment_id`, with ref-counted blob GC on replace/remove), and
+   manages its **links** (view/add/remove, full card→card scope via a generic
+   target picker that browses collections and drills into cards; the list reuses
+   the §4.4 view-models + §8.6.1 broken row). Built on the same FCIS contract as
+   `collection`/`connections`; the attachments foundation (subtask 1) is the
+   shared `lib/core/attachments/` library.
 
 ## What's left for the §9.1 slice
 
-1. **Card edit page** (§4.3, image + per-card link management) and the **sync
-   indicator** (`pendingCount`, §6.6).
+1. The **sync indicator** (`pendingCount`, §6.6).
 2. **Run on the persistent sqflite graph** — flip `main.dart` to `AppConfig.prod`
    and wire the desktop/CI DB factory (sqflite needs ffi on desktop), so gate 5
    can be exercised through the real app lifecycle on a real DB file.
