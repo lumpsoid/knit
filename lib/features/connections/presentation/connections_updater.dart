@@ -47,12 +47,9 @@ class ConnectionsUpdater
           null,
         );
 
-      case LoadFailed(:final message):
+      case LoadFailed():
         return (
-          state.copyWith(
-            status: ConnectionsStatus.failed,
-            errorMessage: message,
-          ),
+          state.copyWith(status: ConnectionsStatus.failed),
           null,
         );
 

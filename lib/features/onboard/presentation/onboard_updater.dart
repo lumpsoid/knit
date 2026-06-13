@@ -48,12 +48,12 @@ class OnboardUpdater
           null,
         );
 
-      case IdentityCreationFailed(:final message):
+      case IdentityCreationFailed():
         return (
           OnboardState(
             step: OnboardStep.explainIdentity,
             nickname: state.nickname,
-            errorMessage: message,
+            hasError: true,
           ),
           null,
         );

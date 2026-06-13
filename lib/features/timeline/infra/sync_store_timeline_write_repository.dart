@@ -30,8 +30,8 @@ class SyncStoreTimelineWriteRepository implements TimelineWriteRepository {
         {'title': title, 'cover_attachment_id': null},
       );
       return Ok(id);
-    } catch (e) {
-      return Failure(TimelineWriteFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(TimelineWriteFailure(e, st));
     }
   }
 
@@ -42,8 +42,8 @@ class SyncStoreTimelineWriteRepository implements TimelineWriteRepository {
     try {
       await _graph.store.delete(EntityType.collection, collectionId);
       return Ok(collectionId);
-    } catch (e) {
-      return Failure(TimelineWriteFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(TimelineWriteFailure(e, st));
     }
   }
 }

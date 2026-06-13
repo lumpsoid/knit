@@ -26,8 +26,7 @@ class CollectionLoaded extends CollectionAction {
 }
 
 class LoadFailed extends CollectionAction {
-  const LoadFailed(this.message);
-  final String message;
+  const LoadFailed();
 }
 
 /// An image card's decoded bytes finished loading. [bytes] is null when the

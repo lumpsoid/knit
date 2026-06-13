@@ -19,8 +19,7 @@ class CollectionsLoaded extends TimelineAction {
 }
 
 class TimelineLoadFailed extends TimelineAction {
-  const TimelineLoadFailed(this.message);
-  final String message;
+  const TimelineLoadFailed();
 }
 
 /// Tapped an existing collection row → open the Collection screen (§4.1).
@@ -42,8 +41,7 @@ class CollectionCreated extends TimelineAction {
 }
 
 class CollectionCreateFailed extends TimelineAction {
-  const CollectionCreateFailed(this.message);
-  final String message;
+  const CollectionCreateFailed();
 }
 
 /// Long-press → Delete confirmed for an existing collection row (§4.1).
@@ -59,8 +57,7 @@ class CollectionDeleted extends TimelineAction {
 }
 
 class CollectionDeleteFailed extends TimelineAction {
-  const CollectionDeleteFailed(this.message);
-  final String message;
+  const CollectionDeleteFailed();
 }
 
 class DeactivateFeature extends TimelineAction {

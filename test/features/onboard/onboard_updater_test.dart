@@ -32,7 +32,7 @@ void main() {
     final (next, effects) =
         updater.update(state, const GenerateIdentityTapped());
     expect(next.step, OnboardStep.generating);
-    expect(next.errorMessage, isNull);
+    expect(next.hasError, isFalse);
     expect(effects, hasLength(1));
     expect((effects!.single as CreateIdentityEffect).nickname, 'mira');
   });
@@ -48,13 +48,13 @@ void main() {
     expect(next.identity, same(card));
   });
 
-  test('failure returns to explain with an error message', () {
+  test('failure returns to explain with the error flag set', () {
     final (next, _) = updater.update(
       const OnboardState(step: OnboardStep.generating, nickname: 'mira'),
-      const IdentityCreationFailed('nope'),
+      const IdentityCreationFailed(),
     );
     expect(next.step, OnboardStep.explainIdentity);
-    expect(next.errorMessage, 'nope');
+    expect(next.hasError, isTrue);
   });
 
   test('Enter app emits EnterAppEffect', () {

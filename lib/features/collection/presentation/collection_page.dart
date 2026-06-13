@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -51,8 +52,12 @@ class _CollectionPageState extends State<CollectionPage> {
     if (!mounted) return;
     switch (effect) {
       case CollectionShowMessageUiEffect(:final message):
+        final text = switch (message) {
+          CollectionMessage.saveFailed =>
+            AppLocalizations.of(context).collectionSaveFailed,
+        };
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
+            .showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -71,17 +76,20 @@ class _CollectionPageState extends State<CollectionPage> {
       builder: (_) => const _AddBlockSheet(),
     );
     if (kind == null || !mounted) return;
+    final l10n = AppLocalizations.of(context);
     switch (kind) {
       case CardKind.link:
         final url = await _promptText(
-          title: 'Add a link',
-          hint: 'https://…',
-          action: 'Add',
+          title: l10n.collectionAddLinkTitle,
+          hint: l10n.collectionAddLinkHint,
+          action: l10n.actionAdd,
         );
         if (url != null) _controller.dispatch(LinkCardSubmitted(url));
       case CardKind.image:
       case CardKind.audio:
-        _comingSoon(kind == CardKind.image ? 'Photo cards' : 'Audio cards');
+        _comingSoon(kind == CardKind.image
+            ? l10n.collectionPhotoCards
+            : l10n.collectionAudioCards);
       case CardKind.text:
       case CardKind.unknown:
         break;
@@ -105,7 +113,7 @@ class _CollectionPageState extends State<CollectionPage> {
         _openConnections(
           kind: ConnectedEntityKind.card,
           id: card.id,
-          title: _cardLabel(card),
+          title: _cardLabel(AppLocalizations.of(context), card),
         );
       case _CardAction.reorder:
         _controller.dispatch(const StartReorder());
@@ -138,14 +146,14 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   /// A short label for a card, used to seed the Connections breadcrumb.
-  static String _cardLabel(FeedCard card) {
+  static String _cardLabel(AppLocalizations l10n, FeedCard card) {
     final text = card.text?.trim();
     if (text != null && text.isNotEmpty) return text;
     return switch (card.kind) {
-      CardKind.image => 'Photo',
-      CardKind.audio => 'Audio',
-      CardKind.link => 'Link',
-      CardKind.text || CardKind.unknown => 'Empty note',
+      CardKind.image => l10n.collectionCardPhoto,
+      CardKind.audio => l10n.collectionCardAudio,
+      CardKind.link => l10n.collectionCardLink,
+      CardKind.text || CardKind.unknown => l10n.labelEmptyNote,
     };
   }
 
@@ -170,10 +178,11 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   Future<void> _renameCollection(String current) async {
+    final l10n = AppLocalizations.of(context);
     final title = await _promptText(
-      title: 'Rename collection',
+      title: l10n.collectionRenameTitle,
       initial: current,
-      action: 'Save',
+      action: l10n.actionSave,
     );
     if (title != null) _controller.dispatch(TitleSubmitted(title));
   }
@@ -198,13 +207,15 @@ class _CollectionPageState extends State<CollectionPage> {
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  void _comingSoon(String what) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text('$what — coming soon')));
+  void _comingSoon(String what) => ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(AppLocalizations.of(context).collectionComingSoon(what))));
 
   // --- build -----------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ValueListenableBuilder<CollectionState>(
       valueListenable: _controller.stateHolder,
       builder: (context, state, _) {
@@ -215,14 +226,14 @@ class _CollectionPageState extends State<CollectionPage> {
                   ? () => _renameCollection(state.title)
                   : null,
               child: Text(
-                state.title.trim().isEmpty ? 'Untitled' : state.title,
+                state.title.trim().isEmpty ? l10n.labelUntitled : state.title,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             actions: [
               if (state.status == CollectionStatus.ready && !state.reordering)
                 IconButton(
-                  tooltip: 'Connections',
+                  tooltip: l10n.collectionConnectionsTooltip,
                   icon: const Icon(Icons.hub_outlined),
                   onPressed: () => _openConnections(
                     kind: ConnectedEntityKind.collection,
@@ -235,10 +246,10 @@ class _CollectionPageState extends State<CollectionPage> {
                     ? TextButton(
                         onPressed: () =>
                             _controller.dispatch(const EndReorder()),
-                        child: const Text('Done'),
+                        child: Text(l10n.actionDone),
                       )
                     : IconButton(
-                        tooltip: 'Reorder',
+                        tooltip: l10n.collectionReorderTooltip,
                         icon: const Icon(Icons.swap_vert),
                         onPressed: () =>
                             _controller.dispatch(const StartReorder()),
@@ -270,7 +281,7 @@ class _CollectionPageState extends State<CollectionPage> {
         return _feed(state);
       case CollectionStatus.failed:
         return _ErrorView(
-          message: state.errorMessage ?? 'Something went wrong',
+          message: AppLocalizations.of(context).collectionLoadError,
           onRetry: () => _controller.dispatch(const ReloadRequested()),
         );
       case CollectionStatus.ready:
@@ -343,6 +354,7 @@ class _CardBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
@@ -355,7 +367,7 @@ class _CardBubble extends StatelessWidget {
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: _content(theme),
+              child: _content(theme, l10n),
             ),
           ),
         ),
@@ -363,7 +375,7 @@ class _CardBubble extends StatelessWidget {
     );
   }
 
-  Widget _content(ThemeData theme) {
+  Widget _content(ThemeData theme, AppLocalizations l10n) {
     switch (card.kind) {
       case CardKind.link:
         return Row(
@@ -373,7 +385,9 @@ class _CardBubble extends StatelessWidget {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                card.text?.trim().isNotEmpty == true ? card.text!.trim() : 'Link',
+                card.text?.trim().isNotEmpty == true
+                    ? card.text!.trim()
+                    : l10n.collectionCardLink,
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   decoration: TextDecoration.underline,
@@ -390,7 +404,8 @@ class _CardBubble extends StatelessWidget {
             bytes: imageBytes,
             width: 220,
             height: 220,
-            placeholder: _placeholder(theme, Icons.image_outlined, 'Photo'),
+            placeholder:
+                _placeholder(theme, Icons.image_outlined, l10n.collectionCardPhoto),
           ),
         );
         if (caption == null || caption.isEmpty) return image;
@@ -407,11 +422,13 @@ class _CardBubble extends StatelessWidget {
           ],
         );
       case CardKind.audio:
-        return _placeholder(theme, Icons.mic_none, 'Audio');
+        return _placeholder(theme, Icons.mic_none, l10n.collectionCardAudio);
       case CardKind.text:
       case CardKind.unknown:
         return Text(
-          card.text?.trim().isNotEmpty == true ? card.text!.trim() : 'Empty note',
+          card.text?.trim().isNotEmpty == true
+              ? card.text!.trim()
+              : l10n.labelEmptyNote,
         );
     }
   }
@@ -441,14 +458,16 @@ class _ReorderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final label = switch (card.kind) {
-      CardKind.link => card.text?.isNotEmpty == true ? card.text! : 'Link',
+      CardKind.link =>
+        card.text?.isNotEmpty == true ? card.text! : l10n.collectionCardLink,
       CardKind.image => card.text?.isNotEmpty == true
           ? card.text!
-          : '[Photo]',
-      CardKind.audio => 'Audio',
+          : l10n.collectionReorderPhoto,
+      CardKind.audio => l10n.collectionCardAudio,
       CardKind.text || CardKind.unknown =>
-        card.text?.trim().isNotEmpty == true ? card.text! : 'Empty note',
+        card.text?.trim().isNotEmpty == true ? card.text! : l10n.labelEmptyNote,
     };
     return ListTile(
       key: ValueKey('tile-${card.id}'),
@@ -516,7 +535,7 @@ class _PromptDialogState extends State<_PromptDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(AppLocalizations.of(context).actionCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_field.text),
@@ -540,6 +559,7 @@ class _Composer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Padding(
@@ -547,7 +567,7 @@ class _Composer extends StatelessWidget {
         child: Row(
           children: [
             IconButton(
-              tooltip: 'Add block',
+              tooltip: l10n.collectionAddBlockTooltip,
               icon: const Icon(Icons.add_circle_outline),
               onPressed: onAddBlock,
             ),
@@ -558,7 +578,7 @@ class _Composer extends StatelessWidget {
                 maxLines: 5,
                 textInputAction: TextInputAction.send,
                 decoration: InputDecoration(
-                  hintText: 'Write a card…',
+                  hintText: l10n.collectionComposerHint,
                   filled: true,
                   fillColor: theme.colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
@@ -572,7 +592,7 @@ class _Composer extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Send',
+              tooltip: l10n.collectionSendTooltip,
               icon: const Icon(Icons.send),
               onPressed: onSend,
             ),
@@ -588,23 +608,24 @@ class _AddBlockSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Wrap(
         children: [
           ListTile(
             leading: const Icon(Icons.link),
-            title: const Text('Link'),
-            subtitle: const Text('A standalone link card'),
+            title: Text(l10n.collectionBlockLink),
+            subtitle: Text(l10n.collectionBlockLinkSubtitle),
             onTap: () => Navigator.of(context).pop(CardKind.link),
           ),
           ListTile(
             leading: const Icon(Icons.image_outlined),
-            title: const Text('Photo'),
+            title: Text(l10n.collectionBlockPhoto),
             onTap: () => Navigator.of(context).pop(CardKind.image),
           ),
           ListTile(
             leading: const Icon(Icons.mic_none),
-            title: const Text('Audio'),
+            title: Text(l10n.collectionBlockAudio),
             onTap: () => Navigator.of(context).pop(CardKind.audio),
           ),
         ],
@@ -619,32 +640,33 @@ class _CardActionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Wrap(
         children: [
           ListTile(
             leading: const Icon(Icons.edit_outlined),
-            title: const Text('Edit'),
+            title: Text(l10n.collectionActionEdit),
             onTap: () => Navigator.of(context).pop(_CardAction.edit),
           ),
           ListTile(
             leading: const Icon(Icons.link),
-            title: const Text('Make a link'),
+            title: Text(l10n.collectionActionMakeLink),
             onTap: () => Navigator.of(context).pop(_CardAction.link),
           ),
           ListTile(
             leading: const Icon(Icons.hub_outlined),
-            title: const Text('Connections'),
+            title: Text(l10n.collectionActionConnections),
             onTap: () => Navigator.of(context).pop(_CardAction.connections),
           ),
           ListTile(
             leading: const Icon(Icons.swap_vert),
-            title: const Text('Reorder'),
+            title: Text(l10n.collectionActionReorder),
             onTap: () => Navigator.of(context).pop(_CardAction.reorder),
           ),
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            title: Text('Delete',
+            title: Text(l10n.collectionActionDelete,
                 style: TextStyle(color: theme.colorScheme.error)),
             onTap: () => Navigator.of(context).pop(_CardAction.delete),
           ),
@@ -709,25 +731,26 @@ class _LinkFinderSheetState extends State<_LinkFinderSheet> {
   }
 
   Widget _collectionsList(CollectionState state) {
+    final l10n = AppLocalizations.of(context);
     final collections = state.linkCollections;
     if (collections == null) {
       return const _SheetSpinner();
     }
     if (collections.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('Nothing to link to yet.'),
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(l10n.collectionNothingToLink),
       );
     }
     return ListView(
       shrinkWrap: true,
       children: [
-        const _SheetHeader('Make a link'),
+        _SheetHeader(l10n.collectionLinkFinderTitle),
         for (final c in collections)
           ListTile(
             leading: const Icon(Icons.workspaces_outline),
             title: Text(
-              c.label.trim().isEmpty ? 'Untitled' : c.label.trim(),
+              c.label.trim().isEmpty ? l10n.labelUntitled : c.label.trim(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -737,10 +760,10 @@ class _LinkFinderSheetState extends State<_LinkFinderSheet> {
                 if (c.id != widget.currentCollectionId)
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(c),
-                    child: const Text('Link'),
+                    child: Text(l10n.actionLink),
                   ),
                 IconButton(
-                  tooltip: 'Open',
+                  tooltip: l10n.actionOpen,
                   icon: const Icon(Icons.chevron_right),
                   onPressed: () => _drill(c),
                 ),
@@ -753,10 +776,11 @@ class _LinkFinderSheetState extends State<_LinkFinderSheet> {
   }
 
   Widget _cardsList(CollectionState state, String collectionId) {
+    final l10n = AppLocalizations.of(context);
     final collection = _collectionFor(state, collectionId);
     final label = (collection?.label.trim().isNotEmpty ?? false)
         ? collection!.label.trim()
-        : 'Untitled';
+        : l10n.labelUntitled;
     final cached = state.linkCardsByCollection[collectionId];
     final cards = cached
         ?.where((o) => o.id != widget.sourceCardId)
@@ -767,7 +791,7 @@ class _LinkFinderSheetState extends State<_LinkFinderSheet> {
       children: [
         ListTile(
           leading: const Icon(Icons.arrow_back),
-          title: const Text('Back to collections'),
+          title: Text(l10n.collectionBackToCollections),
           onTap: () => setState(() => _drilledId = null),
         ),
         const Divider(height: 1),
@@ -777,7 +801,7 @@ class _LinkFinderSheetState extends State<_LinkFinderSheet> {
           ListTile(
             leading: const Icon(Icons.workspaces_outline),
             title: Text(
-              'Link to "$label"',
+              l10n.collectionLinkToCollection(label),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -786,17 +810,19 @@ class _LinkFinderSheetState extends State<_LinkFinderSheet> {
         if (cards == null)
           const _SheetSpinner()
         else if (cards.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Text('No cards here to link to.'),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(l10n.collectionNoCardsToLink),
           )
         else ...[
-          const _SheetHeader('Or a card in it'),
+          _SheetHeader(l10n.collectionOrACardInIt),
           for (final card in cards)
             ListTile(
               leading: const Icon(Icons.sticky_note_2_outlined),
               title: Text(
-                card.label.trim().isEmpty ? 'Empty note' : card.label.trim(),
+                card.label.trim().isEmpty
+                    ? l10n.labelEmptyNote
+                    : card.label.trim(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -857,12 +883,12 @@ class _EmptyView extends StatelessWidget {
             Icon(Icons.chat_bubble_outline,
                 size: 64, color: theme.colorScheme.primary),
             const SizedBox(height: 16),
-            Text('No cards yet',
+            Text(AppLocalizations.of(context).collectionEmptyTitle,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(
-              'Write your first card below, or tap + to add a block.',
+              AppLocalizations.of(context).collectionEmptyBody,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -894,7 +920,9 @@ class _ErrorView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium),
             const SizedBox(height: 24),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
+            FilledButton(
+                onPressed: onRetry,
+                child: Text(AppLocalizations.of(context).actionRetry)),
           ],
         ),
       ),

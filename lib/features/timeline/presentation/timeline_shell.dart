@@ -1,7 +1,6 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
-import 'package:knit/features/timeline/domain/timeline_failure.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_write_repository.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
@@ -38,10 +37,9 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
         result.onTap(
           (collections) => dispatch(CollectionsLoaded(collections)),
           (failure) {
-            _log.severe('Timeline load failed: ${_cause(failure)}');
-            dispatch(
-              const TimelineLoadFailed('Could not load your collections.'),
-            );
+            _log.severe(
+                'Timeline load failed', failure.error, failure.stackTrace);
+            dispatch(const TimelineLoadFailed());
           },
         );
 
@@ -50,13 +48,12 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
         result.onTap(
           (id) => dispatch(CollectionCreated(id)),
           (failure) {
-            _log.severe('Create collection failed: ${_cause(failure)}');
+            _log.severe(
+                'Create collection failed', failure.error, failure.stackTrace);
             _effectEmitter.push(
-              const TimelineShowMessageUiEffect(
-                "Couldn't create the collection. Please try again.",
-              ),
+              const TimelineShowMessageUiEffect(TimelineMessage.createFailed),
             );
-            dispatch(const CollectionCreateFailed('create failed'));
+            dispatch(const CollectionCreateFailed());
           },
         );
 
@@ -68,20 +65,14 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
         result.onTap(
           (id) => dispatch(CollectionDeleted(id)),
           (failure) {
-            _log.severe('Delete collection failed: ${_cause(failure)}');
+            _log.severe(
+                'Delete collection failed', failure.error, failure.stackTrace);
             _effectEmitter.push(
-              const TimelineShowMessageUiEffect(
-                "Couldn't delete the collection. Please try again.",
-              ),
+              const TimelineShowMessageUiEffect(TimelineMessage.deleteFailed),
             );
-            dispatch(const CollectionDeleteFailed('delete failed'));
+            dispatch(const CollectionDeleteFailed());
           },
         );
     }
   }
-
-  String _cause(TimelineFailure failure) => switch (failure) {
-        TimelineLoadFailure(:final cause) => cause,
-        TimelineWriteFailure(:final cause) => cause,
-      };
 }

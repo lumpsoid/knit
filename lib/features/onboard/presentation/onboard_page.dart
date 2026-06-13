@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/onboard/domain/identity_card.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
 import 'package:knit/features/onboard/presentation/onboard_controller.dart';
@@ -86,7 +87,7 @@ class _OnboardPageState extends State<OnboardPage> {
       case OnboardStep.explainIdentity:
         return _ExplainView(
           nickname: state.nickname.trim(),
-          errorMessage: state.errorMessage,
+          hasError: state.hasError,
           onGenerate: () =>
               _controller.dispatch(const GenerateIdentityTapped()),
           onBack: () => _controller.dispatch(const BackTapped()),
@@ -111,19 +112,19 @@ class _WelcomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return _Frame(
       children: [
         const Spacer(),
         Icon(Icons.hub_outlined, size: 96, color: theme.colorScheme.primary),
         const SizedBox(height: 32),
-        Text('Welcome to Knit',
+        Text(l10n.onboardWelcomeTitle,
             style: theme.textTheme.headlineMedium
                 ?.copyWith(fontWeight: FontWeight.w700),
             textAlign: TextAlign.center),
         const SizedBox(height: 12),
         Text(
-          'Capture anything as cards, woven together in your own\n'
-          'collections. Local-first — your data lives on your device.',
+          l10n.onboardWelcomeBody,
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           textAlign: TextAlign.center,
@@ -134,7 +135,7 @@ class _WelcomeView extends StatelessWidget {
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
           ),
-          child: const Text('Get started'),
+          child: Text(l10n.onboardGetStarted),
         ),
       ],
     );
@@ -159,17 +160,17 @@ class _NicknameView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return _Frame(
       onBack: onBack,
       children: [
         const SizedBox(height: 24),
-        Text('What should people call you?',
+        Text(l10n.onboardNicknameTitle,
             style: theme.textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         Text(
-          'A nickname is just a label — your identity is your key, not this '
-          'name. You can change it anytime.',
+          l10n.onboardNicknameBody,
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
@@ -179,10 +180,10 @@ class _NicknameView extends StatelessWidget {
           autofocus: true,
           textInputAction: TextInputAction.done,
           maxLength: 40,
-          decoration: const InputDecoration(
-            labelText: 'Nickname',
-            hintText: 'e.g. mira',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.onboardNicknameLabel,
+            hintText: l10n.onboardNicknameHint,
+            border: const OutlineInputBorder(),
           ),
           onChanged: onChanged,
           onSubmitted: (_) {
@@ -195,7 +196,7 @@ class _NicknameView extends StatelessWidget {
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
           ),
-          child: const Text('Continue'),
+          child: Text(l10n.actionContinue),
         ),
       ],
     );
@@ -205,19 +206,20 @@ class _NicknameView extends StatelessWidget {
 class _ExplainView extends StatelessWidget {
   const _ExplainView({
     required this.nickname,
-    required this.errorMessage,
+    required this.hasError,
     required this.onGenerate,
     required this.onBack,
   });
 
   final String nickname;
-  final String? errorMessage;
+  final bool hasError;
   final VoidCallback onGenerate;
   final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return _Frame(
       onBack: onBack,
       children: [
@@ -225,28 +227,23 @@ class _ExplainView extends StatelessWidget {
         Icon(Icons.vpn_key_outlined,
             size: 64, color: theme.colorScheme.primary),
         const SizedBox(height: 24),
-        Text('Your identity is a key',
+        Text(l10n.onboardExplainTitle,
             style: theme.textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 16),
-        _bullet(theme, Icons.fingerprint,
-            'We\'ll generate a cryptographic key pair on this device. The '
-            'public key IS your identity — not a username on someone\'s server.'),
-        _bullet(theme, Icons.lock_outline,
-            'The private half never leaves your device. Keep it safe — backing '
-            'it up later (in Settings) is how you back up "you".'),
+        _bullet(theme, Icons.fingerprint, l10n.onboardExplainKeyPair),
+        _bullet(theme, Icons.lock_outline, l10n.onboardExplainPrivate),
         _bullet(theme, Icons.badge_outlined,
-            'Hi, $nickname — your key is who you are, your nickname is what '
-            'you\'re called.'),
-        if (errorMessage != null) ...[
+            l10n.onboardExplainNickname(nickname)),
+        if (hasError) ...[
           const SizedBox(height: 16),
-          _ErrorBanner(message: errorMessage!),
+          _ErrorBanner(message: l10n.onboardIdentityError),
         ],
         const Spacer(),
         FilledButton.icon(
           onPressed: onGenerate,
           icon: const Icon(Icons.auto_awesome),
-          label: const Text('Generate my identity'),
+          label: Text(l10n.onboardGenerate),
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
           ),
@@ -322,11 +319,11 @@ class _GeneratingViewState extends State<_GeneratingView>
           ),
         ),
         const SizedBox(height: 32),
-        Text('Minting your keypair…',
+        Text(AppLocalizations.of(context).onboardGeneratingTitle,
             style: theme.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        Text('Generating Ed25519 keys and signing your profile.',
+        Text(AppLocalizations.of(context).onboardGeneratingBody,
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center),
@@ -344,11 +341,12 @@ class _RevealView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final avatarColor = _avatarColor(identity.fingerprint);
     return _Frame(
       children: [
         const SizedBox(height: 16),
-        Text('Meet yourself',
+        Text(l10n.onboardRevealTitle,
             style: theme.textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 24),
@@ -368,7 +366,7 @@ class _RevealView extends StatelessWidget {
             style: theme.textTheme.titleLarge
                 ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
-        Text('key = who you are · nickname = what you\'re called',
+        Text(l10n.onboardKeyTagline,
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 24),
@@ -381,8 +379,7 @@ class _RevealView extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Your private key is stored only on this device. Back it up '
-                'later from Settings.',
+                l10n.onboardPrivateKeyNote,
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -394,7 +391,7 @@ class _RevealView extends StatelessWidget {
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
           ),
-          child: const Text('Enter Knit'),
+          child: Text(l10n.onboardEnter),
         ),
       ],
     );
@@ -473,12 +470,14 @@ class _PubkeyBox extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Copy public key',
+            tooltip: AppLocalizations.of(context).onboardCopyPublicKey,
             icon: const Icon(Icons.copy, size: 18),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: publicKeyHex));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Public key copied')),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context).onboardPublicKeyCopied),
+                ),
               );
             },
           ),

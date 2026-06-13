@@ -91,8 +91,8 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
   ) async {
     try {
       return Ok(await op());
-    } catch (e) {
-      return Failure(CollectionWriteFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(CollectionWriteFailure(e, st));
     }
   }
 }

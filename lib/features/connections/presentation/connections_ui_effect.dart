@@ -4,8 +4,13 @@ sealed class ConnectionsUiEffect {
   const ConnectionsUiEffect();
 }
 
-/// Show a transient message (e.g. a clear failed) — a snackbar.
+/// A semantic, locale-independent message the shell can raise without reaching
+/// for `BuildContext` — the View maps it to localized text (l10n).
+enum ConnectionsMessage { clearFailed }
+
+/// Show a transient message (e.g. a clear failed) — a snackbar. Carries a
+/// semantic [ConnectionsMessage] key, not display text; the View localizes it.
 class ConnectionsShowMessageUiEffect extends ConnectionsUiEffect {
   const ConnectionsShowMessageUiEffect(this.message);
-  final String message;
+  final ConnectionsMessage message;
 }

@@ -32,13 +32,12 @@ void main() {
     expect(effects, isNull);
   });
 
-  test('PendingCountFailed surfaces the failure without effects', () {
+  test('PendingCountFailed marks the marker failed without effects', () {
     final (next, effects) = updater.update(
       const SyncStatusState(phase: SyncStatusPhase.loading),
-      const PendingCountFailed('unavailable'),
+      const PendingCountFailed(),
     );
     expect(next.phase, SyncStatusPhase.failed);
-    expect(next.errorMessage, 'unavailable');
     expect(effects, isNull);
   });
 }

@@ -47,8 +47,8 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
           cards: cards,
         ),
       );
-    } catch (e) {
-      return Failure(CollectionLoadFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(CollectionLoadFailure(e, st));
     }
   }
 
@@ -67,8 +67,8 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
             ),
       ];
       return Ok(options);
-    } catch (e) {
-      return Failure(CollectionLoadFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(CollectionLoadFailure(e, st));
     }
   }
 
@@ -88,8 +88,8 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
             ),
       ];
       return Ok(options);
-    } catch (e) {
-      return Failure(CollectionLoadFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(CollectionLoadFailure(e, st));
     }
   }
 }

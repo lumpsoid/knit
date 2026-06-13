@@ -36,8 +36,7 @@ class IdentityCreated extends OnboardAction {
 }
 
 class IdentityCreationFailed extends OnboardAction {
-  const IdentityCreationFailed(this.message);
-  final String message;
+  const IdentityCreationFailed();
 }
 
 class EnterAppTapped extends OnboardAction {

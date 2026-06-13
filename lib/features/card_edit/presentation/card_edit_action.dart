@@ -36,8 +36,7 @@ class SaveSucceeded extends CardEditAction {
 
 /// The text write failed; stay on the page so the edit isn't lost.
 class SaveFailed extends CardEditAction {
-  const SaveFailed(this.message);
-  final String message;
+  const SaveFailed();
 }
 
 // --- links (subtask 3) -----------------------------------------------------

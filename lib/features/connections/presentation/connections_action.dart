@@ -29,8 +29,7 @@ class ConnectionsLoaded extends ConnectionsAction {
 }
 
 class LoadFailed extends ConnectionsAction {
-  const LoadFailed(this.message);
-  final String message;
+  const LoadFailed();
 }
 
 /// Tap a live connection → jump to its far endpoint, pushing a breadcrumb (§4.4).

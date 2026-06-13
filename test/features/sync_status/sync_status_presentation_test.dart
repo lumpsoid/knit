@@ -9,22 +9,24 @@ void main() {
       const SyncStatusState(phase: SyncStatusPhase.ready),
     );
     expect(view.icon, Icons.cloud_done_outlined);
-    expect(view.tooltip, 'All changes saved');
+    expect(view.label, SyncStatusLabel.allSaved);
   });
 
-  test('one pending change reads in the singular, never alarming', () {
+  test('one pending change reads as pending, carrying its count', () {
     final view = syncStatusPresentation(
       const SyncStatusState(phase: SyncStatusPhase.ready, pendingCount: 1),
     );
     expect(view.icon, Icons.save_outlined);
-    expect(view.tooltip, '1 change saved on this device — not yet shared');
+    expect(view.label, SyncStatusLabel.pending);
+    expect(view.pendingCount, 1);
   });
 
-  test('many pending changes read in the plural', () {
+  test('many pending changes carry their count for the localized plural', () {
     final view = syncStatusPresentation(
       const SyncStatusState(phase: SyncStatusPhase.ready, pendingCount: 4),
     );
-    expect(view.tooltip, '4 changes saved on this device — not yet shared');
+    expect(view.label, SyncStatusLabel.pending);
+    expect(view.pendingCount, 4);
   });
 
   test('loading reuses the last known count (no flicker)', () {
@@ -32,7 +34,8 @@ void main() {
       const SyncStatusState(phase: SyncStatusPhase.loading, pendingCount: 2),
     );
     expect(view.icon, Icons.save_outlined);
-    expect(view.tooltip, contains('2 changes'));
+    expect(view.label, SyncStatusLabel.pending);
+    expect(view.pendingCount, 2);
   });
 
   test('failure is unobtrusive, not an alarm', () {
@@ -40,6 +43,6 @@ void main() {
       const SyncStatusState(phase: SyncStatusPhase.failed),
     );
     expect(view.icon, Icons.cloud_off_outlined);
-    expect(view.tooltip, 'Sync status unavailable');
+    expect(view.label, SyncStatusLabel.unavailable);
   });
 }

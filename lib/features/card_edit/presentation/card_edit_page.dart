@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/card_edit/domain/card_edit_models.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
@@ -59,8 +60,12 @@ class _CardEditPageState extends State<CardEditPage> {
       case CardEditSavedUiEffect():
         Navigator.of(context).pop();
       case CardEditShowMessageUiEffect(:final message):
+        final text = switch (message) {
+          CardEditMessage.saveFailed =>
+            AppLocalizations.of(context).cardEditSaveFailed,
+        };
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
+            .showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -81,13 +86,14 @@ class _CardEditPageState extends State<CardEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ValueListenableBuilder<CardEditState>(
       valueListenable: _controller.stateHolder,
       builder: (context, state, _) {
         final saving = state.status == CardEditStatus.saving;
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Edit card'),
+            title: Text(l10n.cardEditTitle),
             actions: [
               saving
                   ? const Padding(
@@ -102,7 +108,7 @@ class _CardEditPageState extends State<CardEditPage> {
                     )
                   : TextButton(
                       onPressed: _save,
-                      child: const Text('Save'),
+                      child: Text(l10n.actionSave),
                     ),
               const SyncStatusIndicator(),
             ],
@@ -125,9 +131,9 @@ class _CardEditPageState extends State<CardEditPage> {
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
                 textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  hintText: 'Edit this card…',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: l10n.cardEditHint,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 24),
@@ -160,6 +166,7 @@ class _ImageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (state.imageBusy) {
       return const SizedBox(
         height: 160,
@@ -170,7 +177,7 @@ class _ImageSection extends StatelessWidget {
       return OutlinedButton.icon(
         onPressed: onPick,
         icon: const Icon(Icons.add_photo_alternate_outlined),
-        label: const Text('Add photo'),
+        label: Text(l10n.cardEditAddPhoto),
       );
     }
     return Column(
@@ -190,7 +197,7 @@ class _ImageSection extends StatelessWidget {
             TextButton.icon(
               onPressed: onPick,
               icon: const Icon(Icons.swap_horiz),
-              label: const Text('Replace'),
+              label: Text(l10n.cardEditReplace),
             ),
             const Spacer(),
             TextButton.icon(
@@ -200,7 +207,7 @@ class _ImageSection extends StatelessWidget {
                 color: Theme.of(context).colorScheme.error,
               ),
               label: Text(
-                'Remove',
+                l10n.cardEditRemove,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
@@ -227,13 +234,14 @@ class _LinksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
             Text(
-              'LINKS',
+              l10n.cardEditLinksHeader,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 letterSpacing: 0.8,
@@ -253,7 +261,7 @@ class _LinksSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'No links yet.',
+              l10n.cardEditNoLinks,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
@@ -264,7 +272,7 @@ class _LinksSection extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onAdd,
           icon: const Icon(Icons.add_link),
-          label: const Text('Add link'),
+          label: Text(l10n.cardEditAddLink),
         ),
       ],
     );
@@ -282,17 +290,18 @@ class _LinkRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     if (item.broken) {
       return ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(Icons.link_off, color: theme.colorScheme.error),
         title: Text(
-          'Broken link',
+          l10n.cardEditBrokenLink,
           style: TextStyle(color: theme.colorScheme.error),
         ),
-        subtitle: const Text('The linked item was deleted'),
+        subtitle: Text(l10n.cardEditBrokenLinkSubtitle),
         trailing: IconButton(
-          tooltip: 'Remove',
+          tooltip: l10n.actionRemove,
           icon: const Icon(Icons.close),
           onPressed: onRemove,
         ),
@@ -302,12 +311,14 @@ class _LinkRow extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: Icon(_kindIcon(item.otherKind)),
       title: Text(
-        item.label?.trim().isNotEmpty == true ? item.label!.trim() : 'Untitled',
+        item.label?.trim().isNotEmpty == true
+            ? item.label!.trim()
+            : l10n.labelUntitled,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: IconButton(
-        tooltip: 'Remove',
+        tooltip: l10n.actionRemove,
         icon: const Icon(Icons.close),
         onPressed: onRemove,
       ),
@@ -364,22 +375,23 @@ class _DrilldownBodyState extends State<_DrilldownBody> {
   }
 
   Widget _collectionsList() {
+    final l10n = AppLocalizations.of(context);
     if (widget.targets.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('Nothing to link to yet.'),
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(l10n.collectionNothingToLink),
       );
     }
     return ListView(
       shrinkWrap: true,
       children: [
-        const _SheetHeader('Link to which collection?'),
+        _SheetHeader(l10n.cardEditLinkToWhichCollection),
         for (final t in widget.targets)
           ListTile(
             leading: const Icon(Icons.workspaces_outline),
             title: Text(
               t.collection.label.trim().isEmpty
-                  ? 'Untitled'
+                  ? l10n.labelUntitled
                   : t.collection.label.trim(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -394,12 +406,16 @@ class _DrilldownBodyState extends State<_DrilldownBody> {
   }
 
   Widget _cardsList(CardLinkCollectionTargets t) {
+    final l10n = AppLocalizations.of(context);
+    final label = t.collection.label.trim().isEmpty
+        ? l10n.labelUntitled
+        : t.collection.label.trim();
     return ListView(
       shrinkWrap: true,
       children: [
         ListTile(
           leading: const Icon(Icons.arrow_back),
-          title: const Text('Back to collections'),
+          title: Text(l10n.collectionBackToCollections),
           onTap: () => setState(() => _drilled = null),
         ),
         const Divider(height: 1),
@@ -407,18 +423,20 @@ class _DrilldownBodyState extends State<_DrilldownBody> {
         ListTile(
           leading: const Icon(Icons.workspaces_outline),
           title: Text(
-            'Link to "${t.collection.label.trim().isEmpty ? 'Untitled' : t.collection.label.trim()}"',
+            l10n.collectionLinkToCollection(label),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           onTap: () => Navigator.of(context).pop(t.collection),
         ),
-        if (t.cards.isNotEmpty) const _SheetHeader('Or a card in it'),
+        if (t.cards.isNotEmpty) _SheetHeader(l10n.collectionOrACardInIt),
         for (final card in t.cards)
           ListTile(
             leading: const Icon(Icons.sticky_note_2_outlined),
             title: Text(
-              card.label.trim().isEmpty ? 'Empty note' : card.label.trim(),
+              card.label.trim().isEmpty
+                  ? l10n.labelEmptyNote
+                  : card.label.trim(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

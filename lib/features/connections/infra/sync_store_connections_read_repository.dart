@@ -59,8 +59,8 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
           incoming: incoming,
         ),
       );
-    } catch (e) {
-      return Failure(ConnectionsLoadFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(ConnectionsLoadFailure(e, st));
     }
   }
 

@@ -10,8 +10,13 @@ class TimelineOpenCollectionUiEffect extends TimelineUiEffect {
   final String collectionId;
 }
 
-/// Show a transient message (e.g. create failed) — a snackbar.
+/// A semantic, locale-independent message the shell can raise without reaching
+/// for `BuildContext` — the View maps it to localized text (l10n).
+enum TimelineMessage { createFailed, deleteFailed }
+
+/// Show a transient message (e.g. create failed) — a snackbar. Carries a
+/// semantic [TimelineMessage] key, not display text; the View localizes it.
 class TimelineShowMessageUiEffect extends TimelineUiEffect {
   const TimelineShowMessageUiEffect(this.message);
-  final String message;
+  final TimelineMessage message;
 }

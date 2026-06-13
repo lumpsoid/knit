@@ -11,7 +11,7 @@ class OnboardState {
     this.step = OnboardStep.welcome,
     this.nickname = '',
     this.identity,
-    this.errorMessage,
+    this.hasError = false,
   });
 
   final OnboardStep step;
@@ -20,8 +20,9 @@ class OnboardState {
   /// Populated on the reveal step (§5).
   final IdentityCard? identity;
 
-  /// Surfaced on the explain step after a failed Generate.
-  final String? errorMessage;
+  /// Whether the last Generate failed — drives the explain-step error banner.
+  /// The cause is logged in the shell, not surfaced as text here.
+  final bool hasError;
 
   bool get canContinueFromNickname => nickname.trim().isNotEmpty;
 
@@ -29,12 +30,12 @@ class OnboardState {
     OnboardStep? step,
     String? nickname,
     IdentityCard? identity,
-    String? errorMessage,
+    bool? hasError,
   }) =>
       OnboardState(
         step: step ?? this.step,
         nickname: nickname ?? this.nickname,
         identity: identity ?? this.identity,
-        errorMessage: errorMessage ?? this.errorMessage,
+        hasError: hasError ?? this.hasError,
       );
 }

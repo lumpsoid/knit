@@ -16,8 +16,8 @@ class SyncStoreTimelineRepository implements TimelineReadRepository {
       loadTimeline() async {
     try {
       return Ok(await _graph.store.homeTimeline());
-    } catch (e) {
-      return Failure(TimelineLoadFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(TimelineLoadFailure(e, st));
     }
   }
 }

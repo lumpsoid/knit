@@ -50,8 +50,9 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         result.onTap(
           (data) => dispatch(CollectionLoaded(data)),
           (failure) {
-            _log.severe('Collection load failed: ${_cause(failure)}');
-            dispatch(const LoadFailed('Could not load this collection.'));
+            _log.severe(
+                'Collection load failed', failure.error, failure.stackTrace);
+            dispatch(const LoadFailed());
           },
         );
 
@@ -95,7 +96,8 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         result.onTap(
           (options) => dispatch(LinkCollectionsLoaded(options)),
           (failure) {
-            _log.severe('Link collections load failed: ${_cause(failure)}');
+            _log.severe('Link collections load failed', failure.error,
+                failure.stackTrace);
             dispatch(const LinkCollectionsLoaded([]));
           },
         );
@@ -105,7 +107,8 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         result.onTap(
           (options) => dispatch(LinkCardsLoaded(collectionId, options)),
           (failure) {
-            _log.severe('Link cards load failed: ${_cause(failure)}');
+            _log.severe(
+                'Link cards load failed', failure.error, failure.stackTrace);
             dispatch(LinkCardsLoaded(collectionId, const []));
           },
         );
@@ -147,19 +150,13 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         dispatch(const ReloadRequested());
       },
       (failure) {
-        _log.severe('Collection $label failed: ${_cause(failure)}');
+        _log.severe(
+            'Collection $label failed', failure.error, failure.stackTrace);
         _effectEmitter.push(
-          const CollectionShowMessageUiEffect(
-            "That didn't save. Please try again.",
-          ),
+          const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
         );
         dispatch(const ReloadRequested());
       },
     );
   }
-
-  String _cause(CollectionFailure failure) => switch (failure) {
-        CollectionLoadFailure(:final cause) => cause,
-        CollectionWriteFailure(:final cause) => cause,
-      };
 }

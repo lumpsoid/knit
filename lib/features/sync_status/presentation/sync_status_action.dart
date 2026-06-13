@@ -21,6 +21,5 @@ class PendingCountLoaded extends SyncStatusAction {
 
 /// Reading the count failed.
 class PendingCountFailed extends SyncStatusAction {
-  const PendingCountFailed(this.message);
-  final String message;
+  const PendingCountFailed();
 }

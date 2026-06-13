@@ -30,8 +30,8 @@ class SyncStoreOnboardRepository implements OnboardRepository {
           fingerprint: fingerprint,
         ),
       );
-    } catch (e) {
-      return Failure(IdentityCreationFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(IdentityCreationFailure(e, st));
     }
   }
 }

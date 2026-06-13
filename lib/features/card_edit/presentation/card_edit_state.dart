@@ -15,7 +15,6 @@ class CardEditState {
     this.status = CardEditStatus.editing,
     this.cardId = '',
     this.initialText = '',
-    this.errorMessage,
     this.links = const [],
     this.linksLoading = false,
     this.targets = const [],
@@ -27,7 +26,6 @@ class CardEditState {
   final CardEditStatus status;
   final String cardId;
   final String initialText;
-  final String? errorMessage;
 
   /// The card's outgoing links (subtask 3). Reuses the §4.4 view-models.
   final List<ConnectionItem> links;
@@ -54,7 +52,6 @@ class CardEditState {
     CardEditStatus? status,
     String? cardId,
     String? initialText,
-    Object? errorMessage = _unset,
     List<ConnectionItem>? links,
     bool? linksLoading,
     List<CardLinkCollectionTargets>? targets,
@@ -66,8 +63,6 @@ class CardEditState {
         status: status ?? this.status,
         cardId: cardId ?? this.cardId,
         initialText: initialText ?? this.initialText,
-        errorMessage:
-            errorMessage == _unset ? this.errorMessage : errorMessage as String?,
         links: links ?? this.links,
         linksLoading: linksLoading ?? this.linksLoading,
         targets: targets ?? this.targets,

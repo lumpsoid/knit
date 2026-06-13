@@ -2,7 +2,6 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:result_dart/result_dart.dart';
-import 'package:knit/features/connections/domain/connections_failure.dart';
 import 'package:knit/features/connections/domain/connections_read_repository.dart';
 import 'package:knit/features/connections/domain/connections_write_repository.dart';
 import 'package:knit/features/connections/presentation/connections_action.dart';
@@ -41,8 +40,9 @@ class ConnectionsShell extends Shell<ConnectionsEffect, ConnectionsAction> {
         result.onTap(
           (data) => dispatch(ConnectionsLoaded(data)),
           (failure) {
-            _log.severe('Connections load failed: ${_cause(failure)}');
-            dispatch(const LoadFailed('Could not load connections.'));
+            _log.severe(
+                'Connections load failed', failure.error, failure.stackTrace);
+            dispatch(const LoadFailed());
           },
         );
 
@@ -51,10 +51,11 @@ class ConnectionsShell extends Shell<ConnectionsEffect, ConnectionsAction> {
         result.onTap(
           (_) => dispatch(const ReloadRequested()),
           (failure) {
-            _log.severe('Connections clear-link failed: ${_cause(failure)}');
+            _log.severe('Connections clear-link failed', failure.error,
+                failure.stackTrace);
             _effectEmitter.push(
               const ConnectionsShowMessageUiEffect(
-                "That didn't clear. Please try again.",
+                ConnectionsMessage.clearFailed,
               ),
             );
             dispatch(const ReloadRequested());
@@ -62,9 +63,4 @@ class ConnectionsShell extends Shell<ConnectionsEffect, ConnectionsAction> {
         );
     }
   }
-
-  String _cause(ConnectionsFailure failure) => switch (failure) {
-        ConnectionsLoadFailure(:final cause) => cause,
-        ConnectionsWriteFailure(:final cause) => cause,
-      };
 }

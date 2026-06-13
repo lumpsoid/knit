@@ -8,7 +8,6 @@ class SyncStatusState {
   const SyncStatusState({
     this.phase = SyncStatusPhase.loading,
     this.pendingCount = 0,
-    this.errorMessage,
   });
 
   final SyncStatusPhase phase;
@@ -17,16 +16,12 @@ class SyncStatusState {
   /// grows; the view reads it calmly ("saved on this device").
   final int pendingCount;
 
-  final String? errorMessage;
-
   SyncStatusState copyWith({
     SyncStatusPhase? phase,
     int? pendingCount,
-    String? errorMessage,
   }) =>
       SyncStatusState(
         phase: phase ?? this.phase,
         pendingCount: pendingCount ?? this.pendingCount,
-        errorMessage: errorMessage ?? this.errorMessage,
       );
 }

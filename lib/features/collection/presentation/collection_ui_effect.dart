@@ -4,8 +4,13 @@ sealed class CollectionUiEffect {
   const CollectionUiEffect();
 }
 
-/// Show a transient message (e.g. a write failed) — a snackbar.
+/// A semantic, locale-independent message the shell can raise without reaching
+/// for `BuildContext` — the View maps it to localized text (l10n).
+enum CollectionMessage { saveFailed }
+
+/// Show a transient message (e.g. a write failed) — a snackbar. Carries a
+/// semantic [CollectionMessage] key, not display text; the View localizes it.
 class CollectionShowMessageUiEffect extends CollectionUiEffect {
   const CollectionShowMessageUiEffect(this.message);
-  final String message;
+  final CollectionMessage message;
 }

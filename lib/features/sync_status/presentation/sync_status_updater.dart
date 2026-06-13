@@ -27,12 +27,9 @@ class SyncStatusUpdater
           SyncStatusState(phase: SyncStatusPhase.ready, pendingCount: count),
           null,
         );
-      case PendingCountFailed(:final message):
+      case PendingCountFailed():
         return (
-          state.copyWith(
-            phase: SyncStatusPhase.failed,
-            errorMessage: message,
-          ),
+          state.copyWith(phase: SyncStatusPhase.failed),
           null,
         );
     }

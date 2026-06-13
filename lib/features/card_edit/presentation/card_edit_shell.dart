@@ -50,8 +50,6 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
   final EffectEmitter<CardEditUiEffect> _effectEmitter;
   final Logger _log;
 
-  static const String _saveError = "That didn't save. Please try again.";
-
   @override
   Future<void> run(
     CardEditEffect effect, {
@@ -66,9 +64,9 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
             _effectEmitter.push(const CardEditSavedUiEffect());
           },
           (failure) {
-            _log.severe('Card edit failed: ${_cause(failure)}');
-            _effectEmitter.push(const CardEditShowMessageUiEffect(_saveError));
-            dispatch(const SaveFailed(_saveError));
+            _log.severe('Card edit failed', failure.error, failure.stackTrace);
+            _effectEmitter.push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
+            dispatch(const SaveFailed());
           },
         );
 
@@ -79,7 +77,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         result.onTap(
           (links) => dispatch(LinksLoaded(links)),
           (failure) {
-            _log.severe('Card links load failed: ${_cause(failure)}');
+            _log.severe(
+                'Card links load failed', failure.error, failure.stackTrace);
             dispatch(const LinksLoadFailed());
           },
         );
@@ -88,8 +87,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         final result = await _targetsRead.loadTargets(excludeCardId: cardId);
         result.onTap(
           (targets) => dispatch(TargetsLoaded(targets)),
-          (failure) =>
-              _log.severe('Card link targets load failed: ${_cause(failure)}'),
+          (failure) => _log.severe('Card link targets load failed',
+              failure.error, failure.stackTrace),
         );
 
       case AddLinkEffect(:final cardId, :final targetKind, :final targetId):
@@ -121,8 +120,10 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
       case RemoveImageEffect(:final cardId, :final previousAttachmentId):
         final result = await _write.removeCardImage(cardId: cardId);
         if (result.isFailure) {
-          _log.severe('Remove card image failed: ${_cause(result.error!)}');
-          _effectEmitter.push(const CardEditShowMessageUiEffect(_saveError));
+          final failure = result.error!;
+          _log.severe('Remove card image failed', failure.error,
+              failure.stackTrace);
+          _effectEmitter.push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
           dispatch(const ImageEditEnded());
         } else {
           await _gcAttachment(previousAttachmentId);
@@ -141,8 +142,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     result.onTap(
       (_) => dispatch(const LinksChanged()),
       (failure) {
-        _log.severe('Card $label failed: ${_cause(failure)}');
-        _effectEmitter.push(const CardEditShowMessageUiEffect(_saveError));
+        _log.severe('Card $label failed', failure.error, failure.stackTrace);
+        _effectEmitter.push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
         dispatch(const LinksChanged());
       },
     );
@@ -164,8 +165,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
     final created = await _attachmentWrite.createFromPicked(picked);
     if (created.isFailure) {
-      _log.severe('Store picked image failed: ${created.error}');
-      _effectEmitter.push(const CardEditShowMessageUiEffect(_saveError));
+      _log.severe('Store picked image failed', created.error);
+      _effectEmitter.push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
       dispatch(const ImageEditEnded());
       return;
     }
@@ -173,8 +174,9 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
     final attached = await _write.setCardImage(cardId: cardId, attachmentId: newId);
     if (attached.isFailure) {
-      _log.severe('Attach card image failed: ${_cause(attached.error!)}');
-      _effectEmitter.push(const CardEditShowMessageUiEffect(_saveError));
+      final failure = attached.error!;
+      _log.severe('Attach card image failed', failure.error, failure.stackTrace);
+      _effectEmitter.push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
       dispatch(const ImageEditEnded());
       return;
     }
@@ -194,9 +196,4 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
       _log.warning('Attachment GC failed for $attachmentId: ${result.error}');
     }
   }
-
-  String _cause(CardEditFailure failure) => switch (failure) {
-        CardEditWriteFailure(:final cause) => cause,
-        CardEditReadFailure(:final cause) => cause,
-      };
 }

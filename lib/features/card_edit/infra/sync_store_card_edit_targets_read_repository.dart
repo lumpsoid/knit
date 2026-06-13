@@ -50,8 +50,8 @@ class SyncStoreCardEditTargetsReadRepository
         );
       }
       return Ok(tree);
-    } catch (e) {
-      return Failure(CardEditReadFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(CardEditReadFailure(e, st));
     }
   }
 }

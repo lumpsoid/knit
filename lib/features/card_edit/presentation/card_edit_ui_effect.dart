@@ -10,8 +10,13 @@ class CardEditSavedUiEffect extends CardEditUiEffect {
   const CardEditSavedUiEffect();
 }
 
-/// Show a transient message (e.g. a write failed) — a snackbar.
+/// A semantic, locale-independent message the shell can raise without reaching
+/// for `BuildContext` — the View maps it to localized text (l10n).
+enum CardEditMessage { saveFailed }
+
+/// Show a transient message (e.g. a write failed) — a snackbar. Carries a
+/// semantic [CardEditMessage] key, not display text; the View localizes it.
 class CardEditShowMessageUiEffect extends CardEditUiEffect {
   const CardEditShowMessageUiEffect(this.message);
-  final String message;
+  final CardEditMessage message;
 }

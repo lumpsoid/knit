@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/app_launch/domain/app_destination.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_action.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_controller.dart';
@@ -54,6 +55,7 @@ class _AppLaunchPageState extends State<AppLaunchPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Center(
         child: ValueListenableBuilder<AppLaunchState>(
@@ -68,11 +70,11 @@ class _AppLaunchPageState extends State<AppLaunchPage> {
                     Icon(Icons.error_outline,
                         size: 48, color: theme.colorScheme.error),
                     const SizedBox(height: 16),
-                    Text("Couldn't start Knit",
+                    Text(l10n.appLaunchError,
                         style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     Text(
-                      state.errorMessage ?? 'Unknown error',
+                      state.errorMessage ?? l10n.appLaunchUnknownError,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodySmall,
                     ),
@@ -80,7 +82,7 @@ class _AppLaunchPageState extends State<AppLaunchPage> {
                     FilledButton(
                       onPressed: () =>
                           _controller.dispatch(const RetryRequested()),
-                      child: const Text('Retry'),
+                      child: Text(l10n.actionRetry),
                     ),
                   ],
                 ),
@@ -89,7 +91,7 @@ class _AppLaunchPageState extends State<AppLaunchPage> {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Knit',
+                Text(l10n.appTitle,
                     style: theme.textTheme.displaySmall
                         ?.copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 24),

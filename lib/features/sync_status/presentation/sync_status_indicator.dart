@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_action.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_state.dart';
@@ -37,12 +38,18 @@ class _SyncStatusIndicatorState extends State<SyncStatusIndicator> {
   Widget build(BuildContext context) {
     final controller = SyncStatusScope.controller;
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return ValueListenableBuilder<SyncStatusState>(
       valueListenable: controller.stateHolder,
       builder: (context, state, _) {
         final view = syncStatusPresentation(state);
+        final tooltip = switch (view.label) {
+          SyncStatusLabel.allSaved => l10n.syncAllSaved,
+          SyncStatusLabel.unavailable => l10n.syncUnavailable,
+          SyncStatusLabel.pending => l10n.syncPending(view.pendingCount),
+        };
         return IconButton(
-          tooltip: view.tooltip,
+          tooltip: tooltip,
           onPressed: () => controller.dispatch(const RefreshRequested()),
           // Calm — onSurfaceVariant, never the error color, even on failure.
           icon: Icon(view.icon, color: scheme.onSurfaceVariant),
@@ -52,35 +59,44 @@ class _SyncStatusIndicatorState extends State<SyncStatusIndicator> {
   }
 }
 
+/// The semantic tooltip the marker shows (§4.8) — mapped to localized text by
+/// the widget. Locale-independent so the mapping stays unit-testable.
+enum SyncStatusLabel { allSaved, pending, unavailable }
+
 /// What the marker shows for a given [state] (§4.8). Pure + top-level so the
-/// icon/tooltip mapping is unit-testable without pumping a widget. `loading`
+/// icon/label mapping is unit-testable without pumping a widget. `loading`
 /// reuses the last known count, so the marker doesn't flicker while refreshing.
 SyncStatusPresentation syncStatusPresentation(SyncStatusState state) {
   if (state.phase == SyncStatusPhase.failed) {
     return const SyncStatusPresentation(
       icon: Icons.cloud_off_outlined,
-      tooltip: 'Sync status unavailable',
+      label: SyncStatusLabel.unavailable,
     );
   }
   if (state.pendingCount == 0) {
     return const SyncStatusPresentation(
       icon: Icons.cloud_done_outlined,
-      tooltip: 'All changes saved',
+      label: SyncStatusLabel.allSaved,
     );
   }
-  final n = state.pendingCount;
   return SyncStatusPresentation(
     icon: Icons.save_outlined,
-    tooltip: '$n ${n == 1 ? 'change' : 'changes'} '
-        'saved on this device — not yet shared',
+    label: SyncStatusLabel.pending,
+    pendingCount: state.pendingCount,
   );
 }
 
-/// The icon + tooltip the marker renders (widgets.md §1 — a widget-owned view
-/// model of primitives, no feature domain type).
+/// The icon + semantic label the marker renders (widgets.md §1 — a widget-owned
+/// view model of primitives, no feature domain type). [pendingCount] backs the
+/// localized plural for [SyncStatusLabel.pending].
 @immutable
 class SyncStatusPresentation {
-  const SyncStatusPresentation({required this.icon, required this.tooltip});
+  const SyncStatusPresentation({
+    required this.icon,
+    required this.label,
+    this.pendingCount = 0,
+  });
   final IconData icon;
-  final String tooltip;
+  final SyncStatusLabel label;
+  final int pendingCount;
 }

@@ -1,6 +1,5 @@
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
-import 'package:knit/features/sync_status/domain/sync_status_failure.dart';
 import 'package:knit/features/sync_status/domain/sync_status_read_repository.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_action.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_effect.dart';
@@ -29,14 +28,11 @@ class SyncStatusShell extends Shell<SyncStatusEffect, SyncStatusAction> {
         result.onTap(
           (count) => dispatch(PendingCountLoaded(count)),
           (failure) {
-            _log.severe('Pending count read failed: ${_cause(failure)}');
-            dispatch(const PendingCountFailed('unavailable'));
+            _log.severe(
+                'Pending count read failed', failure.error, failure.stackTrace);
+            dispatch(const PendingCountFailed());
           },
         );
     }
   }
-
-  String _cause(SyncStatusFailure failure) => switch (failure) {
-        SyncStatusReadFailure(:final cause) => cause,
-      };
 }

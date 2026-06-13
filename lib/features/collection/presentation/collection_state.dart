@@ -19,7 +19,6 @@ class CollectionState {
     this.linkCollections,
     this.linkCardsByCollection = const {},
     this.reordering = false,
-    this.errorMessage,
   });
 
   final CollectionStatus status;
@@ -47,8 +46,6 @@ class CollectionState {
   /// Whether drag-to-reorder mode is active (§4.2).
   final bool reordering;
 
-  final String? errorMessage;
-
   bool get isEmpty => cards.isEmpty;
 
   bool get canReorder => cards.length > 1;
@@ -63,7 +60,6 @@ class CollectionState {
     List<LinkOption>? linkCollections,
     Map<String, List<LinkOption>>? linkCardsByCollection,
     bool? reordering,
-    String? errorMessage,
   }) =>
       CollectionState(
         status: status ?? this.status,
@@ -76,6 +72,5 @@ class CollectionState {
         linkCardsByCollection:
             linkCardsByCollection ?? this.linkCardsByCollection,
         reordering: reordering ?? this.reordering,
-        errorMessage: errorMessage ?? this.errorMessage,
       );
 }

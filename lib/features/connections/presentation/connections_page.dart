@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_action.dart';
 import 'package:knit/features/connections/presentation/connections_controller.dart';
@@ -50,28 +51,30 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
     if (!mounted) return;
     switch (effect) {
       case ConnectionsShowMessageUiEffect(:final message):
+        final text = switch (message) {
+          ConnectionsMessage.clearFailed =>
+            AppLocalizations.of(context).connectionsClearFailed,
+        };
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
+            .showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
   Future<void> _confirmClear(ConnectionItem item) async {
+    final l10n = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear this link?'),
-        content: const Text(
-          'The broken link will be removed. The cards and collections it '
-          'pointed at are not deleted.',
-        ),
+        title: Text(l10n.connectionsClearTitle),
+        content: Text(l10n.connectionsClearBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Clear'),
+            child: Text(l10n.actionClear),
           ),
         ],
       ),
@@ -95,7 +98,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
           },
           child: Scaffold(
             appBar: AppBar(
-              title: Text(_focusTitle(state)),
+              title: Text(_focusTitle(AppLocalizations.of(context), state)),
               actions: const [SyncStatusIndicator()],
               bottom: state.breadcrumb.length > 1
                   ? _Breadcrumb(
@@ -111,10 +114,10 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
     );
   }
 
-  String _focusTitle(ConnectionsState state) {
-    if (state.breadcrumb.isEmpty) return 'Connections';
+  String _focusTitle(AppLocalizations l10n, ConnectionsState state) {
+    if (state.breadcrumb.isEmpty) return l10n.connectionsTitle;
     final title = state.breadcrumb.last.title.trim();
-    return title.isEmpty ? 'Connections' : title;
+    return title.isEmpty ? l10n.connectionsTitle : title;
   }
 
   Widget _body(ConnectionsState state) {
@@ -126,7 +129,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
         return _list(state);
       case ConnectionsStatus.failed:
         return _ErrorView(
-          message: state.errorMessage ?? 'Something went wrong',
+          message: AppLocalizations.of(context).connectionsLoadError,
           onRetry: () => _controller.dispatch(const ReloadRequested()),
         );
       case ConnectionsStatus.ready:
@@ -144,7 +147,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           if (data.outgoing.isNotEmpty) ...[
-            const _SectionHeader('Links out'),
+            _SectionHeader(AppLocalizations.of(context).connectionsLinksOut),
             for (final item in data.outgoing)
               _ConnectionTile(
                 item: item,
@@ -153,7 +156,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
               ),
           ],
           if (data.incoming.isNotEmpty) ...[
-            const _SectionHeader('Linked from'),
+            _SectionHeader(AppLocalizations.of(context).connectionsLinkedFrom),
             for (final item in data.incoming)
               _ConnectionTile(
                 item: item,
@@ -263,21 +266,25 @@ class _ConnectionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     if (item.broken) {
       return ListTile(
         leading: Icon(Icons.link_off, color: theme.colorScheme.error),
         title: Text(
-          'Broken link',
+          l10n.connectionsBrokenLink,
           style: TextStyle(color: theme.colorScheme.error),
         ),
-        subtitle: Text(_brokenSubtitle()),
-        trailing: TextButton(onPressed: onClear, child: const Text('Clear')),
+        subtitle: Text(_brokenSubtitle(l10n)),
+        trailing:
+            TextButton(onPressed: onClear, child: Text(l10n.actionClear)),
       );
     }
     return ListTile(
       leading: Icon(_kindIcon(item.otherKind)),
       title: Text(
-        item.label?.trim().isNotEmpty == true ? item.label!.trim() : 'Untitled',
+        item.label?.trim().isNotEmpty == true
+            ? item.label!.trim()
+            : l10n.labelUntitled,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -286,15 +293,15 @@ class _ConnectionTile extends StatelessWidget {
     );
   }
 
-  String _brokenSubtitle() {
+  String _brokenSubtitle(AppLocalizations l10n) {
     final kind = switch (item.otherKind) {
-      ConnectedEntityKind.collection => 'collection',
-      ConnectedEntityKind.card => 'card',
-      ConnectedEntityKind.unknown => 'item',
+      ConnectedEntityKind.collection => l10n.connectionsKindCollection,
+      ConnectedEntityKind.card => l10n.connectionsKindCard,
+      ConnectedEntityKind.unknown => l10n.connectionsKindItem,
     };
     return item.direction == ConnectionDirection.outgoing
-        ? 'The linked $kind was deleted'
-        : 'The linking $kind was deleted';
+        ? l10n.connectionsLinkedDeleted(kind)
+        : l10n.connectionsLinkingDeleted(kind);
   }
 
   IconData _kindIcon(ConnectedEntityKind kind) => switch (kind) {
@@ -319,12 +326,12 @@ class _EmptyView extends StatelessWidget {
             Icon(Icons.hub_outlined,
                 size: 64, color: theme.colorScheme.primary),
             const SizedBox(height: 16),
-            Text('No connections yet',
+            Text(AppLocalizations.of(context).connectionsEmptyTitle,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(
-              'Link a card to a collection and it will show up here.',
+              AppLocalizations.of(context).connectionsEmptyBody,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -356,7 +363,9 @@ class _ErrorView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium),
             const SizedBox(height: 24),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
+            FilledButton(
+                onPressed: onRetry,
+                child: Text(AppLocalizations.of(context).actionRetry)),
           ],
         ),
       ),

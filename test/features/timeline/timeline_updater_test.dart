@@ -35,13 +35,12 @@ void main() {
     expect(effects, isNull);
   });
 
-  test('failure surfaces an error and keeps no effects', () {
+  test('failure marks the feed failed and keeps no effects', () {
     final (next, effects) = updater.update(
       const TimelineState(status: TimelineStatus.loading),
-      const TimelineLoadFailed('nope'),
+      const TimelineLoadFailed(),
     );
     expect(next.status, TimelineStatus.failed);
-    expect(next.errorMessage, 'nope');
     expect(effects, isNull);
   });
 
@@ -76,7 +75,7 @@ void main() {
       collections: [summary('a')],
     );
     final (next, effects) =
-        updater.update(ready, const CollectionDeleteFailed('delete failed'));
+        updater.update(ready, const CollectionDeleteFailed());
     expect(next, same(ready));
     expect(effects, isNull);
   });

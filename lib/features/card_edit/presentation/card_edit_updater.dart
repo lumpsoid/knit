@@ -50,12 +50,9 @@ class CardEditUpdater
       case SaveSucceeded():
         return (state, null);
 
-      case SaveFailed(:final message):
+      case SaveFailed():
         return (
-          state.copyWith(
-            status: CardEditStatus.failed,
-            errorMessage: message,
-          ),
+          state.copyWith(status: CardEditStatus.failed),
           null,
         );
 

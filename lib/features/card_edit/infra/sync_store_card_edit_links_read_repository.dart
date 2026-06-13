@@ -45,8 +45,8 @@ class SyncStoreCardEditLinksReadRepository
         );
       }
       return Ok(items);
-    } catch (e) {
-      return Failure(CardEditReadFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(CardEditReadFailure(e, st));
     }
   }
 

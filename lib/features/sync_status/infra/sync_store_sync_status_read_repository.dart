@@ -14,8 +14,8 @@ class SyncStoreSyncStatusReadRepository implements SyncStatusReadRepository {
   Future<Result<int, SyncStatusFailure>> pendingCount() async {
     try {
       return Ok(await _graph.store.pendingCount());
-    } catch (e) {
-      return Failure(SyncStatusReadFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(SyncStatusReadFailure(e, st));
     }
   }
 }

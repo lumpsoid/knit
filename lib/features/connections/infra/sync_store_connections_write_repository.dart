@@ -19,8 +19,8 @@ class SyncStoreConnectionsWriteRepository
     try {
       await _graph.store.delete(EntityType.link, linkId);
       return Ok(linkId);
-    } catch (e) {
-      return Failure(ConnectionsWriteFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(ConnectionsWriteFailure(e, st));
     }
   }
 }

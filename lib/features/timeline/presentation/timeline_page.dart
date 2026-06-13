@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
@@ -47,8 +48,13 @@ class _TimelinePageState extends State<TimelinePage> {
         TimelineScope.routeArgsWriter.open(collectionId);
         Navigator.of(context).push(CollectionPage.route());
       case TimelineShowMessageUiEffect(:final message):
+        final l10n = AppLocalizations.of(context);
+        final text = switch (message) {
+          TimelineMessage.createFailed => l10n.timelineCreateFailed,
+          TimelineMessage.deleteFailed => l10n.timelineDeleteFailed,
+        };
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
+            .showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -67,20 +73,22 @@ class _TimelinePageState extends State<TimelinePage> {
   }
 
   Future<void> _confirmDelete(CollectionSummary summary) async {
-    final title = summary.title.trim().isEmpty ? 'Untitled' : summary.title;
+    final l10n = AppLocalizations.of(context);
+    final title =
+        summary.title.trim().isEmpty ? l10n.labelUntitled : summary.title;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete collection?'),
-        content: Text('"$title" and its cards will be removed.'),
+        title: Text(l10n.timelineDeleteTitle),
+        content: Text(l10n.timelineDeleteBody(title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(l10n.actionDelete),
           ),
         ],
       ),
@@ -101,15 +109,16 @@ class _TimelinePageState extends State<TimelinePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Knit'),
+        title: Text(l10n.appTitle),
         actions: const [SyncStatusIndicator()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createCollection,
         icon: const Icon(Icons.add),
-        label: const Text('Collection'),
+        label: Text(l10n.timelineCollectionFab),
       ),
       body: ValueListenableBuilder<TimelineState>(
         valueListenable: _controller.stateHolder,
@@ -122,7 +131,7 @@ class _TimelinePageState extends State<TimelinePage> {
               return _list(state);
             case TimelineStatus.failed:
               return _ErrorView(
-                message: state.errorMessage ?? 'Something went wrong',
+                message: l10n.timelineLoadError,
                 onRetry: () =>
                     _controller.dispatch(const RefreshRequested()),
               );
@@ -175,22 +184,23 @@ class _NewCollectionDialogState extends State<_NewCollectionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('New collection'),
+      title: Text(l10n.timelineNewCollectionTitle),
       content: TextField(
         controller: _field,
         autofocus: true,
-        decoration: const InputDecoration(hintText: 'Title or theme'),
+        decoration: InputDecoration(hintText: l10n.timelineNewCollectionHint),
         onSubmitted: (v) => Navigator.of(context).pop(v),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.actionCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_field.text),
-          child: const Text('Create'),
+          child: Text(l10n.actionCreate),
         ),
       ],
     );
@@ -210,7 +220,9 @@ class _CollectionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = summary.title.trim().isEmpty ? 'Untitled' : summary.title;
+    final l10n = AppLocalizations.of(context);
+    final title =
+        summary.title.trim().isEmpty ? l10n.labelUntitled : summary.title;
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -223,13 +235,13 @@ class _CollectionTile extends StatelessWidget {
       ),
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
-        '${_preview(summary.lastCard)} · ${summary.cardCount} '
-        '${summary.cardCount == 1 ? 'card' : 'cards'}',
+        '${_preview(l10n, summary.lastCard)} · '
+        '${l10n.timelineCardCount(summary.cardCount)}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: Text(
-        _relative(summary.lastUpdated),
+        _relative(l10n, summary.lastUpdated),
         style: theme.textTheme.labelSmall
             ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
@@ -241,30 +253,30 @@ class _CollectionTile extends StatelessWidget {
     return HSLColor.fromAHSL(1, (h % 360).toDouble(), 0.5, 0.5).toColor();
   }
 
-  String _preview(CardPreview? card) {
-    if (card == null) return 'No cards yet';
+  String _preview(AppLocalizations l10n, CardPreview? card) {
+    if (card == null) return l10n.timelineNoCardsYet;
     switch (card.kind) {
       case 'text':
         final t = card.text?.trim() ?? '';
-        return t.isEmpty ? 'Empty note' : t;
+        return t.isEmpty ? l10n.labelEmptyNote : t;
       case 'image':
-        return '📷 Photo';
+        return l10n.timelinePreviewPhoto;
       case 'audio':
-        return '🎙 Audio';
+        return l10n.timelinePreviewAudio;
       case 'link':
-        return '🔗 Link';
+        return l10n.timelinePreviewLink;
       default:
         return card.kind;
     }
   }
 
-  String _relative(int ms) {
+  String _relative(AppLocalizations l10n, int ms) {
     final delta = DateTime.now()
         .difference(DateTime.fromMillisecondsSinceEpoch(ms));
-    if (delta.inMinutes < 1) return 'now';
-    if (delta.inHours < 1) return '${delta.inMinutes}m';
-    if (delta.inDays < 1) return '${delta.inHours}h';
-    if (delta.inDays < 7) return '${delta.inDays}d';
+    if (delta.inMinutes < 1) return l10n.timeNow;
+    if (delta.inHours < 1) return l10n.timeMinutesShort(delta.inMinutes);
+    if (delta.inDays < 1) return l10n.timeHoursShort(delta.inHours);
+    if (delta.inDays < 7) return l10n.timeDaysShort(delta.inDays);
     final d = DateTime.fromMillisecondsSinceEpoch(ms);
     return '${d.day}/${d.month}';
   }
@@ -279,12 +291,13 @@ class _CollectionActionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Wrap(
         children: [
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            title: Text('Delete',
+            title: Text(l10n.actionDelete,
                 style: TextStyle(color: theme.colorScheme.error)),
             onTap: () => Navigator.of(context).pop(_CollectionAction.delete),
           ),
@@ -309,13 +322,12 @@ class _EmptyView extends StatelessWidget {
             Icon(Icons.workspaces_outline,
                 size: 72, color: theme.colorScheme.primary),
             const SizedBox(height: 20),
-            Text('No collections yet',
+            Text(AppLocalizations.of(context).timelineEmptyTitle,
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(
-              'Collections are chat-style notebooks of cards.\n'
-              'Create one to start weaving things together.',
+              AppLocalizations.of(context).timelineEmptyBody,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -348,7 +360,9 @@ class _ErrorView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium),
             const SizedBox(height: 24),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
+            FilledButton(
+                onPressed: onRetry,
+                child: Text(AppLocalizations.of(context).actionRetry)),
           ],
         ),
       ),

@@ -1,0 +1,187 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Knit",
+  "@appTitle": {
+    "description": "The application name, shown as the app title and on splash/home."
+  },
+
+  "actionCancel": "Cancel",
+  "actionDelete": "Delete",
+  "actionCreate": "Create",
+  "actionSave": "Save",
+  "actionRetry": "Retry",
+  "actionClear": "Clear",
+  "actionRemove": "Remove",
+  "actionDone": "Done",
+  "actionAdd": "Add",
+  "actionLink": "Link",
+  "actionContinue": "Continue",
+  "actionOpen": "Open",
+
+  "labelUntitled": "Untitled",
+  "labelEmptyNote": "Empty note",
+  "errorGeneric": "Something went wrong",
+
+  "appLaunchError": "Couldn't start Knit",
+  "appLaunchUnknownError": "Unknown error",
+
+  "onboardWelcomeTitle": "Welcome to Knit",
+  "onboardWelcomeBody": "Capture anything as cards, woven together in your own collections. Local-first — your data lives on your device.",
+  "onboardGetStarted": "Get started",
+  "onboardNicknameTitle": "What should people call you?",
+  "onboardNicknameBody": "A nickname is just a label — your identity is your key, not this name. You can change it anytime.",
+  "onboardNicknameLabel": "Nickname",
+  "onboardNicknameHint": "e.g. mira",
+  "onboardExplainTitle": "Your identity is a key",
+  "onboardExplainKeyPair": "We'll generate a cryptographic key pair on this device. The public key IS your identity — not a username on someone's server.",
+  "onboardExplainPrivate": "The private half never leaves your device. Keep it safe — backing it up later (in Settings) is how you back up \"you\".",
+  "onboardExplainNickname": "Hi, {nickname} — your key is who you are, your nickname is what you're called.",
+  "@onboardExplainNickname": {
+    "placeholders": {
+      "nickname": { "type": "String" }
+    }
+  },
+  "onboardGenerate": "Generate my identity",
+  "onboardIdentityError": "We couldn't create your identity. Please try again.",
+  "onboardGeneratingTitle": "Minting your keypair…",
+  "onboardGeneratingBody": "Generating Ed25519 keys and signing your profile.",
+  "onboardRevealTitle": "Meet yourself",
+  "onboardKeyTagline": "key = who you are · nickname = what you're called",
+  "onboardPrivateKeyNote": "Your private key is stored only on this device. Back it up later from Settings.",
+  "onboardEnter": "Enter Knit",
+  "onboardCopyPublicKey": "Copy public key",
+  "onboardPublicKeyCopied": "Public key copied",
+
+  "timelineCollectionFab": "Collection",
+  "timelineNewCollectionTitle": "New collection",
+  "timelineNewCollectionHint": "Title or theme",
+  "timelineDeleteTitle": "Delete collection?",
+  "timelineDeleteBody": "\"{title}\" and its cards will be removed.",
+  "@timelineDeleteBody": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "timelineEmptyTitle": "No collections yet",
+  "timelineEmptyBody": "Collections are chat-style notebooks of cards.\nCreate one to start weaving things together.",
+  "timelineLoadError": "Could not load your collections.",
+  "timelineCreateFailed": "Couldn't create the collection. Please try again.",
+  "timelineDeleteFailed": "Couldn't delete the collection. Please try again.",
+  "timelineCardCount": "{count, plural, =1{1 card} other{{count} cards}}",
+  "@timelineCardCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timelineNoCardsYet": "No cards yet",
+  "timelinePreviewPhoto": "📷 Photo",
+  "timelinePreviewAudio": "🎙 Audio",
+  "timelinePreviewLink": "🔗 Link",
+  "timeNow": "now",
+  "timeMinutesShort": "{count}m",
+  "@timeMinutesShort": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "timeHoursShort": "{count}h",
+  "@timeHoursShort": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "timeDaysShort": "{count}d",
+  "@timeDaysShort": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "collectionAddLinkTitle": "Add a link",
+  "collectionAddLinkHint": "https://…",
+  "collectionRenameTitle": "Rename collection",
+  "collectionComposerHint": "Write a card…",
+  "collectionAddBlockTooltip": "Add block",
+  "collectionSendTooltip": "Send",
+  "collectionConnectionsTooltip": "Connections",
+  "collectionReorderTooltip": "Reorder",
+  "collectionComingSoon": "{feature} — coming soon",
+  "@collectionComingSoon": {
+    "placeholders": {
+      "feature": { "type": "String" }
+    }
+  },
+  "collectionPhotoCards": "Photo cards",
+  "collectionAudioCards": "Audio cards",
+  "collectionBlockLink": "Link",
+  "collectionBlockLinkSubtitle": "A standalone link card",
+  "collectionBlockPhoto": "Photo",
+  "collectionBlockAudio": "Audio",
+  "collectionActionEdit": "Edit",
+  "collectionActionMakeLink": "Make a link",
+  "collectionActionConnections": "Connections",
+  "collectionActionReorder": "Reorder",
+  "collectionActionDelete": "Delete",
+  "collectionCardLink": "Link",
+  "collectionCardPhoto": "Photo",
+  "collectionCardAudio": "Audio",
+  "collectionReorderPhoto": "[Photo]",
+  "collectionEmptyTitle": "No cards yet",
+  "collectionEmptyBody": "Write your first card below, or tap + to add a block.",
+  "collectionLoadError": "Could not load this collection.",
+  "collectionSaveFailed": "That didn't save. Please try again.",
+  "collectionLinkFinderTitle": "Make a link",
+  "collectionNothingToLink": "Nothing to link to yet.",
+  "collectionBackToCollections": "Back to collections",
+  "collectionLinkToCollection": "Link to \"{label}\"",
+  "@collectionLinkToCollection": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "collectionNoCardsToLink": "No cards here to link to.",
+  "collectionOrACardInIt": "Or a card in it",
+
+  "cardEditTitle": "Edit card",
+  "cardEditHint": "Edit this card…",
+  "cardEditAddPhoto": "Add photo",
+  "cardEditReplace": "Replace",
+  "cardEditRemove": "Remove",
+  "cardEditLinksHeader": "LINKS",
+  "cardEditNoLinks": "No links yet.",
+  "cardEditAddLink": "Add link",
+  "cardEditBrokenLink": "Broken link",
+  "cardEditBrokenLinkSubtitle": "The linked item was deleted",
+  "cardEditLinkToWhichCollection": "Link to which collection?",
+  "cardEditSaveFailed": "That didn't save. Please try again.",
+
+  "connectionsTitle": "Connections",
+  "connectionsClearTitle": "Clear this link?",
+  "connectionsClearBody": "The broken link will be removed. The cards and collections it pointed at are not deleted.",
+  "connectionsLinksOut": "Links out",
+  "connectionsLinkedFrom": "Linked from",
+  "connectionsBrokenLink": "Broken link",
+  "connectionsLinkedDeleted": "The linked {kind} was deleted",
+  "@connectionsLinkedDeleted": {
+    "placeholders": {
+      "kind": { "type": "String" }
+    }
+  },
+  "connectionsLinkingDeleted": "The linking {kind} was deleted",
+  "@connectionsLinkingDeleted": {
+    "placeholders": {
+      "kind": { "type": "String" }
+    }
+  },
+  "connectionsKindCollection": "collection",
+  "connectionsKindCard": "card",
+  "connectionsKindItem": "item",
+  "connectionsEmptyTitle": "No connections yet",
+  "connectionsEmptyBody": "Link a card to a collection and it will show up here.",
+  "connectionsLoadError": "Could not load connections.",
+  "connectionsClearFailed": "That didn't clear. Please try again.",
+
+  "syncAllSaved": "All changes saved",
+  "syncUnavailable": "Sync status unavailable",
+  "syncPending": "{count, plural, =1{1 change saved on this device — not yet shared} other{{count} changes saved on this device — not yet shared}}",
+  "@syncPending": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
+}

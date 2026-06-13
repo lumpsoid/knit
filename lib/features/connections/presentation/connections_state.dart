@@ -14,13 +14,11 @@ class ConnectionsState {
     this.status = ConnectionsStatus.loading,
     this.breadcrumb = const [],
     this.data,
-    this.errorMessage,
   });
 
   final ConnectionsStatus status;
   final List<ConnectionCrumb> breadcrumb;
   final ConnectionsData? data;
-  final String? errorMessage;
 
   /// True once the root focus is the only crumb — the app-bar back then exits
   /// the feature rather than popping a hop.
@@ -32,12 +30,10 @@ class ConnectionsState {
     ConnectionsStatus? status,
     List<ConnectionCrumb>? breadcrumb,
     ConnectionsData? data,
-    String? errorMessage,
   }) =>
       ConnectionsState(
         status: status ?? this.status,
         breadcrumb: breadcrumb ?? this.breadcrumb,
         data: data ?? this.data,
-        errorMessage: errorMessage ?? this.errorMessage,
       );
 }

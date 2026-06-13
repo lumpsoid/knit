@@ -68,12 +68,9 @@ class CollectionUpdater
           null,
         );
 
-      case LoadFailed(:final message):
+      case LoadFailed():
         return (
-          state.copyWith(
-            status: CollectionStatus.failed,
-            errorMessage: message,
-          ),
+          state.copyWith(status: CollectionStatus.failed),
           null,
         );
 

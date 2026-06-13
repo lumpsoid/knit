@@ -79,12 +79,11 @@ void main() {
       expect(effects, isNull);
     });
 
-    test('SaveFailed records the message and fails', () {
+    test('SaveFailed marks the page failed', () {
       final saving = attached().copyWith(status: CardEditStatus.saving);
       final (next, effects) =
-          updater.update(saving, const SaveFailed('nope'));
+          updater.update(saving, const SaveFailed());
       expect(next.status, CardEditStatus.failed);
-      expect(next.errorMessage, 'nope');
       expect(effects, isNull);
     });
   });

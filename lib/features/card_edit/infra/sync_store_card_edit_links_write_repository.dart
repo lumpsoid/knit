@@ -52,8 +52,8 @@ class SyncStoreCardEditLinksWriteRepository
   ) async {
     try {
       return Ok(await op());
-    } catch (e) {
-      return Failure(CardEditWriteFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(CardEditWriteFailure(e, st));
     }
   }
 }

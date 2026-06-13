@@ -28,12 +28,9 @@ class TimelineUpdater
           ),
           null,
         );
-      case TimelineLoadFailed(:final message):
+      case TimelineLoadFailed():
         return (
-          state.copyWith(
-            status: TimelineStatus.failed,
-            errorMessage: message,
-          ),
+          state.copyWith(status: TimelineStatus.failed),
           null,
         );
       case CollectionTapped(:final collectionId):

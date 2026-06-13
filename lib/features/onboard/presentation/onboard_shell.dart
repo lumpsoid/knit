@@ -1,7 +1,6 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
-import 'package:knit/features/onboard/domain/onboard_failure.dart';
 import 'package:knit/features/onboard/domain/onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
 import 'package:knit/features/onboard/presentation/onboard_effect.dart';
@@ -35,21 +34,13 @@ class OnboardShell extends Shell<OnboardEffect, OnboardAction> {
         result.onTap(
           (card) => dispatch(IdentityCreated(card)),
           (failure) {
-            _log.severe('Identity creation failed: ${_cause(failure)}');
-            dispatch(IdentityCreationFailed(_message(failure)));
+            _log.severe(
+                'Identity creation failed', failure.error, failure.stackTrace);
+            dispatch(const IdentityCreationFailed());
           },
         );
       case EnterAppEffect():
         _effectEmitter.push(const OnboardEnterAppUiEffect());
     }
   }
-
-  String _message(OnboardFailure failure) => switch (failure) {
-        IdentityCreationFailure() =>
-          "We couldn't create your identity. Please try again.",
-      };
-
-  String _cause(OnboardFailure failure) => switch (failure) {
-        IdentityCreationFailure(:final cause) => cause,
-      };
 }

@@ -1,0 +1,8 @@
+# Flutter l10n / gen-l10n configuration (see `flutter gen-l10n --help`).
+# ARB catalogs live in lib/l10n/; the generated AppLocalizations sources are
+# written alongside them so they import as package:knit/l10n/app_localizations.dart.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
