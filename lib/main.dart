@@ -30,6 +30,9 @@ import 'package:knit/features/connections/presentation/connections_scope.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
+import 'package:knit/features/sync_status/infra/sync_store_sync_status_read_repository.dart';
+import 'package:knit/features/sync_status/presentation/sync_status_module.dart';
+import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/features/timeline/presentation/timeline_module.dart';
@@ -74,6 +77,14 @@ void main() {
   OnboardScope.setFactory(
     () => OnboardModule(
       repository: SyncStoreOnboardRepository(graph: graph),
+    ).controller,
+  );
+
+  // The app-wide sync marker (§4.8/§6.6): a single lazy controller every
+  // content page's app bar shares via SyncStatusScope.
+  SyncStatusScope.setFactory(
+    () => SyncStatusModule(
+      readRepository: SyncStoreSyncStatusReadRepository(graph: graph),
     ).controller,
   );
 

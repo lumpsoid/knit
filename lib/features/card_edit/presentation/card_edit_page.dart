@@ -7,6 +7,7 @@ import 'package:knit/features/card_edit/presentation/card_edit_scope.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_state.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_ui_effect.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
+import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Card Edit page (§4.3) — a dedicated page for editing a card's content:
 /// its text (saved with the Save action), its image (subtask 4), and its links
@@ -103,6 +104,7 @@ class _CardEditPageState extends State<CardEditPage> {
                       onPressed: _save,
                       child: const Text('Save'),
                     ),
+              const SyncStatusIndicator(),
             ],
           ),
           body: ListView(

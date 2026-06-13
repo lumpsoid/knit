@@ -5,10 +5,11 @@ derivations are built and tested (131 sync tests). The **app is now built**: App
 Launch, the Onboard identity ceremony, the Timeline (now with inline collection
 create + open), the **Collection screen** (§4.2), and the **Connections view**
 (§4.4) — create → cards → edit → reorder → link → delete, and the links-out /
-backlinks surface that renders the broken-link chip, plus the **Card Edit page**
-(§4.3 — text + image + per-card links incl. card→card) (236 tests total). What
-remains for the §9.1 gate is running it on the **persistent sqflite graph** so
-gate 5 can be checked through the live app.
+backlinks surface that renders the broken-link chip, the **Card Edit page**
+(§4.3 — text + image + per-card links incl. card→card), and the **sync
+indicator** (§4.8/§6.6 — the app-bar pending/synced marker) (252 tests total).
+What remains for the §9.1 gate is running it on the **persistent sqflite graph**
+so gate 5 can be checked through the live app.
 
 ## Done
 
@@ -60,11 +61,18 @@ gate 5 can be checked through the live app.
    the §4.4 view-models + §8.6.1 broken row). Built on the same FCIS contract as
    `collection`/`connections`; the attachments foundation (subtask 1) is the
    shared `lib/core/attachments/` library.
+9. **Sync indicator** (§4.8/§6.6) — `lib/features/sync_status/`. A small, calm
+   app-bar marker over `SyncStore.pendingCount()`, embedded in every content
+   page (`SyncStatusIndicator` in the Timeline / Collection / Connections / Card
+   Edit app bars). A single app-wide `SyncStatusScope` controller refreshes on
+   page mount. Relay-less today (nothing acks, §6.6), so it reads calmly ("saved
+   on this device", never an alarm); the reactive push-on-change refresh is
+   deferred to the relay via the §1 `ExternalSignalListener` seam. Read-only
+   FCIS feature (no UiEffect/EffectEmitter — no one-shot effects).
 
 ## What's left for the §9.1 slice
 
-1. The **sync indicator** (`pendingCount`, §6.6).
-2. **Run on the persistent sqflite graph** — flip `main.dart` to `AppConfig.prod`
+1. **Run on the persistent sqflite graph** — flip `main.dart` to `AppConfig.prod`
    and wire the desktop/CI DB factory (sqflite needs ffi on desktop), so gate 5
    can be exercised through the real app lifecycle on a real DB file.
 

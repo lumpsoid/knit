@@ -11,6 +11,7 @@ import 'package:knit/features/collection/presentation/collection_state.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_page.dart';
+import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Collection screen (§4.2) — a chat-style card feed (oldest at top), a
 /// bottom composer, a "+" add-block sheet, per-card actions, and drag-to-reorder
@@ -248,6 +249,7 @@ class _CollectionPageState extends State<CollectionPage> {
                         onPressed: () =>
                             _controller.dispatch(const StartReorder()),
                       ),
+              const SyncStatusIndicator(),
             ],
           ),
           body: Column(

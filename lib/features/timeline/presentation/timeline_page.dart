@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
+import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_controller.dart';
 import 'package:knit/features/timeline/presentation/timeline_scope.dart';
@@ -84,7 +85,10 @@ class _TimelinePageState extends State<TimelinePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Knit')),
+      appBar: AppBar(
+        title: const Text('Knit'),
+        actions: const [SyncStatusIndicator()],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createCollection,
         icon: const Icon(Icons.add),

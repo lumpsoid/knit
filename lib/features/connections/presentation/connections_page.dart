@@ -5,6 +5,7 @@ import 'package:knit/features/connections/presentation/connections_controller.da
 import 'package:knit/features/connections/presentation/connections_scope.dart';
 import 'package:knit/features/connections/presentation/connections_state.dart';
 import 'package:knit/features/connections/presentation/connections_ui_effect.dart';
+import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Connections view (§4.4) — an entity's links-out + linked-from
 /// (backlinks), each live one tappable to jump (pushing a breadcrumb), each
@@ -95,6 +96,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
           child: Scaffold(
             appBar: AppBar(
               title: Text(_focusTitle(state)),
+              actions: const [SyncStatusIndicator()],
               bottom: state.breadcrumb.length > 1
                   ? _Breadcrumb(
                       crumbs: state.breadcrumb,
