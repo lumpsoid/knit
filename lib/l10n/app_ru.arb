@@ -1,0 +1,184 @@
+{
+  "@@locale": "ru",
+
+  "appTitle": "Knit",
+
+  "actionCancel": "Отмена",
+  "actionDelete": "Удалить",
+  "actionCreate": "Создать",
+  "actionSave": "Сохранить",
+  "actionRetry": "Повторить",
+  "actionClear": "Очистить",
+  "actionRemove": "Убрать",
+  "actionDone": "Готово",
+  "actionAdd": "Добавить",
+  "actionLink": "Связать",
+  "actionContinue": "Продолжить",
+  "actionOpen": "Открыть",
+
+  "labelUntitled": "Без названия",
+  "labelEmptyNote": "Пустая заметка",
+  "errorGeneric": "Что-то пошло не так",
+
+  "appLaunchError": "Не удалось запустить Knit",
+  "appLaunchUnknownError": "Неизвестная ошибка",
+
+  "onboardWelcomeTitle": "Добро пожаловать в Knit",
+  "onboardWelcomeBody": "Сохраняйте что угодно в виде карточек, сплетённых в ваши собственные коллекции. Local-first — ваши данные хранятся на вашем устройстве.",
+  "onboardGetStarted": "Начать",
+  "onboardNicknameTitle": "Как к вам обращаться?",
+  "onboardNicknameBody": "Никнейм — это просто метка: ваша личность определяется ключом, а не этим именем. Его можно изменить в любой момент.",
+  "onboardNicknameLabel": "Никнейм",
+  "onboardNicknameHint": "напр. mira",
+  "onboardExplainTitle": "Ваша личность — это ключ",
+  "onboardExplainKeyPair": "Мы создадим на этом устройстве криптографическую пару ключей. Публичный ключ И ЕСТЬ ваша личность — а не имя пользователя на чьём-то сервере.",
+  "onboardExplainPrivate": "Приватная половина никогда не покидает ваше устройство. Берегите её — создав её резервную копию позже (в настройках), вы сохраните «себя».",
+  "onboardExplainNickname": "Привет, {nickname} — ваш ключ — это кто вы есть, а никнейм — то, как вас называют.",
+  "@onboardExplainNickname": {
+    "placeholders": {
+      "nickname": { "type": "String" }
+    }
+  },
+  "onboardGenerate": "Создать мою личность",
+  "onboardIdentityError": "Не удалось создать вашу личность. Попробуйте ещё раз.",
+  "onboardGeneratingTitle": "Создаём вашу пару ключей…",
+  "onboardGeneratingBody": "Генерируем ключи Ed25519 и подписываем ваш профиль.",
+  "onboardRevealTitle": "Знакомьтесь — это вы",
+  "onboardKeyTagline": "ключ = кто вы есть · никнейм = как вас называют",
+  "onboardPrivateKeyNote": "Ваш приватный ключ хранится только на этом устройстве. Создайте его резервную копию позже в настройках.",
+  "onboardEnter": "Войти в Knit",
+  "onboardCopyPublicKey": "Скопировать публичный ключ",
+  "onboardPublicKeyCopied": "Публичный ключ скопирован",
+
+  "timelineCollectionFab": "Коллекция",
+  "timelineNewCollectionTitle": "Новая коллекция",
+  "timelineNewCollectionHint": "Название или тема",
+  "timelineDeleteTitle": "Удалить коллекцию?",
+  "timelineDeleteBody": "«{title}» и её карточки будут удалены.",
+  "@timelineDeleteBody": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "timelineEmptyTitle": "Пока нет коллекций",
+  "timelineEmptyBody": "Коллекции — это блокноты с карточками в стиле чата.\nСоздайте одну, чтобы начать сплетать всё воедино.",
+  "timelineLoadError": "Не удалось загрузить ваши коллекции.",
+  "timelineCreateFailed": "Не удалось создать коллекцию. Попробуйте ещё раз.",
+  "timelineDeleteFailed": "Не удалось удалить коллекцию. Попробуйте ещё раз.",
+  "timelineCardCount": "{count, plural, =1{1 карточка} few{{count} карточки} many{{count} карточек} other{{count} карточки}}",
+  "@timelineCardCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "timelineNoCardsYet": "Пока нет карточек",
+  "timelinePreviewPhoto": "📷 Фото",
+  "timelinePreviewAudio": "🎙 Аудио",
+  "timelinePreviewLink": "🔗 Ссылка",
+  "timeNow": "сейчас",
+  "timeMinutesShort": "{count} мин",
+  "@timeMinutesShort": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "timeHoursShort": "{count} ч",
+  "@timeHoursShort": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "timeDaysShort": "{count} д",
+  "@timeDaysShort": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "collectionAddLinkTitle": "Добавить ссылку",
+  "collectionAddLinkHint": "https://…",
+  "collectionRenameTitle": "Переименовать коллекцию",
+  "collectionComposerHint": "Напишите карточку…",
+  "collectionAddBlockTooltip": "Добавить блок",
+  "collectionSendTooltip": "Отправить",
+  "collectionConnectionsTooltip": "Связи",
+  "collectionReorderTooltip": "Изменить порядок",
+  "collectionComingSoon": "{feature} — скоро",
+  "@collectionComingSoon": {
+    "placeholders": {
+      "feature": { "type": "String" }
+    }
+  },
+  "collectionPhotoCards": "Фотокарточки",
+  "collectionAudioCards": "Аудиокарточки",
+  "collectionBlockLink": "Ссылка",
+  "collectionBlockLinkSubtitle": "Отдельная карточка-ссылка",
+  "collectionBlockPhoto": "Фото",
+  "collectionBlockAudio": "Аудио",
+  "collectionActionEdit": "Изменить",
+  "collectionActionMakeLink": "Создать связь",
+  "collectionActionConnections": "Связи",
+  "collectionActionReorder": "Изменить порядок",
+  "collectionActionDelete": "Удалить",
+  "collectionCardLink": "Ссылка",
+  "collectionCardPhoto": "Фото",
+  "collectionCardAudio": "Аудио",
+  "collectionReorderPhoto": "[Фото]",
+  "collectionEmptyTitle": "Пока нет карточек",
+  "collectionEmptyBody": "Напишите первую карточку ниже или нажмите +, чтобы добавить блок.",
+  "collectionLoadError": "Не удалось загрузить эту коллекцию.",
+  "collectionSaveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+  "collectionLinkFinderTitle": "Создать связь",
+  "collectionNothingToLink": "Пока не с чем связывать.",
+  "collectionBackToCollections": "Назад к коллекциям",
+  "collectionLinkToCollection": "Связать с «{label}»",
+  "@collectionLinkToCollection": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "collectionNoCardsToLink": "Здесь нет карточек для связи.",
+  "collectionOrACardInIt": "Или карточку в ней",
+
+  "cardEditTitle": "Редактировать карточку",
+  "cardEditHint": "Редактировать эту карточку…",
+  "cardEditAddPhoto": "Добавить фото",
+  "cardEditReplace": "Заменить",
+  "cardEditRemove": "Убрать",
+  "cardEditLinksHeader": "СВЯЗИ",
+  "cardEditNoLinks": "Пока нет связей.",
+  "cardEditAddLink": "Добавить связь",
+  "cardEditBrokenLink": "Битая связь",
+  "cardEditBrokenLinkSubtitle": "Связанный элемент был удалён",
+  "cardEditLinkToWhichCollection": "С какой коллекцией связать?",
+  "cardEditSaveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+
+  "connectionsTitle": "Связи",
+  "connectionsClearTitle": "Очистить эту связь?",
+  "connectionsClearBody": "Битая связь будет удалена. Карточки и коллекции, на которые она указывала, не удаляются.",
+  "connectionsLinksOut": "Исходящие связи",
+  "connectionsLinkedFrom": "Ссылаются на это",
+  "connectionsBrokenLink": "Битая связь",
+  "connectionsLinkedDeleted": "Связанный объект ({kind}) был удалён",
+  "@connectionsLinkedDeleted": {
+    "placeholders": {
+      "kind": { "type": "String" }
+    }
+  },
+  "connectionsLinkingDeleted": "Ссылающийся объект ({kind}) был удалён",
+  "@connectionsLinkingDeleted": {
+    "placeholders": {
+      "kind": { "type": "String" }
+    }
+  },
+  "connectionsKindCollection": "коллекция",
+  "connectionsKindCard": "карточка",
+  "connectionsKindItem": "элемент",
+  "connectionsEmptyTitle": "Пока нет связей",
+  "connectionsEmptyBody": "Свяжите карточку с коллекцией, и она появится здесь.",
+  "connectionsLoadError": "Не удалось загрузить связи.",
+  "connectionsClearFailed": "Не удалось очистить. Попробуйте ещё раз.",
+
+  "syncAllSaved": "Все изменения сохранены",
+  "syncUnavailable": "Статус синхронизации недоступен",
+  "syncPending": "{count, plural, =1{1 изменение сохранено на этом устройстве — ещё не отправлено} few{{count} изменения сохранены на этом устройстве — ещё не отправлены} many{{count} изменений сохранены на этом устройстве — ещё не отправлены} other{{count} изменения сохранены на этом устройстве — ещё не отправлены}}",
+  "@syncPending": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
+}
