@@ -35,7 +35,9 @@ class CollectionUpdater
 
       case CollectionLoaded(:final data):
         // Preserve the decoded-bytes cache across reloads (ids are immutable),
-        // and load any image card whose bytes we don't already hold.
+        // and load any image card whose bytes we don't already hold. Reorder is
+        // a screen *mode* the user ends explicitly (Done), so carry it across the
+        // post-write re-sync — a single move must not drop out of reorder mode.
         final toLoad = _uncachedImageAttachments(data.cards, state.imageBytes);
         return (
           CollectionState(
@@ -46,6 +48,9 @@ class CollectionUpdater
             cards: data.cards,
             imageBytes: state.imageBytes,
             linkTargets: data.linkTargets,
+            // Stay in reorder mode only while it remains reorderable (2+ cards),
+            // so a feed that shrinks under it can't strand the user with no Done.
+            reordering: state.reordering && data.cards.length > 1,
           ),
           toLoad.isEmpty
               ? null

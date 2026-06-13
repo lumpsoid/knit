@@ -219,6 +219,34 @@ void main() {
       final (_, effects) = updater.update(state, const CardMoved(1, 1));
       expect(effects, isNull);
     });
+
+    test('survives the post-write re-sync — a single move keeps the mode', () {
+      final state = ready([card('c1', 'a0'), card('c2', 'a1')])
+          .copyWith(reordering: true);
+      final data = CollectionData(
+        collectionId: 'col',
+        title: 'Notes',
+        coverAttachmentId: null,
+        cards: [card('c2', 'a1'), card('c1', 'a2')],
+        linkTargets: const [],
+      );
+      final (next, _) = updater.update(state, CollectionLoaded(data));
+      expect(next.reordering, isTrue);
+    });
+
+    test('drops the mode when the re-synced feed shrinks below 2 cards', () {
+      final state = ready([card('c1', 'a0'), card('c2', 'a1')])
+          .copyWith(reordering: true);
+      final data = CollectionData(
+        collectionId: 'col',
+        title: 'Notes',
+        coverAttachmentId: null,
+        cards: [card('c1', 'a0')],
+        linkTargets: const [],
+      );
+      final (next, _) = updater.update(state, CollectionLoaded(data));
+      expect(next.reordering, isFalse);
+    });
   });
 
   test('title submit updates header optimistically and emits the write', () {
