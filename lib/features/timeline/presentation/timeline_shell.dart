@@ -62,6 +62,21 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
 
       case OpenCollectionEffect(:final collectionId):
         _effectEmitter.push(TimelineOpenCollectionUiEffect(collectionId));
+
+      case DeleteCollectionEffect(:final collectionId):
+        final result = await _write.deleteCollection(collectionId);
+        result.onTap(
+          (id) => dispatch(CollectionDeleted(id)),
+          (failure) {
+            _log.severe('Delete collection failed: ${_cause(failure)}');
+            _effectEmitter.push(
+              const TimelineShowMessageUiEffect(
+                "Couldn't delete the collection. Please try again.",
+              ),
+            );
+            dispatch(const CollectionDeleteFailed('delete failed'));
+          },
+        );
     }
   }
 

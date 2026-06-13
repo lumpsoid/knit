@@ -52,6 +52,43 @@ class _TimelinePageState extends State<TimelinePage> {
     }
   }
 
+  /// Long-press a row → actions sheet (§4.1). Today the only action is Delete,
+  /// guarded by a confirmation dialog since it's destructive.
+  Future<void> _openCollectionActions(CollectionSummary summary) async {
+    final action = await showModalBottomSheet<_CollectionAction>(
+      context: context,
+      builder: (_) => const _CollectionActionsSheet(),
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _CollectionAction.delete:
+        await _confirmDelete(summary);
+    }
+  }
+
+  Future<void> _confirmDelete(CollectionSummary summary) async {
+    final title = summary.title.trim().isEmpty ? 'Untitled' : summary.title;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete collection?'),
+        content: Text('"$title" and its cards will be removed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    _controller.dispatch(DeleteCollectionRequested(summary.collectionId));
+  }
+
   /// Inline collection creation (§4.1): a title/theme line → create → open.
   Future<void> _createCollection() async {
     final title = await showDialog<String>(
@@ -109,6 +146,7 @@ class _TimelinePageState extends State<TimelinePage> {
           summary: state.collections[i],
           onTap: () => _controller
               .dispatch(CollectionTapped(state.collections[i].collectionId)),
+          onLongPress: () => _openCollectionActions(state.collections[i]),
         ),
       ),
     );
@@ -160,9 +198,14 @@ class _NewCollectionDialogState extends State<_NewCollectionDialog> {
 }
 
 class _CollectionTile extends StatelessWidget {
-  const _CollectionTile({required this.summary, required this.onTap});
+  const _CollectionTile({
+    required this.summary,
+    required this.onTap,
+    required this.onLongPress,
+  });
   final CollectionSummary summary;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +213,7 @@ class _CollectionTile extends StatelessWidget {
     final title = summary.title.trim().isEmpty ? 'Untitled' : summary.title;
     return ListTile(
       onTap: onTap,
+      onLongPress: onLongPress,
       leading: CircleAvatar(
         backgroundColor: _tint(summary.collectionId),
         child: Text(
@@ -223,6 +267,30 @@ class _CollectionTile extends StatelessWidget {
     if (delta.inDays < 7) return '${delta.inDays}d';
     final d = DateTime.fromMillisecondsSinceEpoch(ms);
     return '${d.day}/${d.month}';
+  }
+}
+
+enum _CollectionAction { delete }
+
+/// Long-press actions sheet for a collection row (§4.1).
+class _CollectionActionsSheet extends StatelessWidget {
+  const _CollectionActionsSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Wrap(
+        children: [
+          ListTile(
+            leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+            title: Text('Delete',
+                style: TextStyle(color: theme.colorScheme.error)),
+            onTap: () => Navigator.of(context).pop(_CollectionAction.delete),
+          ),
+        ],
+      ),
+    );
   }
 }
 

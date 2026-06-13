@@ -47,6 +47,17 @@ class TimelineUpdater
       case CollectionCreateFailed():
         // The shell surfaces a message; nothing changes in state.
         return (state, null);
+      case DeleteCollectionRequested(:final collectionId):
+        return (state, [DeleteCollectionEffect(collectionId)]);
+      case CollectionDeleted():
+        // Re-read the home feed so the deleted row drops out.
+        return (
+          state.copyWith(status: TimelineStatus.loading),
+          const [LoadTimelineEffect()],
+        );
+      case CollectionDeleteFailed():
+        // The shell surfaces a message; nothing changes in state.
+        return (state, null);
       case DeactivateFeature():
         return (state, null);
     }

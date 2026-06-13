@@ -19,3 +19,9 @@ class OpenCollectionEffect extends TimelineEffect {
   const OpenCollectionEffect(this.collectionId);
   final String collectionId;
 }
+
+/// Delete a collection (§4.1), then reload the home feed on success.
+class DeleteCollectionEffect extends TimelineEffect {
+  const DeleteCollectionEffect(this.collectionId);
+  final String collectionId;
+}

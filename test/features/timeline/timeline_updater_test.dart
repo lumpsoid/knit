@@ -44,4 +44,40 @@ void main() {
     expect(next.errorMessage, 'nope');
     expect(effects, isNull);
   });
+
+  test('DeleteCollectionRequested emits a delete effect', () {
+    final ready = TimelineState(
+      status: TimelineStatus.ready,
+      collections: [summary('a')],
+    );
+    final (next, effects) =
+        updater.update(ready, const DeleteCollectionRequested('a'));
+    expect(next, same(ready));
+    expect(effects, hasLength(1));
+    expect(effects!.single, isA<DeleteCollectionEffect>());
+    expect((effects.single as DeleteCollectionEffect).collectionId, 'a');
+  });
+
+  test('CollectionDeleted reloads the home feed', () {
+    final (next, effects) = updater.update(
+      TimelineState(
+        status: TimelineStatus.ready,
+        collections: [summary('a')],
+      ),
+      const CollectionDeleted('a'),
+    );
+    expect(next.status, TimelineStatus.loading);
+    expect(effects, const [LoadTimelineEffect()]);
+  });
+
+  test('CollectionDeleteFailed keeps state and emits no effects', () {
+    final ready = TimelineState(
+      status: TimelineStatus.ready,
+      collections: [summary('a')],
+    );
+    final (next, effects) =
+        updater.update(ready, const CollectionDeleteFailed('delete failed'));
+    expect(next, same(ready));
+    expect(effects, isNull);
+  });
 }

@@ -34,4 +34,16 @@ class SyncStoreTimelineWriteRepository implements TimelineWriteRepository {
       return Failure(TimelineWriteFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Result<String, TimelineFailure>> deleteCollection(
+    String collectionId,
+  ) async {
+    try {
+      await _graph.store.delete(EntityType.collection, collectionId);
+      return Ok(collectionId);
+    } catch (e) {
+      return Failure(TimelineWriteFailure(e.toString()));
+    }
+  }
 }

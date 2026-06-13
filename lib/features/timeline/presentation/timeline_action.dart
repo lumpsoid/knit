@@ -46,6 +46,23 @@ class CollectionCreateFailed extends TimelineAction {
   final String message;
 }
 
+/// Long-press → Delete confirmed for an existing collection row (§4.1).
+class DeleteCollectionRequested extends TimelineAction {
+  const DeleteCollectionRequested(this.collectionId);
+  final String collectionId;
+}
+
+/// A collection was deleted → the home feed re-reads itself.
+class CollectionDeleted extends TimelineAction {
+  const CollectionDeleted(this.collectionId);
+  final String collectionId;
+}
+
+class CollectionDeleteFailed extends TimelineAction {
+  const CollectionDeleteFailed(this.message);
+  final String message;
+}
+
 class DeactivateFeature extends TimelineAction {
   const DeactivateFeature();
 }
