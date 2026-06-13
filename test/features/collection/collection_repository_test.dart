@@ -5,6 +5,7 @@ import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -40,7 +41,6 @@ void main() {
     final data = await load(colId);
     expect(data.title, 'Espresso');
     expect(data.cards, isEmpty);
-    expect(data.linkTargets, isEmpty);
   });
 
   test('append cards keeps feed order by position', () async {
@@ -84,6 +84,39 @@ void main() {
     expect(data.cards.map((c) => c.text), ['second', 'first']);
   });
 
+  test('finder offers live collections, then a collection\'s cards', () async {
+    final colId = await createCollection('Espresso');
+    final otherId = await createCollection('Recipes');
+    await write.addCard(
+      collectionId: colId,
+      kind: CardKind.text,
+      position: 'a0',
+      text: 'see recipes',
+    );
+    final otherCardId = (await write.addCard(
+      collectionId: otherId,
+      kind: CardKind.text,
+      position: 'a0',
+      text: 'pour-over',
+    ))
+        .getOrThrow();
+
+    // First level: every live collection (including the source's own).
+    final collections = (await read.loadLinkCollections()).getOrThrow();
+    expect(
+      collections.map((o) => o.id).toSet(),
+      {colId, otherId},
+    );
+    expect(collections.every((o) => o.kind == ConnectedEntityKind.collection),
+        isTrue);
+
+    // Drilled level: that collection's cards (the page drops the source card).
+    final cards = (await read.loadCollectionCards(otherId)).getOrThrow();
+    expect(cards.map((o) => o.id), [otherCardId]);
+    expect(cards.single.kind, ConnectedEntityKind.card);
+    expect(cards.single.label, 'pour-over');
+  });
+
   test('link a card to a collection; deleting the target breaks the link',
       () async {
     final colId = await createCollection('Espresso');
@@ -96,11 +129,11 @@ void main() {
     ))
         .getOrThrow();
 
-    // The finder offers the other collection.
-    final data = await load(colId);
-    expect(data.linkTargets.map((t) => t.collectionId), [otherId]);
-
-    await write.linkCardToCollection(cardId: cardId, collectionId: otherId);
+    await write.linkCardToTarget(
+      cardId: cardId,
+      targetKind: ConnectedEntityKind.collection,
+      targetId: otherId,
+    );
 
     final links = await store.linksOut(cardId);
     expect(links, hasLength(1));
@@ -113,6 +146,36 @@ void main() {
     final status = await store.linkStatus(after.single);
     expect(status.isBroken, isTrue);
     expect(status.targetBroken, isTrue);
+  });
+
+  test('link a card to another card writes a card→card link', () async {
+    final colId = await createCollection('Espresso');
+    final src = (await write.addCard(
+      collectionId: colId,
+      kind: CardKind.text,
+      position: 'a0',
+      text: 'source',
+    ))
+        .getOrThrow();
+    final dst = (await write.addCard(
+      collectionId: colId,
+      kind: CardKind.text,
+      position: 'a1',
+      text: 'target',
+    ))
+        .getOrThrow();
+
+    await write.linkCardToTarget(
+      cardId: src,
+      targetKind: ConnectedEntityKind.card,
+      targetId: dst,
+    );
+
+    final links = await store.linksOut(src);
+    expect(links, hasLength(1));
+    expect((await store.linkStatus(links.single)).isBroken, isFalse);
+    // The target card now has a backlink from the source card.
+    expect(await store.backlinks(dst), hasLength(1));
   });
 
   test('deleting a card removes it from the feed', () async {

@@ -1,9 +1,13 @@
-import 'package:knit/sync/sync.dart';
+/// Display label for a link endpoint or picker target — a read-time derivation
+/// over a projection [Snapshot] (mirrors the Connections view's labelling rule),
+/// kept in one place so every link/picker surface labels endpoints identically.
+/// Pure, never synced, never signed.
+library;
 
-/// Display label for a link endpoint or picker target snapshot: a collection's
-/// title, or a card's text preview (falling back to a kind-based summary). Shared
-/// by the card-edit links read repo and the target-tree read repo so the
-/// labelling rule lives in one place (it mirrors the Connections view's).
+import 'package:knit/sync/snapshot.dart';
+
+/// A collection's title, or a card's text preview (falling back to a kind-based
+/// summary). Other entity kinds fall back to their id.
 String endpointLabel(Snapshot s) {
   switch (s.type) {
     case EntityType.collection:

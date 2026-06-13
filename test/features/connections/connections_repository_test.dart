@@ -50,7 +50,11 @@ void main() {
       text: 'see recipes',
     ))
         .getOrThrow();
-    await collectionWrite.linkCardToCollection(cardId: card, collectionId: b);
+    await collectionWrite.linkCardToTarget(
+      cardId: card,
+      targetKind: ConnectedEntityKind.collection,
+      targetId: b,
+    );
     final link = (await store.linksOut(card)).single.id;
     return (a: a, b: b, card: card, link: link);
   }

@@ -16,7 +16,8 @@ class CollectionState {
     this.coverAttachmentId,
     this.cards = const [],
     this.imageBytes = const {},
-    this.linkTargets = const [],
+    this.linkCollections,
+    this.linkCardsByCollection = const {},
     this.reordering = false,
     this.errorMessage,
   });
@@ -33,8 +34,15 @@ class CollectionState {
   /// which renders the placeholder fallback.
   final Map<String, Uint8List> imageBytes;
 
-  /// Other collections this card can be linked to, in the finder sheet (§4.2).
-  final List<LinkCandidate> linkTargets;
+  /// Link-finder first level: live collections to link to (§4.4). Null until the
+  /// finder is first opened; loaded lazily so opening a collection never reads
+  /// every other collection's cards.
+  final List<LinkOption>? linkCollections;
+
+  /// Link-finder drilled level: a collection's cards, keyed by collection id.
+  /// Filled on drill and reused within the session; the source card is excluded
+  /// at render (the cache is source-card-independent). Cleared on feed reload.
+  final Map<String, List<LinkOption>> linkCardsByCollection;
 
   /// Whether drag-to-reorder mode is active (§4.2).
   final bool reordering;
@@ -52,7 +60,8 @@ class CollectionState {
     String? coverAttachmentId,
     List<FeedCard>? cards,
     Map<String, Uint8List>? imageBytes,
-    List<LinkCandidate>? linkTargets,
+    List<LinkOption>? linkCollections,
+    Map<String, List<LinkOption>>? linkCardsByCollection,
     bool? reordering,
     String? errorMessage,
   }) =>
@@ -63,7 +72,9 @@ class CollectionState {
         coverAttachmentId: coverAttachmentId ?? this.coverAttachmentId,
         cards: cards ?? this.cards,
         imageBytes: imageBytes ?? this.imageBytes,
-        linkTargets: linkTargets ?? this.linkTargets,
+        linkCollections: linkCollections ?? this.linkCollections,
+        linkCardsByCollection:
+            linkCardsByCollection ?? this.linkCardsByCollection,
         reordering: reordering ?? this.reordering,
         errorMessage: errorMessage ?? this.errorMessage,
       );

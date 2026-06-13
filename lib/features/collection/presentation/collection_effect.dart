@@ -1,4 +1,5 @@
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// Async-work descriptors for the Collection screen (fcis.md §6.4). Positions
 /// are pre-computed by the (pure) updater and ride in the effect, so the shell
@@ -45,10 +46,26 @@ class ReorderCardEffect extends CollectionEffect {
   final String position;
 }
 
+/// Load the finder's first level — the device's live collections (§4.4).
+class LoadLinkCollectionsEffect extends CollectionEffect {
+  const LoadLinkCollectionsEffect();
+}
+
+/// Load [collectionId]'s cards for the finder's drilled level (§4.4).
+class LoadCollectionCardsEffect extends CollectionEffect {
+  const LoadCollectionCardsEffect(this.collectionId);
+  final String collectionId;
+}
+
 class LinkEffect extends CollectionEffect {
-  const LinkEffect({required this.cardId, required this.targetCollectionId});
+  const LinkEffect({
+    required this.cardId,
+    required this.targetKind,
+    required this.targetId,
+  });
   final String cardId;
-  final String targetCollectionId;
+  final ConnectedEntityKind targetKind;
+  final String targetId;
 }
 
 class EditTitleEffect extends CollectionEffect {

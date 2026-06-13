@@ -2,13 +2,14 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/sync/sync.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// [CollectionReadRepository] over the graph's [SyncStore]: the header via
 /// [SyncStore.get], the ordered feed via [SyncStore.feed] (§8.7), and the
-/// link-finder candidates via [SyncStore.homeTimeline] (the device's other
-/// live collections).
+/// link-finder targets via [SyncStore.readAll] (collections) + [SyncStore.feed]
+/// (a collection's cards), loaded lazily per level by the page.
 class SyncStoreCollectionReadRepository implements CollectionReadRepository {
   SyncStoreCollectionReadRepository({required AppGraph graph}) : _graph = graph;
 
@@ -38,21 +39,55 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
           ),
       ];
 
-      final linkTargets = [
-        for (final c in await store.homeTimeline())
-          if (c.collectionId != id)
-            LinkCandidate(collectionId: c.collectionId, title: c.title),
-      ];
-
       return Ok(
         CollectionData(
           collectionId: id,
           title: header.content['title'] as String? ?? '',
           coverAttachmentId: header.content['cover_attachment_id'] as String?,
           cards: cards,
-          linkTargets: linkTargets,
         ),
       );
+    } catch (e) {
+      return Failure(CollectionLoadFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<List<LinkOption>, CollectionFailure>>
+      loadLinkCollections() async {
+    try {
+      final store = _graph.store;
+      final options = [
+        for (final col in await store.readAll(EntityType.collection))
+          if (!col.deleted)
+            LinkOption(
+              kind: ConnectedEntityKind.collection,
+              id: col.id,
+              label: endpointLabel(col),
+            ),
+      ];
+      return Ok(options);
+    } catch (e) {
+      return Failure(CollectionLoadFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<List<LinkOption>, CollectionFailure>> loadCollectionCards(
+    String collectionId,
+  ) async {
+    try {
+      final store = _graph.store;
+      final options = [
+        for (final card in await store.feed(collectionId))
+          if (!card.deleted)
+            LinkOption(
+              kind: ConnectedEntityKind.card,
+              id: card.id,
+              label: endpointLabel(card),
+            ),
+      ];
+      return Ok(options);
     } catch (e) {
       return Failure(CollectionLoadFailure(e.toString()));
     }

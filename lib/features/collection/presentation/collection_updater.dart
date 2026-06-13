@@ -47,7 +47,8 @@ class CollectionUpdater
             coverAttachmentId: data.coverAttachmentId,
             cards: data.cards,
             imageBytes: state.imageBytes,
-            linkTargets: data.linkTargets,
+            // Link-finder caches are deliberately dropped on reload: a write may
+            // have changed the targets, so the finder re-reads fresh on reopen.
             // Stay in reorder mode only while it remains reorderable (2+ cards),
             // so a feed that shrinks under it can't strand the user with no Done.
             reordering: state.reordering && data.cards.length > 1,
@@ -109,10 +110,35 @@ class CollectionUpdater
       case CardDeleteRequested(:final cardId):
         return (state, [DeleteCardEffect(cardId)]);
 
-      case LinkRequested(:final cardId, :final targetCollectionId):
+      case LinkFinderOpened():
+        return (state, const [LoadLinkCollectionsEffect()]);
+
+      case LinkCollectionOpened(:final collectionId):
+        // Drill is a cache hit ⇒ pure no-op; a miss loads that collection's
+        // cards once (the sheet shows a spinner until they arrive).
+        if (state.linkCardsByCollection.containsKey(collectionId)) {
+          return (state, null);
+        }
+        return (state, [LoadCollectionCardsEffect(collectionId)]);
+
+      case LinkCollectionsLoaded(:final collections):
+        return (state.copyWith(linkCollections: collections), null);
+
+      case LinkCardsLoaded(:final collectionId, :final cards):
+        return (
+          state.copyWith(
+            linkCardsByCollection: {
+              ...state.linkCardsByCollection,
+              collectionId: cards,
+            },
+          ),
+          null,
+        );
+
+      case LinkRequested(:final cardId, :final targetKind, :final targetId):
         return (
           state,
-          [LinkEffect(cardId: cardId, targetCollectionId: targetCollectionId)],
+          [LinkEffect(cardId: cardId, targetKind: targetKind, targetId: targetId)],
         );
 
       case StartReorder():
@@ -134,7 +160,7 @@ class CollectionUpdater
         );
 
       case DeactivateFeature():
-        return (state, null);
+        return (state.copyWith(reordering: false), null);
     }
   }
 

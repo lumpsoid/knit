@@ -6,6 +6,7 @@ import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
 import 'package:knit/features/collection/presentation/collection_updater.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 
 void main() {
   const updater = CollectionUpdater();
@@ -40,7 +41,6 @@ void main() {
       title: 'Notes',
       coverAttachmentId: null,
       cards: [card('c1', 'a0')],
-      linkTargets: const [],
     );
     final (next, effects) =
         updater.update(const CollectionState(), CollectionLoaded(data));
@@ -55,7 +55,6 @@ void main() {
           title: 'Notes',
           coverAttachmentId: null,
           cards: cards,
-          linkTargets: const [],
         );
 
     FeedCard imageCard(String id, String position, String? attachmentId) =>
@@ -172,13 +171,110 @@ void main() {
       expect((effects!.single as DeleteCardEffect).cardId, 'c1');
     });
 
-    test('link request emits LinkEffect', () {
+    test('link to a collection emits LinkEffect with the collection kind', () {
       final (_, effects) = updater.update(
         ready([card('c1', 'a0')]),
-        const LinkRequested(cardId: 'c1', targetCollectionId: 'col-2'),
+        const LinkRequested(
+          cardId: 'c1',
+          targetKind: ConnectedEntityKind.collection,
+          targetId: 'col-2',
+        ),
       );
       final effect = effects!.single as LinkEffect;
-      expect((effect.cardId, effect.targetCollectionId), ('c1', 'col-2'));
+      expect(
+        (effect.cardId, effect.targetKind, effect.targetId),
+        ('c1', ConnectedEntityKind.collection, 'col-2'),
+      );
+    });
+
+    test('link to a card emits LinkEffect with the card kind', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const LinkRequested(
+          cardId: 'c1',
+          targetKind: ConnectedEntityKind.card,
+          targetId: 'c9',
+        ),
+      );
+      final effect = effects!.single as LinkEffect;
+      expect(
+        (effect.cardId, effect.targetKind, effect.targetId),
+        ('c1', ConnectedEntityKind.card, 'c9'),
+      );
+    });
+  });
+
+  group('link finder (lazy levels)', () {
+    const optCol = LinkOption(
+      kind: ConnectedEntityKind.collection,
+      id: 'col-2',
+      label: 'Other',
+    );
+    const optCard = LinkOption(
+      kind: ConnectedEntityKind.card,
+      id: 'c9',
+      label: 'a card',
+    );
+
+    test('opening the finder loads the collections level', () {
+      final (_, effects) =
+          updater.update(ready(const []), const LinkFinderOpened());
+      expect(effects!.single, isA<LoadLinkCollectionsEffect>());
+    });
+
+    test('LinkCollectionsLoaded stores the first level', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const LinkCollectionsLoaded([optCol]),
+      );
+      expect(next.linkCollections, [optCol]);
+      expect(effects, isNull);
+    });
+
+    test('drilling on a cache miss loads that collection\'s cards', () {
+      final (_, effects) = updater.update(
+        ready(const []),
+        const LinkCollectionOpened('col-2'),
+      );
+      expect(
+        (effects!.single as LoadCollectionCardsEffect).collectionId,
+        'col-2',
+      );
+    });
+
+    test('drilling on a cache hit is a pure no-op', () {
+      final state = ready(const []).copyWith(
+        linkCardsByCollection: const {'col-2': [optCard]},
+      );
+      final (next, effects) =
+          updater.update(state, const LinkCollectionOpened('col-2'));
+      expect(effects, isNull);
+      expect(next.linkCardsByCollection['col-2'], [optCard]);
+    });
+
+    test('LinkCardsLoaded caches under the collection id', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const LinkCardsLoaded('col-2', [optCard]),
+      );
+      expect(next.linkCardsByCollection['col-2'], [optCard]);
+      expect(effects, isNull);
+    });
+
+    test('a feed reload drops the finder caches (re-read fresh on reopen)', () {
+      final state = ready([card('c1', 'a0')]).copyWith(
+        linkCollections: const [optCol],
+        linkCardsByCollection: const {'col-2': [optCard]},
+      );
+      final data = CollectionData(
+        collectionId: 'col',
+        title: 'Notes',
+        coverAttachmentId: null,
+        cards: [card('c1', 'a0')],
+      );
+      final (next, _) = updater.update(state, CollectionLoaded(data));
+      expect(next.linkCollections, isNull);
+      expect(next.linkCardsByCollection, isEmpty);
     });
   });
 
@@ -228,7 +324,6 @@ void main() {
         title: 'Notes',
         coverAttachmentId: null,
         cards: [card('c2', 'a1'), card('c1', 'a2')],
-        linkTargets: const [],
       );
       final (next, _) = updater.update(state, CollectionLoaded(data));
       expect(next.reordering, isTrue);
@@ -242,7 +337,6 @@ void main() {
         title: 'Notes',
         coverAttachmentId: null,
         cards: [card('c1', 'a0')],
-        linkTargets: const [],
       );
       final (next, _) = updater.update(state, CollectionLoaded(data));
       expect(next.reordering, isFalse);

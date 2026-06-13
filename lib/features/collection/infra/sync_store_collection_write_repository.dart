@@ -3,6 +3,7 @@ import 'package:knit/core/ids/id_generator.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/sync/sync.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -56,17 +57,18 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
       });
 
   @override
-  Future<Result<String, CollectionFailure>> linkCardToCollection({
+  Future<Result<String, CollectionFailure>> linkCardToTarget({
     required String cardId,
-    required String collectionId,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
   }) =>
       _write(() async {
         final id = _ids.newId();
         await _graph.store.create(EntityType.link, id, {
           'source_type': EntityType.card.name,
           'source_id': cardId,
-          'target_type': EntityType.collection.name,
-          'target_id': collectionId,
+          'target_type': targetKind.tag,
+          'target_id': targetId,
           'label': null,
         });
         return id;

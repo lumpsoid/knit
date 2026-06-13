@@ -4,4 +4,5 @@
 library;
 
 export 'broken_link.dart';
+export 'endpoint_label.dart';
 export 'home_timeline.dart';

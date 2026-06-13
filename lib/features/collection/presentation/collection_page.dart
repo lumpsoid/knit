@@ -149,15 +149,24 @@ class _CollectionPageState extends State<CollectionPage> {
     };
   }
 
+  /// Open the link finder for [card]: load the first level (collections), then
+  /// let the user link directly to a collection or drill in to pick any card
+  /// (§4.4). The sheet observes controller state so each level loads lazily.
   Future<void> _openLinkFinder(FeedCard card) async {
-    final targets = _controller.stateHolder.value.linkTargets;
-    final targetId = await showModalBottomSheet<String>(
+    _controller.dispatch(const LinkFinderOpened());
+    final picked = await showModalBottomSheet<LinkOption>(
       context: context,
-      builder: (_) => _LinkFinderSheet(targets: targets),
+      isScrollControlled: true,
+      builder: (_) => _LinkFinderSheet(
+        controller: _controller,
+        sourceCardId: card.id,
+        currentCollectionId: _controller.stateHolder.value.collectionId,
+      ),
     );
-    if (targetId == null || !mounted) return;
-    _controller
-        .dispatch(LinkRequested(cardId: card.id, targetCollectionId: targetId));
+    if (picked == null || !mounted) return;
+    _controller.dispatch(
+      LinkRequested(cardId: card.id, targetKind: picked.kind, targetId: picked.id),
+    );
   }
 
   Future<void> _renameCollection(String current) async {
@@ -604,7 +613,7 @@ class _CardActionsSheet extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.link),
-            title: const Text('Link to a collection'),
+            title: const Text('Make a link'),
             onTap: () => Navigator.of(context).pop(_CardAction.link),
           ),
           ListTile(
@@ -629,42 +638,192 @@ class _CardActionsSheet extends StatelessWidget {
   }
 }
 
-class _LinkFinderSheet extends StatelessWidget {
-  const _LinkFinderSheet({required this.targets});
-  final List<LinkCandidate> targets;
+/// Two-level link finder (§4.4): browse collections, link to one directly, or
+/// drill into it to link to any card. Levels load lazily, so the sheet observes
+/// the controller's state (collections + a per-collection card cache) and
+/// dispatches drill loads; selecting a target pops the chosen [LinkOption] back
+/// to the page, which dispatches the link write.
+class _LinkFinderSheet extends StatefulWidget {
+  const _LinkFinderSheet({
+    required this.controller,
+    required this.sourceCardId,
+    required this.currentCollectionId,
+  });
+
+  final CollectionController controller;
+
+  /// The card being linked — dropped from the drilled card list (no self-link).
+  final String sourceCardId;
+
+  /// The source card's own collection — its direct "link to collection" action
+  /// is hidden (a card→its-own-collection link is meaningless), but it can still
+  /// be drilled into to link to a sibling card.
+  final String currentCollectionId;
+
+  @override
+  State<_LinkFinderSheet> createState() => _LinkFinderSheetState();
+}
+
+class _LinkFinderSheetState extends State<_LinkFinderSheet> {
+  /// The collection currently drilled into; null ⇒ the collections list.
+  String? _drilledId;
+
+  void _drill(LinkOption collection) {
+    setState(() => _drilledId = collection.id);
+    widget.controller.dispatch(LinkCollectionOpened(collection.id));
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: targets.isEmpty
-          ? SizedBox(
-            width: double.infinity,
-            child: const Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('No other collections to link to yet.'),
-              ),
-          )
-          : ListView(
-              shrinkWrap: true,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text('Link to which collection?'),
-                ),
-                for (final t in targets)
-                  ListTile(
-                    leading: const Icon(Icons.workspaces_outline),
-                    title: Text(
-                      t.title.trim().isEmpty ? 'Untitled' : t.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    onTap: () => Navigator.of(context).pop(t.collectionId),
-                  ),
-              ],
-            ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        child: ValueListenableBuilder<CollectionState>(
+          valueListenable: widget.controller.stateHolder,
+          builder: (context, state, _) {
+            final drilledId = _drilledId;
+            if (drilledId == null) return _collectionsList(state);
+            return _cardsList(state, drilledId);
+          },
+        ),
+      ),
     );
   }
+
+  Widget _collectionsList(CollectionState state) {
+    final collections = state.linkCollections;
+    if (collections == null) {
+      return const _SheetSpinner();
+    }
+    if (collections.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text('Nothing to link to yet.'),
+      );
+    }
+    return ListView(
+      shrinkWrap: true,
+      children: [
+        const _SheetHeader('Make a link'),
+        for (final c in collections)
+          ListTile(
+            leading: const Icon(Icons.workspaces_outline),
+            title: Text(
+              c.label.trim().isEmpty ? 'Untitled' : c.label.trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (c.id != widget.currentCollectionId)
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(c),
+                    child: const Text('Link'),
+                  ),
+                IconButton(
+                  tooltip: 'Open',
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => _drill(c),
+                ),
+              ],
+            ),
+            onTap: () => _drill(c),
+          ),
+      ],
+    );
+  }
+
+  Widget _cardsList(CollectionState state, String collectionId) {
+    final collection = _collectionFor(state, collectionId);
+    final label = (collection?.label.trim().isNotEmpty ?? false)
+        ? collection!.label.trim()
+        : 'Untitled';
+    final cached = state.linkCardsByCollection[collectionId];
+    final cards = cached
+        ?.where((o) => o.id != widget.sourceCardId)
+        .toList(growable: false);
+
+    return ListView(
+      shrinkWrap: true,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.arrow_back),
+          title: const Text('Back to collections'),
+          onTap: () => setState(() => _drilledId = null),
+        ),
+        const Divider(height: 1),
+        // The collection itself is a valid target — unless it's the source
+        // card's own collection (a card→own-collection link is meaningless).
+        if (collection != null && collectionId != widget.currentCollectionId)
+          ListTile(
+            leading: const Icon(Icons.workspaces_outline),
+            title: Text(
+              'Link to "$label"',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => Navigator.of(context).pop(collection),
+          ),
+        if (cards == null)
+          const _SheetSpinner()
+        else if (cards.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('No cards here to link to.'),
+          )
+        else ...[
+          const _SheetHeader('Or a card in it'),
+          for (final card in cards)
+            ListTile(
+              leading: const Icon(Icons.sticky_note_2_outlined),
+              title: Text(
+                card.label.trim().isEmpty ? 'Empty note' : card.label.trim(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () => Navigator.of(context).pop(card),
+            ),
+        ],
+      ],
+    );
+  }
+
+  static LinkOption? _collectionFor(CollectionState state, String id) {
+    for (final c in state.linkCollections ?? const <LinkOption>[]) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+}
+
+class _SheetHeader extends StatelessWidget {
+  const _SheetHeader(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Text(label, style: Theme.of(context).textTheme.titleSmall),
+      );
+}
+
+class _SheetSpinner extends StatelessWidget {
+  const _SheetSpinner();
+
+  // heightFactor: 1 hugs the indicator's height (still centred horizontally) so
+  // the sheet doesn't balloon to the ConstrainedBox max while a level loads —
+  // and stays valid inside the drilled-cards ListView (unbounded height).
+  @override
+  Widget build(BuildContext context) => const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          heightFactor: 1,
+          child: CircularProgressIndicator(),
+        ),
+      );
 }
 
 class _EmptyView extends StatelessWidget {

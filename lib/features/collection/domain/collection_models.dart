@@ -3,6 +3,8 @@
 /// presentation layer and shared widgets never reach into the merge core.
 library;
 
+import 'package:knit/features/connections/domain/connections_models.dart';
+
 /// A card's `kind` (spec §6.4). `text` is the everyday quick-capture; `link` is
 /// the "+"-block standalone link card; `image`/`audio` arrive with attachments.
 enum CardKind {
@@ -61,28 +63,35 @@ class FeedCard {
       );
 }
 
-/// A link destination offered in the finder sheet (§4.2). For MVP the finder
-/// lists the device's other collections; a card can be linked to one.
-class LinkCandidate {
-  const LinkCandidate({required this.collectionId, required this.title});
-  final String collectionId;
-  final String title;
+/// One selectable target in the link finder — a collection or a card (§4.4).
+/// [kind] chooses the wire `target_type`; [label] is its display title/preview.
+/// The finder loads collections first, then a collection's [LinkOption] cards on
+/// drill, so a card can link to *any* card or collection — not just a collection.
+class LinkOption {
+  const LinkOption({
+    required this.kind,
+    required this.id,
+    required this.label,
+  });
+
+  final ConnectedEntityKind kind;
+  final String id;
+  final String label;
 }
 
-/// The full Collection screen payload — header + ordered feed + the link-finder
-/// candidates, read together so the View never issues a second load.
+/// The Collection screen payload — header + ordered feed. The link-finder
+/// targets are loaded lazily (per level) when the finder opens, so they are not
+/// part of this read.
 class CollectionData {
   const CollectionData({
     required this.collectionId,
     required this.title,
     required this.coverAttachmentId,
     required this.cards,
-    required this.linkTargets,
   });
 
   final String collectionId;
   final String title;
   final String? coverAttachmentId;
   final List<FeedCard> cards;
-  final List<LinkCandidate> linkTargets;
 }

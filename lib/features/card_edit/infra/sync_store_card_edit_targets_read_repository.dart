@@ -2,7 +2,6 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/features/card_edit/domain/card_edit_failure.dart';
 import 'package:knit/features/card_edit/domain/card_edit_models.dart';
 import 'package:knit/features/card_edit/domain/card_edit_targets_read_repository.dart';
-import 'package:knit/features/card_edit/infra/card_edit_endpoint_label.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/sync/sync.dart';
 import 'package:result_dart/result_dart.dart';

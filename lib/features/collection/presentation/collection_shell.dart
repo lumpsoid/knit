@@ -90,11 +90,32 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           dispatch,
         );
 
-      case LinkEffect(:final cardId, :final targetCollectionId):
+      case LoadLinkCollectionsEffect():
+        final result = await _read.loadLinkCollections();
+        result.onTap(
+          (options) => dispatch(LinkCollectionsLoaded(options)),
+          (failure) {
+            _log.severe('Link collections load failed: ${_cause(failure)}');
+            dispatch(const LinkCollectionsLoaded([]));
+          },
+        );
+
+      case LoadCollectionCardsEffect(:final collectionId):
+        final result = await _read.loadCollectionCards(collectionId);
+        result.onTap(
+          (options) => dispatch(LinkCardsLoaded(collectionId, options)),
+          (failure) {
+            _log.severe('Link cards load failed: ${_cause(failure)}');
+            dispatch(LinkCardsLoaded(collectionId, const []));
+          },
+        );
+
+      case LinkEffect(:final cardId, :final targetKind, :final targetId):
         await _runWrite(
-          () => _write.linkCardToCollection(
+          () => _write.linkCardToTarget(
             cardId: cardId,
-            collectionId: targetCollectionId,
+            targetKind: targetKind,
+            targetId: targetId,
           ),
           'create link',
           dispatch,

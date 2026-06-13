@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// Intents + async-result deliveries for the Collection screen (fcis.md §6.4).
 /// All payloads are scalars / feature-local view-models (no sync-core types).
@@ -55,11 +56,43 @@ class CardDeleteRequested extends CollectionAction {
   final String cardId;
 }
 
-/// Actions sheet → finder → link this card to a collection (§4.4).
+/// Actions sheet → "Make a link" opened the finder (§4.4). Loads the first
+/// level (collections); a no-op if they are already loaded is fine — it just
+/// refreshes them.
+class LinkFinderOpened extends CollectionAction {
+  const LinkFinderOpened();
+}
+
+/// Finder drilled into [collectionId] to browse its cards. Triggers a lazy
+/// card load on cache miss; a cache hit is a pure no-op.
+class LinkCollectionOpened extends CollectionAction {
+  const LinkCollectionOpened(this.collectionId);
+  final String collectionId;
+}
+
+/// The finder's first level finished loading (delivery of [LinkFinderOpened]).
+class LinkCollectionsLoaded extends CollectionAction {
+  const LinkCollectionsLoaded(this.collections);
+  final List<LinkOption> collections;
+}
+
+/// A collection's cards finished loading (delivery of [LinkCollectionOpened]).
+class LinkCardsLoaded extends CollectionAction {
+  const LinkCardsLoaded(this.collectionId, this.cards);
+  final String collectionId;
+  final List<LinkOption> cards;
+}
+
+/// Finder → link this card to a collection or another card (§4.4).
 class LinkRequested extends CollectionAction {
-  const LinkRequested({required this.cardId, required this.targetCollectionId});
+  const LinkRequested({
+    required this.cardId,
+    required this.targetKind,
+    required this.targetId,
+  });
   final String cardId;
-  final String targetCollectionId;
+  final ConnectedEntityKind targetKind;
+  final String targetId;
 }
 
 /// Enter / leave drag-to-reorder mode (§4.2).
