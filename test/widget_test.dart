@@ -11,6 +11,7 @@ import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
+import 'package:knit/features/timeline/infra/timeline_channel_notifier.dart';
 import 'package:knit/features/timeline/presentation/timeline_module.dart';
 import 'package:knit/features/timeline/presentation/timeline_scope.dart';
 import 'package:knit/main.dart';
@@ -39,6 +40,7 @@ void main() {
           graph: graph,
           ids: const UuidIdGenerator(),
         ),
+        channelReader: TimelineChannelNotifier(),
       ).controller,
     );
   }

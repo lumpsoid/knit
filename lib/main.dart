@@ -35,6 +35,7 @@ import 'package:knit/features/sync_status/presentation/sync_status_module.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
+import 'package:knit/features/timeline/infra/timeline_channel_notifier.dart';
 import 'package:knit/features/timeline/presentation/timeline_module.dart';
 import 'package:knit/features/timeline/presentation/timeline_scope.dart';
 
@@ -109,11 +110,18 @@ void main() {
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
 
+  // The Timeline input channel (cross_feature.md §3): one shared instance — the
+  // Collection (and any future feature) emits a RefreshChannelEvent after a
+  // write; the Timeline observes it and re-reads the home feed. The producer
+  // gets the emitter half, the consumer the reader half.
+  final timelineChannel = TimelineChannelNotifier();
+
   TimelineScope.setFactory(
     () => TimelineModule(
       readRepository: SyncStoreTimelineRepository(graph: graph),
       writeRepository:
           SyncStoreTimelineWriteRepository(graph: graph, ids: ids),
+      channelReader: timelineChannel,
     ).controller,
   );
   CollectionScope.setFactory(
@@ -123,6 +131,7 @@ void main() {
           SyncStoreCollectionWriteRepository(graph: graph, ids: ids),
       attachmentReadRepository:
           SyncStoreAttachmentReadRepository(graph: graph),
+      timelineChannel: timelineChannel,
     ).controller,
   );
   ConnectionsScope.setFactory(

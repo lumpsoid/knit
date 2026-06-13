@@ -6,6 +6,7 @@ import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
+import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
@@ -22,17 +23,20 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required CollectionWriteRepository writeRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
+    required TimelineChannelEmitter timelineChannel,
     required Logger logger,
   })  : _read = readRepository,
         _write = writeRepository,
         _attachmentRead = attachmentReadRepository,
         _effectEmitter = effectEmitter,
+        _timelineChannel = timelineChannel,
         _log = logger;
 
   final CollectionReadRepository _read;
   final CollectionWriteRepository _write;
   final AttachmentReadRepository _attachmentRead;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
+  final TimelineChannelEmitter _timelineChannel;
   final Logger _log;
 
   @override
@@ -114,7 +118,13 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   ) async {
     final result = await op();
     result.onTap(
-      (_) => dispatch(const ReloadRequested()),
+      (_) {
+        // The write changed the home timeline too (title, last-card preview,
+        // count, updated-time). Nudge the Timeline to re-read via its input
+        // channel (cross_feature.md §3) — it's mounted underneath this page.
+        _timelineChannel.emit(const RefreshChannelEvent());
+        dispatch(const ReloadRequested());
+      },
       (failure) {
         _log.severe('Collection $label failed: ${_cause(failure)}');
         _effectEmitter.push(

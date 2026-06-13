@@ -13,6 +13,7 @@ import 'package:knit/features/collection/presentation/collection_shell.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
 import 'package:knit/features/collection/presentation/collection_updater.dart';
+import 'package:knit/features/timeline/domain/timeline_channel.dart';
 
 /// Composition root for the Collection screen (fcis.md §6.8): wires
 /// stateHolder → effectEmitter → shell → loop → controller.
@@ -21,6 +22,7 @@ class CollectionModule {
     required CollectionReadRepository readRepository,
     required CollectionWriteRepository writeRepository,
     required AttachmentReadRepository attachmentReadRepository,
+    required TimelineChannelEmitter timelineChannel,
     Logger? logger,
   }) {
     final stateHolder =
@@ -31,6 +33,7 @@ class CollectionModule {
       writeRepository: writeRepository,
       attachmentReadRepository: attachmentReadRepository,
       effectEmitter: effectEmitter,
+      timelineChannel: timelineChannel,
       logger: logger ?? Logger('knit.collection'),
     );
     final loop = CollectionLoop(
