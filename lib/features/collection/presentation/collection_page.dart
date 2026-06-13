@@ -383,7 +383,8 @@ class _CardBubble extends StatelessWidget {
           ],
         );
       case CardKind.image:
-        return ClipRRect(
+        final caption = card.text?.trim();
+        final image = ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: AttachmentImage(
             bytes: imageBytes,
@@ -391,6 +392,19 @@ class _CardBubble extends StatelessWidget {
             height: 220,
             placeholder: _placeholder(theme, Icons.image_outlined, 'Photo'),
           ),
+        );
+        if (caption == null || caption.isEmpty) return image;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            image,
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 220),
+              child: Text(caption),
+            ),
+          ],
         );
       case CardKind.audio:
         return _placeholder(theme, Icons.mic_none, 'Audio');
@@ -428,11 +442,13 @@ class _ReorderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = switch (card.kind) {
-      CardKind.link => card.text?.trim().isNotEmpty == true ? card.text!.trim() : 'Link',
-      CardKind.image => 'Photo',
+      CardKind.link => card.text?.isNotEmpty == true ? card.text! : 'Link',
+      CardKind.image => card.text?.isNotEmpty == true
+          ? card.text!
+          : '[Photo]',
       CardKind.audio => 'Audio',
       CardKind.text || CardKind.unknown =>
-        card.text?.trim().isNotEmpty == true ? card.text!.trim() : 'Empty note',
+        card.text?.trim().isNotEmpty == true ? card.text! : 'Empty note',
     };
     return ListTile(
       key: ValueKey('tile-${card.id}'),
@@ -441,8 +457,8 @@ class _ReorderRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: AttachmentImage(
                 bytes: imageBytes,
-                width: 40,
-                height: 40,
+                width: 24,
+                height: 24,
                 placeholder: const Icon(Icons.image_outlined),
               ),
             )
