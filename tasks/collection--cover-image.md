@@ -24,4 +24,5 @@ nothing **captures, stores, or renders** an attachment.
 - spec §4.2 / §4.8 (collection image via header long-press; shown on Home),
   §7.4.3 (attachments, `content_hash`, image/audio cards)
 - `lib/features/collection/` (`coverAttachmentId` already threads through state)
-- unblocks image **cards** in [card-edit--page](card-edit--page.md)
+- shares the attachment foundation with the [Card Edit epic](card-edit/epic.md)
+  (see its [attachments--foundation](card-edit/attachments--foundation.md) subtask)

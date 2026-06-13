@@ -100,6 +100,13 @@ class SyncStore {
   Future<Snapshot?> get(EntityType type, String id) =>
       projection.get(type, id);
 
+  /// Every projected row of [type] (including soft-deleted). Used by the
+  /// attachment foundation for content-hash dedup and reference-counted blob GC.
+  Future<List<Snapshot>> readAll(EntityType type) async =>
+      (await projection.readAll())
+          .where((s) => s.type == type)
+          .toList(growable: false);
+
   Future<List<Snapshot>> feed(String collectionId) =>
       projection.feed(collectionId);
 
@@ -407,7 +414,12 @@ class SyncStore {
       EntityType.card => const {'attachment_id': null, 'text': null},
       EntityType.link => const {'label': null},
       EntityType.profile => const {'nickname': null},
-      EntityType.attachment => const <String, Object?>{},
+      EntityType.attachment => const {
+          'kind': null,
+          'mime': null,
+          'content_hash': null,
+          'size': null,
+        },
     };
     return {...defaults, ...content};
   }

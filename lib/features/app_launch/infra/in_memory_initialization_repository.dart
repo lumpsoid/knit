@@ -1,4 +1,5 @@
 import 'package:knit/app/app_graph.dart';
+import 'package:knit/core/attachments/infra/in_memory_attachment_blob_store.dart';
 import 'package:knit/features/app_launch/domain/initialization_repository.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -16,5 +17,6 @@ class InMemoryInitializationRepository implements InitializationRepository {
     final store = SyncStore.inMemory();
     await store.open(provisionIdentity: false);
     _graph.bindStore(store);
+    _graph.bindBlobStore(InMemoryAttachmentBlobStore());
   }
 }

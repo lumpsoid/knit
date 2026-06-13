@@ -1,8 +1,10 @@
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/schema/knit_migrations.dart';
+import 'package:knit/core/attachments/infra/filesystem_attachment_blob_store.dart';
 import 'package:knit/core/storage/storage.dart';
 import 'package:knit/features/app_launch/domain/initialization_repository.dart';
 import 'package:knit/sync/sync.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sql_migrator/sql_migrator.dart';
 
@@ -43,5 +45,12 @@ class ProductionInitializationRepository implements InitializationRepository {
     );
     await store.open(ensureSchema: false, provisionIdentity: false);
     _graph.bindStore(store);
+
+    // Attachment bytes live on the filesystem out-of-band (spec §6.4/§7.4.8),
+    // content-addressed under the app support dir.
+    final support = await getApplicationSupportDirectory();
+    _graph.bindBlobStore(
+      FilesystemAttachmentBlobStore(baseDir: '${support.path}/blobs'),
+    );
   }
 }

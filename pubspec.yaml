@@ -75,6 +75,11 @@ dependencies:
   # UUIDv7 minting behind the IdGenerator port (spec §6.1) — time-ordered ids.
   uuid: ^4.5.3
 
+  # Attachment capture + storage foundation (spec §6.4/§7.4.8). image_picker sits
+  # behind the ImagePickerPort; path_provider locates the on-disk blob dir.
+  image_picker: ^1.1.2
+  path_provider: ^2.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
