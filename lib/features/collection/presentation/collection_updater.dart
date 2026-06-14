@@ -25,6 +25,8 @@ class CollectionUpdater
           state.copyWith(
             collectionId: collectionId,
             status: CollectionStatus.loading,
+            // A fresh entry into a collection starts with no pending preview.
+            clearPendingImage: true,
           ),
           [LoadCollectionEffect(collectionId)],
         );
@@ -52,6 +54,9 @@ class CollectionUpdater
             // Stay in reorder mode only while it remains reorderable (2+ cards),
             // so a feed that shrinks under it can't strand the user with no Done.
             reordering: state.reordering && data.cards.length > 1,
+            // A resync (pull-to-refresh / post-write) must not drop an image the
+            // user is still composing a caption for.
+            pendingImage: state.pendingImage,
           ),
           toLoad.isEmpty
               ? null
@@ -69,13 +74,26 @@ class CollectionUpdater
         );
 
       case LoadFailed():
-        return (
-          state.copyWith(status: CollectionStatus.failed),
-          null,
-        );
+        return (state.copyWith(status: CollectionStatus.failed), null);
 
       case ComposerSubmitted(:final text):
         final body = text.trim();
+        final pending = state.pendingImage;
+        // A pending image wins: send it as an image card with the (optional)
+        // text as its caption, and clear the preview optimistically.
+        if (pending != null) {
+          return (
+            state.copyWith(clearPendingImage: true),
+            [
+              AddPhotoCardEffect(
+                collectionId: state.collectionId,
+                position: _appendPosition(state.cards),
+                image: pending,
+                caption: body.isEmpty ? null : body,
+              ),
+            ],
+          );
+        }
         if (body.isEmpty) return (state, null);
         return (
           state,
@@ -103,6 +121,17 @@ class CollectionUpdater
             ),
           ],
         );
+
+      case PickImageRequested():
+        return (state, const [PickImageEffect()]);
+
+      case ImagePicked(:final image):
+        // Cancelled pick ⇒ no change; otherwise stage it as the preview.
+        if (image == null) return (state, null);
+        return (state.copyWith(pendingImage: image), null);
+
+      case PendingImageCleared():
+        return (state.copyWith(clearPendingImage: true), null);
 
       case CardDeleteRequested(:final cardId):
         return (state, [DeleteCardEffect(cardId)]);
@@ -135,7 +164,13 @@ class CollectionUpdater
       case LinkRequested(:final cardId, :final targetKind, :final targetId):
         return (
           state,
-          [LinkEffect(cardId: cardId, targetKind: targetKind, targetId: targetId)],
+          [
+            LinkEffect(
+              cardId: cardId,
+              targetKind: targetKind,
+              targetId: targetId,
+            ),
+          ],
         );
 
       case StartReorder():
@@ -157,7 +192,10 @@ class CollectionUpdater
         );
 
       case DeactivateFeature():
-        return (state.copyWith(reordering: false), null);
+        return (
+          state.copyWith(reordering: false, clearPendingImage: true),
+          null,
+        );
     }
   }
 
@@ -177,8 +215,9 @@ class CollectionUpdater
   }
 
   /// Append key: after the last card, or the first key for an empty feed.
-  static String _appendPosition(List<FeedCard> cards) =>
-      cards.isEmpty ? FractionalIndex.first() : FractionalIndex.keyAfter(cards.last.position);
+  static String _appendPosition(List<FeedCard> cards) => cards.isEmpty
+      ? FractionalIndex.first()
+      : FractionalIndex.keyAfter(cards.last.position);
 
   /// Reorder: apply the move locally, mint a key between the new neighbours,
   /// and emit the placement write. ReorderableListView's `newIndex` is the

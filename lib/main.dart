@@ -172,6 +172,9 @@ void bootstrap(AppConfig config) {
           SyncStoreCollectionWriteRepository(graph: graph, ids: ids),
       attachmentReadRepository:
           SyncStoreAttachmentReadRepository(graph: graph),
+      attachmentWriteRepository:
+          SyncStoreAttachmentWriteRepository(graph: graph, ids: ids),
+      imagePicker: ImagePickerAdapter(),
       timelineChannel: timelineChannel,
     ).controller,
   );

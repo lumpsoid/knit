@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
@@ -10,6 +11,8 @@ import 'package:knit/features/connections/domain/connections_models.dart';
 
 void main() {
   const updater = CollectionUpdater();
+
+  final image = PickedImage(bytes: Uint8List.fromList([1, 2, 3]), mime: 'image/png');
 
   FeedCard card(String id, String position, {CardKind kind = CardKind.text}) =>
       FeedCard(id: id, kind: kind, position: position, text: id);
@@ -159,6 +162,66 @@ void main() {
       final effect = effects!.single as AddCardEffect;
       expect(effect.kind, CardKind.link);
       expect(effect.text, 'https://x.y');
+    });
+
+    test('photo block opens the picker', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const PickImageRequested(),
+      );
+      expect(effects!.single, isA<PickImageEffect>());
+      expect(next.pendingImage, isNull, reason: 'nothing staged until picked');
+    });
+
+    test('a picked image is staged as the composer preview', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        ImagePicked(image),
+      );
+      expect(next.pendingImage, same(image));
+      expect(effects, isNull);
+    });
+
+    test('a cancelled pick leaves the preview untouched', () {
+      final (next, effects) = updater.update(
+        ready(const []).copyWith(pendingImage: image),
+        const ImagePicked(null),
+      );
+      expect(next.pendingImage, same(image));
+      expect(effects, isNull);
+    });
+
+    test('clearing the preview drops the staged image', () {
+      final (next, effects) = updater.update(
+        ready(const []).copyWith(pendingImage: image),
+        const PendingImageCleared(),
+      );
+      expect(next.pendingImage, isNull);
+      expect(effects, isNull);
+    });
+
+    test('sending with a staged image emits a photo card and clears the preview',
+        () {
+      final (next, effects) = updater.update(
+        ready([card('c1', 'a0')]).copyWith(pendingImage: image),
+        const ComposerSubmitted('  a caption  '),
+      );
+      final effect = effects!.single as AddPhotoCardEffect;
+      expect(effect.collectionId, 'col');
+      expect(effect.position.compareTo('a0') > 0, isTrue);
+      expect(effect.caption, 'a caption', reason: 'trimmed');
+      expect(effect.image, same(image));
+      expect(next.pendingImage, isNull, reason: 'cleared optimistically');
+    });
+
+    test('sending a staged image with blank text carries a null caption', () {
+      final (_, effects) = updater.update(
+        ready(const []).copyWith(pendingImage: image),
+        const ComposerSubmitted('   '),
+      );
+      final effect = effects!.single as AddPhotoCardEffect;
+      expect(effect.caption, isNull);
+      expect(effect.position, 'a0');
     });
   });
 

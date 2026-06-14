@@ -3,7 +3,11 @@ import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:result_dart/result_dart.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
+import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
+import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
+import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
@@ -22,19 +26,25 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required CollectionReadRepository readRepository,
     required CollectionWriteRepository writeRepository,
     required AttachmentReadRepository attachmentReadRepository,
+    required AttachmentWriteRepository attachmentWriteRepository,
+    required ImagePickerPort imagePicker,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
     required TimelineChannelEmitter timelineChannel,
     required Logger logger,
-  })  : _read = readRepository,
-        _write = writeRepository,
-        _attachmentRead = attachmentReadRepository,
-        _effectEmitter = effectEmitter,
-        _timelineChannel = timelineChannel,
-        _log = logger;
+  }) : _read = readRepository,
+       _write = writeRepository,
+       _attachmentRead = attachmentReadRepository,
+       _attachmentWrite = attachmentWriteRepository,
+       _picker = imagePicker,
+       _effectEmitter = effectEmitter,
+       _timelineChannel = timelineChannel,
+       _log = logger;
 
   final CollectionReadRepository _read;
   final CollectionWriteRepository _write;
   final AttachmentReadRepository _attachmentRead;
+  final AttachmentWriteRepository _attachmentWrite;
+  final ImagePickerPort _picker;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
   final TimelineChannelEmitter _timelineChannel;
   final Logger _log;
@@ -47,14 +57,14 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     switch (effect) {
       case LoadCollectionEffect(:final collectionId):
         final result = await _read.loadCollection(collectionId);
-        result.onTap(
-          (data) => dispatch(CollectionLoaded(data)),
-          (failure) {
-            _log.severe(
-                'Collection load failed', failure.error, failure.stackTrace);
-            dispatch(const LoadFailed());
-          },
-        );
+        result.onTap((data) => dispatch(CollectionLoaded(data)), (failure) {
+          _log.severe(
+            'Collection load failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const LoadFailed());
+        });
 
       case LoadImageBytesEffect(:final attachmentId):
         final result = await _attachmentRead.bytesOf(attachmentId);
@@ -65,7 +75,12 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           dispatch(ImageBytesLoaded(attachmentId, result.getOrThrow().bytes));
         }
 
-      case AddCardEffect(:final collectionId, :final kind, :final position, :final text):
+      case AddCardEffect(
+        :final collectionId,
+        :final kind,
+        :final position,
+        :final text,
+      ):
         await _runWrite(
           () => _write.addCard(
             collectionId: collectionId,
@@ -76,6 +91,18 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           'add card',
           dispatch,
         );
+
+      case PickImageEffect():
+        final picked = await _picker.pickImage();
+        dispatch(ImagePicked(picked));
+
+      case AddPhotoCardEffect(
+        :final collectionId,
+        :final position,
+        :final image,
+        :final caption,
+      ):
+        await _addPhotoCard(collectionId, position, image, caption, dispatch);
 
       case DeleteCardEffect(:final cardId):
         await _runWrite(
@@ -93,14 +120,16 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
 
       case LoadLinkCollectionsEffect():
         final result = await _read.loadLinkCollections();
-        result.onTap(
-          (options) => dispatch(LinkCollectionsLoaded(options)),
-          (failure) {
-            _log.severe('Link collections load failed', failure.error,
-                failure.stackTrace);
-            dispatch(const LinkCollectionsLoaded([]));
-          },
-        );
+        result.onTap((options) => dispatch(LinkCollectionsLoaded(options)), (
+          failure,
+        ) {
+          _log.severe(
+            'Link collections load failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const LinkCollectionsLoaded([]));
+        });
 
       case LoadCollectionCardsEffect(:final collectionId):
         final result = await _read.loadCollectionCards(collectionId);
@@ -108,7 +137,10 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           (options) => dispatch(LinkCardsLoaded(collectionId, options)),
           (failure) {
             _log.severe(
-                'Link cards load failed', failure.error, failure.stackTrace);
+              'Link cards load failed',
+              failure.error,
+              failure.stackTrace,
+            );
             dispatch(LinkCardsLoaded(collectionId, const []));
           },
         );
@@ -133,6 +165,40 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     }
   }
 
+  /// Store the already-picked [image] (content-addressed, §7.4.8), then append
+  /// an image card carrying [caption] and resync. The preview was cleared
+  /// optimistically by the updater on send; a store/write failure surfaces a
+  /// message and still resyncs, matching the text/link write path.
+  Future<void> _addPhotoCard(
+    String collectionId,
+    String position,
+    PickedImage image,
+    String? caption,
+    void Function(CollectionAction) dispatch,
+  ) async {
+    final created = await _attachmentWrite.createFromPicked(image);
+    if (created.isFailure) {
+      _log.severe('Store picked image failed', created.error);
+      _effectEmitter.push(
+        const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
+      );
+      dispatch(const ReloadRequested());
+      return;
+    }
+
+    await _runWrite(
+      () => _write.addCard(
+        collectionId: collectionId,
+        kind: CardKind.image,
+        position: position,
+        text: caption,
+        attachmentId: created.getOrThrow(),
+      ),
+      'add photo card',
+      dispatch,
+    );
+  }
+
   /// Run a write, then resync from the projection. On failure, surface a
   /// message and still resync (drops any optimistic local change).
   Future<void> _runWrite(
@@ -151,7 +217,10 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       },
       (failure) {
         _log.severe(
-            'Collection $label failed', failure.error, failure.stackTrace);
+          'Collection $label failed',
+          failure.error,
+          failure.stackTrace,
+        );
         _effectEmitter.push(
           const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
         );

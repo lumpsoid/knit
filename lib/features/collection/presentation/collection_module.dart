@@ -2,6 +2,8 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
+import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
+import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
@@ -22,6 +24,8 @@ class CollectionModule {
     required CollectionReadRepository readRepository,
     required CollectionWriteRepository writeRepository,
     required AttachmentReadRepository attachmentReadRepository,
+    required AttachmentWriteRepository attachmentWriteRepository,
+    required ImagePickerPort imagePicker,
     required TimelineChannelEmitter timelineChannel,
     Logger? logger,
   }) {
@@ -32,6 +36,8 @@ class CollectionModule {
       readRepository: readRepository,
       writeRepository: writeRepository,
       attachmentReadRepository: attachmentReadRepository,
+      attachmentWriteRepository: attachmentWriteRepository,
+      imagePicker: imagePicker,
       effectEmitter: effectEmitter,
       timelineChannel: timelineChannel,
       logger: logger ?? Logger('knit.collection'),

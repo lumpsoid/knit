@@ -53,11 +53,13 @@ class _CollectionPageState extends State<CollectionPage> {
     switch (effect) {
       case CollectionShowMessageUiEffect(:final message):
         final text = switch (message) {
-          CollectionMessage.saveFailed =>
-            AppLocalizations.of(context).collectionSaveFailed,
+          CollectionMessage.saveFailed => AppLocalizations.of(
+            context,
+          ).collectionSaveFailed,
         };
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(text)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -65,7 +67,9 @@ class _CollectionPageState extends State<CollectionPage> {
 
   void _submitComposer() {
     final text = _composer.text;
-    if (text.trim().isEmpty) return;
+    // A staged image makes an empty caption a valid send (photo, no caption).
+    final hasPendingImage = _controller.stateHolder.value.pendingImage != null;
+    if (text.trim().isEmpty && !hasPendingImage) return;
     _controller.dispatch(ComposerSubmitted(text));
     _composer.clear();
   }
@@ -86,10 +90,11 @@ class _CollectionPageState extends State<CollectionPage> {
         );
         if (url != null) _controller.dispatch(LinkCardSubmitted(url));
       case CardKind.image:
+        // Pick a photo into the composer preview; it only becomes a card when
+        // the user sends, so they can add a caption, clear it, or repick first.
+        _controller.dispatch(const PickImageRequested());
       case CardKind.audio:
-        _comingSoon(kind == CardKind.image
-            ? l10n.collectionPhotoCards
-            : l10n.collectionAudioCards);
+        _comingSoon(l10n.collectionAudioCards);
       case CardKind.text:
       case CardKind.unknown:
         break;
@@ -140,8 +145,11 @@ class _CollectionPageState extends State<CollectionPage> {
     required String id,
     required String title,
   }) {
-    CollectionScope.connectionsRouteArgsWriter
-        .open(kind: kind, id: id, title: title);
+    CollectionScope.connectionsRouteArgsWriter.open(
+      kind: kind,
+      id: id,
+      title: title,
+    );
     Navigator.of(context).push(ConnectionsPage.route());
   }
 
@@ -173,7 +181,11 @@ class _CollectionPageState extends State<CollectionPage> {
     );
     if (picked == null || !mounted) return;
     _controller.dispatch(
-      LinkRequested(cardId: card.id, targetKind: picked.kind, targetId: picked.id),
+      LinkRequested(
+        cardId: card.id,
+        targetKind: picked.kind,
+        targetId: picked.id,
+      ),
     );
   }
 
@@ -208,8 +220,10 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   void _comingSoon(String what) => ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(AppLocalizations.of(context).collectionComingSoon(what))));
+    SnackBar(
+      content: Text(AppLocalizations.of(context).collectionComingSoon(what)),
+    ),
+  );
 
   // --- build -----------------------------------------------------------------
 
@@ -260,11 +274,15 @@ class _CollectionPageState extends State<CollectionPage> {
           body: Column(
             children: [
               Expanded(child: _body(state)),
-              if (!state.reordering) _Composer(
-                controller: _composer,
-                onSend: _submitComposer,
-                onAddBlock: _openAddBlock,
-              ),
+              if (!state.reordering)
+                _Composer(
+                  controller: _composer,
+                  pendingImageBytes: state.pendingImage?.bytes,
+                  onSend: _submitComposer,
+                  onAddBlock: _openAddBlock,
+                  onClearImage: () =>
+                      _controller.dispatch(const PendingImageCleared()),
+                ),
             ],
           ),
         );
@@ -404,8 +422,11 @@ class _CardBubble extends StatelessWidget {
             bytes: imageBytes,
             width: 220,
             height: 220,
-            placeholder:
-                _placeholder(theme, Icons.image_outlined, l10n.collectionCardPhoto),
+            placeholder: _placeholder(
+              theme,
+              Icons.image_outlined,
+              l10n.collectionCardPhoto,
+            ),
           ),
         );
         if (caption == null || caption.isEmpty) return image;
@@ -434,13 +455,13 @@ class _CardBubble extends StatelessWidget {
   }
 
   Widget _placeholder(ThemeData theme, IconData icon, String label) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
+      const SizedBox(width: 8),
+      Text(label),
+    ],
+  );
 }
 
 class _ReorderRow extends StatelessWidget {
@@ -462,9 +483,10 @@ class _ReorderRow extends StatelessWidget {
     final label = switch (card.kind) {
       CardKind.link =>
         card.text?.isNotEmpty == true ? card.text! : l10n.collectionCardLink,
-      CardKind.image => card.text?.isNotEmpty == true
-          ? card.text!
-          : l10n.collectionReorderPhoto,
+      CardKind.image =>
+        card.text?.isNotEmpty == true
+            ? card.text!
+            : l10n.collectionReorderPhoto,
       CardKind.audio => l10n.collectionCardAudio,
       CardKind.text || CardKind.unknown =>
         card.text?.trim().isNotEmpty == true ? card.text! : l10n.labelEmptyNote,
@@ -513,8 +535,9 @@ class _PromptDialog extends StatefulWidget {
 }
 
 class _PromptDialogState extends State<_PromptDialog> {
-  late final TextEditingController _field =
-      TextEditingController(text: widget.initial);
+  late final TextEditingController _field = TextEditingController(
+    text: widget.initial,
+  );
 
   @override
   void dispose() {
@@ -549,55 +572,120 @@ class _PromptDialogState extends State<_PromptDialog> {
 class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
+    required this.pendingImageBytes,
     required this.onSend,
     required this.onAddBlock,
+    required this.onClearImage,
   });
   final TextEditingController controller;
+
+  /// Bytes of an image the user picked but hasn't sent yet; null ⇒ no preview.
+  final Uint8List? pendingImageBytes;
   final VoidCallback onSend;
   final VoidCallback onAddBlock;
+  final VoidCallback onClearImage;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final bytes = pendingImageBytes;
     return SafeArea(
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconButton(
-              tooltip: l10n.collectionAddBlockTooltip,
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: onAddBlock,
-            ),
-            Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 5,
-                textInputAction: TextInputAction.send,
-                decoration: InputDecoration(
-                  hintText: l10n.collectionComposerHint,
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            if (bytes != null)
+              _PendingImagePreview(bytes: bytes, onClear: onClearImage),
+            Row(
+              children: [
+                IconButton(
+                  tooltip: l10n.collectionAddBlockTooltip,
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: onAddBlock,
                 ),
-                onSubmitted: (_) => onSend(),
-              ),
-            ),
-            IconButton(
-              tooltip: l10n.collectionSendTooltip,
-              icon: const Icon(Icons.send),
-              onPressed: onSend,
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    minLines: 1,
+                    maxLines: 5,
+                    textInputAction: TextInputAction.send,
+                    decoration: InputDecoration(
+                      hintText: l10n.collectionComposerHint,
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    onSubmitted: (_) => onSend(),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.collectionSendTooltip,
+                  icon: const Icon(Icons.send),
+                  onPressed: onSend,
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The picked-but-unsent image shown above the composer (§4.2). Tapping ✕ drops
+/// it via [onClear]; the user keeps composing text or picks another from "+".
+class _PendingImagePreview extends StatelessWidget {
+  const _PendingImagePreview({required this.bytes, required this.onClear});
+  final Uint8List bytes;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              bytes,
+              width: 96,
+              height: 96,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: Material(
+              color: theme.colorScheme.surface.withValues(alpha: 0.8),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onClear,
+                child: Tooltip(
+                  message: AppLocalizations.of(context).actionRemove,
+                  child: const Padding(
+                    padding: EdgeInsets.all(2),
+                    child: Icon(Icons.close, size: 18),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -666,8 +754,10 @@ class _CardActionsSheet extends StatelessWidget {
           ),
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            title: Text(l10n.collectionActionDelete,
-                style: TextStyle(color: theme.colorScheme.error)),
+            title: Text(
+              l10n.collectionActionDelete,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
             onTap: () => Navigator.of(context).pop(_CardAction.delete),
           ),
         ],
@@ -847,9 +937,9 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        child: Text(label, style: Theme.of(context).textTheme.titleSmall),
-      );
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+    child: Text(label, style: Theme.of(context).textTheme.titleSmall),
+  );
 }
 
 class _SheetSpinner extends StatelessWidget {
@@ -860,12 +950,9 @@ class _SheetSpinner extends StatelessWidget {
   // and stays valid inside the drilled-cards ListView (unbounded height).
   @override
   Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(
-          heightFactor: 1,
-          child: CircularProgressIndicator(),
-        ),
-      );
+    padding: EdgeInsets.all(24),
+    child: Center(heightFactor: 1, child: CircularProgressIndicator()),
+  );
 }
 
 class _EmptyView extends StatelessWidget {
@@ -880,18 +967,25 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.chat_bubble_outline,
-                size: 64, color: theme.colorScheme.primary),
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: 16),
-            Text(AppLocalizations.of(context).collectionEmptyTitle,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              AppLocalizations.of(context).collectionEmptyTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               AppLocalizations.of(context).collectionEmptyBody,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -916,13 +1010,16 @@ class _ErrorView extends StatelessWidget {
           children: [
             Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 16),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 24),
             FilledButton(
-                onPressed: onRetry,
-                child: Text(AppLocalizations.of(context).actionRetry)),
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).actionRetry),
+            ),
           ],
         ),
       ),

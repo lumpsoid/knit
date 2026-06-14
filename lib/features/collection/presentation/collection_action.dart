@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
@@ -47,6 +48,25 @@ class ComposerSubmitted extends CollectionAction {
 class LinkCardSubmitted extends CollectionAction {
   const LinkCardSubmitted(this.url);
   final String url;
+}
+
+/// The "+" add-block finder chose Photo (§4.2): open the picker so the chosen
+/// image can be previewed above the composer before it becomes a card.
+class PickImageRequested extends CollectionAction {
+  const PickImageRequested();
+}
+
+/// Delivery of [PickImageRequested]: the picker returned [image] (null when the
+/// user cancelled). A non-null image becomes the composer's pending preview.
+class ImagePicked extends CollectionAction {
+  const ImagePicked(this.image);
+  final PickedImage? image;
+}
+
+/// The preview's clear ("✕") button — drop the pending image without writing
+/// anything. The user can then send text only, or pick a different image.
+class PendingImageCleared extends CollectionAction {
+  const PendingImageCleared();
 }
 
 /// Actions sheet → delete a card (§4.2). Links to it become broken, not gone.

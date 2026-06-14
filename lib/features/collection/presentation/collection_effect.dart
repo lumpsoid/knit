@@ -1,3 +1,4 @@
+import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
@@ -33,6 +34,29 @@ class AddCardEffect extends CollectionEffect {
   final CardKind kind;
   final String position;
   final String? text;
+}
+
+/// Open the platform picker so the chosen image can be previewed in the
+/// composer (the shell delivers the result back as an [ImagePicked] action).
+class PickImageEffect extends CollectionEffect {
+  const PickImageEffect();
+}
+
+/// Store the already-picked [image] (§7.4.8), then append an image card at
+/// [position] carrying [caption] (the composer text, already trimmed; null when
+/// blank). The attachment id is minted in the shell from [image] — unlike a
+/// text/link [AddCardEffect], which carries no attachment.
+class AddPhotoCardEffect extends CollectionEffect {
+  const AddPhotoCardEffect({
+    required this.collectionId,
+    required this.position,
+    required this.image,
+    this.caption,
+  });
+  final String collectionId;
+  final String position;
+  final PickedImage image;
+  final String? caption;
 }
 
 class DeleteCardEffect extends CollectionEffect {

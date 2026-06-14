@@ -9,12 +9,15 @@ import 'package:result_dart/result_dart.dart';
 /// op returns the affected entity id on success.
 abstract interface class CollectionWriteRepository {
   /// Append/insert a card of [kind] at the pre-computed [position] (§8.4/§8.7).
-  /// [text] is the body for a text card or the URL/label for a link card.
+  /// [text] is the body for a text card or the URL/label for a link card — or
+  /// the caption for an image card. [attachmentId] points an image card at its
+  /// stored attachment (§7.4.8); it is null for text/link cards.
   Future<Result<String, CollectionFailure>> addCard({
     required String collectionId,
     required CardKind kind,
     required String position,
     String? text,
+    String? attachmentId,
   });
 
   /// Soft-delete a card (§6.1). Links to it become broken chips, never vanish.
