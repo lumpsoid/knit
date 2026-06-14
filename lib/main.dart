@@ -51,7 +51,16 @@ import 'package:knit/features/timeline/infra/timeline_channel_notifier.dart';
 import 'package:knit/features/timeline/presentation/timeline_module.dart';
 import 'package:knit/features/timeline/presentation/timeline_scope.dart';
 
-void main() {
+/// Default entry point. Real builds use the flavor entry points
+/// (`lib/main_dev.dart` / `main_staging.dart` / `main_prod.dart`), each of
+/// which calls [bootstrap] with its [Flavor]'s config; this convenience `main`
+/// boots the dev flavor so `flutter run -t lib/main.dart --flavor dev` works.
+void main() => bootstrap(Flavor.dev.config);
+
+/// Wires the composition root for [config] and runs the app. Pure of flavor
+/// selection — the entry points pick the [AppConfig]; this builds the graph
+/// from it (composition.md §2).
+void bootstrap(AppConfig config) {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Composition routes the single package:logging stream: every layer logs to
@@ -69,10 +78,9 @@ void main() {
     );
   });
 
-  // composition.md §2 — the immutable graph selector. Dev (in-memory) by
-  // default so the app runs on any platform with no SQLite setup; switch to
-  // [AppConfig.prod] for the persistent sqflite graph (one DB file per device).
-  const config = AppConfig.dev;
+  // composition.md §2 — [config] is the immutable graph selector handed in by
+  // the flavor entry point: dev runs the in-memory graph (any platform, no
+  // SQLite), staging/prod the persistent sqflite graph (one DB file per device).
   final graph = AppGraph();
 
   // App Launch hosts the only eagerly-built controller: it drives init, then
@@ -190,11 +198,14 @@ void main() {
     ).controller,
   );
 
-  runApp(const KnitApp());
+  runApp(KnitApp(config: config));
 }
 
 class KnitApp extends StatefulWidget {
-  const KnitApp({super.key});
+  const KnitApp({super.key, required this.config});
+
+  /// The active build flavor's config — drives the non-prod flavor banner.
+  final AppConfig config;
 
   @override
   State<KnitApp> createState() => _KnitAppState();
@@ -238,9 +249,23 @@ class _KnitAppState extends State<KnitApp> {
                 seedColor: _seedColor, brightness: Brightness.dark),
             useMaterial3: true,
           ),
+          builder: _flavorBanner,
           home: const AppLaunchPage(),
         );
       },
+    );
+  }
+
+  /// Corner ribbon naming the flavor on every non-prod build, so a dev/staging
+  /// install is never mistaken for prod. Prod renders the child untouched.
+  Widget _flavorBanner(BuildContext context, Widget? child) {
+    final content = child ?? const SizedBox.shrink();
+    if (widget.config.isProd) return content;
+    return Banner(
+      message: widget.config.flavor.label,
+      location: BannerLocation.topEnd,
+      color: Colors.red.shade700,
+      child: content,
     );
   }
 

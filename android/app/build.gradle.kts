@@ -30,6 +30,28 @@ android {
         versionName = flutter.versionName
     }
 
+    // Build flavors (dev / staging / prod). Each gets a distinct application id
+    // suffix so all three install side by side, and a flavor-specific app name
+    // surfaced to the manifest via @string/app_name. Pair with the matching
+    // Dart entry point, e.g. `flutter run --flavor dev -t lib/main_dev.dart`.
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "Knit Dev")
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            resValue("string", "app_name", "Knit Staging")
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "Knit")
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

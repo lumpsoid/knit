@@ -54,7 +54,7 @@ void main() {
   testWidgets('boots through the splash into onboarding on a fresh device',
       (tester) async {
     wire();
-    await tester.pumpWidget(const KnitApp());
+    await tester.pumpWidget(const KnitApp(config: AppConfig.dev));
 
     // The splash shows first.
     expect(find.text('Knit'), findsOneWidget);
