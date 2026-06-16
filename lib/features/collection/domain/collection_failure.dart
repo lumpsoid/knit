@@ -20,3 +20,9 @@ class CollectionLoadFailure extends CollectionFailure {
 class CollectionWriteFailure extends CollectionFailure {
   const CollectionWriteFailure(super.error, [super.stackTrace]);
 }
+
+/// Handing a card to the platform share sheet (§4.2) failed — e.g. no share
+/// target on the platform, or the share channel threw.
+class CollectionShareFailure extends CollectionFailure {
+  const CollectionShareFailure(super.error, [super.stackTrace]);
+}

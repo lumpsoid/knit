@@ -12,29 +12,36 @@ import 'package:knit/features/connections/domain/connections_models.dart';
 void main() {
   const updater = CollectionUpdater();
 
-  final image = PickedImage(bytes: Uint8List.fromList([1, 2, 3]), mime: 'image/png');
+  final image = PickedImage(
+    bytes: Uint8List.fromList([1, 2, 3]),
+    mime: 'image/png',
+  );
 
   FeedCard card(String id, String position, {CardKind kind = CardKind.text}) =>
       FeedCard(id: id, kind: kind, position: position, text: id);
 
   CollectionState ready(List<FeedCard> cards) => CollectionState(
-        status: CollectionStatus.ready,
-        collectionId: 'col',
-        title: 'Notes',
-        cards: cards,
-      );
+    status: CollectionStatus.ready,
+    collectionId: 'col',
+    title: 'Notes',
+    cards: cards,
+  );
 
   test('ViewAttached loads the given collection', () {
-    final (next, effects) =
-        updater.update(const CollectionState(), const ViewAttached('col-1'));
+    final (next, effects) = updater.update(
+      const CollectionState(),
+      const ViewAttached('col-1'),
+    );
     expect(next.status, CollectionStatus.loading);
     expect(next.collectionId, 'col-1');
     expect((effects!.single as LoadCollectionEffect).collectionId, 'col-1');
   });
 
   test('ReloadRequested is a no-op before a collection is set', () {
-    final (_, effects) =
-        updater.update(const CollectionState(), const ReloadRequested());
+    final (_, effects) = updater.update(
+      const CollectionState(),
+      const ReloadRequested(),
+    );
     expect(effects, isNull);
   });
 
@@ -45,8 +52,10 @@ void main() {
       coverAttachmentId: null,
       cards: [card('c1', 'a0')],
     );
-    final (next, effects) =
-        updater.update(const CollectionState(), CollectionLoaded(data));
+    final (next, effects) = updater.update(
+      const CollectionState(),
+      CollectionLoaded(data),
+    );
     expect(next.status, CollectionStatus.ready);
     expect(next.cards.single.id, 'c1');
     expect(effects, isNull);
@@ -54,11 +63,11 @@ void main() {
 
   group('image thumbnails', () {
     CollectionData dataWith(List<FeedCard> cards) => CollectionData(
-          collectionId: 'col',
-          title: 'Notes',
-          coverAttachmentId: null,
-          cards: cards,
-        );
+      collectionId: 'col',
+      title: 'Notes',
+      coverAttachmentId: null,
+      cards: cards,
+    );
 
     FeedCard imageCard(String id, String position, String? attachmentId) =>
         FeedCard(
@@ -74,8 +83,10 @@ void main() {
         imageCard('c2', 'a1', 'att-1'),
         imageCard('c3', 'a2', 'att-2'),
       ]);
-      final (_, effects) =
-          updater.update(const CollectionState(), CollectionLoaded(data));
+      final (_, effects) = updater.update(
+        const CollectionState(),
+        CollectionLoaded(data),
+      );
       final ids = effects!
           .whereType<LoadImageBytesEffect>()
           .map((e) => e.attachmentId)
@@ -85,8 +96,10 @@ void main() {
 
     test('an image card without an attachment id loads nothing', () {
       final data = dataWith([imageCard('c1', 'a0', null)]);
-      final (_, effects) =
-          updater.update(const CollectionState(), CollectionLoaded(data));
+      final (_, effects) = updater.update(
+        const CollectionState(),
+        CollectionLoaded(data),
+      );
       expect(effects, isNull);
     });
 
@@ -130,8 +143,10 @@ void main() {
 
   group('composer / append positions', () {
     test('first card on an empty feed gets the first key', () {
-      final (_, effects) =
-          updater.update(ready(const []), const ComposerSubmitted('hi'));
+      final (_, effects) = updater.update(
+        ready(const []),
+        const ComposerSubmitted('hi'),
+      );
       final effect = effects!.single as AddCardEffect;
       expect(effect.kind, CardKind.text);
       expect(effect.position, 'a0');
@@ -149,8 +164,10 @@ void main() {
     });
 
     test('blank composer text produces no effect', () {
-      final (_, effects) =
-          updater.update(ready(const []), const ComposerSubmitted('   '));
+      final (_, effects) = updater.update(
+        ready(const []),
+        const ComposerSubmitted('   '),
+      );
       expect(effects, isNull);
     });
 
@@ -200,19 +217,21 @@ void main() {
       expect(effects, isNull);
     });
 
-    test('sending with a staged image emits a photo card and clears the preview',
-        () {
-      final (next, effects) = updater.update(
-        ready([card('c1', 'a0')]).copyWith(pendingImage: image),
-        const ComposerSubmitted('  a caption  '),
-      );
-      final effect = effects!.single as AddPhotoCardEffect;
-      expect(effect.collectionId, 'col');
-      expect(effect.position.compareTo('a0') > 0, isTrue);
-      expect(effect.caption, 'a caption', reason: 'trimmed');
-      expect(effect.image, same(image));
-      expect(next.pendingImage, isNull, reason: 'cleared optimistically');
-    });
+    test(
+      'sending with a staged image emits a photo card and clears the preview',
+      () {
+        final (next, effects) = updater.update(
+          ready([card('c1', 'a0')]).copyWith(pendingImage: image),
+          const ComposerSubmitted('  a caption  '),
+        );
+        final effect = effects!.single as AddPhotoCardEffect;
+        expect(effect.collectionId, 'col');
+        expect(effect.position.compareTo('a0') > 0, isTrue);
+        expect(effect.caption, 'a caption', reason: 'trimmed');
+        expect(effect.image, same(image));
+        expect(next.pendingImage, isNull, reason: 'cleared optimistically');
+      },
+    );
 
     test('sending a staged image with blank text carries a null caption', () {
       final (_, effects) = updater.update(
@@ -267,6 +286,75 @@ void main() {
     });
   });
 
+  group('share', () {
+    // First 12 hex of the (dash-stripped) id are the UUIDv7 ms timestamp.
+    const v7Id = '01890a5d-ac96-7000-8000-000000000000';
+
+    FeedCard photo(String id, {String? caption}) => FeedCard(
+      id: id,
+      kind: CardKind.image,
+      position: 'a0',
+      text: caption,
+      attachmentId: 'att-1',
+    );
+
+    test('a text card emits ShareCardEffect with its text, no attachment', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const CardShareRequested('c1'),
+      );
+      final effect = effects!.single as ShareCardEffect;
+      expect(effect.text, 'c1');
+      expect(effect.attachmentId, isNull);
+    });
+
+    test('an image card shares the photo plus its caption, date-stamped', () {
+      final (_, effects) = updater.update(
+        ready([photo(v7Id, caption: 'a caption')]),
+        const CardShareRequested(v7Id),
+      );
+      final effect = effects!.single as ShareCardEffect;
+      expect(effect.text, 'a caption');
+      expect(effect.attachmentId, 'att-1');
+      expect(effect.imageBaseName, matches(r'^\d{4}-\d{2}-\d{2}-knit$'));
+    });
+
+    test('an image card with no caption shares the photo alone', () {
+      final (_, effects) = updater.update(
+        ready([photo(v7Id)]),
+        const CardShareRequested(v7Id),
+      );
+      final effect = effects!.single as ShareCardEffect;
+      expect(effect.text, isNull);
+      expect(effect.attachmentId, 'att-1');
+    });
+
+    test('the photo file-name stem falls back to "knit" for a non-v7 id', () {
+      final (_, effects) = updater.update(
+        ready([photo('not-a-uuid')]),
+        const CardShareRequested('not-a-uuid'),
+      );
+      expect((effects!.single as ShareCardEffect).imageBaseName, 'knit');
+    });
+
+    test('an empty text card is a pure no-op', () {
+      final empty = FeedCard(id: 'c1', kind: CardKind.text, position: 'a0');
+      final (_, effects) = updater.update(
+        ready([empty]),
+        const CardShareRequested('c1'),
+      );
+      expect(effects, isNull);
+    });
+
+    test('an unknown card id is a pure no-op', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const CardShareRequested('missing'),
+      );
+      expect(effects, isNull);
+    });
+  });
+
   group('link finder (lazy levels)', () {
     const optCol = LinkOption(
       kind: ConnectedEntityKind.collection,
@@ -280,8 +368,10 @@ void main() {
     );
 
     test('opening the finder loads the collections level', () {
-      final (_, effects) =
-          updater.update(ready(const []), const LinkFinderOpened());
+      final (_, effects) = updater.update(
+        ready(const []),
+        const LinkFinderOpened(),
+      );
       expect(effects!.single, isA<LoadLinkCollectionsEffect>());
     });
 
@@ -307,10 +397,14 @@ void main() {
 
     test('drilling on a cache hit is a pure no-op', () {
       final state = ready(const []).copyWith(
-        linkCardsByCollection: const {'col-2': [optCard]},
+        linkCardsByCollection: const {
+          'col-2': [optCard],
+        },
       );
-      final (next, effects) =
-          updater.update(state, const LinkCollectionOpened('col-2'));
+      final (next, effects) = updater.update(
+        state,
+        const LinkCollectionOpened('col-2'),
+      );
       expect(effects, isNull);
       expect(next.linkCardsByCollection['col-2'], [optCard]);
     });
@@ -327,7 +421,9 @@ void main() {
     test('a feed reload drops the finder caches (re-read fresh on reopen)', () {
       final state = ready([card('c1', 'a0')]).copyWith(
         linkCollections: const [optCol],
-        linkCardsByCollection: const {'col-2': [optCard]},
+        linkCardsByCollection: const {
+          'col-2': [optCard],
+        },
       );
       final data = CollectionData(
         collectionId: 'col',
@@ -343,15 +439,21 @@ void main() {
 
   group('reorder mode', () {
     test('start / end toggles the mode flag', () {
-      final (started, _) =
-          updater.update(ready(const []), const StartReorder());
+      final (started, _) = updater.update(
+        ready(const []),
+        const StartReorder(),
+      );
       expect(started.reordering, isTrue);
       final (ended, _) = updater.update(started, const EndReorder());
       expect(ended.reordering, isFalse);
     });
 
     test('moving a card to the end re-keys it after its new predecessor', () {
-      final state = ready([card('c1', 'a0'), card('c2', 'a1'), card('c3', 'a2')]);
+      final state = ready([
+        card('c1', 'a0'),
+        card('c2', 'a1'),
+        card('c3', 'a2'),
+      ]);
       // ReorderableListView reports newIndex as the pre-removal slot.
       final (next, effects) = updater.update(state, const CardMoved(0, 3));
       final effect = effects!.single as ReorderCardEffect;
@@ -365,7 +467,11 @@ void main() {
     });
 
     test('moving a card to the front re-keys it before the new successor', () {
-      final state = ready([card('c1', 'a0'), card('c2', 'a1'), card('c3', 'a2')]);
+      final state = ready([
+        card('c1', 'a0'),
+        card('c2', 'a1'),
+        card('c3', 'a2'),
+      ]);
       final (next, effects) = updater.update(state, const CardMoved(2, 0));
       final effect = effects!.single as ReorderCardEffect;
       expect(effect.cardId, 'c3');
@@ -380,8 +486,10 @@ void main() {
     });
 
     test('survives the post-write re-sync — a single move keeps the mode', () {
-      final state = ready([card('c1', 'a0'), card('c2', 'a1')])
-          .copyWith(reordering: true);
+      final state = ready([
+        card('c1', 'a0'),
+        card('c2', 'a1'),
+      ]).copyWith(reordering: true);
       final data = CollectionData(
         collectionId: 'col',
         title: 'Notes',
@@ -393,8 +501,10 @@ void main() {
     });
 
     test('drops the mode when the re-synced feed shrinks below 2 cards', () {
-      final state = ready([card('c1', 'a0'), card('c2', 'a1')])
-          .copyWith(reordering: true);
+      final state = ready([
+        card('c1', 'a0'),
+        card('c2', 'a1'),
+      ]).copyWith(reordering: true);
       final data = CollectionData(
         collectionId: 'col',
         title: 'Notes',

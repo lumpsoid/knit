@@ -20,12 +20,12 @@ enum CardKind {
   /// Resolve a stored `kind` tag; unknown tags degrade to [CardKind.unknown]
   /// rather than throwing, so a newer peer's card kind still renders.
   static CardKind fromTag(String? tag) => switch (tag) {
-        'text' => CardKind.text,
-        'image' => CardKind.image,
-        'audio' => CardKind.audio,
-        'link' => CardKind.link,
-        _ => CardKind.unknown,
-      };
+    'text' => CardKind.text,
+    'image' => CardKind.image,
+    'audio' => CardKind.audio,
+    'link' => CardKind.link,
+    _ => CardKind.unknown,
+  };
 }
 
 /// One card in the feed (spec §4.2 / §8.7). Ordered by [position] (string,
@@ -52,15 +52,26 @@ class FeedCard {
   /// `attachment_id` for image/audio cards (§7.4.3); null otherwise.
   final String? attachmentId;
 
+  /// The card's capture time, decoded from the millisecond timestamp in the
+  /// leading 48 bits of its UUIDv7 [id] (§6.1) — every minted card id is v7, so
+  /// this resolves for real cards. Null when [id] isn't a v7 uuid, so callers
+  /// can fall back. Used to date-stamp a shared photo's file name (§4.2).
+  DateTime? get capturedAt {
+    final hex = id.replaceAll('-', '');
+    if (hex.length < 12) return null;
+    final ms = int.tryParse(hex.substring(0, 12), radix: 16);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
   /// Used by the updater's optimistic reorder to re-stamp [position] locally
   /// before the placement write lands.
   FeedCard copyWith({String? position}) => FeedCard(
-        id: id,
-        kind: kind,
-        position: position ?? this.position,
-        text: text,
-        attachmentId: attachmentId,
-      );
+    id: id,
+    kind: kind,
+    position: position ?? this.position,
+    text: text,
+    attachmentId: attachmentId,
+  );
 }
 
 /// One selectable target in the link finder — a collection or a card (§4.4).
@@ -68,11 +79,7 @@ class FeedCard {
 /// The finder loads collections first, then a collection's [LinkOption] cards on
 /// drill, so a card can link to *any* card or collection — not just a collection.
 class LinkOption {
-  const LinkOption({
-    required this.kind,
-    required this.id,
-    required this.label,
-  });
+  const LinkOption({required this.kind, required this.id, required this.label});
 
   final ConnectedEntityKind kind;
   final String id;

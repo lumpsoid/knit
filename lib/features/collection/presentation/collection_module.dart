@@ -5,6 +5,7 @@ import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
+import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -26,11 +27,13 @@ class CollectionModule {
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
+    required CardShareRepository shareRepository,
     required TimelineChannelEmitter timelineChannel,
     Logger? logger,
   }) {
-    final stateHolder =
-        ValueListenableStateHolder<CollectionState>(const CollectionState());
+    final stateHolder = ValueListenableStateHolder<CollectionState>(
+      const CollectionState(),
+    );
     final effectEmitter = EffectEmitter<CollectionUiEffect>();
     final shell = CollectionShell(
       readRepository: readRepository,
@@ -38,6 +41,7 @@ class CollectionModule {
       attachmentReadRepository: attachmentReadRepository,
       attachmentWriteRepository: attachmentWriteRepository,
       imagePicker: imagePicker,
+      shareRepository: shareRepository,
       effectEmitter: effectEmitter,
       timelineChannel: timelineChannel,
       logger: logger ?? Logger('knit.collection'),
@@ -45,8 +49,9 @@ class CollectionModule {
     final loop = CollectionLoop(
       stateHolder: stateHolder,
       updater: const CollectionUpdater(),
-      effectRunner:
-          ShellEffectRunner<CollectionEffect, CollectionAction>(shell: shell),
+      effectRunner: ShellEffectRunner<CollectionEffect, CollectionAction>(
+        shell: shell,
+      ),
     );
     _controller = CollectionController(
       stateHolder: stateHolder,

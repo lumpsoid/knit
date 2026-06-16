@@ -271,6 +271,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionActionConnections => 'Connections';
 
   @override
+  String get collectionActionShare => 'Share';
+
+  @override
   String get collectionActionReorder => 'Reorder';
 
   @override

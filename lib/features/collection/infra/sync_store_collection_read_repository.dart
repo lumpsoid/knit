@@ -23,9 +23,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       final store = _graph.store;
       final header = await store.get(EntityType.collection, id);
       if (header == null || header.deleted) {
-        return const Failure(
-          CollectionLoadFailure('collection not found'),
-        );
+        return const Failure(CollectionLoadFailure('collection not found'));
       }
 
       final cards = [
@@ -54,7 +52,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
 
   @override
   Future<Result<List<LinkOption>, CollectionFailure>>
-      loadLinkCollections() async {
+  loadLinkCollections() async {
     try {
       final store = _graph.store;
       final options = [

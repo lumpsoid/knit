@@ -20,8 +20,7 @@ abstract final class CollectionScope {
   static void setRouteArgs(CollectionRouteArgs args) => _routeArgs = args;
   static void setConnectionsRouteArgsWriter(
     ConnectionsRouteArgsWriter writer,
-  ) =>
-      _connectionsWriter = writer;
+  ) => _connectionsWriter = writer;
   static void setCardEditRouteArgsWriter(CardEditRouteArgsWriter writer) =>
       _cardEditWriter = writer;
   static void reset() => _controller = null;

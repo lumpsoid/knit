@@ -15,8 +15,8 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
   SyncStoreCollectionWriteRepository({
     required AppGraph graph,
     required IdGenerator ids,
-  })  : _graph = graph,
-        _ids = ids;
+  }) : _graph = graph,
+       _ids = ids;
 
   final AppGraph _graph;
   final IdGenerator _ids;
@@ -28,24 +28,18 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
     required String position,
     String? text,
     String? attachmentId,
-  }) =>
-      _write(() async {
-        final id = _ids.newId();
-        await _graph.store.create(
-          EntityType.card,
-          id,
-          {
-            'collection_id': collectionId,
-            'kind': kind.tag,
-            'text': text,
-            // Only an image card carries an attachment; omit the key for
-            // text/link cards so their signed payloads stay byte-identical.
-            'attachment_id': ?attachmentId,
-          },
-          position: position,
-        );
-        return id;
-      });
+  }) => _write(() async {
+    final id = _ids.newId();
+    await _graph.store.create(EntityType.card, id, {
+      'collection_id': collectionId,
+      'kind': kind.tag,
+      'text': text,
+      // Only an image card carries an attachment; omit the key for
+      // text/link cards so their signed payloads stay byte-identical.
+      'attachment_id': ?attachmentId,
+    }, position: position);
+    return id;
+  });
 
   @override
   Future<Result<String, CollectionFailure>> deleteCard(String cardId) =>
@@ -58,41 +52,38 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
   Future<Result<String, CollectionFailure>> reorderCard(
     String cardId,
     String position,
-  ) =>
-      _write(() async {
-        await _graph.store.reorder(cardId, position);
-        return cardId;
-      });
+  ) => _write(() async {
+    await _graph.store.reorder(cardId, position);
+    return cardId;
+  });
 
   @override
   Future<Result<String, CollectionFailure>> linkCardToTarget({
     required String cardId,
     required ConnectedEntityKind targetKind,
     required String targetId,
-  }) =>
-      _write(() async {
-        final id = _ids.newId();
-        await _graph.store.create(EntityType.link, id, {
-          'source_type': EntityType.card.name,
-          'source_id': cardId,
-          'target_type': targetKind.tag,
-          'target_id': targetId,
-          'label': null,
-        });
-        return id;
-      });
+  }) => _write(() async {
+    final id = _ids.newId();
+    await _graph.store.create(EntityType.link, id, {
+      'source_type': EntityType.card.name,
+      'source_id': cardId,
+      'target_type': targetKind.tag,
+      'target_id': targetId,
+      'label': null,
+    });
+    return id;
+  });
 
   @override
   Future<Result<String, CollectionFailure>> editTitle(
     String collectionId,
     String title,
-  ) =>
-      _write(() async {
-        await _graph.store.edit(EntityType.collection, collectionId, {
-          'title': title,
-        });
-        return collectionId;
-      });
+  ) => _write(() async {
+    await _graph.store.edit(EntityType.collection, collectionId, {
+      'title': title,
+    });
+    return collectionId;
+  });
 
   Future<Result<String, CollectionFailure>> _write(
     Future<String> Function() op,

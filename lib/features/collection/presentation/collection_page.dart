@@ -120,6 +120,8 @@ class _CollectionPageState extends State<CollectionPage> {
           id: card.id,
           title: _cardLabel(AppLocalizations.of(context), card),
         );
+      case _CardAction.share:
+        _controller.dispatch(CardShareRequested(card.id));
       case _CardAction.reorder:
         _controller.dispatch(const StartReorder());
     }
@@ -368,7 +370,7 @@ class _CollectionPageState extends State<CollectionPage> {
 
 // --- card kinds for the sheets ---------------------------------------------
 
-enum _CardAction { edit, delete, link, connections, reorder }
+enum _CardAction { edit, delete, link, connections, share, reorder }
 
 // --- widgets ---------------------------------------------------------------
 
@@ -861,6 +863,11 @@ class _CardActionsSheet extends StatelessWidget {
             leading: const Icon(Icons.hub_outlined),
             title: Text(l10n.collectionActionConnections),
             onTap: () => Navigator.of(context).pop(_CardAction.connections),
+          ),
+          ListTile(
+            leading: const Icon(Icons.ios_share),
+            title: Text(l10n.collectionActionShare),
+            onTap: () => Navigator.of(context).pop(_CardAction.share),
           ),
           ListTile(
             leading: const Icon(Icons.swap_vert),

@@ -64,6 +64,22 @@ class DeleteCardEffect extends CollectionEffect {
   final String cardId;
 }
 
+/// Share a card (§4.2). The updater resolves the card to its shareable content:
+/// [text] is the body/caption (null when blank); [attachmentId] is set only for
+/// an image card (the shell loads its bytes); [imageBaseName] is the date-stamped
+/// file name stem (e.g. `2026-06-16-knit`), to which the shell appends the
+/// extension once it knows the image's mime.
+class ShareCardEffect extends CollectionEffect {
+  const ShareCardEffect({
+    this.text,
+    this.attachmentId,
+    required this.imageBaseName,
+  });
+  final String? text;
+  final String? attachmentId;
+  final String imageBaseName;
+}
+
 class ReorderCardEffect extends CollectionEffect {
   const ReorderCardEffect(this.cardId, this.position);
   final String cardId;

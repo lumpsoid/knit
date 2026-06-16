@@ -75,6 +75,13 @@ class CardDeleteRequested extends CollectionAction {
   final String cardId;
 }
 
+/// Actions sheet → share a card through the system share sheet (§4.2). Text
+/// cards share their text; an image card shares the photo plus its caption.
+class CardShareRequested extends CollectionAction {
+  const CardShareRequested(this.cardId);
+  final String cardId;
+}
+
 /// Actions sheet → "Make a link" opened the finder (§4.4). Loads the first
 /// level (collections); a no-op if they are already loaded is fine — it just
 /// refreshes them.
