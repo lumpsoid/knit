@@ -270,6 +270,31 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionPhotoSourceCamera => 'Камера';
 
   @override
+  String get collectionAudioStart => 'Начать запись';
+
+  @override
+  String get collectionAudioStop => 'Стоп';
+
+  @override
+  String get collectionAudioPause => 'Пауза';
+
+  @override
+  String get collectionAudioResume => 'Продолжить';
+
+  @override
+  String get collectionAudioRecording => 'Запись';
+
+  @override
+  String get collectionAudioPaused => 'Пауза';
+
+  @override
+  String get collectionAudioMessage => 'Аудиосообщение';
+
+  @override
+  String get collectionAudioPermissionDenied =>
+      'Для записи аудио нужен доступ к микрофону.';
+
+  @override
   String get collectionActionEdit => 'Изменить';
 
   @override

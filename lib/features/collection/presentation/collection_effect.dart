@@ -1,4 +1,5 @@
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -59,6 +60,46 @@ class AddPhotoCardEffect extends CollectionEffect {
   final String collectionId;
   final String position;
   final PickedImage image;
+  final String? caption;
+}
+
+/// Audio capture lifecycle (§4.2), each a thin call into the [AudioRecorderPort].
+/// Start delivers an [AudioRecordingStarted]/[AudioRecordingStartFailed] action;
+/// stop delivers an [AudioRecorded]; pause/resume/cancel are fire-and-forget
+/// (the updater already moved the phase optimistically).
+class StartAudioRecordingEffect extends CollectionEffect {
+  const StartAudioRecordingEffect();
+}
+
+class PauseAudioRecordingEffect extends CollectionEffect {
+  const PauseAudioRecordingEffect();
+}
+
+class ResumeAudioRecordingEffect extends CollectionEffect {
+  const ResumeAudioRecordingEffect();
+}
+
+class StopAudioRecordingEffect extends CollectionEffect {
+  const StopAudioRecordingEffect();
+}
+
+class CancelAudioRecordingEffect extends CollectionEffect {
+  const CancelAudioRecordingEffect();
+}
+
+/// Store the recorded [audio] (§7.4.8), then append an audio card at [position]
+/// carrying [caption] (the composer text, already trimmed; null when blank). The
+/// audio twin of [AddPhotoCardEffect].
+class AddAudioCardEffect extends CollectionEffect {
+  const AddAudioCardEffect({
+    required this.collectionId,
+    required this.position,
+    required this.audio,
+    this.caption,
+  });
+  final String collectionId;
+  final String position;
+  final PickedAudio audio;
   final String? caption;
 }
 

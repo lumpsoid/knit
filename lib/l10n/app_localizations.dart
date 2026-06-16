@@ -554,6 +554,54 @@ abstract class AppLocalizations {
   /// **'Camera'**
   String get collectionPhotoSourceCamera;
 
+  /// No description provided for @collectionAudioStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start recording'**
+  String get collectionAudioStart;
+
+  /// No description provided for @collectionAudioStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get collectionAudioStop;
+
+  /// No description provided for @collectionAudioPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get collectionAudioPause;
+
+  /// No description provided for @collectionAudioResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get collectionAudioResume;
+
+  /// No description provided for @collectionAudioRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get collectionAudioRecording;
+
+  /// No description provided for @collectionAudioPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get collectionAudioPaused;
+
+  /// No description provided for @collectionAudioMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio message'**
+  String get collectionAudioMessage;
+
+  /// No description provided for @collectionAudioPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is needed to record audio.'**
+  String get collectionAudioPermissionDenied;
+
   /// No description provided for @collectionActionEdit.
   ///
   /// In en, this message translates to:

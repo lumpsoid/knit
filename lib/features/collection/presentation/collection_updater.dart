@@ -79,17 +79,34 @@ class CollectionUpdater
 
       case ComposerSubmitted(:final text):
         final body = text.trim();
-        final pending = state.pendingImage;
+        // While a recording is in flight, send is inert — the user stops first.
+        if (state.isRecordingAudio) return (state, null);
+        final pendingImage = state.pendingImage;
         // A pending image wins: send it as an image card with the (optional)
         // text as its caption, and clear the preview optimistically.
-        if (pending != null) {
+        if (pendingImage != null) {
           return (
             state.copyWith(clearPendingImage: true),
             [
               AddPhotoCardEffect(
                 collectionId: state.collectionId,
                 position: _appendPosition(state.cards),
-                image: pending,
+                image: pendingImage,
+                caption: body.isEmpty ? null : body,
+              ),
+            ],
+          );
+        }
+        // Then a recorded audio clip: send it as an audio card with the caption.
+        final pendingAudio = state.pendingAudio;
+        if (pendingAudio != null) {
+          return (
+            state.copyWith(clearPendingAudio: true),
+            [
+              AddAudioCardEffect(
+                collectionId: state.collectionId,
+                position: _appendPosition(state.cards),
+                audio: pendingAudio,
                 caption: body.isEmpty ? null : body,
               ),
             ],
@@ -133,6 +150,58 @@ class CollectionUpdater
 
       case PendingImageCleared():
         return (state.copyWith(clearPendingImage: true), null);
+
+      case AudioRecordingRequested():
+        // Don't stage the phase yet — wait for the recorder to confirm it
+        // started (permission may be denied), mirroring the image-pick path.
+        return (state, const [StartAudioRecordingEffect()]);
+
+      case AudioRecordingStarted():
+        return (
+          state.copyWith(recordingPhase: AudioRecordingPhase.recording),
+          null,
+        );
+
+      case AudioRecordingStartFailed():
+        // Bar returns to idle; the shell already surfaced the reason.
+        return (state.copyWith(clearRecordingPhase: true), null);
+
+      case AudioRecordingPauseRequested():
+        // Optimistic, like reorder: flip the phase now, tell the recorder.
+        return (
+          state.copyWith(recordingPhase: AudioRecordingPhase.paused),
+          const [PauseAudioRecordingEffect()],
+        );
+
+      case AudioRecordingResumeRequested():
+        return (
+          state.copyWith(recordingPhase: AudioRecordingPhase.recording),
+          const [ResumeAudioRecordingEffect()],
+        );
+
+      case AudioRecordingStopRequested():
+        // Keep the phase until the clip is delivered (AudioRecorded clears it).
+        return (state, const [StopAudioRecordingEffect()]);
+
+      case AudioRecorded(:final audio):
+        // Nothing captured ⇒ just leave recording mode; otherwise stage the clip
+        // as the pending preview so a caption can be added before sending.
+        if (audio == null) {
+          return (state.copyWith(clearRecordingPhase: true), null);
+        }
+        return (
+          state.copyWith(clearRecordingPhase: true, pendingAudio: audio),
+          null,
+        );
+
+      case AudioRecordingCancelled():
+        return (
+          state.copyWith(clearRecordingPhase: true, clearPendingAudio: true),
+          const [CancelAudioRecordingEffect()],
+        );
+
+      case PendingAudioCleared():
+        return (state.copyWith(clearPendingAudio: true), null);
 
       case CardDeleteRequested(:final cardId):
         return (state, [DeleteCardEffect(cardId)]);
@@ -196,9 +265,15 @@ class CollectionUpdater
         );
 
       case DeactivateFeature():
+        // Leaving the page must release the recorder if it's still capturing.
         return (
-          state.copyWith(reordering: false, clearPendingImage: true),
-          null,
+          state.copyWith(
+            reordering: false,
+            clearPendingImage: true,
+            clearRecordingPhase: true,
+            clearPendingAudio: true,
+          ),
+          state.isRecordingAudio ? const [CancelAudioRecordingEffect()] : null,
         );
     }
   }

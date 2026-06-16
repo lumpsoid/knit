@@ -1,8 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 
 enum CollectionStatus { loading, ready, failed }
+
+/// Whether an audio message is actively being captured, and if so its sub-state
+/// (§4.2). Null (the field is nullable) ⇒ no recording in flight: either the bar
+/// is idle/hidden or a recorded clip is already staged in [CollectionState.pendingAudio].
+enum AudioRecordingPhase { recording, paused }
 
 /// State for the Collection screen (§4.2). [reordering] is the *mode* of this
 /// screen (drag-to-reorder), not a separate screen — exactly as the spec frames
@@ -21,6 +27,8 @@ class CollectionState {
     this.linkCardsByCollection = const {},
     this.reordering = false,
     this.pendingImage,
+    this.recordingPhase,
+    this.pendingAudio,
   });
 
   final CollectionStatus status;
@@ -54,6 +62,20 @@ class CollectionState {
   /// clearing or repicking just drops these bytes — no attachment is written.
   final PickedImage? pendingImage;
 
+  /// The live audio-capture sub-state (§4.2): non-null while recording or paused,
+  /// driving the recording controls above the composer. Null once stopped — the
+  /// captured clip then lives in [pendingAudio].
+  final AudioRecordingPhase? recordingPhase;
+
+  /// An audio message the user recorded but hasn't sent yet — the audio twin of
+  /// [pendingImage]. Held in memory and shown as a preview chip; the user can add
+  /// a caption before sending. Clearing it just drops these bytes — no attachment
+  /// is written until the composer is sent.
+  final PickedAudio? pendingAudio;
+
+  /// Whether an audio recording is actively being captured (not merely staged).
+  bool get isRecordingAudio => recordingPhase != null;
+
   bool get isEmpty => cards.isEmpty;
 
   bool get canReorder => cards.length > 1;
@@ -70,6 +92,10 @@ class CollectionState {
     bool? reordering,
     PickedImage? pendingImage,
     bool clearPendingImage = false,
+    AudioRecordingPhase? recordingPhase,
+    bool clearRecordingPhase = false,
+    PickedAudio? pendingAudio,
+    bool clearPendingAudio = false,
   }) => CollectionState(
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
@@ -80,9 +106,16 @@ class CollectionState {
     linkCollections: linkCollections ?? this.linkCollections,
     linkCardsByCollection: linkCardsByCollection ?? this.linkCardsByCollection,
     reordering: reordering ?? this.reordering,
-    // Nullable: `clearPendingImage` drops it (the `?? this` idiom can't).
+    // Nullable fields: the matching `clear…` flag drops them (the `?? this`
+    // idiom can't express "set to null").
     pendingImage: clearPendingImage
         ? null
         : (pendingImage ?? this.pendingImage),
+    recordingPhase: clearRecordingPhase
+        ? null
+        : (recordingPhase ?? this.recordingPhase),
+    pendingAudio: clearPendingAudio
+        ? null
+        : (pendingAudio ?? this.pendingAudio),
   );
 }

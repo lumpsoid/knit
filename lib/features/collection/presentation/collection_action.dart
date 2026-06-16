@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -70,6 +71,58 @@ class ImagePicked extends CollectionAction {
 /// anything. The user can then send text only, or pick a different image.
 class PendingImageCleared extends CollectionAction {
   const PendingImageCleared();
+}
+
+/// The audio bar's "Start recording" button (§4.2): begin capturing. The phase
+/// is staged only once the shell confirms the recorder started ([AudioRecordingStarted]).
+class AudioRecordingRequested extends CollectionAction {
+  const AudioRecordingRequested();
+}
+
+/// Delivery of [AudioRecordingRequested]: the recorder began capturing.
+class AudioRecordingStarted extends CollectionAction {
+  const AudioRecordingStarted();
+}
+
+/// Delivery of [AudioRecordingRequested]: the recorder couldn't start (e.g.
+/// microphone permission denied). The bar returns to idle; the shell messages.
+class AudioRecordingStartFailed extends CollectionAction {
+  const AudioRecordingStartFailed();
+}
+
+/// The recording controls' "Pause"/"Resume" buttons (§4.2). Optimistic: the
+/// phase flips immediately and the shell tells the recorder.
+class AudioRecordingPauseRequested extends CollectionAction {
+  const AudioRecordingPauseRequested();
+}
+
+class AudioRecordingResumeRequested extends CollectionAction {
+  const AudioRecordingResumeRequested();
+}
+
+/// The recording controls' "Stop" button (§4.2): finish capturing. The shell
+/// reads back the clip and delivers it as [AudioRecorded].
+class AudioRecordingStopRequested extends CollectionAction {
+  const AudioRecordingStopRequested();
+}
+
+/// Delivery of [AudioRecordingStopRequested]: the recorder returned [audio]
+/// (null when nothing was captured). A non-null clip becomes the pending preview.
+class AudioRecorded extends CollectionAction {
+  const AudioRecorded(this.audio);
+  final PickedAudio? audio;
+}
+
+/// Back out of an in-flight recording (the audio bar's "✕"): discard it without
+/// writing anything. A no-op for the recorder if nothing is recording.
+class AudioRecordingCancelled extends CollectionAction {
+  const AudioRecordingCancelled();
+}
+
+/// The pending audio preview's clear ("✕") button — drop the recorded-but-unsent
+/// clip without writing anything (the recorder has already stopped).
+class PendingAudioCleared extends CollectionAction {
+  const PendingAudioCleared();
 }
 
 /// Actions sheet → delete a card (§4.2). Links to it become broken, not gone.

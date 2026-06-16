@@ -6,7 +6,7 @@ sealed class CollectionUiEffect {
 
 /// A semantic, locale-independent message the shell can raise without reaching
 /// for `BuildContext` — the View maps it to localized text (l10n).
-enum CollectionMessage { saveFailed }
+enum CollectionMessage { saveFailed, micPermissionDenied }
 
 /// Show a transient message (e.g. a write failed) — a snackbar. Carries a
 /// semantic [CollectionMessage] key, not display text; the View localizes it.

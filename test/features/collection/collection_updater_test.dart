@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -16,6 +17,11 @@ void main() {
   final image = PickedImage(
     bytes: Uint8List.fromList([1, 2, 3]),
     mime: 'image/png',
+  );
+
+  final audio = PickedAudio(
+    bytes: Uint8List.fromList([4, 5, 6]),
+    mime: 'audio/mp4',
   );
 
   FeedCard card(String id, String position, {CardKind kind = CardKind.text}) =>
@@ -243,6 +249,188 @@ void main() {
       final effect = effects!.single as AddPhotoCardEffect;
       expect(effect.caption, isNull);
       expect(effect.position, 'a0');
+    });
+  });
+
+  group('audio recording', () {
+    test('start request opens the recorder but stages no phase yet', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const AudioRecordingRequested(),
+      );
+      expect(effects!.single, isA<StartAudioRecordingEffect>());
+      expect(next.recordingPhase, isNull, reason: 'wait for the recorder');
+    });
+
+    test('a confirmed start enters the recording phase', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const AudioRecordingStarted(),
+      );
+      expect(next.recordingPhase, AudioRecordingPhase.recording);
+      expect(effects, isNull);
+    });
+
+    test('a failed start leaves recording mode', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
+      final (next, effects) = updater.update(
+        state,
+        const AudioRecordingStartFailed(),
+      );
+      expect(next.recordingPhase, isNull);
+      expect(effects, isNull);
+    });
+
+    test('pause flips the phase optimistically and tells the recorder', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
+      final (next, effects) = updater.update(
+        state,
+        const AudioRecordingPauseRequested(),
+      );
+      expect(next.recordingPhase, AudioRecordingPhase.paused);
+      expect(effects!.single, isA<PauseAudioRecordingEffect>());
+    });
+
+    test('resume flips back to recording and tells the recorder', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.paused);
+      final (next, effects) = updater.update(
+        state,
+        const AudioRecordingResumeRequested(),
+      );
+      expect(next.recordingPhase, AudioRecordingPhase.recording);
+      expect(effects!.single, isA<ResumeAudioRecordingEffect>());
+    });
+
+    test('stop requests the clip without yet leaving the phase', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
+      final (next, effects) = updater.update(
+        state,
+        const AudioRecordingStopRequested(),
+      );
+      expect(effects!.single, isA<StopAudioRecordingEffect>());
+      expect(next.recordingPhase, AudioRecordingPhase.recording);
+    });
+
+    test('a captured clip is staged as the preview and clears the phase', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
+      final (next, effects) = updater.update(state, AudioRecorded(audio));
+      expect(next.pendingAudio, same(audio));
+      expect(next.recordingPhase, isNull);
+      expect(effects, isNull);
+    });
+
+    test('an empty capture just leaves recording mode', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
+      final (next, effects) = updater.update(
+        state,
+        const AudioRecorded(null),
+      );
+      expect(next.pendingAudio, isNull);
+      expect(next.recordingPhase, isNull);
+      expect(effects, isNull);
+    });
+
+    test('cancel drops everything and discards the recording', () {
+      final state = ready(const []).copyWith(
+        recordingPhase: AudioRecordingPhase.recording,
+      );
+      final (next, effects) = updater.update(
+        state,
+        const AudioRecordingCancelled(),
+      );
+      expect(next.recordingPhase, isNull);
+      expect(next.pendingAudio, isNull);
+      expect(effects!.single, isA<CancelAudioRecordingEffect>());
+    });
+
+    test('clearing the pending clip drops it with no effect', () {
+      final state = ready(const []).copyWith(pendingAudio: audio);
+      final (next, effects) = updater.update(
+        state,
+        const PendingAudioCleared(),
+      );
+      expect(next.pendingAudio, isNull);
+      expect(effects, isNull);
+    });
+
+    test('sending a staged clip emits an audio card and clears it', () {
+      final state = ready([card('c1', 'a0')]).copyWith(pendingAudio: audio);
+      final (next, effects) = updater.update(
+        state,
+        const ComposerSubmitted('  a note  '),
+      );
+      final effect = effects!.single as AddAudioCardEffect;
+      expect(effect.collectionId, 'col');
+      expect(effect.position.compareTo('a0') > 0, isTrue);
+      expect(effect.caption, 'a note', reason: 'trimmed');
+      expect(effect.audio, same(audio));
+      expect(next.pendingAudio, isNull, reason: 'cleared optimistically');
+    });
+
+    test('sending a staged clip with blank text carries a null caption', () {
+      final state = ready(const []).copyWith(pendingAudio: audio);
+      final (_, effects) = updater.update(
+        state,
+        const ComposerSubmitted('   '),
+      );
+      final effect = effects!.single as AddAudioCardEffect;
+      expect(effect.caption, isNull);
+      expect(effect.position, 'a0');
+    });
+
+    test('a pending image wins over a pending clip on send', () {
+      final state = ready(const [])
+          .copyWith(pendingImage: image, pendingAudio: audio);
+      final (_, effects) = updater.update(
+        state,
+        const ComposerSubmitted('hi'),
+      );
+      expect(effects!.single, isA<AddPhotoCardEffect>());
+    });
+
+    test('send is inert while a recording is in flight', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
+      final (next, effects) = updater.update(
+        state,
+        const ComposerSubmitted('hi'),
+      );
+      expect(effects, isNull);
+      expect(next.recordingPhase, AudioRecordingPhase.recording);
+    });
+
+    test('leaving the page cancels an in-flight recording', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
+      final (next, effects) = updater.update(
+        state,
+        const DeactivateFeature(),
+      );
+      expect(next.recordingPhase, isNull);
+      expect(effects!.single, isA<CancelAudioRecordingEffect>());
+    });
+
+    test('leaving the page with no recording emits no cancel', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const DeactivateFeature(),
+      );
+      expect(next.recordingPhase, isNull);
+      expect(effects, isNull);
     });
   });
 

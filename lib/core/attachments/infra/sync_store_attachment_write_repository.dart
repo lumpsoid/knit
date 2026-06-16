@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/attachments/domain/attachment_blob_store.dart';
 import 'package:knit/core/attachments/domain/attachment_failure.dart';
 import 'package:knit/core/attachments/domain/attachment_hashing.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
+import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ids/id_generator.dart';
 import 'package:knit/sync/sync.dart';
@@ -24,15 +27,29 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
   final IdGenerator _ids;
 
   static const String _imageKind = 'image';
+  static const String _audioKind = 'audio';
 
   AttachmentBlobStore get _blobs => _graph.blobStore;
 
   @override
   Future<Result<String, AttachmentFailure>> createFromPicked(
     PickedImage image,
+  ) => _create(image.bytes, image.mime, _imageKind);
+
+  @override
+  Future<Result<String, AttachmentFailure>> createFromAudio(
+    PickedAudio audio,
+  ) => _create(audio.bytes, audio.mime, _audioKind);
+
+  /// Shared capture path (spec §7.4.8): hash → record-dedup → blob put → signed
+  /// metadata record. Identical bytes dedupe to one record + one blob.
+  Future<Result<String, AttachmentFailure>> _create(
+    Uint8List bytes,
+    String mime,
+    String kind,
   ) async {
     try {
-      final hash = await sha256Hex(image.bytes);
+      final hash = await sha256Hex(bytes);
 
       // Record-level dedup: reuse a live record that already holds these bytes.
       for (final s in await _graph.store.readAll(EntityType.attachment)) {
@@ -41,13 +58,13 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
         }
       }
 
-      await _blobs.put(hash, image.bytes);
+      await _blobs.put(hash, bytes);
       final id = _ids.newId();
       await _graph.store.create(EntityType.attachment, id, {
-        AttachmentSchema.colKind: _imageKind,
-        AttachmentSchema.colMime: image.mime,
+        AttachmentSchema.colKind: kind,
+        AttachmentSchema.colMime: mime,
         AttachmentSchema.colContentHash: hash,
-        AttachmentSchema.colSize: image.bytes.length,
+        AttachmentSchema.colSize: bytes.length,
       });
       return Ok(id);
     } catch (e) {

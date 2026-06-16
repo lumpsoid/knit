@@ -178,6 +178,7 @@ void bootstrap(AppConfig config) {
         ids: ids,
       ),
       imagePicker: ImagePickerAdapter(),
+      audioRecorder: RecordAudioRecorder(),
       shareRepository: const SharePlusCardShareRepository(),
       timelineChannel: timelineChannel,
     ).controller,

@@ -268,6 +268,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionPhotoSourceCamera => 'Camera';
 
   @override
+  String get collectionAudioStart => 'Start recording';
+
+  @override
+  String get collectionAudioStop => 'Stop';
+
+  @override
+  String get collectionAudioPause => 'Pause';
+
+  @override
+  String get collectionAudioResume => 'Resume';
+
+  @override
+  String get collectionAudioRecording => 'Recording';
+
+  @override
+  String get collectionAudioPaused => 'Paused';
+
+  @override
+  String get collectionAudioMessage => 'Audio message';
+
+  @override
+  String get collectionAudioPermissionDenied =>
+      'Microphone access is needed to record audio.';
+
+  @override
   String get collectionActionEdit => 'Edit';
 
   @override

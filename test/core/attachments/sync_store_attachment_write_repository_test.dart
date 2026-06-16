@@ -27,6 +27,9 @@ void main() {
   PickedImage png(List<int> b) =>
       PickedImage(bytes: Uint8List.fromList(b), mime: 'image/png');
 
+  PickedAudio m4a(List<int> b) =>
+      PickedAudio(bytes: Uint8List.fromList(b), mime: 'audio/mp4');
+
   Future<List<Snapshot>> liveAttachments() async =>
       (await store.readAll(EntityType.attachment))
           .where((s) => !s.deleted)
@@ -59,6 +62,28 @@ void main() {
     final b = (await write.createFromPicked(png([2]))).getOrThrow();
     expect(a, isNot(b));
     expect((await liveAttachments()).length, 2);
+  });
+
+  test('createFromAudio writes the §7.4.8 metadata with kind audio + the blob',
+      () async {
+    final id = (await write.createFromAudio(m4a([4, 5, 6]))).getOrThrow();
+    final snap = (await store.get(EntityType.attachment, id))!;
+    final hash = await sha256Hex([4, 5, 6]);
+
+    expect(snap.content[AttachmentSchema.colKind], 'audio');
+    expect(snap.content[AttachmentSchema.colMime], 'audio/mp4');
+    expect(snap.content[AttachmentSchema.colContentHash], hash);
+    expect(snap.content[AttachmentSchema.colSize], 3);
+    expect(snap.content[AttachmentSchema.colLocalPath], isNull);
+    expect(snap.sig, isNotEmpty); // signed record
+    expect(await blobs.exists(hash), isTrue);
+  });
+
+  test('identical audio bytes dedupe to one record + one blob', () async {
+    final a = (await write.createFromAudio(m4a([3, 3, 3]))).getOrThrow();
+    final b = (await write.createFromAudio(m4a([3, 3, 3]))).getOrThrow();
+    expect(a, b);
+    expect((await liveAttachments()).length, 1);
   });
 
   test('delete soft-deletes the record and GCs the unshared blob', () async {

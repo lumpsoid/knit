@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -36,6 +37,13 @@ class _CollectionPageState extends State<CollectionPage> {
   /// and dismisses them by picking a source. Kept local — no business decision.
   bool _showPhotoSources = false;
 
+  /// Whether the inline audio-recording bar is revealed above the composer. Pure
+  /// UI state (the "reveal" gesture from "+" → Audio); the *recording* sub-state
+  /// itself lives in [CollectionState.recordingPhase] since it drives a real
+  /// resource. Reset once a clip is captured (the pending preview takes over) or
+  /// the user backs out.
+  bool _showAudioBar = false;
+
   @override
   void initState() {
     super.initState();
@@ -57,10 +65,11 @@ class _CollectionPageState extends State<CollectionPage> {
     if (!mounted) return;
     switch (effect) {
       case CollectionShowMessageUiEffect(:final message):
+        final l10n = AppLocalizations.of(context);
         final text = switch (message) {
-          CollectionMessage.saveFailed => AppLocalizations.of(
-            context,
-          ).collectionSaveFailed,
+          CollectionMessage.saveFailed => l10n.collectionSaveFailed,
+          CollectionMessage.micPermissionDenied =>
+            l10n.collectionAudioPermissionDenied,
         };
         ScaffoldMessenger.of(
           context,
@@ -71,13 +80,21 @@ class _CollectionPageState extends State<CollectionPage> {
   // --- intents ---------------------------------------------------------------
 
   void _submitComposer() {
+    final state = _controller.stateHolder.value;
+    // No send while a recording is in flight — the user stops it first.
+    if (state.isRecordingAudio) return;
     final text = _composer.text;
-    // A staged image makes an empty caption a valid send (photo, no caption).
-    final hasPendingImage = _controller.stateHolder.value.pendingImage != null;
-    if (text.trim().isEmpty && !hasPendingImage) return;
+    // A staged image or audio clip makes an empty caption a valid send.
+    final hasPending = state.pendingImage != null || state.pendingAudio != null;
+    if (text.trim().isEmpty && !hasPending) return;
     _controller.dispatch(ComposerSubmitted(text));
     _composer.clear();
-    if (_showPhotoSources) setState(() => _showPhotoSources = false);
+    if (_showPhotoSources || _showAudioBar) {
+      setState(() {
+        _showPhotoSources = false;
+        _showAudioBar = false;
+      });
+    }
   }
 
   /// A source was chosen from the inline options: hide them and open the picker.
@@ -88,6 +105,41 @@ class _CollectionPageState extends State<CollectionPage> {
 
   /// Leave the photo-source mode without picking (the "✕" the "+" turns into).
   void _cancelPhotoSources() => setState(() => _showPhotoSources = false);
+
+  // --- audio recording intents ----------------------------------------------
+
+  /// Reveal the inline audio bar (from "+" → Audio); modes are exclusive.
+  void _revealAudioBar() => setState(() {
+    _showAudioBar = true;
+    _showPhotoSources = false;
+  });
+
+  void _startRecording() =>
+      _controller.dispatch(const AudioRecordingRequested());
+
+  void _pauseRecording() =>
+      _controller.dispatch(const AudioRecordingPauseRequested());
+
+  void _resumeRecording() =>
+      _controller.dispatch(const AudioRecordingResumeRequested());
+
+  /// Stop capturing: hide the bar now (the captured clip arrives as a pending
+  /// preview) and finish the recording.
+  void _stopRecording() {
+    setState(() => _showAudioBar = false);
+    _controller.dispatch(const AudioRecordingStopRequested());
+  }
+
+  /// Back out of the audio bar (its "✕"): hide it, and discard an in-flight
+  /// recording if one is running.
+  void _cancelAudioMode() {
+    final recording = _controller.stateHolder.value.isRecordingAudio;
+    setState(() => _showAudioBar = false);
+    if (recording) _controller.dispatch(const AudioRecordingCancelled());
+  }
+
+  void _clearPendingAudio() =>
+      _controller.dispatch(const PendingAudioCleared());
 
   Future<void> _openAddBlock() async {
     final kind = await showModalBottomSheet<CardKind>(
@@ -110,7 +162,9 @@ class _CollectionPageState extends State<CollectionPage> {
         // sends, so they can add a caption, clear it, or repick first.
         setState(() => _showPhotoSources = true);
       case CardKind.audio:
-        _comingSoon(l10n.collectionAudioCards);
+        // Reveal the inline recording bar above the composer; the user records,
+        // optionally adds a caption, and sends — mirroring the photo flow.
+        _revealAudioBar();
       case CardKind.text:
       case CardKind.unknown:
         break;
@@ -249,12 +303,6 @@ class _CollectionPageState extends State<CollectionPage> {
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  void _comingSoon(String what) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(AppLocalizations.of(context).collectionComingSoon(what)),
-    ),
-  );
-
   // --- build -----------------------------------------------------------------
 
   @override
@@ -308,6 +356,9 @@ class _CollectionPageState extends State<CollectionPage> {
                   controller: _composer,
                   pendingImageBytes: state.pendingImage?.bytes,
                   showPhotoSources: _showPhotoSources,
+                  hasPendingAudio: state.pendingAudio != null,
+                  showAudioBar: _showAudioBar,
+                  recordingPhase: state.recordingPhase,
                   onSend: _submitComposer,
                   onAddBlock: _openAddBlock,
                   onCancelPhotoSources: _cancelPhotoSources,
@@ -315,6 +366,12 @@ class _CollectionPageState extends State<CollectionPage> {
                   onPickFromCamera: () => _pickImage(ImagePickerSource.camera),
                   onClearImage: () =>
                       _controller.dispatch(const PendingImageCleared()),
+                  onStartRecording: _startRecording,
+                  onPauseRecording: _pauseRecording,
+                  onResumeRecording: _resumeRecording,
+                  onStopRecording: _stopRecording,
+                  onCancelAudio: _cancelAudioMode,
+                  onClearAudio: _clearPendingAudio,
                 ),
             ],
           ),
@@ -498,7 +555,25 @@ class _CardBubble extends StatelessWidget {
           ],
         );
       case CardKind.audio:
-        return _placeholder(theme, Icons.mic_none, l10n.collectionCardAudio);
+        final audioCaption = card.text?.trim();
+        final chip = _placeholder(
+          theme,
+          Icons.mic_none,
+          l10n.collectionCardAudio,
+        );
+        if (audioCaption == null || audioCaption.isEmpty) return chip;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            chip,
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 220),
+              child: Text(audioCaption),
+            ),
+          ],
+        );
       case CardKind.text:
       case CardKind.unknown:
         return Text(
@@ -624,7 +699,10 @@ class _ReorderRow extends StatelessWidget {
         card.text?.isNotEmpty == true
             ? card.text!
             : l10n.collectionReorderPhoto,
-      CardKind.audio => l10n.collectionCardAudio,
+      CardKind.audio =>
+        card.text?.trim().isNotEmpty == true
+            ? card.text!.trim()
+            : l10n.collectionCardAudio,
       CardKind.text || CardKind.unknown =>
         card.text?.trim().isNotEmpty == true ? card.text! : l10n.labelEmptyNote,
     };
@@ -711,12 +789,21 @@ class _Composer extends StatelessWidget {
     required this.controller,
     required this.pendingImageBytes,
     required this.showPhotoSources,
+    required this.hasPendingAudio,
+    required this.showAudioBar,
+    required this.recordingPhase,
     required this.onSend,
     required this.onAddBlock,
     required this.onCancelPhotoSources,
     required this.onPickFromGallery,
     required this.onPickFromCamera,
     required this.onClearImage,
+    required this.onStartRecording,
+    required this.onPauseRecording,
+    required this.onResumeRecording,
+    required this.onStopRecording,
+    required this.onCancelAudio,
+    required this.onClearAudio,
   });
   final TextEditingController controller;
 
@@ -725,6 +812,16 @@ class _Composer extends StatelessWidget {
 
   /// Whether the gallery/camera options row is shown above the input row.
   final bool showPhotoSources;
+
+  /// Whether a recorded-but-unsent audio clip is staged (shows its preview chip).
+  final bool hasPendingAudio;
+
+  /// Whether the audio bar was revealed via "+" → Audio (the idle reveal).
+  final bool showAudioBar;
+
+  /// The live capture sub-state; non-null while recording/paused. Combined with
+  /// [showAudioBar] it decides whether the recording bar is shown.
+  final AudioRecordingPhase? recordingPhase;
   final VoidCallback onSend;
   final VoidCallback onAddBlock;
 
@@ -733,12 +830,24 @@ class _Composer extends StatelessWidget {
   final VoidCallback onPickFromGallery;
   final VoidCallback onPickFromCamera;
   final VoidCallback onClearImage;
+  final VoidCallback onStartRecording;
+  final VoidCallback onPauseRecording;
+  final VoidCallback onResumeRecording;
+  final VoidCallback onStopRecording;
+
+  /// Back out of the audio bar (its "✕"), cancelling any in-flight recording.
+  final VoidCallback onCancelAudio;
+  final VoidCallback onClearAudio;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final bytes = pendingImageBytes;
+    // The audio bar shows while revealed-idle or actively recording (but not once
+    // a clip is staged — its preview chip takes over). Modes are exclusive.
+    final inAudioMode = recordingPhase != null || showAudioBar;
+    final inPickerMode = showPhotoSources || inAudioMode;
     return SafeArea(
       top: false,
       child: Padding(
@@ -749,20 +858,31 @@ class _Composer extends StatelessWidget {
           children: [
             if (bytes != null)
               _PendingImagePreview(bytes: bytes, onClear: onClearImage),
+            if (hasPendingAudio) _PendingAudioPreview(onClear: onClearAudio),
             if (showPhotoSources)
               _PhotoSourceOptions(
                 onGallery: onPickFromGallery,
                 onCamera: onPickFromCamera,
               ),
+            if (inAudioMode)
+              _AudioRecordBar(
+                phase: recordingPhase,
+                onStart: onStartRecording,
+                onPause: onPauseRecording,
+                onResume: onResumeRecording,
+                onStop: onStopRecording,
+              ),
             Row(
               children: [
-                // In photo-source mode the "+" becomes a "✕" so the user can
-                // back out of the mode without picking a source.
-                showPhotoSources
+                // In a picker mode (photo sources or audio) the "+" becomes a
+                // "✕" so the user can back out without committing.
+                inPickerMode
                     ? IconButton(
                         tooltip: l10n.actionCancel,
                         icon: const Icon(Icons.close),
-                        onPressed: onCancelPhotoSources,
+                        onPressed: showPhotoSources
+                            ? onCancelPhotoSources
+                            : onCancelAudio,
                       )
                     : IconButton(
                         tooltip: l10n.collectionAddBlockTooltip,
@@ -888,6 +1008,231 @@ class _PendingImagePreview extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The inline audio-recording bar shown above the composer (§4.2). Idle (no
+/// [phase]) it offers "Start recording"; while capturing it shows a live
+/// indicator — a pulsing dot, an elapsing timer, and a status label — plus
+/// Pause/Resume and Stop. Owns its own ticker + pulse (pure View concerns); the
+/// logical phase is driven from state via [phase].
+class _AudioRecordBar extends StatefulWidget {
+  const _AudioRecordBar({
+    required this.phase,
+    required this.onStart,
+    required this.onPause,
+    required this.onResume,
+    required this.onStop,
+  });
+
+  /// Null ⇒ idle (revealed, not yet recording).
+  final AudioRecordingPhase? phase;
+  final VoidCallback onStart;
+  final VoidCallback onPause;
+  final VoidCallback onResume;
+  final VoidCallback onStop;
+
+  @override
+  State<_AudioRecordBar> createState() => _AudioRecordBarState();
+}
+
+class _AudioRecordBarState extends State<_AudioRecordBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
+
+  /// Ticks once a second while recording; cancelled (freezing the display) while
+  /// paused or idle.
+  Timer? _ticker;
+  Duration _elapsed = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.phase == AudioRecordingPhase.recording) _sync();
+  }
+
+  @override
+  void didUpdateWidget(_AudioRecordBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.phase == widget.phase) return;
+    // A fresh recording (from idle) restarts the clock at zero; resuming from a
+    // pause keeps the accumulated time.
+    if (widget.phase == AudioRecordingPhase.recording &&
+        oldWidget.phase != AudioRecordingPhase.paused) {
+      _elapsed = Duration.zero;
+    }
+    _sync();
+  }
+
+  /// Reconcile the ticker + pulse with the current [widget.phase].
+  void _sync() {
+    if (widget.phase == AudioRecordingPhase.recording) {
+      _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        setState(() => _elapsed += const Duration(seconds: 1));
+      });
+      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
+    } else {
+      _ticker?.cancel();
+      _ticker = null;
+      _pulse.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  static String _format(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final phase = widget.phase;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: phase == null
+            ? _idle(theme, l10n)
+            : _recording(theme, l10n, phase),
+      ),
+    );
+  }
+
+  Widget _idle(ThemeData theme, AppLocalizations l10n) => Row(
+    children: [
+      const SizedBox(width: 8),
+      Icon(Icons.mic_none, color: theme.colorScheme.primary),
+      const SizedBox(width: 10),
+      Expanded(child: Text(l10n.collectionAudioMessage)),
+      TextButton.icon(
+        onPressed: widget.onStart,
+        icon: const Icon(Icons.fiber_manual_record, color: Color(0xFFE53935)),
+        label: Text(l10n.collectionAudioStart),
+      ),
+    ],
+  );
+
+  Widget _recording(
+    ThemeData theme,
+    AppLocalizations l10n,
+    AudioRecordingPhase phase,
+  ) {
+    final recording = phase == AudioRecordingPhase.recording;
+    return Row(
+      children: [
+        const SizedBox(width: 8),
+        _PulsingDot(animation: _pulse, active: recording),
+        const SizedBox(width: 10),
+        Text(
+          _format(_elapsed),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          recording
+              ? l10n.collectionAudioRecording
+              : l10n.collectionAudioPaused,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const Spacer(),
+        IconButton(
+          tooltip: recording
+              ? l10n.collectionAudioPause
+              : l10n.collectionAudioResume,
+          icon: Icon(recording ? Icons.pause : Icons.play_arrow),
+          onPressed: recording ? widget.onPause : widget.onResume,
+        ),
+        IconButton.filledTonal(
+          tooltip: l10n.collectionAudioStop,
+          icon: const Icon(Icons.stop),
+          onPressed: widget.onStop,
+        ),
+      ],
+    );
+  }
+}
+
+/// A small dot that pulses (fades in/out) while [active], or sits dimmed and
+/// still when paused — the at-a-glance "recording is happening" cue (§4.2).
+class _PulsingDot extends StatelessWidget {
+  const _PulsingDot({required this.animation, required this.active});
+  final Animation<double> animation;
+  final bool active;
+
+  static const Color _color = Color(0xFFE53935); // red 600
+
+  @override
+  Widget build(BuildContext context) {
+    const dot = SizedBox(
+      width: 12,
+      height: 12,
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: _color, shape: BoxShape.circle),
+      ),
+    );
+    if (!active) {
+      return Opacity(opacity: 0.4, child: dot);
+    }
+    return FadeTransition(
+      opacity: Tween<double>(begin: 1, end: 0.25).animate(animation),
+      child: dot,
+    );
+  }
+}
+
+/// The recorded-but-unsent audio clip shown above the composer (§4.2) — the
+/// audio twin of [_PendingImagePreview]. Tapping ✕ drops it via [onClear]; the
+/// user can add a caption first, then send.
+class _PendingAudioPreview extends StatelessWidget {
+  const _PendingAudioPreview({required this.onClear});
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.mic, color: theme.colorScheme.primary),
+            const SizedBox(width: 10),
+            Expanded(child: Text(l10n.collectionAudioMessage)),
+            IconButton(
+              tooltip: l10n.actionRemove,
+              icon: const Icon(Icons.close),
+              onPressed: onClear,
+            ),
+          ],
+        ),
       ),
     );
   }

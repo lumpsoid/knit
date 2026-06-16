@@ -4,5 +4,7 @@ export 'attachment_hashing.dart';
 export 'attachment_models.dart';
 export 'attachment_read_repository.dart';
 export 'attachment_write_repository.dart';
+export 'audio_recorder_port.dart';
 export 'image_picker_port.dart';
+export 'picked_audio.dart';
 export 'picked_image.dart';
