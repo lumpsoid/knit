@@ -542,6 +542,18 @@ abstract class AppLocalizations {
   /// **'Audio'**
   String get collectionBlockAudio;
 
+  /// No description provided for @collectionPhotoSourceGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get collectionPhotoSourceGallery;
+
+  /// No description provided for @collectionPhotoSourceCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get collectionPhotoSourceCamera;
+
   /// No description provided for @collectionActionEdit.
   ///
   /// In en, this message translates to:

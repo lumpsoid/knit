@@ -96,8 +96,8 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           dispatch,
         );
 
-      case PickImageEffect():
-        final picked = await _picker.pickImage();
+      case PickImageEffect(:final source):
+        final picked = await _picker.pickImage(source: source);
         dispatch(ImagePicked(picked));
 
       case AddPhotoCardEffect(

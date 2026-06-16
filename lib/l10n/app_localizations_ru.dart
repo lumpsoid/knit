@@ -264,6 +264,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionBlockAudio => 'Аудио';
 
   @override
+  String get collectionPhotoSourceGallery => 'Галерея';
+
+  @override
+  String get collectionPhotoSourceCamera => 'Камера';
+
+  @override
   String get collectionActionEdit => 'Изменить';
 
   @override

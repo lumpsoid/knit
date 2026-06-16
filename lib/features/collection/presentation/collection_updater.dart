@@ -123,8 +123,8 @@ class CollectionUpdater
           ],
         );
 
-      case PickImageRequested():
-        return (state, const [PickImageEffect()]);
+      case PickImageRequested(:final source):
+        return (state, [PickImageEffect(source)]);
 
       case ImagePicked(:final image):
         // Cancelled pick ⇒ no change; otherwise stage it as the preview.

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -50,10 +51,12 @@ class LinkCardSubmitted extends CollectionAction {
   final String url;
 }
 
-/// The "+" add-block finder chose Photo (§4.2): open the picker so the chosen
-/// image can be previewed above the composer before it becomes a card.
+/// The photo-source options chose a [source] (§4.2): open the picker (camera or
+/// gallery) so the chosen image can be previewed above the composer before it
+/// becomes a card.
 class PickImageRequested extends CollectionAction {
-  const PickImageRequested();
+  const PickImageRequested(this.source);
+  final ImagePickerSource source;
 }
 
 /// Delivery of [PickImageRequested]: the picker returned [image] (null when the

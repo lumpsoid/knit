@@ -1,3 +1,4 @@
+import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -36,10 +37,12 @@ class AddCardEffect extends CollectionEffect {
   final String? text;
 }
 
-/// Open the platform picker so the chosen image can be previewed in the
-/// composer (the shell delivers the result back as an [ImagePicked] action).
+/// Open the platform picker on [source] (camera or gallery) so the chosen image
+/// can be previewed in the composer (the shell delivers the result back as an
+/// [ImagePicked] action).
 class PickImageEffect extends CollectionEffect {
-  const PickImageEffect();
+  const PickImageEffect(this.source);
+  final ImagePickerSource source;
 }
 
 /// Store the already-picked [image] (§7.4.8), then append an image card at

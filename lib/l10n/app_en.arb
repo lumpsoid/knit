@@ -113,6 +113,8 @@
   "collectionBlockLinkSubtitle": "A standalone link card",
   "collectionBlockPhoto": "Photo",
   "collectionBlockAudio": "Audio",
+  "collectionPhotoSourceGallery": "Gallery",
+  "collectionPhotoSourceCamera": "Camera",
   "collectionActionEdit": "Edit",
   "collectionActionMakeLink": "Make a link",
   "collectionActionConnections": "Connections",

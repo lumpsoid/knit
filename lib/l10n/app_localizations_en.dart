@@ -262,6 +262,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionBlockAudio => 'Audio';
 
   @override
+  String get collectionPhotoSourceGallery => 'Gallery';
+
+  @override
+  String get collectionPhotoSourceCamera => 'Camera';
+
+  @override
   String get collectionActionEdit => 'Edit';
 
   @override

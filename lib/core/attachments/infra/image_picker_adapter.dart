@@ -21,12 +21,19 @@ class ImagePickerAdapter implements ImagePickerPort {
   };
 
   @override
-  Future<PickedImage?> pickImage() async {
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+  Future<PickedImage?> pickImage({
+    ImagePickerSource source = ImagePickerSource.gallery,
+  }) async {
+    final file = await _picker.pickImage(source: _sourceOf(source));
     if (file == null) return null;
     final bytes = await file.readAsBytes();
     return PickedImage(bytes: bytes, mime: _mimeOf(file.name));
   }
+
+  static ImageSource _sourceOf(ImagePickerSource source) => switch (source) {
+    ImagePickerSource.gallery => ImageSource.gallery,
+    ImagePickerSource.camera => ImageSource.camera,
+  };
 
   static String _mimeOf(String name) {
     final dot = name.lastIndexOf('.');

@@ -110,6 +110,8 @@
   "collectionBlockLinkSubtitle": "Отдельная карточка-ссылка",
   "collectionBlockPhoto": "Фото",
   "collectionBlockAudio": "Аудио",
+  "collectionPhotoSourceGallery": "Галерея",
+  "collectionPhotoSourceCamera": "Камера",
   "collectionActionEdit": "Изменить",
   "collectionActionMakeLink": "Создать связь",
   "collectionActionConnections": "Связи",

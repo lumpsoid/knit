@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -181,12 +182,13 @@ void main() {
       expect(effect.text, 'https://x.y');
     });
 
-    test('photo block opens the picker', () {
+    test('photo block opens the picker on the chosen source', () {
       final (next, effects) = updater.update(
         ready(const []),
-        const PickImageRequested(),
+        const PickImageRequested(ImagePickerSource.camera),
       );
-      expect(effects!.single, isA<PickImageEffect>());
+      final effect = effects!.single as PickImageEffect;
+      expect(effect.source, ImagePickerSource.camera);
       expect(next.pendingImage, isNull, reason: 'nothing staged until picked');
     });
 

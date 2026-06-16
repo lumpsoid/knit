@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
+import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -12,7 +13,6 @@ import 'package:knit/features/collection/presentation/collection_state.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_page.dart';
-import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Collection screen (§4.2) — a chat-style card feed (oldest at top), a
 /// bottom composer, a "+" add-block sheet, per-card actions, and drag-to-reorder
@@ -30,6 +30,11 @@ class CollectionPage extends StatefulWidget {
 class _CollectionPageState extends State<CollectionPage> {
   CollectionController get _controller => CollectionScope.controller;
   final TextEditingController _composer = TextEditingController();
+
+  /// Whether the inline gallery/camera options are shown above the composer.
+  /// Pure UI state (like [_composer]): the user revealed them via "+" → Photo
+  /// and dismisses them by picking a source. Kept local — no business decision.
+  bool _showPhotoSources = false;
 
   @override
   void initState() {
@@ -72,7 +77,17 @@ class _CollectionPageState extends State<CollectionPage> {
     if (text.trim().isEmpty && !hasPendingImage) return;
     _controller.dispatch(ComposerSubmitted(text));
     _composer.clear();
+    if (_showPhotoSources) setState(() => _showPhotoSources = false);
   }
+
+  /// A source was chosen from the inline options: hide them and open the picker.
+  void _pickImage(ImagePickerSource source) {
+    setState(() => _showPhotoSources = false);
+    _controller.dispatch(PickImageRequested(source));
+  }
+
+  /// Leave the photo-source mode without picking (the "✕" the "+" turns into).
+  void _cancelPhotoSources() => setState(() => _showPhotoSources = false);
 
   Future<void> _openAddBlock() async {
     final kind = await showModalBottomSheet<CardKind>(
@@ -90,9 +105,10 @@ class _CollectionPageState extends State<CollectionPage> {
         );
         if (url != null) _controller.dispatch(LinkCardSubmitted(url));
       case CardKind.image:
-        // Pick a photo into the composer preview; it only becomes a card when
-        // the user sends, so they can add a caption, clear it, or repick first.
-        _controller.dispatch(const PickImageRequested());
+        // Reveal the inline gallery/camera options above the composer; choosing
+        // one opens the picker. The photo only becomes a card when the user
+        // sends, so they can add a caption, clear it, or repick first.
+        setState(() => _showPhotoSources = true);
       case CardKind.audio:
         _comingSoon(l10n.collectionAudioCards);
       case CardKind.text:
@@ -291,8 +307,12 @@ class _CollectionPageState extends State<CollectionPage> {
                 _Composer(
                   controller: _composer,
                   pendingImageBytes: state.pendingImage?.bytes,
+                  showPhotoSources: _showPhotoSources,
                   onSend: _submitComposer,
                   onAddBlock: _openAddBlock,
+                  onCancelPhotoSources: _cancelPhotoSources,
+                  onPickFromGallery: () => _pickImage(ImagePickerSource.gallery),
+                  onPickFromCamera: () => _pickImage(ImagePickerSource.camera),
                   onClearImage: () =>
                       _controller.dispatch(const PendingImageCleared()),
                 ),
@@ -690,16 +710,28 @@ class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
     required this.pendingImageBytes,
+    required this.showPhotoSources,
     required this.onSend,
     required this.onAddBlock,
+    required this.onCancelPhotoSources,
+    required this.onPickFromGallery,
+    required this.onPickFromCamera,
     required this.onClearImage,
   });
   final TextEditingController controller;
 
   /// Bytes of an image the user picked but hasn't sent yet; null ⇒ no preview.
   final Uint8List? pendingImageBytes;
+
+  /// Whether the gallery/camera options row is shown above the input row.
+  final bool showPhotoSources;
   final VoidCallback onSend;
   final VoidCallback onAddBlock;
+
+  /// Leave photo-source mode without picking (the "+" becomes a "✕" in mode).
+  final VoidCallback onCancelPhotoSources;
+  final VoidCallback onPickFromGallery;
+  final VoidCallback onPickFromCamera;
   final VoidCallback onClearImage;
 
   @override
@@ -717,13 +749,26 @@ class _Composer extends StatelessWidget {
           children: [
             if (bytes != null)
               _PendingImagePreview(bytes: bytes, onClear: onClearImage),
+            if (showPhotoSources)
+              _PhotoSourceOptions(
+                onGallery: onPickFromGallery,
+                onCamera: onPickFromCamera,
+              ),
             Row(
               children: [
-                IconButton(
-                  tooltip: l10n.collectionAddBlockTooltip,
-                  icon: const Icon(Icons.add_circle_outline),
-                  onPressed: onAddBlock,
-                ),
+                // In photo-source mode the "+" becomes a "✕" so the user can
+                // back out of the mode without picking a source.
+                showPhotoSources
+                    ? IconButton(
+                        tooltip: l10n.actionCancel,
+                        icon: const Icon(Icons.close),
+                        onPressed: onCancelPhotoSources,
+                      )
+                    : IconButton(
+                        tooltip: l10n.collectionAddBlockTooltip,
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: onAddBlock,
+                      ),
                 Expanded(
                   child: TextField(
                     controller: controller,
@@ -752,6 +797,46 @@ class _Composer extends StatelessWidget {
                   onPressed: onSend,
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The inline photo-source options shown above the composer when the user
+/// chose Photo from "+": gallery on the left, camera on the right (§4.2). Takes
+/// primitives only (widgets.md §1) — two callbacks, one per source.
+class _PhotoSourceOptions extends StatelessWidget {
+  const _PhotoSourceOptions({required this.onGallery, required this.onCamera});
+  final VoidCallback onGallery;
+  final VoidCallback onCamera;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton.icon(
+              onPressed: onGallery,
+              icon: const Icon(Icons.photo_library_outlined),
+              label: Text(l10n.collectionPhotoSourceGallery),
+            ),
+            TextButton.icon(
+              onPressed: onCamera,
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: Text(l10n.collectionPhotoSourceCamera),
             ),
           ],
         ),
