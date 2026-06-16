@@ -138,6 +138,18 @@ class _CollectionPageState extends State<CollectionPage> {
     if (mounted) _controller.dispatch(const ReloadRequested());
   }
 
+  /// Open a card's image full-screen for pinch-to-zoom viewing (§4.2). The feed
+  /// thumbnail and the full image share a [Hero], so the open/close animates.
+  void _openImagePreview(FeedCard card, Uint8List bytes) {
+    Navigator.of(context).push(
+      _ImagePreviewPage.route(
+        bytes: bytes,
+        heroTag: _imageHeroTag(card.id),
+        caption: card.text,
+      ),
+    );
+  }
+
   /// Hand the focused entity to the Connections carrier (cross_feature.md §2),
   /// then navigate (§4.4). The carrier is the payload — navigation stays empty.
   void _openConnections({
@@ -334,10 +346,14 @@ class _CollectionPageState extends State<CollectionPage> {
         itemCount: state.cards.length,
         itemBuilder: (context, i) {
           final card = state.cards[i];
+          final bytes = _bytesFor(state, card);
           return _CardBubble(
             card: card,
-            imageBytes: _bytesFor(state, card),
+            imageBytes: bytes,
             onTap: () => _openCardActions(card),
+            onImageTap: bytes == null
+                ? null
+                : () => _openImagePreview(card, bytes),
           );
         },
       ),
@@ -357,17 +373,26 @@ enum _CardAction { edit, delete, link, connections, reorder }
 
 // --- widgets ---------------------------------------------------------------
 
+/// The shared [Hero] tag tying a card's feed thumbnail to its full-screen
+/// preview, so the open/close transition flies between the two.
+Object _imageHeroTag(String cardId) => 'card-image-$cardId';
+
 class _CardBubble extends StatelessWidget {
   const _CardBubble({
     required this.card,
     required this.imageBytes,
     required this.onTap,
+    this.onImageTap,
   });
   final FeedCard card;
 
   /// Decoded bytes for an image card; null while loading or missing.
   final Uint8List? imageBytes;
   final VoidCallback onTap;
+
+  /// Opens the full-screen image preview; null when the image hasn't loaded yet
+  /// (a tap then falls through to [onTap], the card-actions sheet).
+  final VoidCallback? onImageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +441,7 @@ class _CardBubble extends StatelessWidget {
         );
       case CardKind.image:
         final caption = card.text?.trim();
-        final image = ClipRRect(
+        Widget image = ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: AttachmentImage(
             bytes: imageBytes,
@@ -429,6 +454,15 @@ class _CardBubble extends StatelessWidget {
             ),
           ),
         );
+        // Tap the image itself to view it full-screen; the Hero ties this
+        // thumbnail to the preview so the transition flies between them.
+        final onImageTap = this.onImageTap;
+        if (onImageTap != null) {
+          image = GestureDetector(
+            onTap: onImageTap,
+            child: Hero(tag: _imageHeroTag(card.id), child: image),
+          );
+        }
         if (caption == null || caption.isEmpty) return image;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,6 +496,88 @@ class _CardBubble extends StatelessWidget {
       Text(label),
     ],
   );
+}
+
+/// A full-screen, pinch-to-zoom viewer for a card's image (§4.2). Pushed when an
+/// image bubble is tapped; takes primitives only (widgets.md §1) — the decoded
+/// [bytes], a [heroTag] shared with the feed thumbnail, and an optional caption.
+/// Tapping the backdrop or the close button dismisses it.
+class _ImagePreviewPage extends StatelessWidget {
+  const _ImagePreviewPage({
+    required this.bytes,
+    required this.heroTag,
+    this.caption,
+  });
+
+  final Uint8List bytes;
+  final Object heroTag;
+  final String? caption;
+
+  static Route<void> route({
+    required Uint8List bytes,
+    required Object heroTag,
+    String? caption,
+  }) => MaterialPageRoute<void>(
+    fullscreenDialog: true,
+    builder: (_) =>
+        _ImagePreviewPage(bytes: bytes, heroTag: heroTag, caption: caption),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final caption = this.caption?.trim();
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          tooltip: l10n.actionClose,
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: InteractiveViewer(
+                minScale: 1,
+                maxScale: 5,
+                child: Center(
+                  child: Hero(
+                    tag: heroTag,
+                    child: Image.memory(bytes, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (caption != null && caption.isNotEmpty)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: double.infinity,
+                color: Colors.black.withValues(alpha: 0.5),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: SafeArea(
+                  top: false,
+                  child: Text(
+                    caption,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ReorderRow extends StatelessWidget {
