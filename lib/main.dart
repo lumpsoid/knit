@@ -19,6 +19,7 @@ import 'package:knit/features/card_edit/infra/sync_store_card_edit_write_reposit
 import 'package:knit/features/card_edit/presentation/card_edit_module.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_scope.dart';
+import 'package:knit/features/collection/infra/share_plus_card_share_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/collection/presentation/collection_module.dart';
@@ -160,21 +161,24 @@ void bootstrap(AppConfig config) {
   TimelineScope.setFactory(
     () => TimelineModule(
       readRepository: SyncStoreTimelineRepository(graph: graph),
-      writeRepository:
-          SyncStoreTimelineWriteRepository(graph: graph, ids: ids),
+      writeRepository: SyncStoreTimelineWriteRepository(graph: graph, ids: ids),
       channelReader: timelineChannel,
     ).controller,
   );
   CollectionScope.setFactory(
     () => CollectionModule(
       readRepository: SyncStoreCollectionReadRepository(graph: graph),
-      writeRepository:
-          SyncStoreCollectionWriteRepository(graph: graph, ids: ids),
-      attachmentReadRepository:
-          SyncStoreAttachmentReadRepository(graph: graph),
-      attachmentWriteRepository:
-          SyncStoreAttachmentWriteRepository(graph: graph, ids: ids),
+      writeRepository: SyncStoreCollectionWriteRepository(
+        graph: graph,
+        ids: ids,
+      ),
+      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
+        graph: graph,
+        ids: ids,
+      ),
       imagePicker: ImagePickerAdapter(),
+      shareRepository: const SharePlusCardShareRepository(),
       timelineChannel: timelineChannel,
     ).controller,
   );
@@ -187,16 +191,19 @@ void bootstrap(AppConfig config) {
   CardEditScope.setFactory(
     () => CardEditModule(
       writeRepository: SyncStoreCardEditWriteRepository(graph: graph),
-      linksReadRepository:
-          SyncStoreCardEditLinksReadRepository(graph: graph),
-      linksWriteRepository:
-          SyncStoreCardEditLinksWriteRepository(graph: graph, ids: ids),
-      targetsReadRepository:
-          SyncStoreCardEditTargetsReadRepository(graph: graph),
-      attachmentReadRepository:
-          SyncStoreAttachmentReadRepository(graph: graph),
-      attachmentWriteRepository:
-          SyncStoreAttachmentWriteRepository(graph: graph, ids: ids),
+      linksReadRepository: SyncStoreCardEditLinksReadRepository(graph: graph),
+      linksWriteRepository: SyncStoreCardEditLinksWriteRepository(
+        graph: graph,
+        ids: ids,
+      ),
+      targetsReadRepository: SyncStoreCardEditTargetsReadRepository(
+        graph: graph,
+      ),
+      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
+        graph: graph,
+        ids: ids,
+      ),
       imagePicker: ImagePickerAdapter(),
     ).controller,
   );
@@ -249,7 +256,9 @@ class _KnitAppState extends State<KnitApp> {
           ),
           darkTheme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
-                seedColor: _seedColor, brightness: Brightness.dark),
+              seedColor: _seedColor,
+              brightness: Brightness.dark,
+            ),
             useMaterial3: true,
           ),
           builder: _flavorBanner,
@@ -275,14 +284,14 @@ class _KnitAppState extends State<KnitApp> {
   /// Map the domain preference enums to Flutter's types at the edge — the domain
   /// stays free of `package:flutter/material`.
   ThemeMode _themeModeOf(AppThemeMode mode) => switch (mode) {
-        AppThemeMode.system => ThemeMode.system,
-        AppThemeMode.light => ThemeMode.light,
-        AppThemeMode.dark => ThemeMode.dark,
-      };
+    AppThemeMode.system => ThemeMode.system,
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+  };
 
   Locale? _localeOf(AppLanguage language) => switch (language) {
-        AppLanguage.system => null,
-        AppLanguage.english => const Locale('en'),
-        AppLanguage.russian => const Locale('ru'),
-      };
+    AppLanguage.system => null,
+    AppLanguage.english => const Locale('en'),
+    AppLanguage.russian => const Locale('ru'),
+  };
 }

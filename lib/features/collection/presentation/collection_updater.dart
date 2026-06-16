@@ -1,4 +1,5 @@
 import 'package:fcis_core/fcis_core.dart';
+import 'package:intl/intl.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -136,6 +137,9 @@ class CollectionUpdater
       case CardDeleteRequested(:final cardId):
         return (state, [DeleteCardEffect(cardId)]);
 
+      case CardShareRequested(:final cardId):
+        return _shareCard(state, cardId);
+
       case LinkFinderOpened():
         return (state, const [LoadLinkCollectionsEffect()]);
 
@@ -197,6 +201,47 @@ class CollectionUpdater
           null,
         );
     }
+  }
+
+  /// Resolve [cardId] to its shareable content and emit a [ShareCardEffect];
+  /// a missing card or an empty text card with no image is a pure no-op. Only an
+  /// image card carries an attachment to share; other kinds share text only.
+  (CollectionState, List<CollectionEffect>?) _shareCard(
+    CollectionState state,
+    String cardId,
+  ) {
+    final card = _cardById(state.cards, cardId);
+    if (card == null) return (state, null);
+    final text = card.text?.trim();
+    final hasText = text != null && text.isNotEmpty;
+    final attachmentId = card.kind == CardKind.image ? card.attachmentId : null;
+    if (!hasText && attachmentId == null) return (state, null);
+    return (
+      state,
+      [
+        ShareCardEffect(
+          text: hasText ? text : null,
+          attachmentId: attachmentId,
+          imageBaseName: _shareBaseName(card),
+        ),
+      ],
+    );
+  }
+
+  static FeedCard? _cardById(List<FeedCard> cards, String id) {
+    for (final card in cards) {
+      if (card.id == id) return card;
+    }
+    return null;
+  }
+
+  /// The date-stamped file-name stem for a shared photo: the card's capture date
+  /// (§6.1) plus `knit` (e.g. `2026-06-16-knit`); just `knit` if the date can't
+  /// be decoded. Pure — the date comes from the immutable card id, never a clock.
+  static String _shareBaseName(FeedCard card) {
+    final at = card.capturedAt;
+    if (at == null) return 'knit';
+    return '${DateFormat('yyyy-MM-dd').format(at)}-knit';
   }
 
   /// Distinct `attachment_id`s of image cards whose bytes aren't cached yet.

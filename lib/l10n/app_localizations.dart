@@ -560,6 +560,12 @@ abstract class AppLocalizations {
   /// **'Connections'**
   String get collectionActionConnections;
 
+  /// No description provided for @collectionActionShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get collectionActionShare;
+
   /// No description provided for @collectionActionReorder.
   ///
   /// In en, this message translates to:

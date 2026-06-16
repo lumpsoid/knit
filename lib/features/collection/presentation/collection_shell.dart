@@ -6,6 +6,7 @@ import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
+import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
@@ -28,6 +29,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
+    required CardShareRepository shareRepository,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
     required TimelineChannelEmitter timelineChannel,
     required Logger logger,
@@ -36,6 +38,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
        _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
        _picker = imagePicker,
+       _share = shareRepository,
        _effectEmitter = effectEmitter,
        _timelineChannel = timelineChannel,
        _log = logger;
@@ -45,6 +48,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
   final ImagePickerPort _picker;
+  final CardShareRepository _share;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
   final TimelineChannelEmitter _timelineChannel;
   final Logger _log;
@@ -110,6 +114,13 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           'delete card',
           dispatch,
         );
+
+      case ShareCardEffect(
+        :final text,
+        :final attachmentId,
+        :final imageBaseName,
+      ):
+        await _shareCard(text, attachmentId, imageBaseName);
 
       case ReorderCardEffect(:final cardId, :final position):
         await _runWrite(
@@ -196,6 +207,39 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       ),
       'add photo card',
       dispatch,
+    );
+  }
+
+  /// Share a card through the [CardShareRepository] (§4.2). For an image card,
+  /// resolve its bytes via the attachment read port and build the date-stamped
+  /// photo (extension derived from the mime the blob store recorded); if the
+  /// bytes are gone, fall back to sharing the caption alone. Sharing is a
+  /// read-only side-effect — it triggers no resync; a failure is logged only.
+  Future<void> _shareCard(
+    String? text,
+    String? attachmentId,
+    String imageBaseName,
+  ) async {
+    ShareableImage? image;
+    if (attachmentId != null) {
+      final result = await _attachmentRead.bytesOf(attachmentId);
+      if (result.isFailure) {
+        _log.warning('Share: image bytes missing for $attachmentId');
+      } else {
+        final bytes = result.getOrThrow();
+        image = ShareableImage.named(
+          bytes: bytes.bytes,
+          mime: bytes.mime,
+          baseName: imageBaseName,
+        );
+      }
+    }
+    // The image may have vanished from a text-less photo card — nothing to share.
+    if (text == null && image == null) return;
+    final shared = await _share.share(ShareableCard(text: text, image: image));
+    shared.onFailure(
+      (failure) =>
+          _log.severe('Share card failed', failure.error, failure.stackTrace),
     );
   }
 

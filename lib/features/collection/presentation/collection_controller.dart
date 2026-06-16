@@ -11,8 +11,8 @@ class CollectionController {
     required this.stateHolder,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
     required ActionSink<CollectionAction> sink,
-  })  : _effectEmitter = effectEmitter,
-        _sink = sink;
+  }) : _effectEmitter = effectEmitter,
+       _sink = sink;
 
   final ValueListenable<CollectionState> stateHolder;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
