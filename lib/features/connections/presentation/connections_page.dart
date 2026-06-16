@@ -6,7 +6,6 @@ import 'package:knit/features/connections/presentation/connections_controller.da
 import 'package:knit/features/connections/presentation/connections_scope.dart';
 import 'package:knit/features/connections/presentation/connections_state.dart';
 import 'package:knit/features/connections/presentation/connections_ui_effect.dart';
-import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Connections view (§4.4) — an entity's links-out + linked-from
 /// (backlinks), each live one tappable to jump (pushing a breadcrumb), each
@@ -52,11 +51,13 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
     switch (effect) {
       case ConnectionsShowMessageUiEffect(:final message):
         final text = switch (message) {
-          ConnectionsMessage.clearFailed =>
-            AppLocalizations.of(context).connectionsClearFailed,
+          ConnectionsMessage.clearFailed => AppLocalizations.of(
+            context,
+          ).connectionsClearFailed,
         };
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(text)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -99,7 +100,6 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
           child: Scaffold(
             appBar: AppBar(
               title: Text(_focusTitle(AppLocalizations.of(context), state)),
-              actions: const [SyncStatusIndicator()],
               bottom: state.breadcrumb.length > 1
                   ? _Breadcrumb(
                       crumbs: state.breadcrumb,
@@ -275,8 +275,7 @@ class _ConnectionTile extends StatelessWidget {
           style: TextStyle(color: theme.colorScheme.error),
         ),
         subtitle: Text(_brokenSubtitle(l10n)),
-        trailing:
-            TextButton(onPressed: onClear, child: Text(l10n.actionClear)),
+        trailing: TextButton(onPressed: onClear, child: Text(l10n.actionClear)),
       );
     }
     return ListTile(
@@ -305,10 +304,10 @@ class _ConnectionTile extends StatelessWidget {
   }
 
   IconData _kindIcon(ConnectedEntityKind kind) => switch (kind) {
-        ConnectedEntityKind.collection => Icons.workspaces_outline,
-        ConnectedEntityKind.card => Icons.sticky_note_2_outlined,
-        ConnectedEntityKind.unknown => Icons.help_outline,
-      };
+    ConnectedEntityKind.collection => Icons.workspaces_outline,
+    ConnectedEntityKind.card => Icons.sticky_note_2_outlined,
+    ConnectedEntityKind.unknown => Icons.help_outline,
+  };
 }
 
 class _EmptyView extends StatelessWidget {
@@ -323,18 +322,25 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.hub_outlined,
-                size: 64, color: theme.colorScheme.primary),
+            Icon(
+              Icons.hub_outlined,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: 16),
-            Text(AppLocalizations.of(context).connectionsEmptyTitle,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              AppLocalizations.of(context).connectionsEmptyTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               AppLocalizations.of(context).connectionsEmptyBody,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -359,13 +365,16 @@ class _ErrorView extends StatelessWidget {
           children: [
             Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 16),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 24),
             FilledButton(
-                onPressed: onRetry,
-                child: Text(AppLocalizations.of(context).actionRetry)),
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).actionRetry),
+            ),
           ],
         ),
       ),

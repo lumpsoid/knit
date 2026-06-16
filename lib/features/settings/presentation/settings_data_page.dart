@@ -4,7 +4,6 @@ import 'package:knit/features/settings/presentation/settings_action.dart';
 import 'package:knit/features/settings/presentation/settings_controller.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
 import 'package:knit/features/settings/presentation/settings_ui_effect.dart';
-import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Data subpage (§4 settings): backup/transfer (export, import, export
 /// identity) and a danger zone (wipe data, reset identity). Every action flows
@@ -53,7 +52,6 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.settingsDataTitle),
-        actions: const [SyncStatusIndicator()],
       ),
       body: ListView(
         children: [

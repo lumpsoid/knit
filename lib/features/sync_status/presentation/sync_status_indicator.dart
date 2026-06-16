@@ -79,8 +79,11 @@ SyncStatusPresentation syncStatusPresentation(SyncStatusState state) {
       label: SyncStatusLabel.allSaved,
     );
   }
+  // Cloud-themed like the other two states (cloud_done / cloud_off) so the
+  // marker reads as a sync/share status, never a "tap to save" disk affordance:
+  // these changes are already saved locally, just not yet shared (§6.6).
   return SyncStatusPresentation(
-    icon: Icons.save_outlined,
+    icon: Icons.cloud_upload_outlined,
     label: SyncStatusLabel.pending,
     pendingCount: state.pendingCount,
   );

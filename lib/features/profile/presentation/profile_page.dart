@@ -7,7 +7,6 @@ import 'package:knit/features/profile/presentation/profile_controller.dart';
 import 'package:knit/features/profile/presentation/profile_scope.dart';
 import 'package:knit/features/profile/presentation/profile_state.dart';
 import 'package:knit/features/profile/presentation/profile_ui_effect.dart';
-import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Profile / identity screen (spec §5/§7.4.7): the device's handle, an
 /// editable nickname ("you can change it anytime"), and the full public key —
@@ -70,7 +69,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.profileTitle),
-        actions: const [SyncStatusIndicator()],
       ),
       body: ValueListenableBuilder<ProfileState>(
         valueListenable: _controller.stateHolder,
