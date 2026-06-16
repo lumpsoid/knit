@@ -16,7 +16,7 @@ void main() {
     final view = syncStatusPresentation(
       const SyncStatusState(phase: SyncStatusPhase.ready, pendingCount: 1),
     );
-    expect(view.icon, Icons.save_outlined);
+    expect(view.icon, Icons.cloud_upload_outlined);
     expect(view.label, SyncStatusLabel.pending);
     expect(view.pendingCount, 1);
   });
@@ -33,7 +33,7 @@ void main() {
     final view = syncStatusPresentation(
       const SyncStatusState(phase: SyncStatusPhase.loading, pendingCount: 2),
     );
-    expect(view.icon, Icons.save_outlined);
+    expect(view.icon, Icons.cloud_upload_outlined);
     expect(view.label, SyncStatusLabel.pending);
     expect(view.pendingCount, 2);
   });

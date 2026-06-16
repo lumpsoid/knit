@@ -7,7 +7,6 @@ import 'package:knit/features/settings/presentation/settings_controller.dart';
 import 'package:knit/features/settings/presentation/settings_data_page.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
 import 'package:knit/features/settings/presentation/settings_state.dart';
-import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Settings home (§4 settings) — reached from the Timeline app bar. A menu:
 /// the Data subpage, the live Theme/Language pickers (applied app-wide via the
@@ -28,7 +27,6 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.settingsTitle),
-        actions: const [SyncStatusIndicator()],
       ),
       body: ValueListenableBuilder<SettingsState>(
         valueListenable: _controller.stateHolder,

@@ -8,7 +8,6 @@ import 'package:knit/features/card_edit/presentation/card_edit_scope.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_state.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_ui_effect.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
-import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The Card Edit page (§4.3) — a dedicated page for editing a card's content:
 /// its text (saved with the Save action), its image (subtask 4), and its links
@@ -61,11 +60,13 @@ class _CardEditPageState extends State<CardEditPage> {
         Navigator.of(context).pop();
       case CardEditShowMessageUiEffect(:final message):
         final text = switch (message) {
-          CardEditMessage.saveFailed =>
-            AppLocalizations.of(context).cardEditSaveFailed,
+          CardEditMessage.saveFailed => AppLocalizations.of(
+            context,
+          ).cardEditSaveFailed,
         };
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(text)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -106,11 +107,7 @@ class _CardEditPageState extends State<CardEditPage> {
                         ),
                       ),
                     )
-                  : TextButton(
-                      onPressed: _save,
-                      child: Text(l10n.actionSave),
-                    ),
-              const SyncStatusIndicator(),
+                  : TextButton(onPressed: _save, child: Text(l10n.actionSave)),
             ],
           ),
           body: ListView(
@@ -262,8 +259,9 @@ class _LinksSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               l10n.cardEditNoLinks,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         for (final item in state.links)
@@ -326,10 +324,10 @@ class _LinkRow extends StatelessWidget {
   }
 
   IconData _kindIcon(ConnectedEntityKind kind) => switch (kind) {
-        ConnectedEntityKind.collection => Icons.workspaces_outline,
-        ConnectedEntityKind.card => Icons.sticky_note_2_outlined,
-        ConnectedEntityKind.unknown => Icons.help_outline,
-      };
+    ConnectedEntityKind.collection => Icons.workspaces_outline,
+    ConnectedEntityKind.card => Icons.sticky_note_2_outlined,
+    ConnectedEntityKind.unknown => Icons.help_outline,
+  };
 }
 
 // --- link picker ------------------------------------------------------------
@@ -396,9 +394,7 @@ class _DrilldownBodyState extends State<_DrilldownBody> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: t.cards.isEmpty
-                ? null
-                : const Icon(Icons.chevron_right),
+            trailing: t.cards.isEmpty ? null : const Icon(Icons.chevron_right),
             onTap: () => setState(() => _drilled = t),
           ),
       ],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:knit/l10n/app_localizations.dart';
-import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 
 /// The About subpage (§4 settings): app name, tagline, and the version/build.
 ///
@@ -21,7 +20,6 @@ class SettingsAboutPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.settingsAboutTitle),
-        actions: const [SyncStatusIndicator()],
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),

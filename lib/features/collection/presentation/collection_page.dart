@@ -280,7 +280,6 @@ class _CollectionPageState extends State<CollectionPage> {
                         onPressed: () =>
                             _controller.dispatch(const StartReorder()),
                       ),
-              const SyncStatusIndicator(),
             ],
           ),
           body: Column(
