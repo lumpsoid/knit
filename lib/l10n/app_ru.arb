@@ -15,6 +15,7 @@
   "actionLink": "Связать",
   "actionContinue": "Продолжить",
   "actionOpen": "Открыть",
+  "actionClose": "Закрыть",
 
   "labelUntitled": "Без названия",
   "labelEmptyNote": "Пустая заметка",

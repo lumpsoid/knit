@@ -48,6 +48,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionOpen => 'Открыть';
 
   @override
+  String get actionClose => 'Закрыть';
+
+  @override
   String get labelUntitled => 'Без названия';
 
   @override

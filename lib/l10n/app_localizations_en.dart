@@ -48,6 +48,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionOpen => 'Open';
 
   @override
+  String get actionClose => 'Close';
+
+  @override
   String get labelUntitled => 'Untitled';
 
   @override

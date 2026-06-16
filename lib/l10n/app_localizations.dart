@@ -176,6 +176,12 @@ abstract class AppLocalizations {
   /// **'Open'**
   String get actionOpen;
 
+  /// No description provided for @actionClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get actionClose;
+
   /// No description provided for @labelUntitled.
   ///
   /// In en, this message translates to:

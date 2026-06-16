@@ -18,6 +18,7 @@
   "actionLink": "Link",
   "actionContinue": "Continue",
   "actionOpen": "Open",
+  "actionClose": "Close",
 
   "labelUntitled": "Untitled",
   "labelEmptyNote": "Empty note",
