@@ -380,6 +380,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cardEditAddPhoto => 'Добавить фото';
 
   @override
+  String get cardEditAttachFile => 'Прикрепить файл';
+
+  @override
+  String get cardEditAttachment => 'Вложение';
+
+  @override
   String get cardEditReplace => 'Заменить';
 
   @override

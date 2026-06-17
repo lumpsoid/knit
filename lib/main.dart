@@ -217,6 +217,7 @@ void bootstrap(AppConfig config) {
         ids: ids,
       ),
       imagePicker: ImagePickerAdapter(),
+      filePicker: const FilePickerAdapter(),
     ).controller,
   );
 

@@ -165,11 +165,11 @@ void main() {
     });
   });
 
-  group('image', () {
+  group('attachment', () {
     PickedImage png(List<int> b) =>
         PickedImage(bytes: Uint8List.fromList(b), mime: 'image/png');
 
-    test('setCardImage flips kind to image and points at the attachment',
+    test('setCardAttachment flips kind to image and points at the attachment',
         () async {
       final colA = (await timelineWrite.createCollection('A')).getOrThrow();
       final cardId = await newCard(colA, 'note');
@@ -178,7 +178,11 @@ void main() {
       final attId =
           (await attachmentWrite.createFromPicked(png([1, 2, 3]))).getOrThrow();
 
-      await cardEditWrite.setCardImage(cardId: cardId, attachmentId: attId);
+      await cardEditWrite.setCardAttachment(
+        cardId: cardId,
+        attachmentId: attId,
+        kind: CardKind.image,
+      );
 
       final snap = (await store.get(EntityType.card, cardId))!;
       expect(snap.content['kind'], 'image');
@@ -190,7 +194,37 @@ void main() {
       expect(data.cards.single.kind, CardKind.image);
     });
 
-    test('removeCardImage clears the attachment and flips kind back to text',
+    test('setCardAttachment can flip a card to a file attachment', () async {
+      final colA = (await timelineWrite.createCollection('A')).getOrThrow();
+      final cardId = await newCard(colA, 'note');
+      final attachmentWrite =
+          SyncStoreAttachmentWriteRepository(graph: graph, ids: ids);
+      final attId = (await attachmentWrite.createFromFile(
+        PickedFile(
+          bytes: Uint8List.fromList([7, 7, 7]),
+          mime: 'application/pdf',
+          name: 'report.pdf',
+        ),
+      ))
+          .getOrThrow();
+
+      await cardEditWrite.setCardAttachment(
+        cardId: cardId,
+        attachmentId: attId,
+        kind: CardKind.file,
+      );
+
+      final snap = (await store.get(EntityType.card, cardId))!;
+      expect(snap.content['kind'], 'file');
+      expect(snap.content['attachment_id'], attId);
+
+      final data = (await read.loadCollection(colA)).getOrThrow();
+      expect(data.cards.single.kind, CardKind.file);
+      expect(data.cards.single.fileName, 'report.pdf');
+    });
+
+    test(
+        'removeCardAttachment clears the attachment and flips kind back to text',
         () async {
       final colA = (await timelineWrite.createCollection('A')).getOrThrow();
       final cardId = await newCard(colA, 'note');
@@ -198,9 +232,13 @@ void main() {
           SyncStoreAttachmentWriteRepository(graph: graph, ids: ids);
       final attId =
           (await attachmentWrite.createFromPicked(png([4, 5]))).getOrThrow();
-      await cardEditWrite.setCardImage(cardId: cardId, attachmentId: attId);
+      await cardEditWrite.setCardAttachment(
+        cardId: cardId,
+        attachmentId: attId,
+        kind: CardKind.image,
+      );
 
-      await cardEditWrite.removeCardImage(cardId: cardId);
+      await cardEditWrite.removeCardAttachment(cardId: cardId);
 
       final snap = (await store.get(EntityType.card, cardId))!;
       expect(snap.content['kind'], 'text');

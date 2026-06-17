@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:knit/features/card_edit/domain/card_edit_models.dart';
+import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// Intents + async-result deliveries for the Card Edit page (fcis.md §6.4). All
@@ -9,18 +10,24 @@ sealed class CardEditAction {
   const CardEditAction();
 }
 
-/// View attached for [cardId], seeded with [initialText] + [initialAttachmentId]
-/// from the route-args carrier (cross_feature.md §2). Kicks off loading the
-/// card's links, the picker target tree, and the current image bytes.
+/// View attached for [cardId], seeded with the text + attachment metadata from
+/// the route-args carrier (cross_feature.md §2). Kicks off loading the card's
+/// links, the picker target tree, and — for an image attachment — its bytes.
 class ViewAttached extends CardEditAction {
   const ViewAttached({
     required this.cardId,
     required this.initialText,
     required this.initialAttachmentId,
+    this.initialAttachmentKind,
+    this.initialFileName,
+    this.initialFileSize,
   });
   final String cardId;
   final String initialText;
   final String? initialAttachmentId;
+  final CardKind? initialAttachmentKind;
+  final String? initialFileName;
+  final int? initialFileSize;
 }
 
 /// Save tapped with the composed [text].
@@ -76,36 +83,48 @@ class LinksChanged extends CardEditAction {
   const LinksChanged();
 }
 
-// --- image (subtask 4) -----------------------------------------------------
+// --- attachment (subtask 4) ------------------------------------------------
 
-/// Add or replace the card's image — opens the picker, stores the bytes, points
-/// the card at the new attachment.
+/// Add or replace the card's attachment with a *photo* — opens the image picker
+/// (gallery/camera), stores the bytes, points the card at the new attachment.
 class PickImageRequested extends CardEditAction {
   const PickImageRequested();
 }
 
-/// Remove the card's image.
-class RemoveImageRequested extends CardEditAction {
-  const RemoveImageRequested();
+/// Add or replace the card's attachment with *any file* — opens the platform
+/// file picker; the chosen file is routed to image/audio/file by its mime (§4.2).
+class PickFileRequested extends CardEditAction {
+  const PickFileRequested();
 }
 
-/// The card's image changed to [attachmentId] (null = removed). Triggers a bytes
-/// load when non-null.
-class ImageChanged extends CardEditAction {
-  const ImageChanged(this.attachmentId);
+/// Remove the card's attachment.
+class RemoveAttachmentRequested extends CardEditAction {
+  const RemoveAttachmentRequested();
+}
+
+/// The card's attachment settled to [attachmentId] (null = removed), carrying
+/// the resolved [kind] and — for the rendered representation — image [bytes] or
+/// a file's [name]/[size]. Used both for the initial image load and after a
+/// pick/remove, so the section never needs a follow-up reload.
+class AttachmentResolved extends CardEditAction {
+  const AttachmentResolved({
+    this.attachmentId,
+    this.kind,
+    this.bytes,
+    this.name,
+    this.size,
+  });
   final String? attachmentId;
-}
-
-/// The image's decoded bytes finished loading (null = none/failed).
-class ImageBytesLoaded extends CardEditAction {
-  const ImageBytesLoaded(this.bytes);
+  final CardKind? kind;
   final Uint8List? bytes;
+  final String? name;
+  final int? size;
 }
 
-/// An image edit ended without changing anything (cancelled pick or failure) —
-/// drop the busy flag.
-class ImageEditEnded extends CardEditAction {
-  const ImageEditEnded();
+/// An attachment edit ended without changing anything (cancelled pick or
+/// failure) — drop the busy flag, leave the current attachment in place.
+class AttachmentEditEnded extends CardEditAction {
+  const AttachmentEditEnded();
 }
 
 class DeactivateFeature extends CardEditAction {

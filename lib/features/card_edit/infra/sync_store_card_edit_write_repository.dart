@@ -1,6 +1,7 @@
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/features/card_edit/domain/card_edit_failure.dart';
 import 'package:knit/features/card_edit/domain/card_edit_write_repository.dart';
+import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/sync/sync.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -25,20 +26,21 @@ class SyncStoreCardEditWriteRepository implements CardEditWriteRepository {
       });
 
   @override
-  Future<Result<String, CardEditFailure>> setCardImage({
+  Future<Result<String, CardEditFailure>> setCardAttachment({
     required String cardId,
     required String attachmentId,
+    required CardKind kind,
   }) =>
       _write(() async {
         await _graph.store.edit(EntityType.card, cardId, {
-          'kind': 'image',
+          'kind': kind.tag,
           'attachment_id': attachmentId,
         });
         return cardId;
       });
 
   @override
-  Future<Result<String, CardEditFailure>> removeCardImage({
+  Future<Result<String, CardEditFailure>> removeCardAttachment({
     required String cardId,
   }) =>
       _write(() async {

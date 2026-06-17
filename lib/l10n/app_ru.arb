@@ -153,6 +153,8 @@
   "cardEditTitle": "Редактировать карточку",
   "cardEditHint": "Редактировать эту карточку…",
   "cardEditAddPhoto": "Добавить фото",
+  "cardEditAttachFile": "Прикрепить файл",
+  "cardEditAttachment": "Вложение",
   "cardEditReplace": "Заменить",
   "cardEditRemove": "Убрать",
   "cardEditLinksHeader": "СВЯЗИ",

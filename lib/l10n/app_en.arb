@@ -156,6 +156,8 @@
   "cardEditTitle": "Edit card",
   "cardEditHint": "Edit this card…",
   "cardEditAddPhoto": "Add photo",
+  "cardEditAttachFile": "Attach file",
+  "cardEditAttachment": "Attachment",
   "cardEditReplace": "Replace",
   "cardEditRemove": "Remove",
   "cardEditLinksHeader": "LINKS",

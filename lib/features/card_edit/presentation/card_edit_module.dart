@@ -3,6 +3,7 @@ import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
+import 'package:knit/core/attachments/domain/file_picker_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/card_edit/domain/card_edit_links_read_repository.dart';
@@ -31,6 +32,7 @@ class CardEditModule {
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
+    required FilePickerPort filePicker,
     Logger? logger,
   }) {
     final stateHolder =
@@ -44,6 +46,7 @@ class CardEditModule {
       attachmentReadRepository: attachmentReadRepository,
       attachmentWriteRepository: attachmentWriteRepository,
       imagePicker: imagePicker,
+      filePicker: filePicker,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.card_edit'),
     );

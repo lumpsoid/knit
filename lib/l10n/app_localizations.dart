@@ -764,6 +764,18 @@ abstract class AppLocalizations {
   /// **'Add photo'**
   String get cardEditAddPhoto;
 
+  /// No description provided for @cardEditAttachFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach file'**
+  String get cardEditAttachFile;
+
+  /// No description provided for @cardEditAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment'**
+  String get cardEditAttachment;
+
   /// No description provided for @cardEditReplace.
   ///
   /// In en, this message translates to:

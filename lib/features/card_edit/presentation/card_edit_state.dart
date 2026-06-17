@@ -1,14 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:knit/features/card_edit/domain/card_edit_models.dart';
+import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 enum CardEditStatus { editing, saving, failed }
 
 /// State for the Card Edit page (§4.3). The text being edited lives in a
 /// page-owned [TextEditingController] (seeded once from [initialText]), so a
-/// links/image reload never disturbs unsaved text. [status] gates the Save
-/// control. The links + image sections are managed in place (each change is its
-/// own signed write, applied immediately) and reflected here.
+/// links/attachment reload never disturbs unsaved text. [status] gates the Save
+/// control. The links + attachment sections are managed in place (each change is
+/// its own signed write, applied immediately) and reflected here.
 @immutable
 class CardEditState {
   const CardEditState({
@@ -19,8 +20,11 @@ class CardEditState {
     this.linksLoading = false,
     this.targets = const [],
     this.attachmentId,
+    this.attachmentKind,
     this.imageBytes,
-    this.imageBusy = false,
+    this.attachmentName,
+    this.attachmentSize,
+    this.attachmentBusy = false,
   });
 
   final CardEditStatus status;
@@ -34,17 +38,26 @@ class CardEditState {
   /// The link-picker target tree (every collection + its cards), loaded up front.
   final List<CardLinkCollectionTargets> targets;
 
-  /// The card's current image attachment id (subtask 4); null when it has none.
+  /// The card's current attachment id (§7.4.3); null when it has none.
   final String? attachmentId;
 
-  /// Decoded bytes of [attachmentId], for [AttachmentImage]; null while loading
-  /// or absent.
+  /// The current attachment's kind (`image`/`audio`/`file`); drives which
+  /// representation the section renders. Null when the card has no attachment.
+  final CardKind? attachmentKind;
+
+  /// Decoded bytes of an *image* attachment, for [AttachmentImage]; null for
+  /// audio/file attachments (they render as chips) and while loading/absent.
   final Uint8List? imageBytes;
 
-  /// An image add/replace/remove is in flight — gates the image controls.
-  final bool imageBusy;
+  /// For a file attachment, its original name and byte size (§7.4.8), shown on
+  /// the file chip. Null for image/audio attachments.
+  final String? attachmentName;
+  final int? attachmentSize;
 
-  bool get hasImage => attachmentId != null;
+  /// An attachment add/replace/remove is in flight — gates the controls.
+  final bool attachmentBusy;
+
+  bool get hasAttachment => attachmentId != null;
 
   static const Object _unset = Object();
 
@@ -56,8 +69,11 @@ class CardEditState {
     bool? linksLoading,
     List<CardLinkCollectionTargets>? targets,
     Object? attachmentId = _unset,
+    Object? attachmentKind = _unset,
     Object? imageBytes = _unset,
-    bool? imageBusy,
+    Object? attachmentName = _unset,
+    Object? attachmentSize = _unset,
+    bool? attachmentBusy,
   }) =>
       CardEditState(
         status: status ?? this.status,
@@ -68,8 +84,17 @@ class CardEditState {
         targets: targets ?? this.targets,
         attachmentId:
             attachmentId == _unset ? this.attachmentId : attachmentId as String?,
+        attachmentKind: attachmentKind == _unset
+            ? this.attachmentKind
+            : attachmentKind as CardKind?,
         imageBytes:
             imageBytes == _unset ? this.imageBytes : imageBytes as Uint8List?,
-        imageBusy: imageBusy ?? this.imageBusy,
+        attachmentName: attachmentName == _unset
+            ? this.attachmentName
+            : attachmentName as String?,
+        attachmentSize: attachmentSize == _unset
+            ? this.attachmentSize
+            : attachmentSize as int?,
+        attachmentBusy: attachmentBusy ?? this.attachmentBusy,
       );
 }

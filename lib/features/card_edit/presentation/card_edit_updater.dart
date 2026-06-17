@@ -2,6 +2,7 @@ import 'package:fcis_core/fcis_core.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_effect.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_state.dart';
+import 'package:knit/features/collection/domain/collection_models.dart';
 
 /// Pure reducer for the Card Edit page (fcis.md §6.1). Text saves on demand (a
 /// blank/whitespace-only body is dropped, matching the Collection screen);
@@ -20,8 +21,14 @@ class CardEditUpdater
       case ViewAttached(
           :final cardId,
           :final initialText,
-          :final initialAttachmentId
+          :final initialAttachmentId,
+          :final initialAttachmentKind,
+          :final initialFileName,
+          :final initialFileSize
         ):
+        // An image attachment needs its bytes fetched to render the thumbnail;
+        // audio/file render straight from the metadata the carrier passed.
+        final isImage = initialAttachmentKind == CardKind.image;
         return (
           state.copyWith(
             status: CardEditStatus.editing,
@@ -29,12 +36,15 @@ class CardEditUpdater
             initialText: initialText,
             linksLoading: true,
             attachmentId: initialAttachmentId,
-            imageBusy: initialAttachmentId != null,
+            attachmentKind: initialAttachmentKind,
+            attachmentName: initialFileName,
+            attachmentSize: initialFileSize,
+            attachmentBusy: initialAttachmentId != null && isImage,
           ),
           [
             LoadLinksEffect(cardId),
             LoadTargetsEffect(cardId),
-            if (initialAttachmentId != null)
+            if (initialAttachmentId != null && isImage)
               LoadImageEffect(initialAttachmentId),
           ],
         );
@@ -91,11 +101,11 @@ class CardEditUpdater
           [LoadLinksEffect(state.cardId)],
         );
 
-      // --- image ------------------------------------------------------------
+      // --- attachment -------------------------------------------------------
 
       case PickImageRequested():
         return (
-          state.copyWith(imageBusy: true),
+          state.copyWith(attachmentBusy: true),
           [
             PickImageEffect(
               cardId: state.cardId,
@@ -104,42 +114,49 @@ class CardEditUpdater
           ],
         );
 
-      case RemoveImageRequested():
+      case PickFileRequested():
         return (
-          state.copyWith(imageBusy: true),
+          state.copyWith(attachmentBusy: true),
           [
-            RemoveImageEffect(
+            PickFileEffect(
               cardId: state.cardId,
               previousAttachmentId: state.attachmentId,
             ),
           ],
         );
 
-      case ImageChanged(:final attachmentId):
-        if (attachmentId == null) {
-          return (
-            state.copyWith(
-              attachmentId: null,
-              imageBytes: null,
-              imageBusy: false,
+      case RemoveAttachmentRequested():
+        return (
+          state.copyWith(attachmentBusy: true),
+          [
+            RemoveAttachmentEffect(
+              cardId: state.cardId,
+              previousAttachmentId: state.attachmentId,
             ),
-            null,
-          );
-        }
+          ],
+        );
+
+      case AttachmentResolved(
+          :final attachmentId,
+          :final kind,
+          :final bytes,
+          :final name,
+          :final size
+        ):
         return (
           state.copyWith(
             attachmentId: attachmentId,
-            imageBytes: null,
-            imageBusy: true,
+            attachmentKind: kind,
+            imageBytes: bytes,
+            attachmentName: name,
+            attachmentSize: size,
+            attachmentBusy: false,
           ),
-          [LoadImageEffect(attachmentId)],
+          null,
         );
 
-      case ImageBytesLoaded(:final bytes):
-        return (state.copyWith(imageBytes: bytes, imageBusy: false), null);
-
-      case ImageEditEnded():
-        return (state.copyWith(imageBusy: false), null);
+      case AttachmentEditEnded():
+        return (state.copyWith(attachmentBusy: false), null);
 
       case DeactivateFeature():
         return (state, null);

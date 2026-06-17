@@ -5,6 +5,7 @@ import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_effect.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_state.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_updater.dart';
+import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 void main() {
@@ -20,7 +21,7 @@ void main() {
       );
 
   group('attach', () {
-    test('seeds id/text, loads links + targets, no image when none', () {
+    test('seeds id/text, loads links + targets, no attachment when none', () {
       final (next, effects) = updater.update(
         const CardEditState(),
         const ViewAttached(
@@ -34,24 +35,46 @@ void main() {
       expect(next.initialText, 'hello');
       expect(next.linksLoading, isTrue);
       expect(next.attachmentId, isNull);
-      expect(next.imageBusy, isFalse);
+      expect(next.attachmentBusy, isFalse);
       expect(effects, hasLength(2));
       expect(effects!.whereType<LoadLinksEffect>().single.cardId, 'c1');
       expect(effects.whereType<LoadTargetsEffect>().single.cardId, 'c1');
     });
 
-    test('loads the current image when the card has one', () {
+    test('loads the bytes for an image attachment', () {
       final (next, effects) = updater.update(
         const CardEditState(),
         const ViewAttached(
           cardId: 'c1',
           initialText: '',
           initialAttachmentId: 'att-1',
+          initialAttachmentKind: CardKind.image,
         ),
       );
       expect(next.attachmentId, 'att-1');
-      expect(next.imageBusy, isTrue);
+      expect(next.attachmentKind, CardKind.image);
+      expect(next.attachmentBusy, isTrue);
       expect(effects!.whereType<LoadImageEffect>().single.attachmentId, 'att-1');
+    });
+
+    test('renders an audio/file attachment from metadata without a load', () {
+      final (next, effects) = updater.update(
+        const CardEditState(),
+        const ViewAttached(
+          cardId: 'c1',
+          initialText: '',
+          initialAttachmentId: 'att-2',
+          initialAttachmentKind: CardKind.file,
+          initialFileName: 'report.pdf',
+          initialFileSize: 2048,
+        ),
+      );
+      expect(next.attachmentId, 'att-2');
+      expect(next.attachmentKind, CardKind.file);
+      expect(next.attachmentName, 'report.pdf');
+      expect(next.attachmentSize, 2048);
+      expect(next.attachmentBusy, isFalse); // no bytes to fetch
+      expect(effects!.whereType<LoadImageEffect>(), isEmpty);
     });
   });
 
@@ -130,55 +153,91 @@ void main() {
     });
   });
 
-  group('image', () {
+  group('attachment', () {
     test('PickImageRequested carries the previous attachment for GC', () {
       const state = CardEditState(cardId: 'c1', attachmentId: 'old');
       final (next, effects) =
           updater.update(state, const PickImageRequested());
-      expect(next.imageBusy, isTrue);
+      expect(next.attachmentBusy, isTrue);
       expect((effects!.single as PickImageEffect).previousAttachmentId, 'old');
     });
 
-    test('ImageChanged to a new id clears old bytes and loads the new image',
-        () {
-      final state = CardEditState(
-        cardId: 'c1',
-        attachmentId: 'old',
-        imageBytes: Uint8List.fromList([1, 2, 3]),
-      );
-      final (next, effects) = updater.update(state, const ImageChanged('new'));
-      expect(next.attachmentId, 'new');
-      expect(next.imageBytes, isNull);
-      expect(next.imageBusy, isTrue);
-      expect((effects!.single as LoadImageEffect).attachmentId, 'new');
+    test('PickFileRequested carries the previous attachment for GC', () {
+      const state = CardEditState(cardId: 'c1', attachmentId: 'old');
+      final (next, effects) = updater.update(state, const PickFileRequested());
+      expect(next.attachmentBusy, isTrue);
+      expect((effects!.single as PickFileEffect).previousAttachmentId, 'old');
     });
 
-    test('ImageChanged to null removes the image with no effect', () {
-      final state = CardEditState(
-        cardId: 'c1',
-        attachmentId: 'old',
-        imageBytes: Uint8List.fromList([1]),
-        imageBusy: true,
+    test('RemoveAttachmentRequested carries the previous attachment for GC', () {
+      const state = CardEditState(cardId: 'c1', attachmentId: 'old');
+      final (next, effects) =
+          updater.update(state, const RemoveAttachmentRequested());
+      expect(next.attachmentBusy, isTrue);
+      expect(
+        (effects!.single as RemoveAttachmentEffect).previousAttachmentId,
+        'old',
       );
-      final (next, effects) = updater.update(state, const ImageChanged(null));
-      expect(next.attachmentId, isNull);
-      expect(next.imageBytes, isNull);
-      expect(next.imageBusy, isFalse);
+    });
+
+    test('AttachmentResolved with an image fills bytes and clears busy', () {
+      const state = CardEditState(cardId: 'c1', attachmentBusy: true);
+      final bytes = Uint8List.fromList([9]);
+      final (next, effects) = updater.update(
+        state,
+        AttachmentResolved(
+          attachmentId: 'new',
+          kind: CardKind.image,
+          bytes: bytes,
+        ),
+      );
+      expect(next.attachmentId, 'new');
+      expect(next.attachmentKind, CardKind.image);
+      expect(next.imageBytes, bytes);
+      expect(next.attachmentBusy, isFalse);
       expect(effects, isNull);
     });
 
-    test('ImageBytesLoaded stores bytes and clears the busy flag', () {
-      const state = CardEditState(cardId: 'c1', imageBusy: true);
-      final bytes = Uint8List.fromList([9]);
-      final (next, _) = updater.update(state, ImageBytesLoaded(bytes));
-      expect(next.imageBytes, bytes);
-      expect(next.imageBusy, isFalse);
+    test('AttachmentResolved with a file fills name/size, no bytes', () {
+      const state = CardEditState(cardId: 'c1', attachmentBusy: true);
+      final (next, _) = updater.update(
+        state,
+        const AttachmentResolved(
+          attachmentId: 'new',
+          kind: CardKind.file,
+          name: 'a.zip',
+          size: 10,
+        ),
+      );
+      expect(next.attachmentKind, CardKind.file);
+      expect(next.attachmentName, 'a.zip');
+      expect(next.attachmentSize, 10);
+      expect(next.imageBytes, isNull);
+      expect(next.attachmentBusy, isFalse);
     });
 
-    test('ImageEditEnded just drops the busy flag', () {
-      const state = CardEditState(cardId: 'c1', imageBusy: true);
-      final (next, effects) = updater.update(state, const ImageEditEnded());
-      expect(next.imageBusy, isFalse);
+    test('AttachmentResolved to null removes the attachment', () {
+      final state = CardEditState(
+        cardId: 'c1',
+        attachmentId: 'old',
+        attachmentKind: CardKind.image,
+        imageBytes: Uint8List.fromList([1]),
+        attachmentBusy: true,
+      );
+      final (next, effects) =
+          updater.update(state, const AttachmentResolved(attachmentId: null));
+      expect(next.attachmentId, isNull);
+      expect(next.attachmentKind, isNull);
+      expect(next.imageBytes, isNull);
+      expect(next.attachmentBusy, isFalse);
+      expect(effects, isNull);
+    });
+
+    test('AttachmentEditEnded just drops the busy flag', () {
+      const state = CardEditState(cardId: 'c1', attachmentBusy: true);
+      final (next, effects) =
+          updater.update(state, const AttachmentEditEnded());
+      expect(next.attachmentBusy, isFalse);
       expect(effects, isNull);
     });
   });

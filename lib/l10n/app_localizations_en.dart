@@ -377,6 +377,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cardEditAddPhoto => 'Add photo';
 
   @override
+  String get cardEditAttachFile => 'Attach file';
+
+  @override
+  String get cardEditAttachment => 'Attachment';
+
+  @override
   String get cardEditReplace => 'Replace';
 
   @override

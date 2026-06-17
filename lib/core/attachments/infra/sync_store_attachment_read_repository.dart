@@ -33,6 +33,8 @@ class SyncStoreAttachmentReadRepository implements AttachmentReadRepository {
 
     final mime = record.content[AttachmentSchema.colMime] as String? ??
         'application/octet-stream';
-    return Ok(AttachmentBytes(bytes: bytes, mime: mime));
+    final name = record.content[AttachmentSchema.colName] as String?;
+    final size = (record.content[AttachmentSchema.colSize] as num?)?.toInt();
+    return Ok(AttachmentBytes(bytes: bytes, mime: mime, name: name, size: size));
   }
 }

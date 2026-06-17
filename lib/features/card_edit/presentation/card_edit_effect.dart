@@ -45,16 +45,18 @@ class RemoveLinkEffect extends CardEditEffect {
   final String linkId;
 }
 
-// --- image (subtask 4) -----------------------------------------------------
+// --- attachment (subtask 4) ------------------------------------------------
 
-/// Load the decoded bytes for [attachmentId] to render the current image.
+/// Load the decoded bytes for an *image* [attachmentId] to render the current
+/// attachment. Audio/file attachments render from their metadata, so they don't
+/// load bytes here.
 class LoadImageEffect extends CardEditEffect {
   const LoadImageEffect(this.attachmentId);
   final String attachmentId;
 }
 
-/// Pick an image, store it, point [cardId] at the new attachment, and GC the
-/// [previousAttachmentId] it replaced (if any).
+/// Pick a photo (gallery/camera), store it, point [cardId] at the new image
+/// attachment, and GC the [previousAttachmentId] it replaced (if any).
 class PickImageEffect extends CardEditEffect {
   const PickImageEffect({
     required this.cardId,
@@ -64,9 +66,20 @@ class PickImageEffect extends CardEditEffect {
   final String? previousAttachmentId;
 }
 
-/// Clear [cardId]'s image and GC the [previousAttachmentId].
-class RemoveImageEffect extends CardEditEffect {
-  const RemoveImageEffect({
+/// Pick any file, store it (routed to image/audio/file by its mime, §4.2), point
+/// [cardId] at the new attachment, and GC the [previousAttachmentId] (if any).
+class PickFileEffect extends CardEditEffect {
+  const PickFileEffect({
+    required this.cardId,
+    required this.previousAttachmentId,
+  });
+  final String cardId;
+  final String? previousAttachmentId;
+}
+
+/// Clear [cardId]'s attachment and GC the [previousAttachmentId].
+class RemoveAttachmentEffect extends CardEditEffect {
+  const RemoveAttachmentEffect({
     required this.cardId,
     required this.previousAttachmentId,
   });
