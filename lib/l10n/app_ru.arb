@@ -118,6 +118,8 @@
   "collectionAudioResume": "Продолжить",
   "collectionAudioRecording": "Запись",
   "collectionAudioPaused": "Пауза",
+  "collectionAudioPlay": "Воспроизвести",
+  "collectionAudioNowPlaying": "Сейчас играет",
   "collectionAudioMessage": "Аудиосообщение",
   "collectionAudioPermissionDenied": "Для записи аудио нужен доступ к микрофону.",
   "collectionActionEdit": "Изменить",

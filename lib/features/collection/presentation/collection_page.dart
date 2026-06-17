@@ -1,12 +1,14 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/presentation/audio_mini_player.dart';
+import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
@@ -30,6 +32,7 @@ class CollectionPage extends StatefulWidget {
 
 class _CollectionPageState extends State<CollectionPage> {
   CollectionController get _controller => CollectionScope.controller;
+  AudioPlaybackController get _playback => CollectionScope.playbackController;
   final TextEditingController _composer = TextEditingController();
 
   /// Whether the inline gallery/camera options are shown above the composer.
@@ -54,6 +57,9 @@ class _CollectionPageState extends State<CollectionPage> {
 
   @override
   void dispose() {
+    // Leaving the collection stops playback so audio doesn't trail the user out
+    // (the player itself is an app-wide singleton — only the clip is released).
+    unawaited(_playback.close());
     _controller
       ..dispatch(const DeactivateFeature())
       ..onDetach();
@@ -351,6 +357,23 @@ class _CollectionPageState extends State<CollectionPage> {
           body: Column(
             children: [
               Expanded(child: _body(state)),
+              // The persistent player sits between the feed and the composer so
+              // it stays on screen as the feed scrolls — shown in reorder mode
+              // too, so the user never loses what's playing.
+              ValueListenableBuilder<PlaybackSnapshot>(
+                valueListenable: _playback.snapshot,
+                builder: (context, snap, _) {
+                  if (!snap.isActive) return const SizedBox.shrink();
+                  return AudioMiniPlayer(
+                    phase: snap.phase,
+                    position: snap.position,
+                    duration: snap.duration,
+                    onPlayPause: () => unawaited(_playback.togglePlayPause()),
+                    onSeek: (d) => unawaited(_playback.seek(d)),
+                    onClose: () => unawaited(_playback.close()),
+                  );
+                },
+              ),
               if (!state.reordering)
                 _Composer(
                   controller: _composer,
@@ -425,6 +448,9 @@ class _CollectionPageState extends State<CollectionPage> {
         itemBuilder: (context, i) {
           final card = state.cards[i];
           final bytes = _bytesFor(state, card);
+          final audioId = card.kind == CardKind.audio
+              ? card.attachmentId
+              : null;
           return _CardBubble(
             card: card,
             imageBytes: bytes,
@@ -432,6 +458,12 @@ class _CollectionPageState extends State<CollectionPage> {
             onImageTap: bytes == null
                 ? null
                 : () => _openImagePreview(card, bytes),
+            // A playable audio card gets the shared player snapshot (to flip when
+            // it's the one playing) and a tap-to-toggle on its play button.
+            playback: audioId == null ? null : _playback.snapshot,
+            onToggleAudio: audioId == null
+                ? null
+                : () => unawaited(_playback.toggle(card.id, audioId)),
           );
         },
       ),
@@ -461,6 +493,8 @@ class _CardBubble extends StatelessWidget {
     required this.imageBytes,
     required this.onTap,
     this.onImageTap,
+    this.playback,
+    this.onToggleAudio,
   });
   final FeedCard card;
 
@@ -471,6 +505,15 @@ class _CardBubble extends StatelessWidget {
   /// Opens the full-screen image preview; null when the image hasn't loaded yet
   /// (a tap then falls through to [onTap], the card-actions sheet).
   final VoidCallback? onImageTap;
+
+  /// The shared player snapshot for a playable audio card, so its chip flips to
+  /// a now-playing state when this card is the one in the player. Null for every
+  /// other card kind (and audio cards whose bytes are gone).
+  final ValueListenable<PlaybackSnapshot>? playback;
+
+  /// Toggle this audio card's playback (play / pause / replay); null when not a
+  /// playable audio card.
+  final VoidCallback? onToggleAudio;
 
   @override
   Widget build(BuildContext context) {
@@ -556,10 +599,10 @@ class _CardBubble extends StatelessWidget {
         );
       case CardKind.audio:
         final audioCaption = card.text?.trim();
-        final chip = _placeholder(
-          theme,
-          Icons.mic_none,
-          l10n.collectionCardAudio,
+        final chip = _AudioCardChip(
+          cardId: card.id,
+          playback: playback,
+          onToggle: onToggleAudio,
         );
         if (audioCaption == null || audioCaption.isEmpty) return chip;
         return Column(
@@ -592,6 +635,95 @@ class _CardBubble extends StatelessWidget {
       Text(label),
     ],
   );
+}
+
+/// An audio card's in-feed chip. Tapping its icon starts/toggles playback in the
+/// shared player; when this card is the one playing it flips — a primary-tinted
+/// pause/play icon and a "Now playing" label — so the user can scroll back and
+/// find it. [playback] null ⇒ no attachment to play: a plain, static mic chip.
+class _AudioCardChip extends StatelessWidget {
+  const _AudioCardChip({
+    required this.cardId,
+    required this.playback,
+    required this.onToggle,
+  });
+
+  final String cardId;
+  final ValueListenable<PlaybackSnapshot>? playback;
+  final VoidCallback? onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final playback = this.playback;
+    if (playback == null) {
+      return _chip(context, active: false, playing: false, loading: false);
+    }
+    return ValueListenableBuilder<PlaybackSnapshot>(
+      valueListenable: playback,
+      builder: (context, snap, _) {
+        final active = snap.cardId == cardId;
+        return _chip(
+          context,
+          active: active,
+          playing: active && snap.isPlaying,
+          loading: active && snap.isLoading,
+        );
+      },
+    );
+  }
+
+  Widget _chip(
+    BuildContext context, {
+    required bool active,
+    required bool playing,
+    required bool loading,
+  }) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final color = active
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Own circular Material so the tap ripple clips to a circle around the
+        // button instead of splashing onto the bubble's rounded rectangle (where
+        // it would spill past the left corner and clip square on the right).
+        Material(
+          type: MaterialType.transparency,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkResponse(
+            onTap: onToggle,
+            containedInkWell: true,
+            radius: 30,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: loading
+                  ? const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Padding(
+                        padding: EdgeInsets.all(2),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : Icon(
+                      playing ? Icons.pause_circle : Icons.play_circle,
+                      size: 48,
+                      color: color,
+                    ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          active ? l10n.collectionAudioNowPlaying : l10n.collectionCardAudio,
+          style: active ? TextStyle(color: color) : null,
+        ),
+      ],
+    );
+  }
 }
 
 /// A full-screen, pinch-to-zoom viewer for a card's image (§4.2). Pushed when an

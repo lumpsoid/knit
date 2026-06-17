@@ -590,6 +590,18 @@ abstract class AppLocalizations {
   /// **'Paused'**
   String get collectionAudioPaused;
 
+  /// No description provided for @collectionAudioPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get collectionAudioPlay;
+
+  /// No description provided for @collectionAudioNowPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Now playing'**
+  String get collectionAudioNowPlaying;
+
   /// No description provided for @collectionAudioMessage.
   ///
   /// In en, this message translates to:

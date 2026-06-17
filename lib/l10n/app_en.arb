@@ -121,6 +121,8 @@
   "collectionAudioResume": "Resume",
   "collectionAudioRecording": "Recording",
   "collectionAudioPaused": "Paused",
+  "collectionAudioPlay": "Play",
+  "collectionAudioNowPlaying": "Now playing",
   "collectionAudioMessage": "Audio message",
   "collectionAudioPermissionDenied": "Microphone access is needed to record audio.",
   "collectionActionEdit": "Edit",

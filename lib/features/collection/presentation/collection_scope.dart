@@ -1,4 +1,5 @@
 import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
+import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
@@ -11,12 +12,15 @@ import 'package:knit/features/connections/presentation/connections_route_args.da
 abstract final class CollectionScope {
   static CollectionController? _controller;
   static CollectionController Function()? _factory;
+  static AudioPlaybackController? _playbackController;
   static CollectionRouteArgs? _routeArgs;
   static ConnectionsRouteArgsWriter? _connectionsWriter;
   static CardEditRouteArgsWriter? _cardEditWriter;
 
   static void setFactory(CollectionController Function() factory) =>
       _factory = factory;
+  static void setPlaybackController(AudioPlaybackController controller) =>
+      _playbackController = controller;
   static void setRouteArgs(CollectionRouteArgs args) => _routeArgs = args;
   static void setConnectionsRouteArgsWriter(
     ConnectionsRouteArgsWriter writer,
@@ -34,6 +38,20 @@ abstract final class CollectionScope {
       );
     }
     return _controller = _factory!();
+  }
+
+  /// The app-wide audio player shared by the mini-player bar and the now-playing
+  /// card flip. A singleton (unlike the lazily-rebuilt [controller]) so a clip
+  /// keeps its lifecycle across feed re-syncs; the page stops it on exit.
+  static AudioPlaybackController get playbackController {
+    final controller = _playbackController;
+    if (controller == null) {
+      throw StateError(
+        'CollectionScope.playbackController is not initialized.\n'
+        'Call CollectionScope.setPlaybackController() during composition.',
+      );
+    }
+    return controller;
   }
 
   static CollectionRouteArgs get routeArgs {

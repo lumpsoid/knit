@@ -84,10 +84,12 @@ dependencies:
 
   # Attachment capture + storage foundation (spec §6.4/§7.4.8). image_picker sits
   # behind the ImagePickerPort; path_provider locates the on-disk blob dir; record
-  # sits behind the AudioRecorderPort (audio-message capture).
+  # sits behind the AudioRecorderPort (audio-message capture); audioplayers sits
+  # behind the AudioPlayerPort (audio-message playback).
   image_picker: ^1.1.2
   path_provider: ^2.1.4
   record: ^6.0.0
+  audioplayers: ^6.1.0
 
   # Device-local preference persistence (theme + language). These are this
   # device's UI settings, not synced graph data — so they live in

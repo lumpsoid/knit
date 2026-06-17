@@ -286,6 +286,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionAudioPaused => 'Paused';
 
   @override
+  String get collectionAudioPlay => 'Play';
+
+  @override
+  String get collectionAudioNowPlaying => 'Now playing';
+
+  @override
   String get collectionAudioMessage => 'Audio message';
 
   @override

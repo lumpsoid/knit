@@ -22,6 +22,7 @@ import 'package:knit/features/card_edit/presentation/card_edit_scope.dart';
 import 'package:knit/features/collection/infra/share_plus_card_share_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
+import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/presentation/collection_module.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
@@ -182,6 +183,15 @@ void bootstrap(AppConfig config) {
       shareRepository: const SharePlusCardShareRepository(),
       timelineChannel: timelineChannel,
     ).controller,
+  );
+  // The audio player is an app-wide singleton (not rebuilt per page entry) so a
+  // clip survives the Collection feed's post-write re-syncs; the page stops it on
+  // exit. It plays the same content-addressed bytes the read path already serves.
+  CollectionScope.setPlaybackController(
+    AudioPlaybackController(
+      player: AudioPlayersAudioPlayer(),
+      attachmentRead: SyncStoreAttachmentReadRepository(graph: graph),
+    ),
   );
   ConnectionsScope.setFactory(
     () => ConnectionsModule(

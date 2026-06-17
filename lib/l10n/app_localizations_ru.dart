@@ -288,6 +288,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionAudioPaused => 'Пауза';
 
   @override
+  String get collectionAudioPlay => 'Воспроизвести';
+
+  @override
+  String get collectionAudioNowPlaying => 'Сейчас играет';
+
+  @override
   String get collectionAudioMessage => 'Аудиосообщение';
 
   @override
