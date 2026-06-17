@@ -746,6 +746,60 @@ abstract class AppLocalizations {
   /// **'Or a card in it'**
   String get collectionOrACardInIt;
 
+  /// No description provided for @collectionAppBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection'**
+  String get collectionAppBarTitle;
+
+  /// No description provided for @collectionDescriptionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No description'**
+  String get collectionDescriptionEmpty;
+
+  /// No description provided for @collectionEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit collection'**
+  String get collectionEditTitle;
+
+  /// No description provided for @collectionEditTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get collectionEditTitleHint;
+
+  /// No description provided for @collectionEditDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get collectionEditDescriptionHint;
+
+  /// No description provided for @collectionEditCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover'**
+  String get collectionEditCover;
+
+  /// No description provided for @collectionEditAddCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Add cover photo'**
+  String get collectionEditAddCover;
+
+  /// No description provided for @collectionEditReplaceCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace cover'**
+  String get collectionEditReplaceCover;
+
+  /// No description provided for @collectionEditRemoveCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove cover'**
+  String get collectionEditRemoveCover;
+
   /// No description provided for @cardEditTitle.
   ///
   /// In en, this message translates to:

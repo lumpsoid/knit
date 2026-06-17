@@ -32,10 +32,12 @@ abstract class EnvelopeColumns {
         $colSig         TEXT NOT NULL''';
 }
 
-/// A topic notebook (spec §6.4) — title + optional cover image only.
+/// A topic notebook (spec §6.4) — title + optional description + optional cover
+/// image.
 abstract class CollectionSchema {
   static const String table = 'collection';
   static const String colTitle = 'title';
+  static const String colDescription = 'description';
   static const String colCoverAttachmentId = 'cover_attachment_id';
 
   static const String createTable =
@@ -43,6 +45,7 @@ abstract class CollectionSchema {
       CREATE TABLE IF NOT EXISTS $table (
         ${EnvelopeColumns.ddl},
         $colTitle              TEXT NOT NULL,
+        $colDescription        TEXT,
         $colCoverAttachmentId  TEXT
       )
       ''';

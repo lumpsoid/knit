@@ -410,7 +410,10 @@ class SyncStore {
     Map<String, Object?> content,
   ) {
     final defaults = switch (type) {
-      EntityType.collection => const {'cover_attachment_id': null},
+      EntityType.collection => const {
+          'description': null,
+          'cover_attachment_id': null,
+        },
       EntityType.card => const {'attachment_id': null, 'text': null},
       EntityType.link => const {'label': null},
       EntityType.profile => const {'nickname': null},

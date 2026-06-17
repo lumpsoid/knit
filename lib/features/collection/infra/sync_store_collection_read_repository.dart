@@ -59,6 +59,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         CollectionData(
           collectionId: id,
           title: header.content['title'] as String? ?? '',
+          description: header.content['description'] as String?,
           coverAttachmentId: header.content['cover_attachment_id'] as String?,
           cards: cards,
         ),

@@ -25,6 +25,7 @@ abstract class ProjectionRowMapper {
       EntityType.collection => {
           ..._envelope(s),
           CollectionSchema.colTitle: c[CollectionSchema.colTitle],
+          CollectionSchema.colDescription: c[CollectionSchema.colDescription],
           CollectionSchema.colCoverAttachmentId:
               c[CollectionSchema.colCoverAttachmentId],
         },
@@ -89,6 +90,8 @@ abstract class ProjectionRowMapper {
     return switch (type) {
       EntityType.collection => build(content: {
           CollectionSchema.colTitle: row[CollectionSchema.colTitle],
+          CollectionSchema.colDescription:
+              row[CollectionSchema.colDescription],
           CollectionSchema.colCoverAttachmentId:
               row[CollectionSchema.colCoverAttachmentId],
         }),

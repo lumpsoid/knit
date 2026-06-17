@@ -52,6 +52,61 @@ void main() {
     });
   });
 
+  group('collection description (§3.1/§7.4)', () {
+    test('create carries an optional description into the projection', () async {
+      final store = await openStore();
+      await store.create(EntityType.collection, 'col-1', {
+        'title': 'Espresso',
+        'description': 'Dialing-in notes',
+      });
+      final row = await store.get(EntityType.collection, 'col-1');
+      expect(row!.content['title'], 'Espresso');
+      expect(row.content['description'], 'Dialing-in notes');
+    });
+
+    test('a create that omits description defaults it to null', () async {
+      final store = await openStore();
+      await store.create(EntityType.collection, 'col-1', {'title': 'Espresso'});
+      final row = await store.get(EntityType.collection, 'col-1');
+      expect(row!.content['description'], isNull);
+    });
+
+    test('editing the description overlays it, leaving the title intact', () async {
+      final store = await openStore();
+      await store.create(EntityType.collection, 'col-1', {'title': 'Espresso'});
+      await store.edit(EntityType.collection, 'col-1', {
+        'description': 'Now with notes',
+      });
+      final row = await store.get(EntityType.collection, 'col-1');
+      expect(row!.content['title'], 'Espresso');
+      expect(row.content['description'], 'Now with notes');
+    });
+
+    test('editing the title preserves an existing description (§7.6 overlay)',
+        () async {
+      final store = await openStore();
+      await store.create(EntityType.collection, 'col-1', {
+        'title': 'Espresso',
+        'description': 'keep me',
+      });
+      await store.edit(EntityType.collection, 'col-1', {'title': 'Pour-over'});
+      final row = await store.get(EntityType.collection, 'col-1');
+      expect(row!.content['title'], 'Pour-over');
+      expect(row.content['description'], 'keep me');
+    });
+
+    test('description survives a rebuild-from-log (§8.9)', () async {
+      final store = await openStore();
+      await store.create(EntityType.collection, 'col-1', {
+        'title': 'Espresso',
+        'description': 'rebuilt blurb',
+      });
+      await store.rebuild();
+      final row = await store.get(EntityType.collection, 'col-1');
+      expect(row!.content['description'], 'rebuilt blurb');
+    });
+  });
+
   group('gate 3 — reorder freezes hlc_*, bumps position_*, text intact (§8.4)', () {
     test('a reorder of a card leaves content untouched', () async {
       final store = await openStore();

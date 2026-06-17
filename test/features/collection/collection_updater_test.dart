@@ -63,6 +63,7 @@ void main() {
     final data = CollectionData(
       collectionId: 'col',
       title: 'Notes',
+      description: null,
       coverAttachmentId: null,
       cards: [card('c1', 'a0')],
     );
@@ -79,6 +80,7 @@ void main() {
     CollectionData dataWith(List<FeedCard> cards) => CollectionData(
       collectionId: 'col',
       title: 'Notes',
+      description: null,
       coverAttachmentId: null,
       cards: cards,
     );
@@ -760,6 +762,7 @@ void main() {
       final data = CollectionData(
         collectionId: 'col',
         title: 'Notes',
+        description: null,
         coverAttachmentId: null,
         cards: [card('c1', 'a0')],
       );
@@ -825,6 +828,7 @@ void main() {
       final data = CollectionData(
         collectionId: 'col',
         title: 'Notes',
+        description: null,
         coverAttachmentId: null,
         cards: [card('c2', 'a1'), card('c1', 'a2')],
       );
@@ -840,6 +844,7 @@ void main() {
       final data = CollectionData(
         collectionId: 'col',
         title: 'Notes',
+        description: null,
         coverAttachmentId: null,
         cards: [card('c1', 'a0')],
       );

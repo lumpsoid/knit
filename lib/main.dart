@@ -26,6 +26,10 @@ import 'package:knit/features/collection/presentation/audio_playback_controller.
 import 'package:knit/features/collection/presentation/collection_module.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
+import 'package:knit/features/collection_edit/infra/sync_store_collection_edit_write_repository.dart';
+import 'package:knit/features/collection_edit/presentation/collection_edit_module.dart';
+import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
+import 'package:knit/features/collection_edit/presentation/collection_edit_scope.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_read_repository.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_write_repository.dart';
 import 'package:knit/features/connections/presentation/connections_module.dart';
@@ -150,6 +154,12 @@ void bootstrap(AppConfig config) {
   CollectionScope.setCardEditRouteArgsWriter(cardEditRouteArgs);
   CardEditScope.setRouteArgs(cardEditRouteArgs);
 
+  // A fourth carrier for the Collection Edit page (§4.2): the Collection page
+  // writes the collection to edit, the Collection Edit page reads it on entry.
+  final collectionEditRouteArgs = InMemoryCollectionEditRouteArgsStore();
+  CollectionScope.setCollectionEditRouteArgsWriter(collectionEditRouteArgs);
+  CollectionEditScope.setRouteArgs(collectionEditRouteArgs);
+
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
 
@@ -218,6 +228,17 @@ void bootstrap(AppConfig config) {
       ),
       imagePicker: ImagePickerAdapter(),
       filePicker: const FilePickerAdapter(),
+    ).controller,
+  );
+  CollectionEditScope.setFactory(
+    () => CollectionEditModule(
+      writeRepository: SyncStoreCollectionEditWriteRepository(graph: graph),
+      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
+        graph: graph,
+        ids: ids,
+      ),
+      imagePicker: ImagePickerAdapter(),
     ).controller,
   );
 

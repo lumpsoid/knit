@@ -27,6 +27,7 @@ Snapshot collection({
   bool deleted = false,
   String sig = 'sig',
   String title = 't',
+  String? description,
   String? coverAttachmentId,
 }) =>
     Snapshot(
@@ -38,7 +39,11 @@ Snapshot collection({
       hlc: Hlc(hlcMs, 0),
       deleted: deleted,
       sig: '$sig$hlcMs',
-      content: {'title': title, 'cover_attachment_id': coverAttachmentId},
+      content: {
+        'title': title,
+        'description': description,
+        'cover_attachment_id': coverAttachmentId,
+      },
     );
 
 Snapshot link({

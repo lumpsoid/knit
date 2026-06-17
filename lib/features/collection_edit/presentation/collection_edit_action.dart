@@ -1,0 +1,73 @@
+import 'dart:typed_data';
+
+/// Intents + async-result deliveries for the Collection Edit page (fcis.md §6.4).
+/// All payloads are scalars (no sync-core types).
+sealed class CollectionEditAction {
+  const CollectionEditAction();
+}
+
+/// View attached for [collectionId], seeded with the title/description + cover id
+/// from the route-args carrier (cross_feature.md §2). Kicks off loading the cover
+/// image bytes when there's a cover.
+class ViewAttached extends CollectionEditAction {
+  const ViewAttached({
+    required this.collectionId,
+    required this.initialTitle,
+    this.initialDescription,
+    this.initialCoverAttachmentId,
+  });
+  final String collectionId;
+  final String initialTitle;
+  final String? initialDescription;
+  final String? initialCoverAttachmentId;
+}
+
+/// Save tapped with the composed [title] and [description].
+class SaveRequested extends CollectionEditAction {
+  const SaveRequested({required this.title, this.description});
+  final String title;
+  final String? description;
+}
+
+/// The details write committed; the page pops (driven by a UI effect from the
+/// shell).
+class SaveSucceeded extends CollectionEditAction {
+  const SaveSucceeded();
+}
+
+/// The details write failed; stay on the page so the edit isn't lost.
+class SaveFailed extends CollectionEditAction {
+  const SaveFailed();
+}
+
+// --- cover image -----------------------------------------------------------
+
+/// Add or replace the collection's cover with a photo — opens the image picker,
+/// stores the bytes, points the header at the new attachment.
+class PickCoverRequested extends CollectionEditAction {
+  const PickCoverRequested();
+}
+
+/// Remove the collection's cover image.
+class RemoveCoverRequested extends CollectionEditAction {
+  const RemoveCoverRequested();
+}
+
+/// The cover settled to [attachmentId] (null = removed), carrying its decoded
+/// [bytes] for the preview. Used both for the initial load and after a
+/// pick/remove, so the section never needs a follow-up reload.
+class CoverResolved extends CollectionEditAction {
+  const CoverResolved({this.attachmentId, this.bytes});
+  final String? attachmentId;
+  final Uint8List? bytes;
+}
+
+/// A cover edit ended without changing anything (cancelled pick or failure) —
+/// drop the busy flag, leave the current cover in place.
+class CoverEditEnded extends CollectionEditAction {
+  const CoverEditEnded();
+}
+
+class DeactivateFeature extends CollectionEditAction {
+  const DeactivateFeature();
+}

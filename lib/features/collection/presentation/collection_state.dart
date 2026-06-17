@@ -21,6 +21,7 @@ class CollectionState {
     this.status = CollectionStatus.loading,
     this.collectionId = '',
     this.title = '',
+    this.description,
     this.coverAttachmentId,
     this.cards = const [],
     this.imageBytes = const {},
@@ -36,6 +37,10 @@ class CollectionState {
   final CollectionStatus status;
   final String collectionId;
   final String title;
+
+  /// The collection's optional free-text blurb (spec §3.1), shown on the title
+  /// card; null/empty when unset.
+  final String? description;
   final String? coverAttachmentId;
   final List<FeedCard> cards;
 
@@ -92,6 +97,7 @@ class CollectionState {
     CollectionStatus? status,
     String? collectionId,
     String? title,
+    String? description,
     String? coverAttachmentId,
     List<FeedCard>? cards,
     Map<String, Uint8List>? imageBytes,
@@ -110,6 +116,7 @@ class CollectionState {
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
     title: title ?? this.title,
+    description: description ?? this.description,
     coverAttachmentId: coverAttachmentId ?? this.coverAttachmentId,
     cards: cards ?? this.cards,
     imageBytes: imageBytes ?? this.imageBytes,

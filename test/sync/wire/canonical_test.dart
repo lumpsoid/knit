@@ -22,6 +22,7 @@ void main() {
         sig: 'ignored-not-in-payload',
         content: const {
           'title': 'Espresso dialing-in',
+          'description': null,
           'cover_attachment_id': null,
         },
       );
@@ -29,6 +30,7 @@ void main() {
       const expected =
           '{"author":"$pub","cover_attachment_id":null,'
           '"created_at":1718020800000,"created_by":"$pub","deleted":0,'
+          '"description":null,'
           '"hlc_counter":0,"hlc_ms":1718020800000,'
           '"id":"0192f1a2-3b4c-7def-8123-000000000001","t":"collection",'
           '"title":"Espresso dialing-in"}';
@@ -165,7 +167,11 @@ void main() {
         hlc: const Hlc(0, 0),
         deleted: false,
         sig: '',
-        content: {'title': title, 'cover_attachment_id': null},
+        content: {
+          'title': title,
+          'description': null,
+          'cover_attachment_id': null,
+        },
       );
       final out = CanonicalSerializer.string(s);
       return RegExp(r'"title":(".*")\}$').firstMatch(out)!.group(1)!;
@@ -223,7 +229,11 @@ void main() {
         hlc: const Hlc(0, 0),
         deleted: false,
         sig: '',
-        content: const {'title': 't', 'cover_attachment_id': null},
+        content: const {
+          'title': 't',
+          'description': null,
+          'cover_attachment_id': null,
+        },
       );
       expect(CanonicalSerializer.string(s), contains('"created_at":1718020800000'));
       expect(CanonicalSerializer.string(s), contains('"hlc_ms":0'));

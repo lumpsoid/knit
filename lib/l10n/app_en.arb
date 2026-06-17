@@ -153,6 +153,16 @@
   "collectionNoCardsToLink": "No cards here to link to.",
   "collectionOrACardInIt": "Or a card in it",
 
+  "collectionAppBarTitle": "Collection",
+  "collectionDescriptionEmpty": "No description",
+  "collectionEditTitle": "Edit collection",
+  "collectionEditTitleHint": "Title",
+  "collectionEditDescriptionHint": "Description (optional)",
+  "collectionEditCover": "Cover",
+  "collectionEditAddCover": "Add cover photo",
+  "collectionEditReplaceCover": "Replace cover",
+  "collectionEditRemoveCover": "Remove cover",
+
   "cardEditTitle": "Edit card",
   "cardEditHint": "Edit this card…",
   "cardEditAddPhoto": "Add photo",

@@ -47,15 +47,16 @@ Both a Collection and a Card are **nodes** and are linkable identically — a us
 collection like a big card; nothing structurally stops that. The **only** difference in
 affordance:
 
-- **Collection** = `title` + an optional **cover image** on its header. **No body text, no
-  audio.** Its only media is the cover image (added via header long-press).
+- **Collection** = `title` + an optional **description** + an optional **cover image** on
+  its header card. **No audio.** Its only media is the cover image (edited from the header
+  card). The description is a short free-text blurb about the collection — not feed content.
 - **Card** = `kind ∈ {text, image, link, audio, file}`, with body text and one attachment.
   **Audio exists only as a card** inside a collection — never on a collection header.
   A **file** card carries an arbitrary attachment (any mime), labelled by the
   attachment's original `name`.
 
-The data model enforces this: `collection` has `title` + `cover_attachment_id` only;
-`kind=audio`/`attachment_id` live only on `card`.
+The data model enforces this: `collection` has `title` + optional `description` +
+`cover_attachment_id` only; `kind=audio`/`attachment_id` live only on `card`.
 
 ### 3.2 Locked model decisions
 
@@ -91,7 +92,9 @@ The data model enforces this: `collection` has `title` + `cover_attachment_id` o
 - **Tap a card → actions sheet:** delete · edit · link · add image · start reorder.
 - **Reorder mode** — drag-to-reorder, a *state of this screen*, not a separate screen.
   **Reorder applies only to cards within this collection**; there is no reordering on Home.
-- **Long-press the collection header (main card)** → add/replace cover image, edit title.
+- **The collection header is a distinct top-most card** in the feed (visually set apart from
+  chat cards): cover image (if set), title, and optional description. **Tap it → the
+  collection-edit page** to edit title, description, and add/replace/remove the cover image.
 
 ### 4.3 Card Edit (from the actions sheet)
 Edit text/content; manage that card's image and its links.
@@ -193,10 +196,11 @@ it never moves. (Profiles: `created_by == id == author == pubkey`.)
 
 ### 6.4 Entity tables
 ```sql
--- a topic notebook (a node; title + optional cover image only — no body, no audio)
+-- a topic notebook (a node; title + optional description + optional cover image — no audio)
 CREATE TABLE collection (
   -- envelope...
   title                TEXT NOT NULL,
+  description          TEXT,            -- nullable; short blurb on the header card
   cover_attachment_id  TEXT             -- nullable; image on the home timeline
 );
 
@@ -472,9 +476,9 @@ Example identity: `mira#a4f9`, pubkey
 `9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08`.
 
 **7.4.1 Collection — put** (fields: `author, cover_attachment_id, created_at, created_by,
-deleted, hlc_counter, hlc_ms, id, t, title`)
+deleted, description, hlc_counter, hlc_ms, id, t, title`)
 ```
-{"author":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08","cover_attachment_id":null,"created_at":1718020800000,"created_by":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08","deleted":0,"hlc_counter":0,"hlc_ms":1718020800000,"id":"0192f1a2-3b4c-7def-8123-000000000001","t":"collection","title":"Espresso dialing-in"}
+{"author":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08","cover_attachment_id":null,"created_at":1718020800000,"created_by":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08","deleted":0,"description":null,"hlc_counter":0,"hlc_ms":1718020800000,"id":"0192f1a2-3b4c-7def-8123-000000000001","t":"collection","title":"Espresso dialing-in"}
 ```
 Full op on the wire (`payload` carried as a JSON **string**; escapes vanish on parse, and
 `utf8(parsed_string)` is the signed bytes):
@@ -488,7 +492,7 @@ Full op on the wire (`payload` carried as a JSON **string**; escapes vanish on p
   "author": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
   "hlc_ms": 1718020800000,
   "hlc_counter": 0,
-  "payload": "{\"author\":\"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\",\"cover_attachment_id\":null,\"created_at\":1718020800000,\"created_by\":\"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\",\"deleted\":0,\"hlc_counter\":0,\"hlc_ms\":1718020800000,\"id\":\"0192f1a2-3b4c-7def-8123-000000000001\",\"t\":\"collection\",\"title\":\"Espresso dialing-in\"}",
+  "payload": "{\"author\":\"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\",\"cover_attachment_id\":null,\"created_at\":1718020800000,\"created_by\":\"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\",\"deleted\":0,\"description\":null,\"hlc_counter\":0,\"hlc_ms\":1718020800000,\"id\":\"0192f1a2-3b4c-7def-8123-000000000001\",\"t\":\"collection\",\"title\":\"Espresso dialing-in\"}",
   "sig": "d4e5f6a7b8c9d0e1……c1"
 }
 ```
@@ -498,7 +502,7 @@ string above.)
 **7.4.2 Collection — delete** (`created_at` immutable; HLC bumps; content retained;
 `deleted:1` makes it a delete)
 ```
-{"author":"9f86…a08","cover_attachment_id":null,"created_at":1718020800000,"created_by":"9f86…a08","deleted":1,"hlc_counter":0,"hlc_ms":1718107200000,"id":"0192f1a2-3b4c-7def-8123-000000000001","t":"collection","title":"Espresso dialing-in"}
+{"author":"9f86…a08","cover_attachment_id":null,"created_at":1718020800000,"created_by":"9f86…a08","deleted":1,"description":null,"hlc_counter":0,"hlc_ms":1718107200000,"id":"0192f1a2-3b4c-7def-8123-000000000001","t":"collection","title":"Espresso dialing-in"}
 ```
 `op:"delete"`, `op_id:"0192f1a2-3b4c-7def-8123-000000000001@1718107200000.0.<sig16>"`.
 

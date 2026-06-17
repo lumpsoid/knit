@@ -150,6 +150,16 @@
   "collectionNoCardsToLink": "Здесь нет карточек для связи.",
   "collectionOrACardInIt": "Или карточку в ней",
 
+  "collectionAppBarTitle": "Коллекция",
+  "collectionDescriptionEmpty": "Без описания",
+  "collectionEditTitle": "Редактировать коллекцию",
+  "collectionEditTitleHint": "Название",
+  "collectionEditDescriptionHint": "Описание (необязательно)",
+  "collectionEditCover": "Обложка",
+  "collectionEditAddCover": "Добавить обложку",
+  "collectionEditReplaceCover": "Заменить обложку",
+  "collectionEditRemoveCover": "Удалить обложку",
+
   "cardEditTitle": "Редактировать карточку",
   "cardEditHint": "Редактировать эту карточку…",
   "cardEditAddPhoto": "Добавить фото",

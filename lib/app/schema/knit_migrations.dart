@@ -46,6 +46,25 @@ List<Migration> knitMigrations() => [
           );
         },
       ),
+      // v3: the optional `description` field on a collection (spec §3.1/§7.4).
+      // The baseline DDL already carries the column for fresh installs; this
+      // ALTER backfills DBs created at v1/v2.
+      Migration(
+        version: 3,
+        description: 'add collection.description (§3.1/§7.4)',
+        up: (db) async {
+          await db.execute(
+            'ALTER TABLE ${CollectionSchema.table} '
+            'ADD COLUMN ${CollectionSchema.colDescription} TEXT',
+          );
+        },
+        down: (db) async {
+          await db.execute(
+            'ALTER TABLE ${CollectionSchema.table} '
+            'DROP COLUMN ${CollectionSchema.colDescription}',
+          );
+        },
+      ),
     ];
 
 const List<String> _baselineDdl = [

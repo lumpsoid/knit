@@ -371,6 +371,33 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionOrACardInIt => 'Или карточку в ней';
 
   @override
+  String get collectionAppBarTitle => 'Коллекция';
+
+  @override
+  String get collectionDescriptionEmpty => 'Без описания';
+
+  @override
+  String get collectionEditTitle => 'Редактировать коллекцию';
+
+  @override
+  String get collectionEditTitleHint => 'Название';
+
+  @override
+  String get collectionEditDescriptionHint => 'Описание (необязательно)';
+
+  @override
+  String get collectionEditCover => 'Обложка';
+
+  @override
+  String get collectionEditAddCover => 'Добавить обложку';
+
+  @override
+  String get collectionEditReplaceCover => 'Заменить обложку';
+
+  @override
+  String get collectionEditRemoveCover => 'Удалить обложку';
+
+  @override
   String get cardEditTitle => 'Редактировать карточку';
 
   @override

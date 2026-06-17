@@ -43,12 +43,17 @@ class CollectionUpdater
         // and load any image card whose bytes we don't already hold. Reorder is
         // a screen *mode* the user ends explicitly (Done), so carry it across the
         // post-write re-sync — a single move must not drop out of reorder mode.
-        final toLoad = _uncachedImageAttachments(data.cards, state.imageBytes);
+        final toLoad = _uncachedImageAttachments(
+          data.cards,
+          data.coverAttachmentId,
+          state.imageBytes,
+        );
         return (
           CollectionState(
             status: CollectionStatus.ready,
             collectionId: data.collectionId,
             title: data.title,
+            description: data.description,
             coverAttachmentId: data.coverAttachmentId,
             cards: data.cards,
             imageBytes: state.imageBytes,
@@ -374,12 +379,17 @@ class CollectionUpdater
     return '${DateFormat('yyyy-MM-dd').format(at)}-knit';
   }
 
-  /// Distinct `attachment_id`s of image cards whose bytes aren't cached yet.
+  /// Distinct `attachment_id`s whose bytes aren't cached yet: every image card's
+  /// attachment, plus the collection's cover image (§7.4.1) for the title card.
   static List<String> _uncachedImageAttachments(
     List<FeedCard> cards,
+    String? coverAttachmentId,
     Map<String, Object?> cache,
   ) {
     final ids = <String>{};
+    if (coverAttachmentId != null && !cache.containsKey(coverAttachmentId)) {
+      ids.add(coverAttachmentId);
+    }
     for (final card in cards) {
       final id = card.attachmentId;
       if (card.kind == CardKind.image && id != null && !cache.containsKey(id)) {

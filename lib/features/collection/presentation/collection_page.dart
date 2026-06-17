@@ -7,6 +7,7 @@ import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection_edit/presentation/collection_edit_page.dart';
 import 'package:knit/features/collection/presentation/audio_mini_player.dart';
 import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -91,7 +92,8 @@ class _CollectionPageState extends State<CollectionPage> {
     if (state.isRecordingAudio) return;
     final text = _composer.text;
     // A staged image, audio clip, or file makes an empty caption a valid send.
-    final hasPending = state.pendingImage != null ||
+    final hasPending =
+        state.pendingImage != null ||
         state.pendingAudio != null ||
         state.pendingFile != null;
     if (text.trim().isEmpty && !hasPending) return;
@@ -289,14 +291,19 @@ class _CollectionPageState extends State<CollectionPage> {
     );
   }
 
-  Future<void> _renameCollection(String current) async {
-    final l10n = AppLocalizations.of(context);
-    final title = await _promptText(
-      title: l10n.collectionRenameTitle,
-      initial: current,
-      action: l10n.actionSave,
+  /// Hand the collection to the Collection Edit carrier (cross_feature.md §2),
+  /// then navigate to the dedicated edit page (§4.2) — title, description, cover.
+  /// On return, resync from the projection so the title card reflects the edit
+  /// (projection-is-truth — no push needed).
+  Future<void> _openCollectionEdit(CollectionState state) async {
+    CollectionScope.collectionEditRouteArgsWriter.open(
+      collectionId: state.collectionId,
+      initialTitle: state.title,
+      initialDescription: state.description,
+      initialCoverAttachmentId: state.coverAttachmentId,
     );
-    if (title != null) _controller.dispatch(TitleSubmitted(title));
+    await Navigator.of(context).push(CollectionEditPage.route());
+    if (mounted) _controller.dispatch(const ReloadRequested());
   }
 
   /// A simple single-field text prompt; returns null on cancel/empty.
@@ -329,15 +336,7 @@ class _CollectionPageState extends State<CollectionPage> {
       builder: (context, state, _) {
         return Scaffold(
           appBar: AppBar(
-            title: GestureDetector(
-              onLongPress: state.status == CollectionStatus.ready
-                  ? () => _renameCollection(state.title)
-                  : null,
-              child: Text(
-                state.title.trim().isEmpty ? l10n.labelUntitled : state.title,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            title: Text(l10n.collectionAppBarTitle),
             actions: [
               if (state.status == CollectionStatus.ready && !state.reordering)
                 IconButton(
@@ -396,7 +395,8 @@ class _CollectionPageState extends State<CollectionPage> {
                   onSend: _submitComposer,
                   onAddBlock: _openAddBlock,
                   onCancelPhotoSources: _cancelPhotoSources,
-                  onPickFromGallery: () => _pickImage(ImagePickerSource.gallery),
+                  onPickFromGallery: () =>
+                      _pickImage(ImagePickerSource.gallery),
                   onPickFromCamera: () => _pickImage(ImagePickerSource.camera),
                   onClearImage: () =>
                       _controller.dispatch(const PendingImageCleared()),
@@ -429,14 +429,27 @@ class _CollectionPageState extends State<CollectionPage> {
           onRetry: () => _controller.dispatch(const ReloadRequested()),
         );
       case CollectionStatus.ready:
-        if (state.isEmpty) return const _EmptyView();
+        // The title card heads the feed even when there are no cards yet, so a
+        // brand-new collection can still be opened to edit its title/cover.
         return _feed(state);
     }
   }
 
   Widget _feed(CollectionState state) {
+    final titleCard = _CollectionTitleCard(
+      title: state.title,
+      description: state.description,
+      hasCover: state.coverAttachmentId != null,
+      coverBytes: state.coverAttachmentId == null
+          ? null
+          : state.imageBytes[state.coverAttachmentId],
+      onTap: () => _openCollectionEdit(state),
+    );
+
     if (state.reordering) {
+      // The title card heads the reorder list as a fixed, non-draggable header.
       return ReorderableListView.builder(
+        header: titleCard,
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: state.cards.length,
         onReorder: (oldIndex, newIndex) =>
@@ -452,14 +465,18 @@ class _CollectionPageState extends State<CollectionPage> {
         },
       );
     }
+    final isEmpty = state.isEmpty;
     return RefreshIndicator(
       onRefresh: () async => _controller.dispatch(const ReloadRequested()),
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: state.cards.length,
+        // The title card is always item 0; an empty feed shows a hint beneath it.
+        itemCount: 1 + (isEmpty ? 1 : state.cards.length),
         itemBuilder: (context, i) {
-          final card = state.cards[i];
+          if (i == 0) return titleCard;
+          if (isEmpty) return const _EmptyHint();
+          final card = state.cards[i - 1];
           final bytes = _bytesFor(state, card);
           final audioId = card.kind == CardKind.audio
               ? card.attachmentId
@@ -510,6 +527,98 @@ enum _CardAction { edit, delete, link, connections, share, reorder }
 /// The shared [Hero] tag tying a card's feed thumbnail to its full-screen
 /// preview, so the open/close transition flies between the two.
 Object _imageHeroTag(String cardId) => 'card-image-$cardId';
+
+/// The collection's header, rendered as a distinct top-most card in the feed
+/// (§4.2) — visually set apart from the chat bubbles (a full-width elevated card
+/// with an optional cover banner). Shows the cover (if set), the title, and the
+/// optional description; tapping it opens the collection-edit page. Takes
+/// primitives only (widgets.md §1).
+class _CollectionTitleCard extends StatelessWidget {
+  const _CollectionTitleCard({
+    required this.title,
+    required this.description,
+    required this.hasCover,
+    required this.coverBytes,
+    required this.onTap,
+  });
+
+  final String title;
+  final String? description;
+
+  /// Whether a cover is set — drives the banner (a placeholder shows while its
+  /// bytes load).
+  final bool hasCover;
+  final Uint8List? coverBytes;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final name = title.trim().isEmpty ? l10n.labelUntitled : title.trim();
+    final blurb = description?.trim();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      child: Card(
+        elevation: 2,
+        clipBehavior: Clip.antiAlias,
+        margin: EdgeInsets.zero,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasCover)
+                AttachmentImage(
+                  bytes: coverBytes,
+                  height: 160,
+                  fit: BoxFit.cover,
+                ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            name,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (blurb != null && blurb.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              blurb,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _CardBubble extends StatelessWidget {
   const _CardBubble({
@@ -837,7 +946,9 @@ String _formatBytes(int bytes) {
     value /= 1024;
     unit++;
   }
-  final text = value >= 10 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+  final text = value >= 10
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1);
   return '$text ${units[unit]}';
 }
 
@@ -1119,10 +1230,7 @@ class _Composer extends StatelessWidget {
               _PendingImagePreview(bytes: bytes, onClear: onClearImage),
             if (hasPendingAudio) _PendingAudioPreview(onClear: onClearAudio),
             if (pendingFileName != null)
-              _PendingFilePreview(
-                name: pendingFileName!,
-                onClear: onClearFile,
-              ),
+              _PendingFilePreview(name: pendingFileName!, onClear: onClearFile),
             if (showPhotoSources)
               _PhotoSourceOptions(
                 onGallery: onPickFromGallery,
@@ -1529,11 +1637,7 @@ class _PendingFilePreview extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
             IconButton(
               tooltip: AppLocalizations.of(context).actionRemove,
@@ -1821,40 +1925,41 @@ class _SheetSpinner extends StatelessWidget {
   );
 }
 
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
+/// The "no cards yet" hint shown beneath the title card on an empty collection
+/// (§4.2). Top-aligned (not vertically centred) so it composes as a list item
+/// under the header card.
+class _EmptyHint extends StatelessWidget {
+  const _EmptyHint();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 64,
-              color: theme.colorScheme.primary,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 64,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            AppLocalizations.of(context).collectionEmptyTitle,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 16),
-            Text(
-              AppLocalizations.of(context).collectionEmptyTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            AppLocalizations.of(context).collectionEmptyBody,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 8),
-            Text(
-              AppLocalizations.of(context).collectionEmptyBody,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

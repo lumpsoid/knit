@@ -119,12 +119,16 @@ class CollectionData {
   const CollectionData({
     required this.collectionId,
     required this.title,
+    required this.description,
     required this.coverAttachmentId,
     required this.cards,
   });
 
   final String collectionId;
   final String title;
+
+  /// The collection's optional free-text blurb (spec §3.1); null/empty when unset.
+  final String? description;
   final String? coverAttachmentId;
   final List<FeedCard> cards;
 }

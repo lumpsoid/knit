@@ -21,7 +21,7 @@ abstract class CanonicalSerializer {
   // (`local_path`, `seq`, `acked`, `origin`) are excluded too (§7.1).
   static const Set<String> _collectionKeys = {
     'author', 'cover_attachment_id', 'created_at', 'created_by', 'deleted',
-    'hlc_counter', 'hlc_ms', 'id', 't', 'title',
+    'description', 'hlc_counter', 'hlc_ms', 'id', 't', 'title',
   };
   static const Set<String> _cardKeys = {
     'attachment_id', 'author', 'collection_id', 'created_at', 'created_by',

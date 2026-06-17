@@ -368,6 +368,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionOrACardInIt => 'Or a card in it';
 
   @override
+  String get collectionAppBarTitle => 'Collection';
+
+  @override
+  String get collectionDescriptionEmpty => 'No description';
+
+  @override
+  String get collectionEditTitle => 'Edit collection';
+
+  @override
+  String get collectionEditTitleHint => 'Title';
+
+  @override
+  String get collectionEditDescriptionHint => 'Description (optional)';
+
+  @override
+  String get collectionEditCover => 'Cover';
+
+  @override
+  String get collectionEditAddCover => 'Add cover photo';
+
+  @override
+  String get collectionEditReplaceCover => 'Replace cover';
+
+  @override
+  String get collectionEditRemoveCover => 'Remove cover';
+
+  @override
   String get cardEditTitle => 'Edit card';
 
   @override

@@ -1,0 +1,105 @@
+import 'package:fcis_core/fcis_core.dart';
+import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
+import 'package:knit/features/collection_edit/presentation/collection_edit_effect.dart';
+import 'package:knit/features/collection_edit/presentation/collection_edit_state.dart';
+
+/// Pure reducer for the Collection Edit page (fcis.md §6.1). Title + description
+/// save on demand (a blank title is dropped — `title` is NOT NULL, spec §6.4);
+/// the cover is managed in place — each intent emits one write effect and the
+/// result resolves the cover section.
+class CollectionEditUpdater
+    implements
+        Updater<
+          CollectionEditState,
+          CollectionEditAction,
+          CollectionEditEffect
+        > {
+  const CollectionEditUpdater();
+
+  @override
+  (CollectionEditState, List<CollectionEditEffect>?) update(
+    CollectionEditState state,
+    CollectionEditAction action,
+  ) {
+    switch (action) {
+      case ViewAttached(
+        :final collectionId,
+        :final initialTitle,
+        :final initialDescription,
+        :final initialCoverAttachmentId,
+      ):
+        return (
+          state.copyWith(
+            status: CollectionEditStatus.editing,
+            collectionId: collectionId,
+            initialTitle: initialTitle,
+            initialDescription: initialDescription,
+            coverAttachmentId: initialCoverAttachmentId,
+            coverBusy: initialCoverAttachmentId != null,
+          ),
+          initialCoverAttachmentId == null
+              ? null
+              : [LoadCoverEffect(initialCoverAttachmentId)],
+        );
+
+      case SaveRequested(:final title, :final description):
+        final name = title.trim();
+        if (name.isEmpty) return (state, null);
+        final blurb = description?.trim();
+        return (
+          state.copyWith(status: CollectionEditStatus.saving),
+          [
+            SaveDetailsEffect(
+              collectionId: state.collectionId,
+              title: name,
+              description: blurb == null || blurb.isEmpty ? null : blurb,
+            ),
+          ],
+        );
+
+      case SaveSucceeded():
+        return (state, null);
+
+      case SaveFailed():
+        return (state.copyWith(status: CollectionEditStatus.failed), null);
+
+      case PickCoverRequested():
+        return (
+          state.copyWith(coverBusy: true),
+          [
+            PickCoverEffect(
+              collectionId: state.collectionId,
+              previousAttachmentId: state.coverAttachmentId,
+            ),
+          ],
+        );
+
+      case RemoveCoverRequested():
+        return (
+          state.copyWith(coverBusy: true),
+          [
+            RemoveCoverEffect(
+              collectionId: state.collectionId,
+              previousAttachmentId: state.coverAttachmentId,
+            ),
+          ],
+        );
+
+      case CoverResolved(:final attachmentId, :final bytes):
+        return (
+          state.copyWith(
+            coverAttachmentId: attachmentId,
+            coverBytes: bytes,
+            coverBusy: false,
+          ),
+          null,
+        );
+
+      case CoverEditEnded():
+        return (state.copyWith(coverBusy: false), null);
+
+      case DeactivateFeature():
+        return (state, null);
+    }
+  }
+}
