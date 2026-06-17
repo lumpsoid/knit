@@ -29,6 +29,19 @@ enum CardKind {
     'link' => CardKind.link,
     _ => CardKind.unknown,
   };
+
+  /// Classify a picked file by its declared [mime] into the card kind it should
+  /// become (§4.2): an `image/*` file is an [image] card, an `audio/*` file an
+  /// [audio] card, and anything else a generic [file] card. Pure — the picker
+  /// derives the mime from the extension when the platform omits one, so this is
+  /// effectively the "judge it by extension" rule. Lives here (not in a shell)
+  /// because it is a business decision (business_logic.md §placement ladder).
+  static CardKind forFileMime(String mime) =>
+      switch (mime.split('/').first.toLowerCase()) {
+        'image' => CardKind.image,
+        'audio' => CardKind.audio,
+        _ => CardKind.file,
+      };
 }
 
 /// One card in the feed (spec §4.2 / §8.7). Ordered by [position] (string,

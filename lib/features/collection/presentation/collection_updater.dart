@@ -1,5 +1,7 @@
 import 'package:fcis_core/fcis_core.dart';
 import 'package:intl/intl.dart';
+import 'package:knit/core/attachments/domain/picked_audio.dart';
+import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -97,21 +99,42 @@ class CollectionUpdater
             ],
           );
         }
-        // Then a picked file: send it as a file card with the (optional) text
-        // as its caption, clearing the preview optimistically.
+        // Then a picked file: judge it by its declared mime (§4.2) — an image
+        // becomes an image card and an audio file an audio card (the picker
+        // derives the mime from the extension), so it renders/plays like one
+        // captured in-app; anything else stays a generic file card. The caption
+        // (optional) rides along, and the preview clears optimistically.
         final pendingFile = state.pendingFile;
         if (pendingFile != null) {
-          return (
-            state.copyWith(clearPendingFile: true),
-            [
-              AddFileCardEffect(
-                collectionId: state.collectionId,
-                position: _appendPosition(state.cards),
-                file: pendingFile,
-                caption: body.isEmpty ? null : body,
+          final caption = body.isEmpty ? null : body;
+          final position = _appendPosition(state.cards);
+          final effect = switch (CardKind.forFileMime(pendingFile.mime)) {
+            CardKind.image => AddPhotoCardEffect(
+              collectionId: state.collectionId,
+              position: position,
+              image: PickedImage(
+                bytes: pendingFile.bytes,
+                mime: pendingFile.mime,
               ),
-            ],
-          );
+              caption: caption,
+            ),
+            CardKind.audio => AddAudioCardEffect(
+              collectionId: state.collectionId,
+              position: position,
+              audio: PickedAudio(
+                bytes: pendingFile.bytes,
+                mime: pendingFile.mime,
+              ),
+              caption: caption,
+            ),
+            _ => AddFileCardEffect(
+              collectionId: state.collectionId,
+              position: position,
+              file: pendingFile,
+              caption: caption,
+            ),
+          };
+          return (state.copyWith(clearPendingFile: true), [effect]);
         }
         // Then a recorded audio clip: send it as an audio card with the caption.
         final pendingAudio = state.pendingAudio;

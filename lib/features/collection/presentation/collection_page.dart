@@ -468,9 +468,15 @@ class _CollectionPageState extends State<CollectionPage> {
             onImageTap: bytes == null
                 ? null
                 : () => _openImagePreview(card, bytes),
-            // Tapping a file card shares it through the system sheet (which
-            // offers "Open with…"); the same path the actions-sheet Share uses.
-            onFileTap: card.kind == CardKind.file
+            // Tapping a captioned file card shares it through the system sheet
+            // (which offers "Open with…"); the same path the actions-sheet Share
+            // uses. A caption-less file card has no other tap target, so leave it
+            // null: the tap falls through to the bubble's actions sheet (which
+            // already carries Share) — otherwise the user could never reach
+            // Delete to remove the card.
+            onFileTap:
+                card.kind == CardKind.file &&
+                    (card.text?.trim().isNotEmpty ?? false)
                 ? () => _controller.dispatch(CardShareRequested(card.id))
                 : null,
             // A playable audio card gets the shared player snapshot (to flip when

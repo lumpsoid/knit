@@ -504,6 +504,43 @@ void main() {
       expect(effect.position, 'a0');
     });
 
+    test('an image-typed picked file is sent as a photo card', () {
+      final imageFile = PickedFile(
+        bytes: Uint8List.fromList([10, 11, 12]),
+        mime: 'image/jpeg',
+        name: 'holiday.jpg',
+      );
+      final state = ready([card('c1', 'a0')]).copyWith(pendingFile: imageFile);
+      final (next, effects) = updater.update(
+        state,
+        const ComposerSubmitted('beach'),
+      );
+      final effect = effects!.single as AddPhotoCardEffect;
+      expect(effect.image.bytes, imageFile.bytes);
+      expect(effect.image.mime, 'image/jpeg');
+      expect(effect.caption, 'beach');
+      expect(effect.position.compareTo('a0') > 0, isTrue);
+      expect(next.pendingFile, isNull, reason: 'cleared optimistically');
+    });
+
+    test('an audio-typed picked file is sent as an audio card', () {
+      final audioFile = PickedFile(
+        bytes: Uint8List.fromList([13, 14, 15]),
+        mime: 'audio/mpeg',
+        name: 'song.mp3',
+      );
+      final state = ready(const []).copyWith(pendingFile: audioFile);
+      final (next, effects) = updater.update(
+        state,
+        const ComposerSubmitted('  '),
+      );
+      final effect = effects!.single as AddAudioCardEffect;
+      expect(effect.audio.bytes, audioFile.bytes);
+      expect(effect.audio.mime, 'audio/mpeg');
+      expect(effect.caption, isNull);
+      expect(next.pendingFile, isNull);
+    });
+
     test('a pending image wins over a pending file on send', () {
       final state = ready(const [])
           .copyWith(pendingImage: image, pendingFile: pickedFile);
@@ -819,5 +856,23 @@ void main() {
     expect(next.title, 'Renamed');
     final effect = effects!.single as EditTitleEffect;
     expect((effect.collectionId, effect.title), ('col', 'Renamed'));
+  });
+
+  group('CardKind.forFileMime', () {
+    test('image/* mimes classify as image cards', () {
+      expect(CardKind.forFileMime('image/png'), CardKind.image);
+      expect(CardKind.forFileMime('IMAGE/JPEG'), CardKind.image);
+    });
+
+    test('audio/* mimes classify as audio cards', () {
+      expect(CardKind.forFileMime('audio/mp4'), CardKind.audio);
+      expect(CardKind.forFileMime('audio/mpeg'), CardKind.audio);
+    });
+
+    test('everything else classifies as a generic file card', () {
+      expect(CardKind.forFileMime('application/pdf'), CardKind.file);
+      expect(CardKind.forFileMime('video/mp4'), CardKind.file);
+      expect(CardKind.forFileMime(''), CardKind.file);
+    });
   });
 }
