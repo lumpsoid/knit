@@ -7,6 +7,7 @@ import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
+import 'package:knit/core/attachments/infra/sync_store_attachment_read_repository.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
@@ -40,6 +41,8 @@ void main() {
           graph: graph,
           ids: const UuidIdGenerator(),
         ),
+        attachmentReadRepository:
+            SyncStoreAttachmentReadRepository(graph: graph),
         channelReader: TimelineChannelNotifier(),
       ).controller,
     );

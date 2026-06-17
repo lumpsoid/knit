@@ -1,6 +1,7 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
+import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
@@ -20,6 +21,7 @@ class TimelineModule {
   TimelineModule({
     required TimelineReadRepository readRepository,
     required TimelineWriteRepository writeRepository,
+    required AttachmentReadRepository attachmentReadRepository,
     required TimelineChannelReader channelReader,
     Logger? logger,
   }) {
@@ -29,6 +31,7 @@ class TimelineModule {
     final shell = TimelineShell(
       readRepository: readRepository,
       writeRepository: writeRepository,
+      attachmentReadRepository: attachmentReadRepository,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.timeline'),
     );

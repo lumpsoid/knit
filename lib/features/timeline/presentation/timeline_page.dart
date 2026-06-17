@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/profile/presentation/profile_page.dart';
@@ -165,12 +168,17 @@ class _TimelinePageState extends State<TimelinePage> {
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: state.collections.length,
         separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, i) => _CollectionTile(
-          summary: state.collections[i],
-          onTap: () => _controller
-              .dispatch(CollectionTapped(state.collections[i].collectionId)),
-          onLongPress: () => _openCollectionActions(state.collections[i]),
-        ),
+        itemBuilder: (context, i) {
+          final summary = state.collections[i];
+          final coverId = summary.coverAttachmentId;
+          return _CollectionTile(
+            summary: summary,
+            coverBytes: coverId == null ? null : state.coverBytes[coverId],
+            onTap: () =>
+                _controller.dispatch(CollectionTapped(summary.collectionId)),
+            onLongPress: () => _openCollectionActions(summary),
+          );
+        },
       ),
     );
   }
@@ -224,10 +232,15 @@ class _NewCollectionDialogState extends State<_NewCollectionDialog> {
 class _CollectionTile extends StatelessWidget {
   const _CollectionTile({
     required this.summary,
+    required this.coverBytes,
     required this.onTap,
     required this.onLongPress,
   });
   final CollectionSummary summary;
+
+  /// Decoded cover bytes, or null when the collection has no cover or its bytes
+  /// haven't loaded — in which case the lettered-avatar placeholder is shown.
+  final Uint8List? coverBytes;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -240,13 +253,7 @@ class _CollectionTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
-      leading: CircleAvatar(
-        backgroundColor: _tint(summary.collectionId),
-        child: Text(
-          title.substring(0, 1).toUpperCase(),
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
+      leading: _leading(title),
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         '${_preview(l10n, summary.lastCard)} · '
@@ -261,6 +268,32 @@ class _CollectionTile extends StatelessWidget {
       ),
     );
   }
+
+  /// A collection row's leading glyph: its cover image (clipped to the avatar
+  /// circle) when its bytes are loaded, otherwise the lettered-avatar
+  /// placeholder tinted from the collection id.
+  Widget _leading(String title) {
+    final bytes = coverBytes;
+    if (bytes != null) {
+      return ClipOval(
+        child: AttachmentImage(
+          bytes: bytes,
+          width: 40,
+          height: 40,
+          placeholder: _letterAvatar(title),
+        ),
+      );
+    }
+    return _letterAvatar(title);
+  }
+
+  Widget _letterAvatar(String title) => CircleAvatar(
+        backgroundColor: _tint(summary.collectionId),
+        child: Text(
+          title.substring(0, 1).toUpperCase(),
+          style: const TextStyle(color: Colors.white),
+        ),
+      );
 
   Color _tint(String seed) {
     final h = seed.codeUnits.fold<int>(0, (a, c) => (a * 31 + c) & 0xFFFF);

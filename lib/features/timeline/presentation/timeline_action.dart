@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:knit/sync/sync.dart';
 
 /// Intents + async-result deliveries for Timeline (fcis.md §6.4).
@@ -20,6 +21,15 @@ class CollectionsLoaded extends TimelineAction {
 
 class TimelineLoadFailed extends TimelineAction {
   const TimelineLoadFailed();
+}
+
+/// A collection cover image's decoded bytes finished loading. [bytes] is null
+/// when the attachment is missing/unreadable — the placeholder stays and
+/// nothing caches.
+class CoverBytesLoaded extends TimelineAction {
+  const CoverBytesLoaded(this.attachmentId, this.bytes);
+  final String attachmentId;
+  final Uint8List? bytes;
 }
 
 /// Tapped an existing collection row → open the Collection screen (§4.1).

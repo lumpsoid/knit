@@ -173,6 +173,7 @@ void bootstrap(AppConfig config) {
     () => TimelineModule(
       readRepository: SyncStoreTimelineRepository(graph: graph),
       writeRepository: SyncStoreTimelineWriteRepository(graph: graph, ids: ids),
+      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
       channelReader: timelineChannel,
     ).controller,
   );

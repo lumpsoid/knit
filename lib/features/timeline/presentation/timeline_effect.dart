@@ -8,6 +8,13 @@ class LoadTimelineEffect extends TimelineEffect {
   const LoadTimelineEffect();
 }
 
+/// Resolve a collection's cover attachment to its renderable bytes (§7.4.1),
+/// so a row can show its cover instead of the lettered-avatar placeholder.
+class LoadCoverBytesEffect extends TimelineEffect {
+  const LoadCoverBytesEffect(this.attachmentId);
+  final String attachmentId;
+}
+
 /// Persist a new collection (§4.1), then open it on success.
 class CreateCollectionEffect extends TimelineEffect {
   const CreateCollectionEffect(this.title);

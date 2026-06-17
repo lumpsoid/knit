@@ -2,6 +2,7 @@ import 'package:fcis_core/fcis_core.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_effect.dart';
 import 'package:knit/features/timeline/presentation/timeline_state.dart';
+import 'package:knit/sync/sync.dart';
 
 /// Pure reducer for Timeline (fcis.md §6.1).
 class TimelineUpdater
@@ -21,10 +22,25 @@ class TimelineUpdater
           const [LoadTimelineEffect()],
         );
       case CollectionsLoaded(:final collections):
+        // Preserve the decoded-cover cache across refreshes (ids are immutable),
+        // and load any cover whose bytes we don't already hold.
+        final toLoad = _uncachedCovers(collections, state.coverBytes);
         return (
           TimelineState(
             status: TimelineStatus.ready,
             collections: collections,
+            coverBytes: state.coverBytes,
+          ),
+          toLoad.isEmpty
+              ? null
+              : [for (final id in toLoad) LoadCoverBytesEffect(id)],
+        );
+      case CoverBytesLoaded(:final attachmentId, :final bytes):
+        // Cache only on success; a miss leaves the placeholder in place.
+        if (bytes == null) return (state, null);
+        return (
+          state.copyWith(
+            coverBytes: {...state.coverBytes, attachmentId: bytes},
           ),
           null,
         );
@@ -58,5 +74,18 @@ class TimelineUpdater
       case DeactivateFeature():
         return (state, null);
     }
+  }
+
+  /// Distinct cover `attachment_id`s whose bytes aren't cached yet (§7.4.1).
+  static List<String> _uncachedCovers(
+    List<CollectionSummary> collections,
+    Map<String, Object?> cache,
+  ) {
+    final ids = <String>{};
+    for (final c in collections) {
+      final id = c.coverAttachmentId;
+      if (id != null && !cache.containsKey(id)) ids.add(id);
+    }
+    return ids.toList(growable: false);
   }
 }

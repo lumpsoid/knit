@@ -1,6 +1,7 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
+import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_write_repository.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
@@ -14,15 +15,18 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
   TimelineShell({
     required TimelineReadRepository readRepository,
     required TimelineWriteRepository writeRepository,
+    required AttachmentReadRepository attachmentReadRepository,
     required EffectEmitter<TimelineUiEffect> effectEmitter,
     required Logger logger,
   })  : _read = readRepository,
         _write = writeRepository,
+        _attachmentRead = attachmentReadRepository,
         _effectEmitter = effectEmitter,
         _log = logger;
 
   final TimelineReadRepository _read;
   final TimelineWriteRepository _write;
+  final AttachmentReadRepository _attachmentRead;
   final EffectEmitter<TimelineUiEffect> _effectEmitter;
   final Logger _log;
 
@@ -56,6 +60,15 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
             dispatch(const CollectionCreateFailed());
           },
         );
+
+      case LoadCoverBytesEffect(:final attachmentId):
+        final result = await _attachmentRead.bytesOf(attachmentId);
+        if (result.isFailure) {
+          _log.warning('Collection cover bytes missing for $attachmentId');
+          dispatch(CoverBytesLoaded(attachmentId, null));
+        } else {
+          dispatch(CoverBytesLoaded(attachmentId, result.getOrThrow().bytes));
+        }
 
       case OpenCollectionEffect(:final collectionId):
         _effectEmitter.push(TimelineOpenCollectionUiEffect(collectionId));
