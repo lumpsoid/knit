@@ -6,6 +6,7 @@ import 'package:knit/core/attachments/domain/attachment_failure.dart';
 import 'package:knit/core/attachments/domain/attachment_hashing.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
+import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ids/id_generator.dart';
 import 'package:knit/sync/sync.dart';
@@ -28,6 +29,7 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
 
   static const String _imageKind = 'image';
   static const String _audioKind = 'audio';
+  static const String _fileKind = 'file';
 
   AttachmentBlobStore get _blobs => _graph.blobStore;
 
@@ -41,19 +43,31 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
     PickedAudio audio,
   ) => _create(audio.bytes, audio.mime, _audioKind);
 
+  @override
+  Future<Result<String, AttachmentFailure>> createFromFile(
+    PickedFile file,
+  ) => _create(file.bytes, file.mime, _fileKind, name: file.name);
+
   /// Shared capture path (spec §7.4.8): hash → record-dedup → blob put → signed
-  /// metadata record. Identical bytes dedupe to one record + one blob.
+  /// metadata record. Identical bytes dedupe to one record + one blob — but a
+  /// file is only deduped when its `name` matches too, so two files with the
+  /// same bytes under different names keep distinct labelled records while still
+  /// sharing the one content-addressed blob.
   Future<Result<String, AttachmentFailure>> _create(
     Uint8List bytes,
     String mime,
-    String kind,
-  ) async {
+    String kind, {
+    String? name,
+  }) async {
     try {
       final hash = await sha256Hex(bytes);
 
-      // Record-level dedup: reuse a live record that already holds these bytes.
+      // Record-level dedup: reuse a live record that already holds these bytes
+      // under the same name (null name for image/audio always matches).
       for (final s in await _graph.store.readAll(EntityType.attachment)) {
-        if (!s.deleted && s.content[AttachmentSchema.colContentHash] == hash) {
+        if (!s.deleted &&
+            s.content[AttachmentSchema.colContentHash] == hash &&
+            s.content[AttachmentSchema.colName] == name) {
           return Ok(s.id);
         }
       }
@@ -65,6 +79,7 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
         AttachmentSchema.colMime: mime,
         AttachmentSchema.colContentHash: hash,
         AttachmentSchema.colSize: bytes.length,
+        AttachmentSchema.colName: name,
       });
       return Ok(id);
     } catch (e) {

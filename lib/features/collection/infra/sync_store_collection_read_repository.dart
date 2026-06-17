@@ -26,16 +26,34 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         return const Failure(CollectionLoadFailure('collection not found'));
       }
 
-      final cards = [
-        for (final card in await store.feed(id))
+      final cards = <FeedCard>[];
+      for (final card in await store.feed(id)) {
+        final kind = CardKind.fromTag(card.content['kind'] as String?);
+        final attachmentId = card.content['attachment_id'] as String?;
+        // A file card needs its attachment's name + size to label the chip;
+        // resolve the (tiny) metadata record eagerly so the feed renders it
+        // without a per-card bytes load (unlike image thumbnails).
+        String? fileName;
+        int? fileSize;
+        if (kind == CardKind.file && attachmentId != null) {
+          final att = await store.get(EntityType.attachment, attachmentId);
+          if (att != null && !att.deleted) {
+            fileName = att.content[AttachmentSchema.colName] as String?;
+            fileSize = att.content[AttachmentSchema.colSize] as int?;
+          }
+        }
+        cards.add(
           FeedCard(
             id: card.id,
-            kind: CardKind.fromTag(card.content['kind'] as String?),
+            kind: kind,
             position: card.position!,
             text: card.content['text'] as String?,
-            attachmentId: card.content['attachment_id'] as String?,
+            attachmentId: attachmentId,
+            fileName: fileName,
+            fileSize: fileSize,
           ),
-      ];
+        );
+      }
 
       return Ok(
         CollectionData(

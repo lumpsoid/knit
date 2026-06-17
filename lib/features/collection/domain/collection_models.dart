@@ -6,11 +6,13 @@ library;
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// A card's `kind` (spec §6.4). `text` is the everyday quick-capture; `link` is
-/// the "+"-block standalone link card; `image`/`audio` arrive with attachments.
+/// the "+"-block standalone link card; `image`/`audio`/`file` arrive with
+/// attachments (`file` is an arbitrary attachment, labelled by its file name).
 enum CardKind {
   text,
   image,
   audio,
+  file,
   link,
   unknown;
 
@@ -23,6 +25,7 @@ enum CardKind {
     'text' => CardKind.text,
     'image' => CardKind.image,
     'audio' => CardKind.audio,
+    'file' => CardKind.file,
     'link' => CardKind.link,
     _ => CardKind.unknown,
   };
@@ -37,6 +40,8 @@ class FeedCard {
     required this.position,
     this.text,
     this.attachmentId,
+    this.fileName,
+    this.fileSize,
   });
 
   final String id;
@@ -49,8 +54,14 @@ class FeedCard {
   /// Body text for a text card; the URL/label for a link card; null otherwise.
   final String? text;
 
-  /// `attachment_id` for image/audio cards (§7.4.3); null otherwise.
+  /// `attachment_id` for image/audio/file cards (§7.4.3); null otherwise.
   final String? attachmentId;
+
+  /// For a file card, the attachment's original file name and byte size (§7.4.8),
+  /// resolved eagerly into the feed read so the chip can label/size it without a
+  /// per-card bytes load. Null for every other kind.
+  final String? fileName;
+  final int? fileSize;
 
   /// The card's capture time, decoded from the millisecond timestamp in the
   /// leading 48 bits of its UUIDv7 [id] (§6.1) — every minted card id is v7, so
@@ -71,6 +82,8 @@ class FeedCard {
     position: position ?? this.position,
     text: text,
     attachmentId: attachmentId,
+    fileName: fileName,
+    fileSize: fileSize,
   );
 }
 

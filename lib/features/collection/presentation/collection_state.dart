@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
+import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 
@@ -29,6 +30,7 @@ class CollectionState {
     this.pendingImage,
     this.recordingPhase,
     this.pendingAudio,
+    this.pendingFile,
   });
 
   final CollectionStatus status;
@@ -73,6 +75,12 @@ class CollectionState {
   /// is written until the composer is sent.
   final PickedAudio? pendingAudio;
 
+  /// A file the user picked but hasn't sent yet — the file twin of [pendingImage].
+  /// Held in memory and shown as a preview chip (its name); the user can add a
+  /// caption before sending. Clearing it just drops these bytes — no attachment
+  /// is written until the composer is sent.
+  final PickedFile? pendingFile;
+
   /// Whether an audio recording is actively being captured (not merely staged).
   bool get isRecordingAudio => recordingPhase != null;
 
@@ -96,6 +104,8 @@ class CollectionState {
     bool clearRecordingPhase = false,
     PickedAudio? pendingAudio,
     bool clearPendingAudio = false,
+    PickedFile? pendingFile,
+    bool clearPendingFile = false,
   }) => CollectionState(
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
@@ -117,5 +127,6 @@ class CollectionState {
     pendingAudio: clearPendingAudio
         ? null
         : (pendingAudio ?? this.pendingAudio),
+    pendingFile: clearPendingFile ? null : (pendingFile ?? this.pendingFile),
   );
 }

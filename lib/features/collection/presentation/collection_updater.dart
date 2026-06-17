@@ -97,6 +97,22 @@ class CollectionUpdater
             ],
           );
         }
+        // Then a picked file: send it as a file card with the (optional) text
+        // as its caption, clearing the preview optimistically.
+        final pendingFile = state.pendingFile;
+        if (pendingFile != null) {
+          return (
+            state.copyWith(clearPendingFile: true),
+            [
+              AddFileCardEffect(
+                collectionId: state.collectionId,
+                position: _appendPosition(state.cards),
+                file: pendingFile,
+                caption: body.isEmpty ? null : body,
+              ),
+            ],
+          );
+        }
         // Then a recorded audio clip: send it as an audio card with the caption.
         final pendingAudio = state.pendingAudio;
         if (pendingAudio != null) {
@@ -203,6 +219,17 @@ class CollectionUpdater
       case PendingAudioCleared():
         return (state.copyWith(clearPendingAudio: true), null);
 
+      case PickFileRequested():
+        return (state, const [PickFileEffect()]);
+
+      case FilePicked(:final file):
+        // Cancelled pick ⇒ no change; otherwise stage it as the preview.
+        if (file == null) return (state, null);
+        return (state.copyWith(pendingFile: file), null);
+
+      case PendingFileCleared():
+        return (state.copyWith(clearPendingFile: true), null);
+
       case CardDeleteRequested(:final cardId):
         return (state, [DeleteCardEffect(cardId)]);
 
@@ -272,6 +299,7 @@ class CollectionUpdater
             clearPendingImage: true,
             clearRecordingPhase: true,
             clearPendingAudio: true,
+            clearPendingFile: true,
           ),
           state.isRecordingAudio ? const [CancelAudioRecordingEffect()] : null,
         );
@@ -279,8 +307,9 @@ class CollectionUpdater
   }
 
   /// Resolve [cardId] to its shareable content and emit a [ShareCardEffect];
-  /// a missing card or an empty text card with no image is a pure no-op. Only an
-  /// image card carries an attachment to share; other kinds share text only.
+  /// a missing card or an empty text card with no attachment is a pure no-op.
+  /// An image or file card carries an attachment to share (a file shares under
+  /// its stored name); other kinds share text only.
   (CollectionState, List<CollectionEffect>?) _shareCard(
     CollectionState state,
     String cardId,
@@ -289,7 +318,9 @@ class CollectionUpdater
     if (card == null) return (state, null);
     final text = card.text?.trim();
     final hasText = text != null && text.isNotEmpty;
-    final attachmentId = card.kind == CardKind.image ? card.attachmentId : null;
+    final sharesAttachment =
+        card.kind == CardKind.image || card.kind == CardKind.file;
+    final attachmentId = sharesAttachment ? card.attachmentId : null;
     if (!hasText && attachmentId == null) return (state, null);
     return (
       state,
@@ -298,6 +329,7 @@ class CollectionUpdater
           text: hasText ? text : null,
           attachmentId: attachmentId,
           imageBaseName: _shareBaseName(card),
+          fileName: card.kind == CardKind.file ? card.fileName : null,
         ),
       ],
     );

@@ -5,8 +5,10 @@ import 'package:result_dart/result_dart.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/audio_recorder_port.dart';
+import 'package:knit/core/attachments/domain/file_picker_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
+import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
@@ -32,6 +34,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
     required AudioRecorderPort audioRecorder,
+    required FilePickerPort filePicker,
     required CardShareRepository shareRepository,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
     required TimelineChannelEmitter timelineChannel,
@@ -42,6 +45,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
        _attachmentWrite = attachmentWriteRepository,
        _picker = imagePicker,
        _recorder = audioRecorder,
+       _filePicker = filePicker,
        _share = shareRepository,
        _effectEmitter = effectEmitter,
        _timelineChannel = timelineChannel,
@@ -53,6 +57,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final AttachmentWriteRepository _attachmentWrite;
   final ImagePickerPort _picker;
   final AudioRecorderPort _recorder;
+  final FilePickerPort _filePicker;
   final CardShareRepository _share;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
   final TimelineChannelEmitter _timelineChannel;
@@ -136,6 +141,18 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       ):
         await _addAudioCard(collectionId, position, audio, caption, dispatch);
 
+      case PickFileEffect():
+        final picked = await _filePicker.pickFile();
+        dispatch(FilePicked(picked));
+
+      case AddFileCardEffect(
+        :final collectionId,
+        :final position,
+        :final file,
+        :final caption,
+      ):
+        await _addFileCard(collectionId, position, file, caption, dispatch);
+
       case DeleteCardEffect(:final cardId):
         await _runWrite(
           () => _write.deleteCard(cardId),
@@ -147,8 +164,9 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         :final text,
         :final attachmentId,
         :final imageBaseName,
+        :final fileName,
       ):
-        await _shareCard(text, attachmentId, imageBaseName);
+        await _shareCard(text, attachmentId, imageBaseName, fileName);
 
       case ReorderCardEffect(:final cardId, :final position):
         await _runWrite(
@@ -322,31 +340,71 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     );
   }
 
-  /// Share a card through the [CardShareRepository] (§4.2). For an image card,
-  /// resolve its bytes via the attachment read port and build the date-stamped
-  /// photo (extension derived from the mime the blob store recorded); if the
-  /// bytes are gone, fall back to sharing the caption alone. Sharing is a
-  /// read-only side-effect — it triggers no resync; a failure is logged only.
+  /// Store the picked [file] (content-addressed, §7.4.8), then append a file card
+  /// carrying [caption] and resync — the file twin of [_addPhotoCard].
+  Future<void> _addFileCard(
+    String collectionId,
+    String position,
+    PickedFile file,
+    String? caption,
+    void Function(CollectionAction) dispatch,
+  ) async {
+    final created = await _attachmentWrite.createFromFile(file);
+    if (created.isFailure) {
+      _log.severe('Store picked file failed', created.error);
+      _effectEmitter.push(
+        const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
+      );
+      dispatch(const ReloadRequested());
+      return;
+    }
+
+    await _runWrite(
+      () => _write.addCard(
+        collectionId: collectionId,
+        kind: CardKind.file,
+        position: position,
+        text: caption,
+        attachmentId: created.getOrThrow(),
+      ),
+      'add file card',
+      dispatch,
+    );
+  }
+
+  /// Share a card through the [CardShareRepository] (§4.2). For an image or file
+  /// card, resolve its bytes via the attachment read port: a file shares under
+  /// its stored [fileName]; an image builds a date-stamped name from
+  /// [imageBaseName] + the mime the blob store recorded. If the bytes are gone,
+  /// fall back to sharing the caption alone. Sharing is a read-only side-effect —
+  /// it triggers no resync; a failure is logged only.
   Future<void> _shareCard(
     String? text,
     String? attachmentId,
     String imageBaseName,
+    String? fileName,
   ) async {
     ShareableImage? image;
     if (attachmentId != null) {
       final result = await _attachmentRead.bytesOf(attachmentId);
       if (result.isFailure) {
-        _log.warning('Share: image bytes missing for $attachmentId');
+        _log.warning('Share: attachment bytes missing for $attachmentId');
       } else {
         final bytes = result.getOrThrow();
-        image = ShareableImage.named(
-          bytes: bytes.bytes,
-          mime: bytes.mime,
-          baseName: imageBaseName,
-        );
+        image = fileName != null
+            ? ShareableImage(
+                bytes: bytes.bytes,
+                mime: bytes.mime,
+                fileName: fileName,
+              )
+            : ShareableImage.named(
+                bytes: bytes.bytes,
+                mime: bytes.mime,
+                baseName: imageBaseName,
+              );
       }
     }
-    // The image may have vanished from a text-less photo card — nothing to share.
+    // The attachment may have vanished from a text-less card — nothing to share.
     if (text == null && image == null) return;
     final shared = await _share.share(ShareableCard(text: text, image: image));
     shared.onFailure(

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
+import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -123,6 +124,25 @@ class AudioRecordingCancelled extends CollectionAction {
 /// clip without writing anything (the recorder has already stopped).
 class PendingAudioCleared extends CollectionAction {
   const PendingAudioCleared();
+}
+
+/// The "+" add-block chose File (§4.2): open the platform file picker so the
+/// chosen file can be previewed above the composer before it becomes a card.
+class PickFileRequested extends CollectionAction {
+  const PickFileRequested();
+}
+
+/// Delivery of [PickFileRequested]: the picker returned [file] (null when the
+/// user cancelled). A non-null file becomes the composer's pending preview.
+class FilePicked extends CollectionAction {
+  const FilePicked(this.file);
+  final PickedFile? file;
+}
+
+/// The pending-file preview's clear ("✕") button — drop the picked-but-unsent
+/// file without writing anything (the file twin of [PendingImageCleared]).
+class PendingFileCleared extends CollectionAction {
+  const PendingFileCleared();
 }
 
 /// Actions sheet → delete a card (§4.2). Links to it become broken, not gone.

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
+import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -22,6 +23,12 @@ void main() {
   final audio = PickedAudio(
     bytes: Uint8List.fromList([4, 5, 6]),
     mime: 'audio/mp4',
+  );
+
+  final pickedFile = PickedFile(
+    bytes: Uint8List.fromList([7, 8, 9]),
+    mime: 'application/pdf',
+    name: 'report.pdf',
   );
 
   FeedCard card(String id, String position, {CardKind kind = CardKind.text}) =>
@@ -434,6 +441,86 @@ void main() {
     });
   });
 
+  group('file attachment', () {
+    test('PickFileRequested emits the pick effect, stages nothing yet', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const PickFileRequested(),
+      );
+      expect(effects!.single, isA<PickFileEffect>());
+      expect(next.pendingFile, isNull, reason: 'nothing staged until picked');
+    });
+
+    test('a cancelled pick leaves state unchanged', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        const FilePicked(null),
+      );
+      expect(next.pendingFile, isNull);
+      expect(effects, isNull);
+    });
+
+    test('a picked file is staged as the pending preview', () {
+      final (next, effects) = updater.update(
+        ready(const []),
+        FilePicked(pickedFile),
+      );
+      expect(next.pendingFile, same(pickedFile));
+      expect(effects, isNull);
+    });
+
+    test('clearing the pending file drops it with no effect', () {
+      final state = ready(const []).copyWith(pendingFile: pickedFile);
+      final (next, effects) = updater.update(
+        state,
+        const PendingFileCleared(),
+      );
+      expect(next.pendingFile, isNull);
+      expect(effects, isNull);
+    });
+
+    test('sending a staged file emits a file card and clears it', () {
+      final state = ready([card('c1', 'a0')]).copyWith(pendingFile: pickedFile);
+      final (next, effects) = updater.update(
+        state,
+        const ComposerSubmitted('  a caption  '),
+      );
+      final effect = effects!.single as AddFileCardEffect;
+      expect(effect.collectionId, 'col');
+      expect(effect.position.compareTo('a0') > 0, isTrue);
+      expect(effect.caption, 'a caption', reason: 'trimmed');
+      expect(effect.file, same(pickedFile));
+      expect(next.pendingFile, isNull, reason: 'cleared optimistically');
+    });
+
+    test('sending a staged file with blank text carries a null caption', () {
+      final state = ready(const []).copyWith(pendingFile: pickedFile);
+      final (_, effects) = updater.update(
+        state,
+        const ComposerSubmitted('   '),
+      );
+      final effect = effects!.single as AddFileCardEffect;
+      expect(effect.caption, isNull);
+      expect(effect.position, 'a0');
+    });
+
+    test('a pending image wins over a pending file on send', () {
+      final state = ready(const [])
+          .copyWith(pendingImage: image, pendingFile: pickedFile);
+      final (_, effects) = updater.update(
+        state,
+        const ComposerSubmitted('hi'),
+      );
+      expect(effects!.single, isA<AddPhotoCardEffect>());
+    });
+
+    test('leaving the page drops a staged file', () {
+      final state = ready(const []).copyWith(pendingFile: pickedFile);
+      final (next, _) = updater.update(state, const DeactivateFeature());
+      expect(next.pendingFile, isNull);
+    });
+  });
+
   group('delete / link', () {
     test('delete emits DeleteCardEffect', () {
       final (_, effects) = updater.update(
@@ -542,6 +629,24 @@ void main() {
         const CardShareRequested('missing'),
       );
       expect(effects, isNull);
+    });
+
+    test('a file card shares its attachment under its stored name', () {
+      final fileCard = FeedCard(
+        id: 'f1',
+        kind: CardKind.file,
+        position: 'a0',
+        attachmentId: 'att-9',
+        fileName: 'report.pdf',
+        fileSize: 1234,
+      );
+      final (_, effects) = updater.update(
+        ready([fileCard]),
+        const CardShareRequested('f1'),
+      );
+      final effect = effects!.single as ShareCardEffect;
+      expect(effect.attachmentId, 'att-9');
+      expect(effect.fileName, 'report.pdf');
     });
   });
 

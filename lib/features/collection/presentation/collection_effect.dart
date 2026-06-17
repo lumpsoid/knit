@@ -1,5 +1,6 @@
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
+import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -103,25 +104,49 @@ class AddAudioCardEffect extends CollectionEffect {
   final String? caption;
 }
 
+/// Open the platform file picker so the chosen file can be previewed in the
+/// composer (the shell delivers the result back as a [FilePicked] action).
+class PickFileEffect extends CollectionEffect {
+  const PickFileEffect();
+}
+
+/// Store the already-picked [file] (§7.4.8), then append a file card at
+/// [position] carrying [caption] (the composer text, already trimmed; null when
+/// blank). The file twin of [AddPhotoCardEffect]/[AddAudioCardEffect].
+class AddFileCardEffect extends CollectionEffect {
+  const AddFileCardEffect({
+    required this.collectionId,
+    required this.position,
+    required this.file,
+    this.caption,
+  });
+  final String collectionId;
+  final String position;
+  final PickedFile file;
+  final String? caption;
+}
+
 class DeleteCardEffect extends CollectionEffect {
   const DeleteCardEffect(this.cardId);
   final String cardId;
 }
 
 /// Share a card (§4.2). The updater resolves the card to its shareable content:
-/// [text] is the body/caption (null when blank); [attachmentId] is set only for
-/// an image card (the shell loads its bytes); [imageBaseName] is the date-stamped
-/// file name stem (e.g. `2026-06-16-knit`), to which the shell appends the
-/// extension once it knows the image's mime.
+/// [text] is the body/caption (null when blank); [attachmentId] is set for an
+/// image or file card (the shell loads its bytes). For a file card [fileName]
+/// is its stored name, used verbatim; for an image card [fileName] is null and
+/// the shell builds a date-stamped name from [imageBaseName] + the image mime.
 class ShareCardEffect extends CollectionEffect {
   const ShareCardEffect({
     this.text,
     this.attachmentId,
     required this.imageBaseName,
+    this.fileName,
   });
   final String? text;
   final String? attachmentId;
   final String imageBaseName;
+  final String? fileName;
 }
 
 class ReorderCardEffect extends CollectionEffect {

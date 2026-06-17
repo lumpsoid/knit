@@ -1,4 +1,5 @@
 export 'audioplayers_audio_player.dart';
+export 'file_picker_adapter.dart';
 export 'filesystem_attachment_blob_store.dart';
 export 'image_picker_adapter.dart';
 export 'in_memory_attachment_blob_store.dart';

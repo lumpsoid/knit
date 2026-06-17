@@ -90,8 +90,10 @@ class _CollectionPageState extends State<CollectionPage> {
     // No send while a recording is in flight — the user stops it first.
     if (state.isRecordingAudio) return;
     final text = _composer.text;
-    // A staged image or audio clip makes an empty caption a valid send.
-    final hasPending = state.pendingImage != null || state.pendingAudio != null;
+    // A staged image, audio clip, or file makes an empty caption a valid send.
+    final hasPending = state.pendingImage != null ||
+        state.pendingAudio != null ||
+        state.pendingFile != null;
     if (text.trim().isEmpty && !hasPending) return;
     _controller.dispatch(ComposerSubmitted(text));
     _composer.clear();
@@ -171,6 +173,10 @@ class _CollectionPageState extends State<CollectionPage> {
         // Reveal the inline recording bar above the composer; the user records,
         // optionally adds a caption, and sends — mirroring the photo flow.
         _revealAudioBar();
+      case CardKind.file:
+        // Open the platform picker straight away; the chosen file becomes a
+        // pending preview above the composer (the user can caption it, then send).
+        _controller.dispatch(const PickFileRequested());
       case CardKind.text:
       case CardKind.unknown:
         break;
@@ -250,6 +256,7 @@ class _CollectionPageState extends State<CollectionPage> {
     return switch (card.kind) {
       CardKind.image => l10n.collectionCardPhoto,
       CardKind.audio => l10n.collectionCardAudio,
+      CardKind.file => card.fileName ?? l10n.collectionCardFile,
       CardKind.link => l10n.collectionCardLink,
       CardKind.text || CardKind.unknown => l10n.labelEmptyNote,
     };
@@ -378,6 +385,7 @@ class _CollectionPageState extends State<CollectionPage> {
                 _Composer(
                   controller: _composer,
                   pendingImageBytes: state.pendingImage?.bytes,
+                  pendingFileName: state.pendingFile?.name,
                   showPhotoSources: _showPhotoSources,
                   hasPendingAudio: state.pendingAudio != null,
                   showAudioBar: _showAudioBar,
@@ -389,6 +397,8 @@ class _CollectionPageState extends State<CollectionPage> {
                   onPickFromCamera: () => _pickImage(ImagePickerSource.camera),
                   onClearImage: () =>
                       _controller.dispatch(const PendingImageCleared()),
+                  onClearFile: () =>
+                      _controller.dispatch(const PendingFileCleared()),
                   onStartRecording: _startRecording,
                   onPauseRecording: _pauseRecording,
                   onResumeRecording: _resumeRecording,
@@ -458,6 +468,11 @@ class _CollectionPageState extends State<CollectionPage> {
             onImageTap: bytes == null
                 ? null
                 : () => _openImagePreview(card, bytes),
+            // Tapping a file card shares it through the system sheet (which
+            // offers "Open with…"); the same path the actions-sheet Share uses.
+            onFileTap: card.kind == CardKind.file
+                ? () => _controller.dispatch(CardShareRequested(card.id))
+                : null,
             // A playable audio card gets the shared player snapshot (to flip when
             // it's the one playing) and a tap-to-toggle on its play button.
             playback: audioId == null ? null : _playback.snapshot,
@@ -493,6 +508,7 @@ class _CardBubble extends StatelessWidget {
     required this.imageBytes,
     required this.onTap,
     this.onImageTap,
+    this.onFileTap,
     this.playback,
     this.onToggleAudio,
   });
@@ -505,6 +521,10 @@ class _CardBubble extends StatelessWidget {
   /// Opens the full-screen image preview; null when the image hasn't loaded yet
   /// (a tap then falls through to [onTap], the card-actions sheet).
   final VoidCallback? onImageTap;
+
+  /// Shares a file card through the system sheet; null for every other kind (a
+  /// tap then falls through to [onTap], the card-actions sheet).
+  final VoidCallback? onFileTap;
 
   /// The shared player snapshot for a playable audio card, so its chip flips to
   /// a now-playing state when this card is the one in the player. Null for every
@@ -617,6 +637,22 @@ class _CardBubble extends StatelessWidget {
             ),
           ],
         );
+      case CardKind.file:
+        final fileCaption = card.text?.trim();
+        final chip = _FileCardChip(card: card, onTap: onFileTap);
+        if (fileCaption == null || fileCaption.isEmpty) return chip;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            chip,
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 220),
+              child: Text(fileCaption),
+            ),
+          ],
+        );
       case CardKind.text:
       case CardKind.unknown:
         return Text(
@@ -724,6 +760,76 @@ class _AudioCardChip extends StatelessWidget {
       ],
     );
   }
+}
+
+/// A file card's in-feed chip: a file-type icon, the attachment's name, and its
+/// size. Tapping it shares the file through the system sheet (via [onTap]); a
+/// null [onTap] (e.g. a missing attachment) leaves it inert so the bubble's own
+/// tap (the actions sheet) still fires.
+class _FileCardChip extends StatelessWidget {
+  const _FileCardChip({required this.card, required this.onTap});
+
+  final FeedCard card;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final name = card.fileName?.trim();
+    final size = card.fileSize;
+    final chip = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 240),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.insert_drive_file_outlined,
+            size: 32,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name == null || name.isEmpty ? l10n.collectionCardFile : name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                if (size != null)
+                  Text(
+                    _formatBytes(size),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (onTap == null) return chip;
+    return GestureDetector(onTap: onTap, child: chip);
+  }
+}
+
+/// A compact, human-readable byte size (e.g. `1.2 MB`). Decimal units, pure.
+String _formatBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  var value = bytes / 1024;
+  var unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  final text = value >= 10 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+  return '$text ${units[unit]}';
 }
 
 /// A full-screen, pinch-to-zoom viewer for a card's image (§4.2). Pushed when an
@@ -835,6 +941,12 @@ class _ReorderRow extends StatelessWidget {
         card.text?.trim().isNotEmpty == true
             ? card.text!.trim()
             : l10n.collectionCardAudio,
+      CardKind.file =>
+        card.fileName?.trim().isNotEmpty == true
+            ? card.fileName!.trim()
+            : (card.text?.trim().isNotEmpty == true
+                  ? card.text!.trim()
+                  : l10n.collectionCardFile),
       CardKind.text || CardKind.unknown =>
         card.text?.trim().isNotEmpty == true ? card.text! : l10n.labelEmptyNote,
     };
@@ -920,6 +1032,7 @@ class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
     required this.pendingImageBytes,
+    required this.pendingFileName,
     required this.showPhotoSources,
     required this.hasPendingAudio,
     required this.showAudioBar,
@@ -930,6 +1043,7 @@ class _Composer extends StatelessWidget {
     required this.onPickFromGallery,
     required this.onPickFromCamera,
     required this.onClearImage,
+    required this.onClearFile,
     required this.onStartRecording,
     required this.onPauseRecording,
     required this.onResumeRecording,
@@ -941,6 +1055,9 @@ class _Composer extends StatelessWidget {
 
   /// Bytes of an image the user picked but hasn't sent yet; null ⇒ no preview.
   final Uint8List? pendingImageBytes;
+
+  /// Name of a file the user picked but hasn't sent yet; null ⇒ no preview.
+  final String? pendingFileName;
 
   /// Whether the gallery/camera options row is shown above the input row.
   final bool showPhotoSources;
@@ -962,6 +1079,7 @@ class _Composer extends StatelessWidget {
   final VoidCallback onPickFromGallery;
   final VoidCallback onPickFromCamera;
   final VoidCallback onClearImage;
+  final VoidCallback onClearFile;
   final VoidCallback onStartRecording;
   final VoidCallback onPauseRecording;
   final VoidCallback onResumeRecording;
@@ -991,6 +1109,11 @@ class _Composer extends StatelessWidget {
             if (bytes != null)
               _PendingImagePreview(bytes: bytes, onClear: onClearImage),
             if (hasPendingAudio) _PendingAudioPreview(onClear: onClearAudio),
+            if (pendingFileName != null)
+              _PendingFilePreview(
+                name: pendingFileName!,
+                onClear: onClearFile,
+              ),
             if (showPhotoSources)
               _PhotoSourceOptions(
                 onGallery: onPickFromGallery,
@@ -1370,6 +1493,51 @@ class _PendingAudioPreview extends StatelessWidget {
   }
 }
 
+/// The picked-but-unsent file shown above the composer (§4.2) — the file twin of
+/// [_PendingAudioPreview]. Shows the file's name; tapping ✕ drops it via
+/// [onClear]. The user can add a caption first, then send.
+class _PendingFilePreview extends StatelessWidget {
+  const _PendingFilePreview({required this.name, required this.onClear});
+  final String name;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.insert_drive_file_outlined,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            IconButton(
+              tooltip: AppLocalizations.of(context).actionRemove,
+              icon: const Icon(Icons.close),
+              onPressed: onClear,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AddBlockSheet extends StatelessWidget {
   const _AddBlockSheet();
 
@@ -1394,6 +1562,11 @@ class _AddBlockSheet extends StatelessWidget {
             leading: const Icon(Icons.mic_none),
             title: Text(l10n.collectionBlockAudio),
             onTap: () => Navigator.of(context).pop(CardKind.audio),
+          ),
+          ListTile(
+            leading: const Icon(Icons.attach_file),
+            title: Text(l10n.collectionBlockFile),
+            onTap: () => Navigator.of(context).pop(CardKind.file),
           ),
         ],
       ),

@@ -98,13 +98,15 @@ abstract class LinkSchema {
 }
 
 /// Media metadata (spec §6.4) — bytes live on the filesystem; `local_path` is
-/// device-local, NOT synced, NOT signed.
+/// device-local, NOT synced, NOT signed. `name` is the original file name of a
+/// `file`-kind attachment (spec §7.4.8), synced + signed; null for image/audio.
 abstract class AttachmentSchema {
   static const String table = 'attachment';
   static const String colKind = 'kind';
   static const String colMime = 'mime';
   static const String colContentHash = 'content_hash';
   static const String colSize = 'size';
+  static const String colName = 'name';
   static const String colLocalPath = 'local_path';
 
   static const String createTable =
@@ -115,6 +117,7 @@ abstract class AttachmentSchema {
         $colMime         TEXT NOT NULL,
         $colContentHash  TEXT NOT NULL,
         $colSize         INTEGER NOT NULL,
+        $colName         TEXT,
         $colLocalPath    TEXT
       )
       ''';

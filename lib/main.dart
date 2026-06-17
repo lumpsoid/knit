@@ -180,6 +180,7 @@ void bootstrap(AppConfig config) {
       ),
       imagePicker: ImagePickerAdapter(),
       audioRecorder: RecordAudioRecorder(),
+      filePicker: const FilePickerAdapter(),
       shareRepository: const SharePlusCardShareRepository(),
       timelineChannel: timelineChannel,
     ).controller,

@@ -542,6 +542,12 @@ abstract class AppLocalizations {
   /// **'Audio'**
   String get collectionBlockAudio;
 
+  /// No description provided for @collectionBlockFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get collectionBlockFile;
+
   /// No description provided for @collectionPhotoSourceGallery.
   ///
   /// In en, this message translates to:
@@ -667,6 +673,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Audio'**
   String get collectionCardAudio;
+
+  /// No description provided for @collectionCardFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get collectionCardFile;
 
   /// No description provided for @collectionReorderPhoto.
   ///

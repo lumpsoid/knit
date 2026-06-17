@@ -262,6 +262,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionBlockAudio => 'Audio';
 
   @override
+  String get collectionBlockFile => 'File';
+
+  @override
   String get collectionPhotoSourceGallery => 'Gallery';
 
   @override
@@ -324,6 +327,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collectionCardAudio => 'Audio';
+
+  @override
+  String get collectionCardFile => 'File';
 
   @override
   String get collectionReorderPhoto => '[Photo]';

@@ -4,6 +4,7 @@ import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/audio_recorder_port.dart';
+import 'package:knit/core/attachments/domain/file_picker_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
@@ -29,6 +30,7 @@ class CollectionModule {
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
     required AudioRecorderPort audioRecorder,
+    required FilePickerPort filePicker,
     required CardShareRepository shareRepository,
     required TimelineChannelEmitter timelineChannel,
     Logger? logger,
@@ -44,6 +46,7 @@ class CollectionModule {
       attachmentWriteRepository: attachmentWriteRepository,
       imagePicker: imagePicker,
       audioRecorder: audioRecorder,
+      filePicker: filePicker,
       shareRepository: shareRepository,
       effectEmitter: effectEmitter,
       timelineChannel: timelineChannel,

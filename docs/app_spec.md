@@ -49,8 +49,10 @@ affordance:
 
 - **Collection** = `title` + an optional **cover image** on its header. **No body text, no
   audio.** Its only media is the cover image (added via header long-press).
-- **Card** = `kind ∈ {text, image, link, audio}`, with body text and one attachment.
+- **Card** = `kind ∈ {text, image, link, audio, file}`, with body text and one attachment.
   **Audio exists only as a card** inside a collection — never on a collection header.
+  A **file** card carries an arbitrary attachment (any mime), labelled by the
+  attachment's original `name`.
 
 The data model enforces this: `collection` has `title` + `cover_attachment_id` only;
 `kind=audio`/`attachment_id` live only on `card`.
@@ -223,10 +225,11 @@ CREATE TABLE link (
 -- media metadata; bytes live on the filesystem, synced lazily out-of-band
 CREATE TABLE attachment (
   -- envelope...
-  kind          TEXT NOT NULL,          -- image | audio
+  kind          TEXT NOT NULL,          -- image | audio | file
   mime          TEXT NOT NULL,
   content_hash  TEXT NOT NULL,          -- sha256 (hex) of bytes: dedup + integrity
   size          INTEGER NOT NULL,
+  name          TEXT,                   -- original file name; set for kind=file, else null
   local_path    TEXT                    -- device-local, NOT synced, NOT signed
 );
 ```
@@ -533,7 +536,9 @@ read time → broken-link chip, no op involved.
 **7.4.8 Profile — delete** — `deleted:1`, HLC bumps, otherwise identical (rare).
 
 > **Attachment — put.** Signed fields: `author, content_hash, created_at, created_by,
-> deleted, hlc_counter, hlc_ms, id, kind, mime, size, t`. `local_path` never in the payload
+> deleted, hlc_counter, hlc_ms, id, kind, mime, name, size, t`. `name` is the original
+> file name for a `kind=file` attachment (so a file card can label it and sharing
+> preserves it); it is `null` for `image`/`audio`. `local_path` never in the payload
 > (local-only, unsigned). The bytes are not in the op — they transfer out-of-band,
 > content-addressed by `content_hash` (§7.7).
 

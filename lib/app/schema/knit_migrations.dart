@@ -26,6 +26,26 @@ List<Migration> knitMigrations() => [
           }
         },
       ),
+      // v2: the file-attachment `name` field (spec §7.4.8). The baseline DDL
+      // already carries the column for fresh installs (CREATE ... IF NOT EXISTS
+      // is a no-op on an existing v1 table), so an ALTER backfills DBs that were
+      // created at v1. SQLite ≥3.35 supports ADD/DROP COLUMN.
+      Migration(
+        version: 2,
+        description: 'add attachment.name for file attachments (§7.4.8)',
+        up: (db) async {
+          await db.execute(
+            'ALTER TABLE ${AttachmentSchema.table} '
+            'ADD COLUMN ${AttachmentSchema.colName} TEXT',
+          );
+        },
+        down: (db) async {
+          await db.execute(
+            'ALTER TABLE ${AttachmentSchema.table} '
+            'DROP COLUMN ${AttachmentSchema.colName}',
+          );
+        },
+      ),
     ];
 
 const List<String> _baselineDdl = [

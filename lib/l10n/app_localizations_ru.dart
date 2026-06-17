@@ -264,6 +264,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionBlockAudio => 'Аудио';
 
   @override
+  String get collectionBlockFile => 'Файл';
+
+  @override
   String get collectionPhotoSourceGallery => 'Галерея';
 
   @override
@@ -326,6 +329,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get collectionCardAudio => 'Аудио';
+
+  @override
+  String get collectionCardFile => 'Файл';
 
   @override
   String get collectionReorderPhoto => '[Фото]';

@@ -52,6 +52,7 @@ abstract class ProjectionRowMapper {
           AttachmentSchema.colMime: c[AttachmentSchema.colMime],
           AttachmentSchema.colContentHash: c[AttachmentSchema.colContentHash],
           AttachmentSchema.colSize: c[AttachmentSchema.colSize],
+          AttachmentSchema.colName: c[AttachmentSchema.colName],
           AttachmentSchema.colLocalPath: c[AttachmentSchema.colLocalPath],
         },
       EntityType.profile => {
@@ -116,6 +117,7 @@ abstract class ProjectionRowMapper {
           AttachmentSchema.colMime: row[AttachmentSchema.colMime],
           AttachmentSchema.colContentHash: row[AttachmentSchema.colContentHash],
           AttachmentSchema.colSize: row[AttachmentSchema.colSize],
+          AttachmentSchema.colName: row[AttachmentSchema.colName],
           AttachmentSchema.colLocalPath: row[AttachmentSchema.colLocalPath],
         }),
       EntityType.profile => build(content: {

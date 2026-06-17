@@ -38,7 +38,7 @@ abstract class CanonicalSerializer {
   };
   static const Set<String> _attachmentKeys = {
     'author', 'content_hash', 'created_at', 'created_by', 'deleted',
-    'hlc_counter', 'hlc_ms', 'id', 'kind', 'mime', 'size', 't',
+    'hlc_counter', 'hlc_ms', 'id', 'kind', 'mime', 'name', 'size', 't',
   };
 
   static Set<String> _fieldSet(EntityType type) => switch (type) {

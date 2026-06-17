@@ -30,6 +30,13 @@ void main() {
   PickedAudio m4a(List<int> b) =>
       PickedAudio(bytes: Uint8List.fromList(b), mime: 'audio/mp4');
 
+  PickedFile file(List<int> b, {String name = 'report.pdf'}) =>
+      PickedFile(
+        bytes: Uint8List.fromList(b),
+        mime: 'application/pdf',
+        name: name,
+      );
+
   Future<List<Snapshot>> liveAttachments() async =>
       (await store.readAll(EntityType.attachment))
           .where((s) => !s.deleted)
@@ -86,6 +93,50 @@ void main() {
     expect((await liveAttachments()).length, 1);
   });
 
+  test('createFromFile writes the §7.4.8 metadata with kind file + name', () async {
+    final id =
+        (await write.createFromFile(file([7, 8, 9], name: 'report.pdf')))
+            .getOrThrow();
+    final snap = (await store.get(EntityType.attachment, id))!;
+    final hash = await sha256Hex([7, 8, 9]);
+
+    expect(snap.content[AttachmentSchema.colKind], 'file');
+    expect(snap.content[AttachmentSchema.colMime], 'application/pdf');
+    expect(snap.content[AttachmentSchema.colContentHash], hash);
+    expect(snap.content[AttachmentSchema.colSize], 3);
+    expect(snap.content[AttachmentSchema.colName], 'report.pdf');
+    expect(snap.content[AttachmentSchema.colLocalPath], isNull);
+    expect(snap.sig, isNotEmpty); // signed record
+    expect(await blobs.exists(hash), isTrue);
+  });
+
+  test('identical file bytes + name dedupe to one record + one blob', () async {
+    final a = (await write.createFromFile(file([2, 2], name: 'a.pdf')))
+        .getOrThrow();
+    final b = (await write.createFromFile(file([2, 2], name: 'a.pdf')))
+        .getOrThrow();
+    expect(a, b);
+    expect((await liveAttachments()).length, 1);
+  });
+
+  test('same file bytes under a different name keep distinct records, one blob',
+      () async {
+    final a = (await write.createFromFile(file([4, 4], name: 'a.pdf')))
+        .getOrThrow();
+    final b = (await write.createFromFile(file([4, 4], name: 'b.pdf')))
+        .getOrThrow();
+    expect(a, isNot(b));
+    final live = await liveAttachments();
+    expect(live.length, 2);
+    // One shared content-addressed blob backs both labelled records.
+    final hash = await sha256Hex([4, 4]);
+    expect(await blobs.exists(hash), isTrue);
+    expect(
+      live.map((s) => s.content[AttachmentSchema.colName]).toSet(),
+      {'a.pdf', 'b.pdf'},
+    );
+  });
+
   test('delete soft-deletes the record and GCs the unshared blob', () async {
     final id = (await write.createFromPicked(png([5, 5]))).getOrThrow();
     final hash = (await store.get(EntityType.attachment, id))!
@@ -111,6 +162,7 @@ void main() {
       AttachmentSchema.colMime: 'image/png',
       AttachmentSchema.colContentHash: hash,
       AttachmentSchema.colSize: 2,
+      AttachmentSchema.colName: null,
     });
 
     await write.delete(id1);
