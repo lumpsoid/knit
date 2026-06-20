@@ -15,6 +15,7 @@ import 'package:knit/core/attachments/infra/sync_store_attachment_read_repositor
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/settings/infra/shared_preferences_settings_repository.dart';
+import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository.dart';
 import 'package:knit/features/settings/presentation/settings_module.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
@@ -60,11 +61,13 @@ void main() {
       () => SettingsModule(
         readRepository: settingsRepository,
         writeRepository: settingsRepository,
+        wipeRepository: SyncStoreSettingsWipeRepository(graph: graph),
         backupExportRepository: SyncStoreBackupExportRepository(graph: graph),
         backupImportRepository: SyncStoreBackupImportRepository(graph: graph),
         backupDeliveryPort: RecordingBackupDeliveryPort(),
         backupSavePort: RecordingBackupSavePort(),
         backupSourcePort: StubBackupSourcePort(),
+        timelineChannel: TimelineChannelNotifier(),
       ).controller,
     );
   }

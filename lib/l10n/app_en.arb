@@ -280,6 +280,11 @@
       "mismatched": { "type": "int" }
     }
   },
+  "settingsWipeConfirmTitle": "Wipe all data?",
+  "settingsWipeConfirmMessage": "This permanently deletes every collection, card, and link on this device. Your identity is kept. This can't be undone — export a backup first if you might want this data back.",
+  "settingsWipeConfirmAction": "Wipe data",
+  "settingsWipeDone": "All data wiped",
+  "settingsWipeFailed": "Couldn't wipe the data",
 
   "syncAllSaved": "All changes saved",
   "syncUnavailable": "Sync status unavailable",

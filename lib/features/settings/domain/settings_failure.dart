@@ -18,3 +18,9 @@ class PreferencesLoadFailure extends SettingsFailure {
 class PreferencesSaveFailure extends SettingsFailure {
   const PreferencesSaveFailure(super.error, [super.stackTrace]);
 }
+
+/// Wiping the device's data failed partway — some content may remain, so the
+/// page must report the failure rather than claim a clean slate.
+class WipeDataFailure extends SettingsFailure {
+  const WipeDataFailure(super.error, [super.stackTrace]);
+}

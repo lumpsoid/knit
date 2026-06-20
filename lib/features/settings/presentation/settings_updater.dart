@@ -42,8 +42,10 @@ class SettingsUpdater
         // A long build+deliver — show the spinner until DataActionFinished.
         return (state.copyWith(busy: true), [RunExportEffect(destination)]);
       case DataActionRequested(:final action):
-        // Only import is long-running; the placeholders resolve instantly.
-        final busy = action == DataAction.importData;
+        // Import and wipe touch the store and run async; the remaining
+        // placeholders resolve instantly.
+        final busy = action == DataAction.importData ||
+            action == DataAction.wipeData;
         return (
           state.copyWith(busy: busy),
           [RunDataActionEffect(action)],

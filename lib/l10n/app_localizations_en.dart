@@ -670,6 +670,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settingsWipeConfirmTitle => 'Wipe all data?';
+
+  @override
+  String get settingsWipeConfirmMessage =>
+      'This permanently deletes every collection, card, and link on this device. Your identity is kept. This can\'t be undone — export a backup first if you might want this data back.';
+
+  @override
+  String get settingsWipeConfirmAction => 'Wipe data';
+
+  @override
+  String get settingsWipeDone => 'All data wiped';
+
+  @override
+  String get settingsWipeFailed => 'Couldn\'t wipe the data';
+
+  @override
   String get syncAllSaved => 'All changes saved';
 
   @override

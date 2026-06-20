@@ -8,6 +8,7 @@ import 'package:knit/features/backup/domain/backup_import_repository.dart';
 import 'package:knit/features/backup/domain/backup_save_port.dart';
 import 'package:knit/features/backup/domain/backup_source_port.dart';
 import 'package:knit/features/settings/domain/settings_read_repository.dart';
+import 'package:knit/features/settings/domain/settings_wipe_repository.dart';
 import 'package:knit/features/settings/domain/settings_write_repository.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
 import 'package:knit/features/settings/presentation/settings_controller.dart';
@@ -17,17 +18,20 @@ import 'package:knit/features/settings/presentation/settings_shell.dart';
 import 'package:knit/features/settings/presentation/settings_state.dart';
 import 'package:knit/features/settings/presentation/settings_ui_effect.dart';
 import 'package:knit/features/settings/presentation/settings_updater.dart';
+import 'package:knit/features/timeline/domain/timeline_channel.dart';
 
 /// Composition root for Settings (fcis.md §6.8).
 class SettingsModule {
   SettingsModule({
     required SettingsReadRepository readRepository,
     required SettingsWriteRepository writeRepository,
+    required SettingsWipeRepository wipeRepository,
     required BackupExportRepository backupExportRepository,
     required BackupImportRepository backupImportRepository,
     required BackupDeliveryPort backupDeliveryPort,
     required BackupSavePort backupSavePort,
     required BackupSourcePort backupSourcePort,
+    required TimelineChannelEmitter timelineChannel,
     Logger? logger,
   }) {
     final stateHolder =
@@ -36,12 +40,14 @@ class SettingsModule {
     final shell = SettingsShell(
       readRepository: readRepository,
       writeRepository: writeRepository,
+      wipeRepository: wipeRepository,
       backupExportRepository: backupExportRepository,
       backupImportRepository: backupImportRepository,
       backupDeliveryPort: backupDeliveryPort,
       backupSavePort: backupSavePort,
       backupSourcePort: backupSourcePort,
       effectEmitter: effectEmitter,
+      timelineChannel: timelineChannel,
       logger: logger ?? Logger('knit.settings'),
     );
     final loop = SettingsLoop(

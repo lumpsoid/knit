@@ -1292,6 +1292,36 @@ abstract class AppLocalizations {
   /// **'{quarantined} ops skipped, {mismatched} files corrupt'**
   String settingsBackupImportWarning(int quarantined, int mismatched);
 
+  /// No description provided for @settingsWipeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wipe all data?'**
+  String get settingsWipeConfirmTitle;
+
+  /// No description provided for @settingsWipeConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes every collection, card, and link on this device. Your identity is kept. This can\'t be undone — export a backup first if you might want this data back.'**
+  String get settingsWipeConfirmMessage;
+
+  /// No description provided for @settingsWipeConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Wipe data'**
+  String get settingsWipeConfirmAction;
+
+  /// No description provided for @settingsWipeDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All data wiped'**
+  String get settingsWipeDone;
+
+  /// No description provided for @settingsWipeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t wipe the data'**
+  String get settingsWipeFailed;
+
   /// No description provided for @syncAllSaved.
   ///
   /// In en, this message translates to:

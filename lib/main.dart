@@ -49,6 +49,7 @@ import 'package:knit/features/profile/presentation/profile_module.dart';
 import 'package:knit/features/profile/presentation/profile_scope.dart';
 import 'package:knit/features/settings/domain/app_preferences.dart';
 import 'package:knit/features/settings/infra/shared_preferences_settings_repository.dart';
+import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
 import 'package:knit/features/settings/presentation/settings_module.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
@@ -133,11 +134,20 @@ void bootstrap(AppConfig config) {
   // built controller the root [KnitApp] observes and every settings page uses.
   // Persisted in shared_preferences — device-local config, not synced graph
   // data — so it's wired here regardless of the AppConfig graph selection.
+  // The Timeline input channel (cross_feature.md §3): one shared instance — the
+  // Collection and Settings (and any future feature) emit a RefreshChannelEvent
+  // after a write/restore/wipe; the Timeline observes it and re-reads the home
+  // feed. The producer gets the emitter half, the consumer the reader half.
+  final timelineChannel = TimelineChannelNotifier();
+
   const settingsRepository = SharedPreferencesSettingsRepository();
   SettingsScope.setFactory(
     () => SettingsModule(
       readRepository: settingsRepository,
       writeRepository: settingsRepository,
+      // The Data subpage wipe (§4 danger zone): truncate the store + blobs,
+      // keeping the device identity.
+      wipeRepository: SyncStoreSettingsWipeRepository(graph: graph),
       // The Data subpage export/import (§4): bundle the signed log + blobs to a
       // .zip and share it; pick a .zip and replay it back through the store.
       backupExportRepository: SyncStoreBackupExportRepository(graph: graph),
@@ -145,6 +155,8 @@ void bootstrap(AppConfig config) {
       backupDeliveryPort: const SharePlusBackupDeliveryPort(),
       backupSavePort: const FilePickerBackupSavePort(),
       backupSourcePort: const FilePickerBackupSourcePort(),
+      // A restore or wipe changes the home feed — emit into the Timeline channel.
+      timelineChannel: timelineChannel,
     ).controller,
   );
 
@@ -177,12 +189,6 @@ void bootstrap(AppConfig config) {
 
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
-
-  // The Timeline input channel (cross_feature.md §3): one shared instance — the
-  // Collection (and any future feature) emits a RefreshChannelEvent after a
-  // write; the Timeline observes it and re-reads the home feed. The producer
-  // gets the emitter half, the consumer the reader half.
-  final timelineChannel = TimelineChannelNotifier();
 
   TimelineScope.setFactory(
     () => TimelineModule(

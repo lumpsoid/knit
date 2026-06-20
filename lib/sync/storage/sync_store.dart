@@ -370,6 +370,44 @@ class SyncStore {
     });
   }
 
+  // --- Wipe (Settings §4 danger zone) ---------------------------------------
+
+  /// Delete all content on this device — collections, cards, links, attachments
+  /// — while **keeping the device identity**: both the keypair (in
+  /// [localIdentity], untouched here) *and* the signed `profile` record (the
+  /// nickname#fingerprint, §7.4.7). The profile ops are read out of the log,
+  /// then in one transaction (§8.5) the [changeLog], [projection], and
+  /// [quarantine] are truncated and only the profile ops are re-appended and
+  /// re-materialized — so the user keeps their identity but loses every other
+  /// entity. The device clock is left intact (the same author keeps writing).
+  /// Discarding the keypair entirely is the separate "reset identity" action.
+  /// Attachment blobs are out-of-band, so the caller removes them.
+  Future<void> wipe() async {
+    final ops = await changeLog.readOrdered();
+    final profileOps = ops
+        .where((op) => op.toSnapshot().type == EntityType.profile)
+        .toList(growable: false);
+
+    // Replay the kept profile ops through the merge-core to recover the current
+    // profile row (a nickname edit is a second op over the create, §6.9).
+    final memory = Projection();
+    for (final op in profileOps) {
+      memory.apply(op.toSnapshot());
+    }
+
+    await _unitOfWork.run((ctx) async {
+      await projection.clear(ctx: ctx);
+      await changeLog.clear(ctx: ctx);
+      await quarantine.clear(ctx: ctx);
+      for (final op in profileOps) {
+        await changeLog.append(op, ctx: ctx);
+      }
+      for (final row in memory.rows) {
+        await projection.upsert(row, ctx: ctx);
+      }
+    });
+  }
+
   // --- Helpers ---------------------------------------------------------------
 
   /// Load (or, on a fresh device, provision and persist) the device identity

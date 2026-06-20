@@ -277,6 +277,11 @@
       "mismatched": { "type": "int" }
     }
   },
+  "settingsWipeConfirmTitle": "Стереть все данные?",
+  "settingsWipeConfirmMessage": "Это безвозвратно удалит все коллекции, карточки и связи на этом устройстве. Ваш ключ сохранится. Отменить нельзя — сначала экспортируйте резервную копию, если данные могут понадобиться.",
+  "settingsWipeConfirmAction": "Стереть данные",
+  "settingsWipeDone": "Все данные стёрты",
+  "settingsWipeFailed": "Не удалось стереть данные",
 
   "syncAllSaved": "Все изменения сохранены",
   "syncUnavailable": "Статус синхронизации недоступен",

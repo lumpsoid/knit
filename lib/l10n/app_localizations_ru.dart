@@ -674,6 +674,22 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get settingsWipeConfirmTitle => 'Стереть все данные?';
+
+  @override
+  String get settingsWipeConfirmMessage =>
+      'Это безвозвратно удалит все коллекции, карточки и связи на этом устройстве. Ваш ключ сохранится. Отменить нельзя — сначала экспортируйте резервную копию, если данные могут понадобиться.';
+
+  @override
+  String get settingsWipeConfirmAction => 'Стереть данные';
+
+  @override
+  String get settingsWipeDone => 'Все данные стёрты';
+
+  @override
+  String get settingsWipeFailed => 'Не удалось стереть данные';
+
+  @override
   String get syncAllSaved => 'Все изменения сохранены';
 
   @override

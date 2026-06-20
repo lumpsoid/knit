@@ -9,8 +9,10 @@ import 'package:knit/features/settings/presentation/settings_ui_effect.dart';
 
 /// The Data subpage (§4 settings): backup/transfer (export, import, export
 /// identity) and a danger zone (wipe data, reset identity). Every action flows
-/// through the shared [SettingsScope] loop as a [DataActionRequested]; today the
-/// shell answers with a "coming soon" UiEffect this page shows as a snackbar.
+/// through the shared [SettingsScope] loop as a [DataActionRequested] (export
+/// and wipe go through their own paths first — a destination sheet, a confirm
+/// dialog). The identity export/reset actions are still answered with a "coming
+/// soon" UiEffect this page shows as a snackbar.
 class SettingsDataPage extends StatefulWidget {
   const SettingsDataPage({super.key});
 
@@ -54,6 +56,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
         action == DataAction.importData
             ? l10n.settingsBackupImportFailed
             : l10n.settingsBackupExportFailed,
+      SettingsDataWipedUiEffect() => l10n.settingsWipeDone,
+      SettingsWipeFailedUiEffect() => l10n.settingsWipeFailed,
     };
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
@@ -127,7 +131,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
           title: Text(l10n.settingsWipeData,
               style: TextStyle(color: theme.colorScheme.error)),
           subtitle: Text(l10n.settingsWipeDataSubtitle),
-          onTap: () => _request(DataAction.wipeData),
+          onTap: _confirmWipe,
         ),
         ListTile(
           leading: Icon(Icons.restart_alt, color: theme.colorScheme.error),
@@ -142,6 +146,35 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 
   void _request(DataAction action) =>
       _controller.dispatch(DataActionRequested(action));
+
+  /// Wiping is irreversible, so confirm before dispatching it. Only an explicit
+  /// confirmation kicks off the (busy-spinner) wipe; dismissing does nothing.
+  Future<void> _confirmWipe() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.settingsWipeConfirmTitle),
+        content: Text(l10n.settingsWipeConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            child: Text(l10n.settingsWipeConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      _request(DataAction.wipeData);
+    }
+  }
 
   /// Ask where the export should go (share sheet or a saved file), then kick off
   /// the build+deliver. Dismissing the sheet does nothing.
