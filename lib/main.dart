@@ -9,6 +9,11 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/composition.dart';
 import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
+import 'package:knit/features/backup/infra/file_picker_backup_save_port.dart';
+import 'package:knit/features/backup/infra/file_picker_backup_source_port.dart';
+import 'package:knit/features/backup/infra/share_plus_backup_delivery_port.dart';
+import 'package:knit/features/backup/infra/sync_store_backup_export_repository.dart';
+import 'package:knit/features/backup/infra/sync_store_backup_import_repository.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_page.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
@@ -133,6 +138,13 @@ void bootstrap(AppConfig config) {
     () => SettingsModule(
       readRepository: settingsRepository,
       writeRepository: settingsRepository,
+      // The Data subpage export/import (§4): bundle the signed log + blobs to a
+      // .zip and share it; pick a .zip and replay it back through the store.
+      backupExportRepository: SyncStoreBackupExportRepository(graph: graph),
+      backupImportRepository: SyncStoreBackupImportRepository(graph: graph),
+      backupDeliveryPort: const SharePlusBackupDeliveryPort(),
+      backupSavePort: const FilePickerBackupSavePort(),
+      backupSourcePort: const FilePickerBackupSourcePort(),
     ).controller,
   );
 

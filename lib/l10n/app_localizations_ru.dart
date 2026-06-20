@@ -635,6 +635,45 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get settingsExportChooseTitle => 'Экспорт резервной копии';
+
+  @override
+  String get settingsExportChooseShare => 'Поделиться…';
+
+  @override
+  String get settingsExportChooseShareSubtitle =>
+      'Отправить копию в другое приложение';
+
+  @override
+  String get settingsExportChooseSave => 'Сохранить в файл';
+
+  @override
+  String get settingsExportChooseSaveSubtitle => 'Выберите, где хранить копию';
+
+  @override
+  String get settingsBackupExported => 'Резервная копия готова к отправке';
+
+  @override
+  String get settingsBackupSaved => 'Резервная копия сохранена';
+
+  @override
+  String get settingsBackupExportFailed => 'Не удалось создать резервную копию';
+
+  @override
+  String get settingsBackupImportFailed =>
+      'Не удалось восстановить из резервной копии';
+
+  @override
+  String settingsBackupImported(int applied, int deduped) {
+    return 'Восстановлено элементов: $applied (уже было: $deduped)';
+  }
+
+  @override
+  String settingsBackupImportWarning(int quarantined, int mismatched) {
+    return 'Пропущено операций: $quarantined, повреждено файлов: $mismatched';
+  }
+
+  @override
   String get syncAllSaved => 'Все изменения сохранены';
 
   @override

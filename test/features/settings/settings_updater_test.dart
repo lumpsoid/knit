@@ -70,15 +70,48 @@ void main() {
     expect(effects, isNull);
   });
 
-  test('DataActionRequested routes through to a data-action effect', () {
+  test('DataActionRequested(import) sets busy and runs the data action', () {
     final (next, effects) = updater.update(
       const SettingsState(),
-      const DataActionRequested(DataAction.exportData),
+      const DataActionRequested(DataAction.importData),
     );
-    expect(next.preferences, const AppPreferences()); // no state change
+    expect(next.busy, isTrue);
     expect(
       (effects!.single as RunDataActionEffect).action,
-      DataAction.exportData,
+      DataAction.importData,
     );
+  });
+
+  test('DataActionRequested(placeholder) stays idle (instant coming-soon)', () {
+    final (next, effects) = updater.update(
+      const SettingsState(),
+      const DataActionRequested(DataAction.exportIdentity),
+    );
+    expect(next.busy, isFalse);
+    expect(
+      (effects!.single as RunDataActionEffect).action,
+      DataAction.exportIdentity,
+    );
+  });
+
+  test('ExportRequested sets busy and runs the export with its destination', () {
+    final (next, effects) = updater.update(
+      const SettingsState(),
+      const ExportRequested(BackupDestination.saveFile),
+    );
+    expect(next.busy, isTrue);
+    expect(
+      (effects!.single as RunExportEffect).destination,
+      BackupDestination.saveFile,
+    );
+  });
+
+  test('DataActionFinished clears busy', () {
+    final (next, effects) = updater.update(
+      const SettingsState(busy: true),
+      const DataActionFinished(),
+    );
+    expect(next.busy, isFalse);
+    expect(effects, isNull);
   });
 }

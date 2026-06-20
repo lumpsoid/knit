@@ -254,6 +254,29 @@
       "feature": { "type": "String" }
     }
   },
+  "settingsExportChooseTitle": "Экспорт резервной копии",
+  "settingsExportChooseShare": "Поделиться…",
+  "settingsExportChooseShareSubtitle": "Отправить копию в другое приложение",
+  "settingsExportChooseSave": "Сохранить в файл",
+  "settingsExportChooseSaveSubtitle": "Выберите, где хранить копию",
+  "settingsBackupExported": "Резервная копия готова к отправке",
+  "settingsBackupSaved": "Резервная копия сохранена",
+  "settingsBackupExportFailed": "Не удалось создать резервную копию",
+  "settingsBackupImportFailed": "Не удалось восстановить из резервной копии",
+  "settingsBackupImported": "Восстановлено элементов: {applied} (уже было: {deduped})",
+  "@settingsBackupImported": {
+    "placeholders": {
+      "applied": { "type": "int" },
+      "deduped": { "type": "int" }
+    }
+  },
+  "settingsBackupImportWarning": "Пропущено операций: {quarantined}, повреждено файлов: {mismatched}",
+  "@settingsBackupImportWarning": {
+    "placeholders": {
+      "quarantined": { "type": "int" },
+      "mismatched": { "type": "int" }
+    }
+  },
 
   "syncAllSaved": "Все изменения сохранены",
   "syncUnavailable": "Статус синхронизации недоступен",

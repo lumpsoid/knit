@@ -100,6 +100,10 @@ dependencies:
   package_info_plus: ^10.1.0
   share_plus: ^13.1.0
 
+  # Zip encode/decode for the backup bundle (export/import — settings §4 Data).
+  # Pure Dart, no platform channel, so the codec round-trips in unit tests.
+  archive: ^4.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

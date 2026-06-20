@@ -2,6 +2,11 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
+import 'package:knit/features/backup/domain/backup_delivery_port.dart';
+import 'package:knit/features/backup/domain/backup_export_repository.dart';
+import 'package:knit/features/backup/domain/backup_import_repository.dart';
+import 'package:knit/features/backup/domain/backup_save_port.dart';
+import 'package:knit/features/backup/domain/backup_source_port.dart';
 import 'package:knit/features/settings/domain/settings_read_repository.dart';
 import 'package:knit/features/settings/domain/settings_write_repository.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
@@ -18,6 +23,11 @@ class SettingsModule {
   SettingsModule({
     required SettingsReadRepository readRepository,
     required SettingsWriteRepository writeRepository,
+    required BackupExportRepository backupExportRepository,
+    required BackupImportRepository backupImportRepository,
+    required BackupDeliveryPort backupDeliveryPort,
+    required BackupSavePort backupSavePort,
+    required BackupSourcePort backupSourcePort,
     Logger? logger,
   }) {
     final stateHolder =
@@ -26,6 +36,11 @@ class SettingsModule {
     final shell = SettingsShell(
       readRepository: readRepository,
       writeRepository: writeRepository,
+      backupExportRepository: backupExportRepository,
+      backupImportRepository: backupImportRepository,
+      backupDeliveryPort: backupDeliveryPort,
+      backupSavePort: backupSavePort,
+      backupSourcePort: backupSourcePort,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.settings'),
     );

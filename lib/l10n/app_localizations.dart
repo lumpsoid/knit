@@ -1226,6 +1226,72 @@ abstract class AppLocalizations {
   /// **'{feature} — coming soon'**
   String settingsComingSoon(String feature);
 
+  /// No description provided for @settingsExportChooseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup'**
+  String get settingsExportChooseTitle;
+
+  /// No description provided for @settingsExportChooseShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share…'**
+  String get settingsExportChooseShare;
+
+  /// No description provided for @settingsExportChooseShareSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the backup to another app'**
+  String get settingsExportChooseShareSubtitle;
+
+  /// No description provided for @settingsExportChooseSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to a file'**
+  String get settingsExportChooseSave;
+
+  /// No description provided for @settingsExportChooseSaveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where to keep the backup'**
+  String get settingsExportChooseSaveSubtitle;
+
+  /// No description provided for @settingsBackupExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup ready to share'**
+  String get settingsBackupExported;
+
+  /// No description provided for @settingsBackupSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved'**
+  String get settingsBackupSaved;
+
+  /// No description provided for @settingsBackupExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the backup'**
+  String get settingsBackupExportFailed;
+
+  /// No description provided for @settingsBackupImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t restore the backup'**
+  String get settingsBackupImportFailed;
+
+  /// No description provided for @settingsBackupImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored {applied} items ({deduped} already present)'**
+  String settingsBackupImported(int applied, int deduped);
+
+  /// No description provided for @settingsBackupImportWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{quarantined} ops skipped, {mismatched} files corrupt'**
+  String settingsBackupImportWarning(int quarantined, int mismatched);
+
   /// No description provided for @syncAllSaved.
   ///
   /// In en, this message translates to:

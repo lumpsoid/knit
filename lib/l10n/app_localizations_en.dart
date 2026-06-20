@@ -631,6 +631,45 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settingsExportChooseTitle => 'Export backup';
+
+  @override
+  String get settingsExportChooseShare => 'Share…';
+
+  @override
+  String get settingsExportChooseShareSubtitle =>
+      'Send the backup to another app';
+
+  @override
+  String get settingsExportChooseSave => 'Save to a file';
+
+  @override
+  String get settingsExportChooseSaveSubtitle =>
+      'Choose where to keep the backup';
+
+  @override
+  String get settingsBackupExported => 'Backup ready to share';
+
+  @override
+  String get settingsBackupSaved => 'Backup saved';
+
+  @override
+  String get settingsBackupExportFailed => 'Couldn\'t create the backup';
+
+  @override
+  String get settingsBackupImportFailed => 'Couldn\'t restore the backup';
+
+  @override
+  String settingsBackupImported(int applied, int deduped) {
+    return 'Restored $applied items ($deduped already present)';
+  }
+
+  @override
+  String settingsBackupImportWarning(int quarantined, int mismatched) {
+    return '$quarantined ops skipped, $mismatched files corrupt';
+  }
+
+  @override
   String get syncAllSaved => 'All changes saved';
 
   @override

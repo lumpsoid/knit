@@ -1,6 +1,13 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
+import 'package:result_dart/result_dart.dart';
+import 'package:knit/features/backup/domain/backup_delivery_port.dart';
+import 'package:knit/features/backup/domain/backup_export_repository.dart';
+import 'package:knit/features/backup/domain/backup_import_repository.dart';
+import 'package:knit/features/backup/domain/backup_models.dart';
+import 'package:knit/features/backup/domain/backup_save_port.dart';
+import 'package:knit/features/backup/domain/backup_source_port.dart';
 import 'package:knit/features/settings/domain/settings_read_repository.dart';
 import 'package:knit/features/settings/domain/settings_write_repository.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
@@ -8,26 +15,41 @@ import 'package:knit/features/settings/presentation/settings_effect.dart';
 import 'package:knit/features/settings/presentation/settings_ui_effect.dart';
 
 /// Imperative shell for Settings (fcis.md §6.6). Unwraps the read/write Results
-/// at the seam (result.md §9.3) into success/failure Actions; pushes the
-/// "coming soon" UiEffect for the not-yet-built data actions. The updater never
-/// sees a Result.
+/// at the seam (result.md §9.3) into success/failure Actions / UiEffects; the
+/// updater never sees a Result.
 ///
-/// [RunDataActionEffect] is the seam where export / import / identity backup /
-/// wipe / reset will be implemented: replace the placeholder push with the real
-/// work (and dispatch result Actions) when each flow lands.
+/// The data-management seam (§4 Data subpage): export builds the bundle and
+/// delivers it (share or save-to-file) and import picks + restores it; both end
+/// by dispatching [DataActionFinished] so the busy spinner clears. The
+/// identity/wipe/reset actions are still placeholders.
 class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
   SettingsShell({
     required SettingsReadRepository readRepository,
     required SettingsWriteRepository writeRepository,
+    required BackupExportRepository backupExportRepository,
+    required BackupImportRepository backupImportRepository,
+    required BackupDeliveryPort backupDeliveryPort,
+    required BackupSavePort backupSavePort,
+    required BackupSourcePort backupSourcePort,
     required EffectEmitter<SettingsUiEffect> effectEmitter,
     required Logger logger,
   })  : _read = readRepository,
         _write = writeRepository,
+        _export = backupExportRepository,
+        _import = backupImportRepository,
+        _delivery = backupDeliveryPort,
+        _save = backupSavePort,
+        _source = backupSourcePort,
         _effectEmitter = effectEmitter,
         _log = logger;
 
   final SettingsReadRepository _read;
   final SettingsWriteRepository _write;
+  final BackupExportRepository _export;
+  final BackupImportRepository _import;
+  final BackupDeliveryPort _delivery;
+  final BackupSavePort _save;
+  final BackupSourcePort _source;
   final EffectEmitter<SettingsUiEffect> _effectEmitter;
   final Logger _log;
 
@@ -59,8 +81,100 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
             dispatch(const PreferencesSaveFailed());
           },
         );
+      case RunExportEffect(:final destination):
+        await _runExport(destination, dispatch);
       case RunDataActionEffect(:final action):
-        _effectEmitter.push(SettingsComingSoonUiEffect(action));
+        switch (action) {
+          case DataAction.importData:
+            await _runImport(dispatch);
+          case DataAction.exportData:
+          case DataAction.exportIdentity:
+          case DataAction.wipeData:
+          case DataAction.resetIdentity:
+            // Export is handled via RunExportEffect; the rest are placeholders.
+            _effectEmitter.push(SettingsComingSoonUiEffect(action));
+        }
     }
+  }
+
+  /// Build the backup bundle, then deliver it to [destination]. Always clears the
+  /// spinner via [DataActionFinished], whatever the outcome.
+  Future<void> _runExport(
+    BackupDestination destination,
+    void Function(SettingsAction) dispatch,
+  ) async {
+    final exported = await _export.exportAll();
+    switch (exported) {
+      case Ok(value: final archive):
+        switch (destination) {
+          case BackupDestination.share:
+            await _deliverShare(archive);
+          case BackupDestination.saveFile:
+            await _deliverSave(archive);
+        }
+      case Failure(:final error):
+        _log.severe('Backup export failed', error.error, error.stackTrace);
+        _effectEmitter
+            .push(const SettingsBackupFailedUiEffect(DataAction.exportData));
+    }
+    dispatch(const DataActionFinished());
+  }
+
+  Future<void> _deliverShare(BackupArchive archive) async {
+    final shared = await _delivery.share(archive);
+    switch (shared) {
+      case Ok():
+        _effectEmitter.push(
+          const SettingsBackupExportedUiEffect(BackupDestination.share),
+        );
+      case Failure(:final error):
+        _log.severe('Backup share failed', error.error, error.stackTrace);
+        _effectEmitter
+            .push(const SettingsBackupFailedUiEffect(DataAction.exportData));
+    }
+  }
+
+  Future<void> _deliverSave(BackupArchive archive) async {
+    final result = await _save.save(archive);
+    switch (result) {
+      case Ok(value: final didSave):
+        if (didSave) {
+          _effectEmitter.push(
+            const SettingsBackupExportedUiEffect(BackupDestination.saveFile),
+          );
+        }
+        // A cancelled save dialog is silent — no error, no confirmation.
+      case Failure(:final error):
+        _log.severe('Backup save failed', error.error, error.stackTrace);
+        _effectEmitter
+            .push(const SettingsBackupFailedUiEffect(DataAction.exportData));
+    }
+  }
+
+  /// Pick a bundle, then replay it through the store. A cancelled pick is silent.
+  /// Always clears the spinner via [DataActionFinished].
+  Future<void> _runImport(void Function(SettingsAction) dispatch) async {
+    final picked = await _source.pickArchive();
+    switch (picked) {
+      case Ok(value: final bytes):
+        if (bytes != null) {
+          final restored = await _import.importArchive(bytes);
+          switch (restored) {
+            case Ok(value: final summary):
+              _effectEmitter.push(SettingsBackupImportedUiEffect(summary));
+            case Failure(:final error):
+              _log.severe(
+                  'Backup import failed', error.error, error.stackTrace);
+              _effectEmitter.push(
+                const SettingsBackupFailedUiEffect(DataAction.importData),
+              );
+          }
+        }
+      case Failure(:final error):
+        _log.severe('Backup pick failed', error.error, error.stackTrace);
+        _effectEmitter
+            .push(const SettingsBackupFailedUiEffect(DataAction.importData));
+    }
+    dispatch(const DataActionFinished());
   }
 }

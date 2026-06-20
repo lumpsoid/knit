@@ -19,27 +19,37 @@ class SettingsUpdater
       case ViewAttached():
         return (state, const [LoadPreferencesEffect()]);
       case PreferencesLoaded(:final preferences):
-        return (SettingsState(preferences: preferences), null);
+        return (state.copyWith(preferences: preferences), null);
       case PreferencesLoadFailed():
         return (state, null);
       case ThemeModeSelected(:final themeMode):
         final next = state.preferences.copyWith(themeMode: themeMode);
         return (
-          SettingsState(preferences: next),
+          state.copyWith(preferences: next),
           [SavePreferencesEffect(next)],
         );
       case LanguageSelected(:final language):
         final next = state.preferences.copyWith(language: language);
         return (
-          SettingsState(preferences: next),
+          state.copyWith(preferences: next),
           [SavePreferencesEffect(next)],
         );
       case PreferencesSaved(:final preferences):
-        return (SettingsState(preferences: preferences), null);
+        return (state.copyWith(preferences: preferences), null);
       case PreferencesSaveFailed():
         return (state, null);
+      case ExportRequested(:final destination):
+        // A long build+deliver — show the spinner until DataActionFinished.
+        return (state.copyWith(busy: true), [RunExportEffect(destination)]);
       case DataActionRequested(:final action):
-        return (state, [RunDataActionEffect(action)]);
+        // Only import is long-running; the placeholders resolve instantly.
+        final busy = action == DataAction.importData;
+        return (
+          state.copyWith(busy: busy),
+          [RunDataActionEffect(action)],
+        );
+      case DataActionFinished():
+        return (state.copyWith(busy: false), null);
     }
   }
 }

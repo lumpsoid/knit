@@ -1,15 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:knit/app/app_config.dart';
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/composition.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
+import 'package:knit/features/backup/infra/in_memory_backup_ports.dart';
+import 'package:knit/features/backup/infra/sync_store_backup_export_repository.dart';
+import 'package:knit/features/backup/infra/sync_store_backup_import_repository.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
 import 'package:knit/core/attachments/infra/sync_store_attachment_read_repository.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
+import 'package:knit/features/settings/infra/shared_preferences_settings_repository.dart';
+import 'package:knit/features/settings/presentation/settings_module.dart';
+import 'package:knit/features/settings/presentation/settings_scope.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/features/timeline/infra/timeline_channel_notifier.dart';
@@ -46,16 +53,32 @@ void main() {
         channelReader: TimelineChannelNotifier(),
       ).controller,
     );
+    // KnitApp observes SettingsScope for theme/locale on boot; the backup ports
+    // are lazy (never touched during onboarding) so in-memory doubles suffice.
+    const settingsRepository = SharedPreferencesSettingsRepository();
+    SettingsScope.setFactory(
+      () => SettingsModule(
+        readRepository: settingsRepository,
+        writeRepository: settingsRepository,
+        backupExportRepository: SyncStoreBackupExportRepository(graph: graph),
+        backupImportRepository: SyncStoreBackupImportRepository(graph: graph),
+        backupDeliveryPort: RecordingBackupDeliveryPort(),
+        backupSavePort: RecordingBackupSavePort(),
+        backupSourcePort: StubBackupSourcePort(),
+      ).controller,
+    );
   }
 
   tearDown(() {
     AppLaunchScope.reset();
     OnboardScope.reset();
     TimelineScope.reset();
+    SettingsScope.reset();
   });
 
   testWidgets('boots through the splash into onboarding on a fresh device',
       (tester) async {
+    SharedPreferences.setMockInitialValues(const <String, Object>{});
     wire();
     await tester.pumpWidget(const KnitApp(config: AppConfig.dev));
 

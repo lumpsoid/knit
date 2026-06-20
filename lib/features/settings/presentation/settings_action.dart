@@ -1,9 +1,8 @@
 import 'package:knit/features/settings/domain/app_preferences.dart';
 
-/// The data-management actions on the Data subpage (§4 settings). Each is a
-/// placeholder today — the shell answers with a "coming soon" notice — but they
-/// flow through the loop so the real implementations slot straight into the
-/// shell later, no UI rewiring.
+/// The data-management actions on the Data subpage (§4 settings). Export and
+/// import are implemented (backup bundle); the identity/wipe/reset actions are
+/// still placeholders the shell answers with a "coming soon" notice.
 enum DataAction {
   exportData,
   importData,
@@ -11,6 +10,9 @@ enum DataAction {
   wipeData,
   resetIdentity,
 }
+
+/// Where an export bundle goes once built — chosen by the user in a bottom sheet.
+enum BackupDestination { share, saveFile }
 
 /// Intents + async-result deliveries for Settings (fcis.md §6.4).
 sealed class SettingsAction {
@@ -56,8 +58,23 @@ class PreferencesSaveFailed extends SettingsAction {
   const PreferencesSaveFailed();
 }
 
-/// The user tapped a data-management action on the Data subpage.
+/// The user tapped a data-management action on the Data subpage (import /
+/// identity / wipe / reset). Export goes through [ExportRequested] instead, since
+/// it first asks the user where the bundle should go.
 class DataActionRequested extends SettingsAction {
   const DataActionRequested(this.action);
   final DataAction action;
+}
+
+/// The user chose an export destination in the bottom sheet — build the bundle
+/// and deliver it there.
+class ExportRequested extends SettingsAction {
+  const ExportRequested(this.destination);
+  final BackupDestination destination;
+}
+
+/// A long data action (export build/deliver, or import restore) finished — clear
+/// the busy spinner. Carries no result; success/failure is reported via UiEffect.
+class DataActionFinished extends SettingsAction {
+  const DataActionFinished();
 }

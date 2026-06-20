@@ -17,10 +17,16 @@ class SavePreferencesEffect extends SettingsEffect {
   final AppPreferences preferences;
 }
 
-/// Carry out a data-management action (§4 settings). The placeholder home for
-/// export/import/identity/wipe/reset; today the shell turns it into a "coming
-/// soon" notice, later into the real flow.
+/// Carry out a data-management action (§4 settings): import runs the restore
+/// flow; identity/wipe/reset are still "coming soon".
 class RunDataActionEffect extends SettingsEffect {
   const RunDataActionEffect(this.action);
   final DataAction action;
+}
+
+/// Build the backup bundle and deliver it to [destination] (share sheet or a
+/// user-chosen file).
+class RunExportEffect extends SettingsEffect {
+  const RunExportEffect(this.destination);
+  final BackupDestination destination;
 }

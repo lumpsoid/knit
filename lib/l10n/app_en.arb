@@ -257,6 +257,29 @@
       "feature": { "type": "String" }
     }
   },
+  "settingsExportChooseTitle": "Export backup",
+  "settingsExportChooseShare": "Share…",
+  "settingsExportChooseShareSubtitle": "Send the backup to another app",
+  "settingsExportChooseSave": "Save to a file",
+  "settingsExportChooseSaveSubtitle": "Choose where to keep the backup",
+  "settingsBackupExported": "Backup ready to share",
+  "settingsBackupSaved": "Backup saved",
+  "settingsBackupExportFailed": "Couldn't create the backup",
+  "settingsBackupImportFailed": "Couldn't restore the backup",
+  "settingsBackupImported": "Restored {applied} items ({deduped} already present)",
+  "@settingsBackupImported": {
+    "placeholders": {
+      "applied": { "type": "int" },
+      "deduped": { "type": "int" }
+    }
+  },
+  "settingsBackupImportWarning": "{quarantined} ops skipped, {mismatched} files corrupt",
+  "@settingsBackupImportWarning": {
+    "placeholders": {
+      "quarantined": { "type": "int" },
+      "mismatched": { "type": "int" }
+    }
+  },
 
   "syncAllSaved": "All changes saved",
   "syncUnavailable": "Sync status unavailable",
