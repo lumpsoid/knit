@@ -42,6 +42,14 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
             fileSize = att.content[AttachmentSchema.colSize] as int?;
           }
         }
+        // Count every link this card takes part in, in either direction (§4.4):
+        // links-out (forward links made *from* this card) plus backlinks (links
+        // made *to* it from elsewhere) — so the card on the receiving end also
+        // shows it's connected. The two sets are disjoint per card (a card's own
+        // outgoing link never appears in its own backlinks), so this never
+        // double-counts a single link.
+        final connectionCount = (await store.linksOut(card.id)).length +
+            (await store.backlinks(card.id)).length;
         cards.add(
           FeedCard(
             id: card.id,
@@ -51,6 +59,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
             attachmentId: attachmentId,
             fileName: fileName,
             fileSize: fileSize,
+            connectionCount: connectionCount,
           ),
         );
       }

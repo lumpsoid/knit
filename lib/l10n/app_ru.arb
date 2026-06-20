@@ -97,6 +97,12 @@
   "collectionAddBlockTooltip": "Добавить блок",
   "collectionSendTooltip": "Отправить",
   "collectionConnectionsTooltip": "Связи",
+  "collectionCardConnections": "{count, plural, =1{1 связь} few{{count} связи} other{{count} связей}}",
+  "@collectionCardConnections": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "collectionReorderTooltip": "Изменить порядок",
   "collectionComingSoon": "{feature} — скоро",
   "@collectionComingSoon": {

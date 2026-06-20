@@ -236,6 +236,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionConnectionsTooltip => 'Connections';
 
   @override
+  String collectionCardConnections(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count connections',
+      one: '1 connection',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get collectionReorderTooltip => 'Reorder';
 
   @override

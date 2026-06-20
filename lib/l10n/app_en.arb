@@ -100,6 +100,12 @@
   "collectionAddBlockTooltip": "Add block",
   "collectionSendTooltip": "Send",
   "collectionConnectionsTooltip": "Connections",
+  "collectionCardConnections": "{count, plural, =1{1 connection} other{{count} connections}}",
+  "@collectionCardConnections": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "collectionReorderTooltip": "Reorder",
   "collectionComingSoon": "{feature} — coming soon",
   "@collectionComingSoon": {

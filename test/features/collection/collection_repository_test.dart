@@ -178,6 +178,42 @@ void main() {
     expect(await store.backlinks(dst), hasLength(1));
   });
 
+  test('connectionCount counts links at both ends, without double-counting',
+      () async {
+    final colId = await createCollection('Espresso');
+    final src = (await write.addCard(
+      collectionId: colId,
+      kind: CardKind.text,
+      position: 'a0',
+      text: 'source',
+    ))
+        .getOrThrow();
+    final dst = (await write.addCard(
+      collectionId: colId,
+      kind: CardKind.text,
+      position: 'a1',
+      text: 'target',
+    ))
+        .getOrThrow();
+
+    // No links yet → no badge for either card.
+    var cards = (await load(colId)).cards;
+    expect(cards.map((c) => c.connectionCount), [0, 0]);
+
+    // Link source → target. Both ends show the link once: the source via its
+    // link-out, the target via its backlink. Neither is double-counted.
+    await write.linkCardToTarget(
+      cardId: src,
+      targetKind: ConnectedEntityKind.card,
+      targetId: dst,
+    );
+    cards = (await load(colId)).cards;
+    expect({for (final c in cards) c.id: c.connectionCount}, {
+      src: 1,
+      dst: 1,
+    });
+  });
+
   test('deleting a card removes it from the feed', () async {
     final colId = await createCollection('Espresso');
     final cardId = (await write.addCard(

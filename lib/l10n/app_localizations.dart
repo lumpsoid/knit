@@ -494,6 +494,12 @@ abstract class AppLocalizations {
   /// **'Connections'**
   String get collectionConnectionsTooltip;
 
+  /// No description provided for @collectionCardConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 connection} other{{count} connections}}'**
+  String collectionCardConnections(int count);
+
   /// No description provided for @collectionReorderTooltip.
   ///
   /// In en, this message translates to:

@@ -55,6 +55,7 @@ class FeedCard {
     this.attachmentId,
     this.fileName,
     this.fileSize,
+    this.connectionCount = 0,
   });
 
   final String id;
@@ -75,6 +76,14 @@ class FeedCard {
   /// per-card bytes load. Null for every other kind.
   final String? fileName;
   final int? fileSize;
+
+  /// How many links (§4.4) this card takes part in, counting both directions —
+  /// links-out (made *from* this card) and backlinks (made *to* it) — so both
+  /// ends of a link surface a badge. A read-time derivation shown under the
+  /// bubble so the user can see, at a glance, which cards are woven into the
+  /// graph. The two directions are disjoint per card, so a single link is never
+  /// double-counted. Zero ⇒ no badge is shown.
+  final int connectionCount;
 
   /// The card's capture time, decoded from the millisecond timestamp in the
   /// leading 48 bits of its UUIDv7 [id] (§6.1) — every minted card id is v7, so
@@ -97,6 +106,7 @@ class FeedCard {
     attachmentId: attachmentId,
     fileName: fileName,
     fileSize: fileSize,
+    connectionCount: connectionCount,
   );
 }
 

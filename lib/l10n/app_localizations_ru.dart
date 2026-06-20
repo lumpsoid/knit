@@ -238,6 +238,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionConnectionsTooltip => 'Связи';
 
   @override
+  String collectionCardConnections(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count связей',
+      few: '$count связи',
+      one: '1 связь',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get collectionReorderTooltip => 'Изменить порядок';
 
   @override
