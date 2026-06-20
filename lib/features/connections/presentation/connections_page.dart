@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
+import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_action.dart';
 import 'package:knit/features/connections/presentation/connections_controller.dart';
@@ -21,13 +22,16 @@ class ConnectionsPage extends StatefulWidget {
 }
 
 class _ConnectionsPageState extends State<ConnectionsPage> {
-  ConnectionsController get _controller => ConnectionsScope.controller;
+  // One controller per page instance (fcis.md §4), built in [initState] and
+  // disposed in [dispose] — so a Connections page stacked over another never
+  // shares state with it.
+  late final ConnectionsController _controller;
 
   @override
   void initState() {
     super.initState();
     final args = ConnectionsScope.routeArgs;
-    _controller
+    _controller = ConnectionsScope.create()
       ..onAttach(_onUiEffect)
       ..dispatch(
         ViewAttached(
@@ -40,9 +44,11 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
 
   @override
   void dispose() {
+    // Tear down the page-owned controller (detaches the effect seam and disposes
+    // the state-holder notifier).
     _controller
       ..dispatch(const DeactivateFeature())
-      ..onDetach();
+      ..dispose();
     super.dispose();
   }
 
@@ -83,6 +89,18 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
     if (ok == true && mounted) {
       _controller.dispatch(ClearLinkRequested(item.linkId));
     }
+  }
+
+  /// Open the connected [item] inside its collection (§4.2): hand the collection
+  /// to the Collection carrier (cross_feature.md §2), then push the Collection
+  /// page. Each Collection page owns its controller (fcis.md §4), so stacking one
+  /// over this view is safe — Back returns here, to the connections the user came
+  /// from.
+  void _openInCollection(ConnectionItem item) {
+    final collectionId = item.openCollectionId;
+    if (collectionId == null || collectionId.isEmpty) return;
+    ConnectionsScope.collectionRouteArgsWriter.open(collectionId);
+    Navigator.of(context).push(CollectionPage.route());
   }
 
   @override
@@ -153,6 +171,9 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
                 item: item,
                 onJump: () => _controller.dispatch(ConnectionTapped(item)),
                 onClear: () => _confirmClear(item),
+                onOpen: item.openCollectionId == null
+                    ? null
+                    : () => _openInCollection(item),
               ),
           ],
           if (data.incoming.isNotEmpty) ...[
@@ -162,6 +183,9 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
                 item: item,
                 onJump: () => _controller.dispatch(ConnectionTapped(item)),
                 onClear: () => _confirmClear(item),
+                onOpen: item.openCollectionId == null
+                    ? null
+                    : () => _openInCollection(item),
               ),
           ],
         ],
@@ -257,11 +281,16 @@ class _ConnectionTile extends StatelessWidget {
     required this.item,
     required this.onJump,
     required this.onClear,
+    this.onOpen,
   });
 
   final ConnectionItem item;
   final VoidCallback onJump;
   final VoidCallback onClear;
+
+  /// Open the endpoint inside its collection (§4.2); null when it can't be
+  /// located (a broken endpoint, or one with no resolvable collection).
+  final VoidCallback? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +316,21 @@ class _ConnectionTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: const Icon(Icons.chevron_right),
+      // The chevron jumps deeper into *this* endpoint's connections (onTap); the
+      // "open" button leaves to the Collection page showing the endpoint inside
+      // its collection. Two distinct destinations, so both are offered.
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onOpen != null)
+            IconButton(
+              icon: const Icon(Icons.open_in_new),
+              tooltip: l10n.connectionsOpen,
+              onPressed: onOpen,
+            ),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
       onTap: onJump,
     );
   }

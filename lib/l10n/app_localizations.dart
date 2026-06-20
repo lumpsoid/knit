@@ -920,6 +920,12 @@ abstract class AppLocalizations {
   /// **'Linked from'**
   String get connectionsLinkedFrom;
 
+  /// No description provided for @connectionsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in collection'**
+  String get connectionsOpen;
+
   /// No description provided for @connectionsBrokenLink.
   ///
   /// In en, this message translates to:

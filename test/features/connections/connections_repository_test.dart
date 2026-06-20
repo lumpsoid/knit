@@ -71,6 +71,8 @@ void main() {
     expect(out.otherId, g.b);
     expect(out.broken, isFalse);
     expect(out.label, 'Recipes');
+    // A collection endpoint opens itself.
+    expect(out.openCollectionId, g.b);
   });
 
   test('the linked collection shows the card as a live backlink', () async {
@@ -85,6 +87,8 @@ void main() {
     expect(back.otherId, g.card);
     expect(back.broken, isFalse);
     expect(back.label, 'see recipes');
+    // A card endpoint opens the collection that holds it.
+    expect(back.openCollectionId, g.a);
   });
 
   test('deleting the source card renders the backlink broken, not gone (§8.6.1)',
@@ -98,6 +102,8 @@ void main() {
     expect(back.broken, isTrue);
     expect(back.label, isNull);
     expect(back.linkId, g.link);
+    // A broken endpoint can't be located, so there's nothing to open.
+    expect(back.openCollectionId, isNull);
   });
 
   test('deleting the target collection renders the links-out broken', () async {

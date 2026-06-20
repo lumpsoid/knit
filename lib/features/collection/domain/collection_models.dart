@@ -132,6 +132,7 @@ class CollectionData {
     required this.description,
     required this.coverAttachmentId,
     required this.cards,
+    this.connectionCount = 0,
   });
 
   final String collectionId;
@@ -141,4 +142,9 @@ class CollectionData {
   final String? description;
   final String? coverAttachmentId;
   final List<FeedCard> cards;
+
+  /// How many links (§4.4) the collection *itself* takes part in — links-out
+  /// plus backlinks (things linked to it), counted once each like a card's
+  /// [FeedCard.connectionCount]. Surfaced on the title card; zero ⇒ no badge.
+  final int connectionCount;
 }

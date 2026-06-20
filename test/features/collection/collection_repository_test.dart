@@ -214,6 +214,34 @@ void main() {
     });
   });
 
+  test('collection connectionCount counts links to the collection itself',
+      () async {
+    final colId = await createCollection('Espresso');
+    final otherId = await createCollection('Recipes');
+    final cardId = (await write.addCard(
+      collectionId: colId,
+      kind: CardKind.text,
+      position: 'a0',
+      text: 'see recipes',
+    ))
+        .getOrThrow();
+
+    // Before linking: neither collection is linked.
+    expect((await load(colId)).connectionCount, 0);
+    expect((await load(otherId)).connectionCount, 0);
+
+    await write.linkCardToTarget(
+      cardId: cardId,
+      targetKind: ConnectedEntityKind.collection,
+      targetId: otherId,
+    );
+
+    // The target collection now has one backlink; the source collection is
+    // unaffected (the link sits on the card, not the collection itself).
+    expect((await load(otherId)).connectionCount, 1);
+    expect((await load(colId)).connectionCount, 0);
+  });
+
   test('deleting a card removes it from the feed', () async {
     final colId = await createCollection('Espresso');
     final cardId = (await write.addCard(

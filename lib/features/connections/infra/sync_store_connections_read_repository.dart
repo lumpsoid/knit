@@ -89,8 +89,20 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
       otherId: otherId,
       broken: broken,
       label: other == null ? null : _label(other),
+      openCollectionId: other == null ? null : _openCollectionId(otherKind, other),
     );
   }
+
+  /// The collection to open so [other] can be seen inside it (§4.2): a collection
+  /// endpoint opens itself; a card endpoint opens the collection that holds it
+  /// (its `collection_id`, §6.4). Null for any other/unknown endpoint kind.
+  String? _openCollectionId(ConnectedEntityKind kind, Snapshot other) =>
+      switch (kind) {
+        ConnectedEntityKind.collection => other.id,
+        ConnectedEntityKind.card =>
+          other.content[CardSchema.colCollectionId] as String?,
+        ConnectedEntityKind.unknown => null,
+      };
 
   /// Display label for an endpoint snapshot: a collection's title, or a card's
   /// text preview (falling back to a kind-based summary).

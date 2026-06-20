@@ -40,6 +40,7 @@ class ConnectionItem {
     required this.otherId,
     required this.broken,
     this.label,
+    this.openCollectionId,
   });
 
   /// The `link` entity id — the handle the "clear" action removes.
@@ -56,6 +57,12 @@ class ConnectionItem {
   /// Title (collection) or text preview (card) of the far endpoint; null when
   /// it is broken (missing/tombstoned).
   final String? label;
+
+  /// The collection to open so the far endpoint can be seen *inside* it (§4.2):
+  /// for a collection endpoint, the endpoint itself; for a card endpoint, the
+  /// collection that holds it. Null when it can't be resolved (broken, or an
+  /// unknown endpoint kind) — the View then shows no "open" affordance.
+  final String? openCollectionId;
 }
 
 /// A breadcrumb entry — one hop in the §4.4 back-stack so deep wandering doesn't

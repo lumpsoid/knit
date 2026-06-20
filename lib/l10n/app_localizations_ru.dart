@@ -468,6 +468,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get connectionsLinkedFrom => 'Ссылаются на это';
 
   @override
+  String get connectionsOpen => 'Открыть в коллекции';
+
+  @override
   String get connectionsBrokenLink => 'Битая связь';
 
   @override

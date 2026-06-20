@@ -56,6 +56,7 @@ class CollectionUpdater
             description: data.description,
             coverAttachmentId: data.coverAttachmentId,
             cards: data.cards,
+            connectionCount: data.connectionCount,
             imageBytes: state.imageBytes,
             // Link-finder caches are deliberately dropped on reload: a write may
             // have changed the targets, so the finder re-reads fresh on reopen.

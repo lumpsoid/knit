@@ -186,6 +186,7 @@
   "connectionsClearBody": "Битая связь будет удалена. Карточки и коллекции, на которые она указывала, не удаляются.",
   "connectionsLinksOut": "Исходящие связи",
   "connectionsLinkedFrom": "Ссылаются на это",
+  "connectionsOpen": "Открыть в коллекции",
   "connectionsBrokenLink": "Битая связь",
   "connectionsLinkedDeleted": "Связанный объект ({kind}) был удалён",
   "@connectionsLinkedDeleted": {

@@ -141,6 +141,9 @@ void bootstrap(AppConfig config) {
   final routeArgs = InMemoryCollectionRouteArgsStore();
   TimelineScope.setRouteArgsWriter(routeArgs);
   CollectionScope.setRouteArgs(routeArgs);
+  // The Connections view writes the same carrier to open a connected item
+  // inside its collection (§4.2/§4.4) before navigating to the Collection page.
+  ConnectionsScope.setCollectionRouteArgsWriter(routeArgs);
 
   // A second carrier for the Connections view (§4.4): the Collection page writes
   // the focused card/collection, the Connections page reads it on entry.

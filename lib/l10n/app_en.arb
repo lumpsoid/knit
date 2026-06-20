@@ -189,6 +189,7 @@
   "connectionsClearBody": "The broken link will be removed. The cards and collections it pointed at are not deleted.",
   "connectionsLinksOut": "Links out",
   "connectionsLinkedFrom": "Linked from",
+  "connectionsOpen": "Open in collection",
   "connectionsBrokenLink": "Broken link",
   "connectionsLinkedDeleted": "The linked {kind} was deleted",
   "@connectionsLinkedDeleted": {

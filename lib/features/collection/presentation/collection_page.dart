@@ -32,7 +32,11 @@ class CollectionPage extends StatefulWidget {
 }
 
 class _CollectionPageState extends State<CollectionPage> {
-  CollectionController get _controller => CollectionScope.controller;
+  // One controller per page instance (fcis.md §4), built in [initState] and
+  // disposed in [dispose] — so a Collection page stacked over another (e.g.
+  // pushed from Connections) never shares state with it. The audio player stays
+  // an app-wide singleton.
+  late final CollectionController _controller;
   AudioPlaybackController get _playback => CollectionScope.playbackController;
   final TextEditingController _composer = TextEditingController();
 
@@ -51,7 +55,7 @@ class _CollectionPageState extends State<CollectionPage> {
   @override
   void initState() {
     super.initState();
-    _controller
+    _controller = CollectionScope.create()
       ..onAttach(_onUiEffect)
       ..dispatch(ViewAttached(CollectionScope.routeArgs.collectionId));
   }
@@ -61,9 +65,11 @@ class _CollectionPageState extends State<CollectionPage> {
     // Leaving the collection stops playback so audio doesn't trail the user out
     // (the player itself is an app-wide singleton — only the clip is released).
     unawaited(_playback.close());
+    // Cancel any in-flight recording, then tear down the page-owned controller
+    // (detaches the effect seam and disposes the state-holder notifier).
     _controller
       ..dispatch(const DeactivateFeature())
-      ..onDetach();
+      ..dispose();
     _composer.dispose();
     super.dispose();
   }
@@ -338,16 +344,6 @@ class _CollectionPageState extends State<CollectionPage> {
           appBar: AppBar(
             title: Text(l10n.collectionAppBarTitle),
             actions: [
-              if (state.status == CollectionStatus.ready && !state.reordering)
-                IconButton(
-                  tooltip: l10n.collectionConnectionsTooltip,
-                  icon: const Icon(Icons.hub_outlined),
-                  onPressed: () => _openConnections(
-                    kind: ConnectedEntityKind.collection,
-                    id: state.collectionId,
-                    title: state.title,
-                  ),
-                ),
               if (state.status == CollectionStatus.ready && state.canReorder)
                 state.reordering
                     ? TextButton(
@@ -443,7 +439,13 @@ class _CollectionPageState extends State<CollectionPage> {
       coverBytes: state.coverAttachmentId == null
           ? null
           : state.imageBytes[state.coverAttachmentId],
+      connectionCount: state.connectionCount,
       onTap: () => _openCollectionEdit(state),
+      onConnectionsTap: () => _openConnections(
+        kind: ConnectedEntityKind.collection,
+        id: state.collectionId,
+        title: state.title,
+      ),
     );
 
     if (state.reordering) {
@@ -549,16 +551,19 @@ Object _imageHeroTag(String cardId) => 'card-image-$cardId';
 
 /// The collection's header, rendered as a distinct top-most card in the feed
 /// (§4.2) — visually set apart from the chat bubbles (a full-width elevated card
-/// with an optional cover banner). Shows the cover (if set), the title, and the
-/// optional description; tapping it opens the collection-edit page. Takes
-/// primitives only (widgets.md §1).
+/// with an optional cover banner). Shows the cover (if set), the title, the
+/// optional description, and a Connections affordance (with a count badge when
+/// the collection itself is linked); tapping the card opens the collection-edit
+/// page. Takes primitives only (widgets.md §1).
 class _CollectionTitleCard extends StatelessWidget {
   const _CollectionTitleCard({
     required this.title,
     required this.description,
     required this.hasCover,
     required this.coverBytes,
+    required this.connectionCount,
     required this.onTap,
+    required this.onConnectionsTap,
   });
 
   final String title;
@@ -568,7 +573,14 @@ class _CollectionTitleCard extends StatelessWidget {
   /// bytes load).
   final bool hasCover;
   final Uint8List? coverBytes;
+
+  /// How many links the collection itself takes part in (§4.4); a number rides
+  /// next to the Connections icon when > 0.
+  final int connectionCount;
   final VoidCallback onTap;
+
+  /// Open the collection's Connections view (§4.4).
+  final VoidCallback onConnectionsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -623,6 +635,40 @@ class _CollectionTitleCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    // The collection's own Connections affordance (moved here
+                    // from the app bar). A count rides next to the icon when the
+                    // collection itself is linked; its own InkWell captures the
+                    // tap, so it opens Connections rather than the card's edit.
+                    Tooltip(
+                      message: l10n.collectionConnectionsTooltip,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: onConnectionsTap,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.hub_outlined,
+                                size: 20,
+                                color: theme.colorScheme.primary,
+                              ),
+                              if (connectionCount > 0) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$connectionCount',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                     Icon(
                       Icons.edit_outlined,
                       size: 20,

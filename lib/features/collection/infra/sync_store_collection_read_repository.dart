@@ -64,6 +64,13 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         );
       }
 
+      // Links the collection itself takes part in, both directions (§4.4) — its
+      // own links-out plus backlinks (cards/collections linked to it). Disjoint
+      // sets, so a single link is never double-counted (mirrors the per-card
+      // badge).
+      final connectionCount = (await store.linksOut(id)).length +
+          (await store.backlinks(id)).length;
+
       return Ok(
         CollectionData(
           collectionId: id,
@@ -71,6 +78,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
           description: header.content['description'] as String?,
           coverAttachmentId: header.content['cover_attachment_id'] as String?,
           cards: cards,
+          connectionCount: connectionCount,
         ),
       );
     } catch (e, st) {

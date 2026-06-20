@@ -40,6 +40,7 @@ class ConnectionsModule {
       stateHolder: stateHolder,
       effectEmitter: effectEmitter,
       sink: loop,
+      onDispose: stateHolder.dispose,
     );
   }
 

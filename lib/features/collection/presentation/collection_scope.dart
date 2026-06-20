@@ -5,13 +5,14 @@ import 'package:knit/features/collection/presentation/collection_route_args.dart
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
 
-/// Composition cell for the Collection screen (fcis.md §4). Holds the lazily
-/// built [CollectionController], the read side of the route-args carrier
-/// (cross_feature.md §2) the page reads its target collection from, and the
-/// write sides of the Connections carrier (§4.4) and the Card Edit carrier
-/// (§4.3) the page hands off to.
+/// Composition cell for the Collection screen (fcis.md §4). Provides a
+/// page-scoped [CollectionController] (built fresh per page via [create], owned
+/// and disposed by the page — so two stacked Collection pages never share
+/// state), the read side of the route-args carrier (cross_feature.md §2) the
+/// page reads its target collection from, and the write sides of the
+/// Connections carrier (§4.4) and the Card Edit carrier (§4.3) the page hands
+/// off to. The carriers and the audio player are app-wide singletons.
 abstract final class CollectionScope {
-  static CollectionController? _controller;
   static CollectionController Function()? _factory;
   static AudioPlaybackController? _playbackController;
   static CollectionRouteArgs? _routeArgs;
@@ -32,17 +33,18 @@ abstract final class CollectionScope {
   static void setCollectionEditRouteArgsWriter(
     CollectionEditRouteArgsWriter writer,
   ) => _collectionEditWriter = writer;
-  static void reset() => _controller = null;
 
-  static CollectionController get controller {
-    if (_controller != null) return _controller!;
-    if (_factory == null) {
+  /// Build a controller for one page instance. Not cached — the page owns the
+  /// returned controller and calls `dispose()` on exit (fcis.md §4).
+  static CollectionController create() {
+    final factory = _factory;
+    if (factory == null) {
       throw StateError(
         'CollectionScope is not initialized.\n'
-        'Call CollectionScope.setFactory() before accessing controller.',
+        'Call CollectionScope.setFactory() before create().',
       );
     }
-    return _controller = _factory!();
+    return factory();
   }
 
   /// The app-wide audio player shared by the mini-player bar and the now-playing

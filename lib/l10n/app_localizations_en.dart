@@ -464,6 +464,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionsLinkedFrom => 'Linked from';
 
   @override
+  String get connectionsOpen => 'Open in collection';
+
+  @override
   String get connectionsBrokenLink => 'Broken link';
 
   @override

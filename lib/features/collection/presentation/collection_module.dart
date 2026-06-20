@@ -63,6 +63,7 @@ class CollectionModule {
       stateHolder: stateHolder,
       effectEmitter: effectEmitter,
       sink: loop,
+      onDispose: stateHolder.dispose,
     );
   }
 

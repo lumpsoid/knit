@@ -24,6 +24,7 @@ class CollectionState {
     this.description,
     this.coverAttachmentId,
     this.cards = const [],
+    this.connectionCount = 0,
     this.imageBytes = const {},
     this.linkCollections,
     this.linkCardsByCollection = const {},
@@ -43,6 +44,10 @@ class CollectionState {
   final String? description;
   final String? coverAttachmentId;
   final List<FeedCard> cards;
+
+  /// How many links the collection itself takes part in (§4.4) — shown as a
+  /// badge on the title card. Zero ⇒ no badge.
+  final int connectionCount;
 
   /// Decoded bytes of image cards, keyed by `attachment_id`. Content-addressed,
   /// so an id's bytes are immutable — cached here to avoid reloading on every
@@ -100,6 +105,7 @@ class CollectionState {
     String? description,
     String? coverAttachmentId,
     List<FeedCard>? cards,
+    int? connectionCount,
     Map<String, Uint8List>? imageBytes,
     List<LinkOption>? linkCollections,
     Map<String, List<LinkOption>>? linkCardsByCollection,
@@ -119,6 +125,7 @@ class CollectionState {
     description: description ?? this.description,
     coverAttachmentId: coverAttachmentId ?? this.coverAttachmentId,
     cards: cards ?? this.cards,
+    connectionCount: connectionCount ?? this.connectionCount,
     imageBytes: imageBytes ?? this.imageBytes,
     linkCollections: linkCollections ?? this.linkCollections,
     linkCardsByCollection: linkCardsByCollection ?? this.linkCardsByCollection,
