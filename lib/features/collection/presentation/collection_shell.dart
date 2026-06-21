@@ -15,6 +15,7 @@ import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
+import 'package:knit/features/collection/domain/link_launcher.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
@@ -36,6 +37,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required AudioRecorderPort audioRecorder,
     required FilePickerPort filePicker,
     required CardShareRepository shareRepository,
+    required LinkLauncher linkLauncher,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
     required TimelineChannelEmitter timelineChannel,
     required Logger logger,
@@ -47,6 +49,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
        _recorder = audioRecorder,
        _filePicker = filePicker,
        _share = shareRepository,
+       _links = linkLauncher,
        _effectEmitter = effectEmitter,
        _timelineChannel = timelineChannel,
        _log = logger;
@@ -59,6 +62,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final AudioRecorderPort _recorder;
   final FilePickerPort _filePicker;
   final CardShareRepository _share;
+  final LinkLauncher _links;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
   final TimelineChannelEmitter _timelineChannel;
   final Logger _log;
@@ -167,6 +171,9 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         :final fileName,
       ):
         await _shareCard(text, attachmentId, imageBaseName, fileName);
+
+      case OpenLinkEffect(:final url):
+        await _openLink(url);
 
       case ReorderCardEffect(:final cardId, :final position):
         await _runWrite(
@@ -411,6 +418,19 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       (failure) =>
           _log.severe('Share card failed', failure.error, failure.stackTrace),
     );
+  }
+
+  /// Open [url] in the browser through the [LinkLauncher] port. Opening is a
+  /// read-only side-effect — it triggers no resync; a failure (unlaunchable URL
+  /// or no platform handler) is logged and surfaced as a message.
+  Future<void> _openLink(String url) async {
+    final opened = await _links.open(url);
+    opened.onFailure((failure) {
+      _log.severe('Open link failed', failure.error, failure.stackTrace);
+      _effectEmitter.push(
+        const CollectionShowMessageUiEffect(CollectionMessage.linkOpenFailed),
+      );
+    });
   }
 
   /// Run a write, then resync from the projection. On failure, surface a

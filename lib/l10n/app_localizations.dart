@@ -464,6 +464,12 @@ abstract class AppLocalizations {
   /// **'https://…'**
   String get collectionAddLinkHint;
 
+  /// No description provided for @collectionLinkOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this link'**
+  String get collectionLinkOpenFailed;
+
   /// No description provided for @collectionRenameTitle.
   ///
   /// In en, this message translates to:

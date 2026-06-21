@@ -83,6 +83,7 @@ class _CollectionPageState extends State<CollectionPage> {
           CollectionMessage.saveFailed => l10n.collectionSaveFailed,
           CollectionMessage.micPermissionDenied =>
             l10n.collectionAudioPermissionDenied,
+          CollectionMessage.linkOpenFailed => l10n.collectionLinkOpenFailed,
         };
         ScaffoldMessenger.of(
           context,
@@ -501,6 +502,15 @@ class _CollectionPageState extends State<CollectionPage> {
                     (card.text?.trim().isNotEmpty ?? false)
                 ? () => _controller.dispatch(CardShareRequested(card.id))
                 : null,
+            // Tapping a link card opens its URL in the browser (dispatched as an
+            // intent — the launch itself lives behind the LinkLauncher port). A
+            // label-less link has no URL to open, so it falls through to the
+            // bubble's actions sheet (where Delete still lives).
+            onLinkTap:
+                card.kind == CardKind.link &&
+                    (card.text?.trim().isNotEmpty ?? false)
+                ? () => _controller.dispatch(LinkCardOpened(card.id))
+                : null,
             // A playable audio card gets the shared player snapshot (to flip when
             // it's the one playing) and a tap-to-toggle on its play button.
             playback: audioId == null ? null : _playback.snapshot,
@@ -692,6 +702,7 @@ class _CardBubble extends StatelessWidget {
     required this.onTap,
     this.onImageTap,
     this.onFileTap,
+    this.onLinkTap,
     this.playback,
     this.onToggleAudio,
   });
@@ -708,6 +719,11 @@ class _CardBubble extends StatelessWidget {
   /// Shares a file card through the system sheet; null for every other kind (a
   /// tap then falls through to [onTap], the card-actions sheet).
   final VoidCallback? onFileTap;
+
+  /// Opens a link card's URL in the browser; null for every other kind and for
+  /// label-less link cards (a tap then falls through to [onTap], the
+  /// card-actions sheet, so Delete stays reachable).
+  final VoidCallback? onLinkTap;
 
   /// The shared player snapshot for a playable audio card, so its chip flips to
   /// a now-playing state when this card is the one in the player. Null for every
@@ -745,7 +761,7 @@ class _CardBubble extends StatelessWidget {
   Widget _content(ThemeData theme, AppLocalizations l10n) {
     switch (card.kind) {
       case CardKind.link:
-        return Row(
+        final link = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.link, size: 18, color: theme.colorScheme.primary),
@@ -763,6 +779,12 @@ class _CardBubble extends StatelessWidget {
             ),
           ],
         );
+        // Tap the link itself to open it in the browser; the gesture consumes
+        // the tap so it won't bubble to the actions sheet. A label-less link
+        // has no [onLinkTap], so its tap falls through to [onTap].
+        final onLinkTap = this.onLinkTap;
+        if (onLinkTap == null) return link;
+        return GestureDetector(onTap: onLinkTap, child: link);
       case CardKind.image:
         final caption = card.text?.trim();
         Widget image = ClipRRect(

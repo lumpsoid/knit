@@ -221,6 +221,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionAddLinkHint => 'https://…';
 
   @override
+  String get collectionLinkOpenFailed => 'Couldn\'t open this link';
+
+  @override
   String get collectionRenameTitle => 'Rename collection';
 
   @override

@@ -104,6 +104,10 @@ dependencies:
   # Pure Dart, no platform channel, so the codec round-trips in unit tests.
   archive: ^4.0.0
 
+  # Hand a link card's URL to the system browser (§4.2) — tapping a link card
+  # opens it externally via the platform's default handler.
+  url_launcher: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

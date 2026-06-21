@@ -26,3 +26,9 @@ class CollectionWriteFailure extends CollectionFailure {
 class CollectionShareFailure extends CollectionFailure {
   const CollectionShareFailure(super.error, [super.stackTrace]);
 }
+
+/// Opening a link card's URL in the browser (§4.2) failed — the stored text
+/// wasn't a launchable URL, or the platform had no handler / refused the launch.
+class CollectionLinkOpenFailure extends CollectionFailure {
+  const CollectionLinkOpenFailure(super.error, [super.stackTrace]);
+}

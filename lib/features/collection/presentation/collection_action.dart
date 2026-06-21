@@ -158,6 +158,14 @@ class CardShareRequested extends CollectionAction {
   final String cardId;
 }
 
+/// Tapped a link card's URL → open it in the system browser (§4.2). The updater
+/// resolves the card to its stored link text and emits the open effect; the
+/// launch itself lives behind the LinkLauncher port.
+class LinkCardOpened extends CollectionAction {
+  const LinkCardOpened(this.cardId);
+  final String cardId;
+}
+
 /// Actions sheet → "Make a link" opened the finder (§4.4). Loads the first
 /// level (collections); a no-op if they are already loaded is fine — it just
 /// refreshes them.

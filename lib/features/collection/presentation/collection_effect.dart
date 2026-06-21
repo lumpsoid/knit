@@ -149,6 +149,14 @@ class ShareCardEffect extends CollectionEffect {
   final String? fileName;
 }
 
+/// Open a link card's [url] in the system browser (§4.2). The updater resolves
+/// the tapped card to its stored link text; the shell delegates the launch to
+/// the LinkLauncher port. A read-only side-effect — it triggers no resync.
+class OpenLinkEffect extends CollectionEffect {
+  const OpenLinkEffect(this.url);
+  final String url;
+}
+
 class ReorderCardEffect extends CollectionEffect {
   const ReorderCardEffect(this.cardId, this.position);
   final String cardId;

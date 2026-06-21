@@ -265,6 +265,9 @@ class CollectionUpdater
       case CardShareRequested(:final cardId):
         return _shareCard(state, cardId);
 
+      case LinkCardOpened(:final cardId):
+        return _openLink(state, cardId);
+
       case LinkFinderOpened():
         return (state, const [LoadLinkCollectionsEffect()]);
 
@@ -362,6 +365,19 @@ class CollectionUpdater
         ),
       ],
     );
+  }
+
+  /// Resolve [cardId] to its stored link text and emit an [OpenLinkEffect]; a
+  /// missing card or one with no text is a pure no-op (nothing to open). The URL
+  /// is the card body verbatim — scheme-defaulting is the LinkLauncher's job.
+  (CollectionState, List<CollectionEffect>?) _openLink(
+    CollectionState state,
+    String cardId,
+  ) {
+    final card = _cardById(state.cards, cardId);
+    final url = card?.text?.trim();
+    if (url == null || url.isEmpty) return (state, null);
+    return (state, [OpenLinkEffect(url)]);
   }
 
   static FeedCard? _cardById(List<FeedCard> cards, String id) {

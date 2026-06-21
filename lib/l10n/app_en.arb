@@ -95,6 +95,7 @@
 
   "collectionAddLinkTitle": "Add a link",
   "collectionAddLinkHint": "https://…",
+  "collectionLinkOpenFailed": "Couldn't open this link",
   "collectionRenameTitle": "Rename collection",
   "collectionComposerHint": "Write a card…",
   "collectionAddBlockTooltip": "Add block",

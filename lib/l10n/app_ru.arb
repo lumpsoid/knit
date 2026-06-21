@@ -92,6 +92,7 @@
 
   "collectionAddLinkTitle": "Добавить ссылку",
   "collectionAddLinkHint": "https://…",
+  "collectionLinkOpenFailed": "Не удалось открыть ссылку",
   "collectionRenameTitle": "Переименовать коллекцию",
   "collectionComposerHint": "Напишите карточку…",
   "collectionAddBlockTooltip": "Добавить блок",

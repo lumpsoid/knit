@@ -10,6 +10,7 @@ import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
+import 'package:knit/features/collection/domain/link_launcher.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
@@ -32,6 +33,7 @@ class CollectionModule {
     required AudioRecorderPort audioRecorder,
     required FilePickerPort filePicker,
     required CardShareRepository shareRepository,
+    required LinkLauncher linkLauncher,
     required TimelineChannelEmitter timelineChannel,
     Logger? logger,
   }) {
@@ -48,6 +50,7 @@ class CollectionModule {
       audioRecorder: audioRecorder,
       filePicker: filePicker,
       shareRepository: shareRepository,
+      linkLauncher: linkLauncher,
       effectEmitter: effectEmitter,
       timelineChannel: timelineChannel,
       logger: logger ?? Logger('knit.collection'),

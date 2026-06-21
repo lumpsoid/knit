@@ -223,6 +223,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionAddLinkHint => 'https://…';
 
   @override
+  String get collectionLinkOpenFailed => 'Не удалось открыть ссылку';
+
+  @override
   String get collectionRenameTitle => 'Переименовать коллекцию';
 
   @override
