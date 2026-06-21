@@ -29,6 +29,13 @@ class FilePickerAdapter implements FilePickerPort {
     'pptx':
         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     'mp3': 'audio/mpeg',
+    'aac': 'audio/aac',
+    'm4a': 'audio/mp4',
+    'ogg': 'audio/ogg',
+    'oga': 'audio/ogg',
+    'opus': 'audio/opus',
+    'wav': 'audio/wav',
+    'flac': 'audio/flac',
     'mp4': 'video/mp4',
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
