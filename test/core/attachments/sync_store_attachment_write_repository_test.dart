@@ -57,11 +57,12 @@ void main() {
     expect(await blobs.exists(hash), isTrue);
   });
 
-  test('identical bytes dedupe to one record + one blob', () async {
+  test('identical bytes create distinct records sharing one blob', () async {
     final a = (await write.createFromPicked(png([9, 9, 9]))).getOrThrow();
     final b = (await write.createFromPicked(png([9, 9, 9]))).getOrThrow();
-    expect(a, b);
-    expect((await liveAttachments()).length, 1);
+    expect(a, isNot(b));
+    expect((await liveAttachments()).length, 2);
+    expect(await blobs.exists(await sha256Hex([9, 9, 9])), isTrue);
   });
 
   test('different bytes create distinct records', () async {
@@ -86,11 +87,13 @@ void main() {
     expect(await blobs.exists(hash), isTrue);
   });
 
-  test('identical audio bytes dedupe to one record + one blob', () async {
+  test('identical audio bytes create distinct records sharing one blob',
+      () async {
     final a = (await write.createFromAudio(m4a([3, 3, 3]))).getOrThrow();
     final b = (await write.createFromAudio(m4a([3, 3, 3]))).getOrThrow();
-    expect(a, b);
-    expect((await liveAttachments()).length, 1);
+    expect(a, isNot(b));
+    expect((await liveAttachments()).length, 2);
+    expect(await blobs.exists(await sha256Hex([3, 3, 3])), isTrue);
   });
 
   test('createFromFile writes the §7.4.8 metadata with kind file + name', () async {
@@ -110,13 +113,15 @@ void main() {
     expect(await blobs.exists(hash), isTrue);
   });
 
-  test('identical file bytes + name dedupe to one record + one blob', () async {
+  test('identical file bytes + name create distinct records sharing one blob',
+      () async {
     final a = (await write.createFromFile(file([2, 2], name: 'a.pdf')))
         .getOrThrow();
     final b = (await write.createFromFile(file([2, 2], name: 'a.pdf')))
         .getOrThrow();
-    expect(a, b);
-    expect((await liveAttachments()).length, 1);
+    expect(a, isNot(b));
+    expect((await liveAttachments()).length, 2);
+    expect(await blobs.exists(await sha256Hex([2, 2])), isTrue);
   });
 
   test('same file bytes under a different name keep distinct records, one blob',
@@ -167,6 +172,22 @@ void main() {
 
     await write.delete(id1);
     expect(await blobs.exists(hash), isTrue);
+  });
+
+  test("removing one card's reused photo keeps the sibling card's image",
+      () async {
+    // Two cards capture the SAME photo → two distinct records, one shared blob.
+    final a = (await write.createFromPicked(png([8, 8, 8]))).getOrThrow();
+    final b = (await write.createFromPicked(png([8, 8, 8]))).getOrThrow();
+    expect(a, isNot(b));
+    final hash = await sha256Hex([8, 8, 8]);
+
+    // Card A removes/replaces its image (Card Edit GC path → write.delete).
+    await write.delete(a);
+
+    // The blob survives and Card B's record still resolves to bytes — no "Фото".
+    expect(await blobs.exists(hash), isTrue);
+    expect((await store.get(EntityType.attachment, b))!.deleted, isFalse);
   });
 
   test('delete of an unknown id fails with AttachmentNotFound', () async {

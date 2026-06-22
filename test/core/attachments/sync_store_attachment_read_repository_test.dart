@@ -50,6 +50,19 @@ void main() {
     expect(result.error, isA<AttachmentNotFound>());
   });
 
+  test('sibling card still reads its bytes after a reused photo is deleted',
+      () async {
+    // Two cards capture the same photo → distinct records, one shared blob.
+    final a = (await write.createFromPicked(png([8, 8, 8]))).getOrThrow();
+    final b = (await write.createFromPicked(png([8, 8, 8]))).getOrThrow();
+    await write.delete(a);
+
+    // The layer the UI consumes still resolves the sibling's bytes — no orphan.
+    final out = (await read.bytesOf(b)).getOrThrow();
+    expect(out.bytes, Uint8List.fromList([8, 8, 8]));
+    expect(out.mime, 'image/png');
+  });
+
   test('record present but blob gone fails with AttachmentBytesMissing',
       () async {
     final id = (await write.createFromPicked(png([2, 2, 2]))).getOrThrow();

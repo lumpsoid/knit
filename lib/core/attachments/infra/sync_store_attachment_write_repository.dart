@@ -16,7 +16,12 @@ import 'package:result_dart/result_dart.dart';
 /// bytes go to the content-addressed [AttachmentBlobStore] out-of-band; only the
 /// `{kind, mime, content_hash, size}` metadata is signed via `store.create`
 /// (spec §7.4.8 — `local_path` is never written, so nothing unsigned reaches the
-/// projection). Identical images dedupe to one record + one blob.
+/// projection).
+///
+/// Invariant: **1 referent : 1 attachment record.** Identical bytes share one
+/// content-addressed blob, ref-counted across records. Every capture mints its
+/// own record, so removing one card's attachment can never orphan a sibling
+/// card that reused the same photo/bytes.
 class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
   SyncStoreAttachmentWriteRepository({
     required AppGraph graph,
@@ -48,11 +53,10 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
     PickedFile file,
   ) => _create(file.bytes, file.mime, _fileKind, name: file.name);
 
-  /// Shared capture path (spec §7.4.8): hash → record-dedup → blob put → signed
-  /// metadata record. Identical bytes dedupe to one record + one blob — but a
-  /// file is only deduped when its `name` matches too, so two files with the
-  /// same bytes under different names keep distinct labelled records while still
-  /// sharing the one content-addressed blob.
+  /// Shared capture path (spec §7.4.8): hash → blob put → signed metadata
+  /// record. Identical bytes share one content-addressed blob (idempotent put),
+  /// but every capture mints its OWN record (1 referent : 1 record), so removing
+  /// one card's attachment can never orphan a sibling that reused the bytes.
   Future<Result<String, AttachmentFailure>> _create(
     Uint8List bytes,
     String mime,
@@ -61,16 +65,6 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
   }) async {
     try {
       final hash = await sha256Hex(bytes);
-
-      // Record-level dedup: reuse a live record that already holds these bytes
-      // under the same name (null name for image/audio always matches).
-      for (final s in await _graph.store.readAll(EntityType.attachment)) {
-        if (!s.deleted &&
-            s.content[AttachmentSchema.colContentHash] == hash &&
-            s.content[AttachmentSchema.colName] == name) {
-          return Ok(s.id);
-        }
-      }
 
       await _blobs.put(hash, bytes);
       final id = _ids.newId();
