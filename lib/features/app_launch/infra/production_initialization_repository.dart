@@ -1,9 +1,13 @@
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/schema/knit_migrations.dart';
+import 'package:knit/core/attachments/domain/legacy_attachment_split_migration.dart';
 import 'package:knit/core/attachments/infra/filesystem_attachment_blob_store.dart';
+import 'package:knit/core/attachments/infra/sync_store_legacy_attachment_migration_port.dart';
+import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/core/storage/storage.dart';
 import 'package:knit/features/app_launch/domain/initialization_repository.dart';
 import 'package:knit/sync/sync.dart';
+import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sql_migrator/sql_migrator.dart';
@@ -52,5 +56,29 @@ class ProductionInitializationRepository implements InitializationRepository {
     _graph.bindBlobStore(
       FilesystemAttachmentBlobStore(baseDir: '${support.path}/blobs'),
     );
+
+    await _runDataMigrations(store);
+  }
+
+  /// One-time, idempotent data migrations over the signed write path. Best-effort
+  /// — a failure is logged and swallowed so it can never brick startup; the data
+  /// is left as-is (the per-card GC guard still protects it) and the pass retries
+  /// next launch. Gated on identity: a fresh device has no content and cannot
+  /// sign until onboarding provisions a key, so there is nothing to migrate.
+  Future<void> _runDataMigrations(SyncStore store) async {
+    if (!await store.hasIdentity()) return;
+    try {
+      // Heal pre-`83a99bc` attachment records shared by >1 card so each card
+      // owns its own record (the 1 referent : 1 record invariant). No relay yet,
+      // so a plain local pass — fresh ids can't collide with another device.
+      await LegacyAttachmentSplitMigration(
+        SyncStoreLegacyAttachmentMigrationPort(
+          graph: _graph,
+          ids: const UuidIdGenerator(),
+        ),
+      ).run();
+    } catch (e, st) {
+      Logger('knit.app_launch').severe('Data migration failed', e, st);
+    }
   }
 }

@@ -8,6 +8,7 @@ export 'audio_player_port.dart';
 export 'audio_recorder_port.dart';
 export 'file_picker_port.dart';
 export 'image_picker_port.dart';
+export 'legacy_attachment_split_migration.dart';
 export 'picked_audio.dart';
 export 'picked_file.dart';
 export 'picked_image.dart';
