@@ -569,6 +569,30 @@ void main() {
       expect((effects!.single as DeleteCardEffect).cardId, 'c1');
     });
 
+    test('delete carries an image card\'s attachment id for GC', () {
+      const img = FeedCard(
+        id: 'c1',
+        kind: CardKind.image,
+        position: 'a0',
+        attachmentId: 'att-1',
+      );
+      final (_, effects) = updater.update(
+        ready([img]),
+        const CardDeleteRequested('c1'),
+      );
+      final eff = effects!.single as DeleteCardEffect;
+      expect(eff.cardId, 'c1');
+      expect(eff.attachmentId, 'att-1');
+    });
+
+    test('delete of a text card carries no attachment id', () {
+      final (_, effects) = updater.update(
+        ready([card('c2', 'a0')]),
+        const CardDeleteRequested('c2'),
+      );
+      expect((effects!.single as DeleteCardEffect).attachmentId, isNull);
+    });
+
     test('link to a collection emits LinkEffect with the collection kind', () {
       final (_, effects) = updater.update(
         ready([card('c1', 'a0')]),

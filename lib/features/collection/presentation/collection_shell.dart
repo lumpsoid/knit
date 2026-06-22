@@ -157,11 +157,12 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       ):
         await _addFileCard(collectionId, position, file, caption, dispatch);
 
-      case DeleteCardEffect(:final cardId):
+      case DeleteCardEffect(:final cardId, :final attachmentId):
         await _runWrite(
           () => _write.deleteCard(cardId),
           'delete card',
           dispatch,
+          onSuccess: () => _gcDeletedCardAttachment(attachmentId),
         );
 
       case ShareCardEffect(
@@ -434,22 +435,26 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   }
 
   /// Run a write, then resync from the projection. On failure, surface a
-  /// message and still resync (drops any optimistic local change).
+  /// message and still resync (drops any optimistic local change). [onSuccess],
+  /// when given, runs on the success branch *before* the resync — used to
+  /// reclaim any storage the write freed (e.g. a deleted card's attachment).
   Future<void> _runWrite(
     Future<Result<String, CollectionFailure>> Function() op,
     String label,
-    void Function(CollectionAction) dispatch,
-  ) async {
+    void Function(CollectionAction) dispatch, {
+    Future<void> Function()? onSuccess,
+  }) async {
     final result = await op();
-    result.onTap(
-      (_) {
+    await result.foldAsync(
+      (_) async {
+        if (onSuccess != null) await onSuccess();
         // The write changed the home timeline too (title, last-card preview,
         // count, updated-time). Nudge the Timeline to re-read via its input
         // channel (cross_feature.md §3) — it's mounted underneath this page.
         _timelineChannel.emit(const RefreshChannelEvent());
         dispatch(const ReloadRequested());
       },
-      (failure) {
+      (failure) async {
         _log.severe(
           'Collection $label failed',
           failure.error,
@@ -461,5 +466,24 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         dispatch(const ReloadRequested());
       },
     );
+  }
+
+  /// Reclaim the attachment a just-deleted card uniquely owned — but only when
+  /// no other live card still references it, so a legacy shared record (created
+  /// before the 1 referent : 1 record invariant) is never orphaned. The
+  /// ref-counted blob GC inside [AttachmentWriteRepository.delete] then keeps the
+  /// blob for any sibling *record* sharing the bytes. Conservative on an unknown
+  /// reference state, and non-fatal on failure — the card is already gone; this
+  /// only reclaims storage.
+  Future<void> _gcDeletedCardAttachment(String? attachmentId) async {
+    if (attachmentId == null) return;
+    final check = await _read.isAttachmentReferenced(attachmentId);
+    // Skip GC when still referenced, or when the check failed (don't risk an
+    // orphan on an unknown reference state).
+    if (check.isFailure || check.getOrThrow()) return;
+    final result = await _attachmentWrite.delete(attachmentId);
+    if (result.isFailure) {
+      _log.warning('Attachment GC failed for $attachmentId: ${result.error}');
+    }
   }
 }

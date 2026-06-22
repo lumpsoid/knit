@@ -256,4 +256,22 @@ void main() {
     await write.deleteCard(cardId);
     expect((await load(colId)).cards, isEmpty);
   });
+
+  test('isAttachmentReferenced tracks live cards pointing at an attachment',
+      () async {
+    final colId = await createCollection('Espresso');
+    final cardId = (await write.addCard(
+      collectionId: colId,
+      kind: CardKind.image,
+      position: 'a0',
+      attachmentId: 'att-1',
+    ))
+        .getOrThrow();
+
+    expect((await read.isAttachmentReferenced('att-1')).getOrThrow(), isTrue);
+    expect((await read.isAttachmentReferenced('missing')).getOrThrow(), isFalse);
+
+    await write.deleteCard(cardId);
+    expect((await read.isAttachmentReferenced('att-1')).getOrThrow(), isFalse);
+  });
 }

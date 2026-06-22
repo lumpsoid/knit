@@ -126,4 +126,19 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       return Failure(CollectionLoadFailure(e, st));
     }
   }
+
+  @override
+  Future<Result<bool, CollectionFailure>> isAttachmentReferenced(
+    String attachmentId,
+  ) async {
+    try {
+      // readAll, not feed: a card in *any* collection counts as a referent.
+      final referenced = (await _graph.store.readAll(EntityType.card)).any(
+        (c) => !c.deleted && c.content['attachment_id'] == attachmentId,
+      );
+      return Ok(referenced);
+    } catch (e, st) {
+      return Failure(CollectionLoadFailure(e, st));
+    }
+  }
 }

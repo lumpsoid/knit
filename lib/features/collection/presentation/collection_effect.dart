@@ -126,9 +126,13 @@ class AddFileCardEffect extends CollectionEffect {
   final String? caption;
 }
 
+/// Delete [cardId] (§4.2). Links to it become broken, not gone. [attachmentId]
+/// is the card's attachment (image/audio/file) so the shell can reclaim it once
+/// the card is gone; null for text/link cards (nothing to GC).
 class DeleteCardEffect extends CollectionEffect {
-  const DeleteCardEffect(this.cardId);
+  const DeleteCardEffect(this.cardId, {this.attachmentId});
   final String cardId;
+  final String? attachmentId;
 }
 
 /// Share a card (§4.2). The updater resolves the card to its shareable content:

@@ -260,7 +260,11 @@ class CollectionUpdater
         return (state.copyWith(clearPendingFile: true), null);
 
       case CardDeleteRequested(:final cardId):
-        return (state, [DeleteCardEffect(cardId)]);
+        // Carry the card's attachment id so the shell can reclaim it after
+        // delete; a text/link card (or a card not in the feed) has none →
+        // nothing to GC.
+        final card = _cardById(state.cards, cardId);
+        return (state, [DeleteCardEffect(cardId, attachmentId: card?.attachmentId)]);
 
       case CardShareRequested(:final cardId):
         return _shareCard(state, cardId);

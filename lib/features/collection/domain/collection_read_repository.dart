@@ -19,4 +19,13 @@ abstract interface class CollectionReadRepository {
   Future<Result<List<LinkOption>, CollectionFailure>> loadCollectionCards(
     String collectionId,
   );
+
+  /// True when any **live** card still references [attachmentId] via its
+  /// `content['attachment_id']`. The shell consults this before reclaiming a
+  /// deleted card's attachment so a legacy shared record (one record reused by
+  /// several cards, created before the 1 referent : 1 record invariant) is never
+  /// orphaned (business_logic.md §5: a narrow, single-purpose port).
+  Future<Result<bool, CollectionFailure>> isAttachmentReferenced(
+    String attachmentId,
+  );
 }
