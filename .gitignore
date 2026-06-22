@@ -46,3 +46,6 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Release artifacts from scripts/build_release.sh
+/dist/
