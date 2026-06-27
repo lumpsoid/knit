@@ -29,7 +29,7 @@ import 'package:knit/features/collection/infra/sync_store_collection_read_reposi
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/collection/infra/url_launcher_link_launcher.dart';
 import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
-import 'package:knit/features/collection/presentation/collection_module.dart';
+import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
 import 'package:knit/features/collection_edit/infra/sync_store_collection_edit_write_repository.dart';
@@ -38,7 +38,7 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_route
 import 'package:knit/features/collection_edit/presentation/collection_edit_scope.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_read_repository.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_write_repository.dart';
-import 'package:knit/features/connections/presentation/connections_module.dart';
+import 'package:knit/features/connections/presentation/connections_controller.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_scope.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
@@ -200,7 +200,7 @@ void bootstrap(AppConfig config) {
     ).controller,
   );
   CollectionScope.setFactory(
-    () => CollectionModule(
+    () => CollectionController(
       readRepository: SyncStoreCollectionReadRepository(graph: graph),
       writeRepository: SyncStoreCollectionWriteRepository(
         graph: graph,
@@ -217,7 +217,7 @@ void bootstrap(AppConfig config) {
       shareRepository: const SharePlusCardShareRepository(),
       linkLauncher: const UrlLauncherLinkLauncher(),
       timelineChannel: timelineChannel,
-    ).controller,
+    ),
   );
   // The audio player is an app-wide singleton (not rebuilt per page entry) so a
   // clip survives the Collection feed's post-write re-syncs; the page stops it on
@@ -229,10 +229,10 @@ void bootstrap(AppConfig config) {
     ),
   );
   ConnectionsScope.setFactory(
-    () => ConnectionsModule(
+    () => ConnectionsController(
       readRepository: SyncStoreConnectionsReadRepository(graph: graph),
       writeRepository: SyncStoreConnectionsWriteRepository(graph: graph),
-    ).controller,
+    ),
   );
   CardEditScope.setFactory(
     () => CardEditModule(
