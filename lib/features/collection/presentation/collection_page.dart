@@ -15,6 +15,7 @@ import 'package:knit/features/collection/presentation/collection_controller.dart
 import 'package:knit/features/collection/presentation/collection_scope.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
+import 'package:knit/features/collection/presentation/image_gallery_page.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_page.dart';
 
@@ -234,25 +235,40 @@ class _CollectionPageState extends State<CollectionPage> {
     if (mounted) _controller.dispatch(const ReloadRequested());
   }
 
-  /// Open a card's image full-screen for pinch-to-zoom viewing (§4.2). The feed
-  /// thumbnail and the full image share a [Hero], so the open/close animates.
-  void _openImagePreview(FeedCard card, Uint8List bytes) {
-    Navigator.of(context).push(
-      _ImagePreviewPage.route(
-        bytes: bytes,
-        heroTag: _imageHeroTag(card.id),
-        caption: card.text,
-      ),
-    );
+  /// Open a card's image full-screen in the swipeable zoom gallery (§4.2), over
+  /// every loaded image card in feed order and starting at [card]. Each feed
+  /// thumbnail shares a [Hero] with its gallery page, so the open/close animates.
+  void _openImagePreview(FeedCard card) {
+    final state = _controller.stateHolder.value;
+    final images = <GalleryImage>[];
+    var initialIndex = 0;
+    for (final c in state.cards) {
+      if (c.kind != CardKind.image) continue;
+      final bytes = _bytesFor(state, c);
+      if (bytes == null) continue;
+      if (c.id == card.id) initialIndex = images.length;
+      images.add(
+        GalleryImage(
+          bytes: bytes,
+          heroTag: _imageHeroTag(c.id),
+          caption: c.text,
+        ),
+      );
+    }
+    if (images.isEmpty) return;
+    Navigator.of(
+      context,
+    ).push(ImageGalleryPage.route(images: images, initialIndex: initialIndex));
   }
 
-  /// Open the collection's cover full-screen for pinch-to-zoom viewing — the
-  /// same viewer as a card image, with the banner as its [Hero] source.
+  /// Open the collection's cover full-screen for zoom viewing — the same viewer
+  /// as a card image (a single page), with the banner as its [Hero] source.
   void _openCoverPreview(String collectionId, Uint8List bytes) {
     Navigator.of(context).push(
-      _ImagePreviewPage.route(
-        bytes: bytes,
-        heroTag: _coverHeroTag(collectionId),
+      ImageGalleryPage.route(
+        images: [
+          GalleryImage(bytes: bytes, heroTag: _coverHeroTag(collectionId)),
+        ],
       ),
     );
   }
@@ -504,9 +520,7 @@ class _CollectionPageState extends State<CollectionPage> {
             card: card,
             imageBytes: bytes,
             onTap: () => _openCardActions(card),
-            onImageTap: bytes == null
-                ? null
-                : () => _openImagePreview(card, bytes),
+            onImageTap: bytes == null ? null : () => _openImagePreview(card),
             // Tapping a captioned file card shares it through the system sheet
             // (which offers "Open with…"); the same path the actions-sheet Share
             // uses. A caption-less file card has no other tap target, so leave it
@@ -1137,88 +1151,6 @@ String _formatBytes(int bytes) {
       ? value.toStringAsFixed(0)
       : value.toStringAsFixed(1);
   return '$text ${units[unit]}';
-}
-
-/// A full-screen, pinch-to-zoom viewer for a card's image (§4.2). Pushed when an
-/// image bubble is tapped; takes primitives only (widgets.md §1) — the decoded
-/// [bytes], a [heroTag] shared with the feed thumbnail, and an optional caption.
-/// Tapping the backdrop or the close button dismisses it.
-class _ImagePreviewPage extends StatelessWidget {
-  const _ImagePreviewPage({
-    required this.bytes,
-    required this.heroTag,
-    this.caption,
-  });
-
-  final Uint8List bytes;
-  final Object heroTag;
-  final String? caption;
-
-  static Route<void> route({
-    required Uint8List bytes,
-    required Object heroTag,
-    String? caption,
-  }) => MaterialPageRoute<void>(
-    fullscreenDialog: true,
-    builder: (_) =>
-        _ImagePreviewPage(bytes: bytes, heroTag: heroTag, caption: caption),
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final caption = this.caption?.trim();
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          tooltip: l10n.actionClose,
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: InteractiveViewer(
-                minScale: 1,
-                maxScale: 5,
-                child: Center(
-                  child: Hero(
-                    tag: heroTag,
-                    child: Image.memory(bytes, fit: BoxFit.contain),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (caption != null && caption.isNotEmpty)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: double.infinity,
-                color: Colors.black.withValues(alpha: 0.5),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                child: SafeArea(
-                  top: false,
-                  child: Text(
-                    caption,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ReorderRow extends StatelessWidget {
