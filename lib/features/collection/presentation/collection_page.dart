@@ -1453,7 +1453,8 @@ class _Composer extends StatelessWidget {
                     controller: controller,
                     minLines: 1,
                     maxLines: 5,
-                    textInputAction: TextInputAction.send,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
                     decoration: InputDecoration(
                       hintText: l10n.collectionComposerHint,
                       filled: true,
@@ -1467,7 +1468,6 @@ class _Composer extends StatelessWidget {
                         vertical: 8,
                       ),
                     ),
-                    onSubmitted: (_) => onSend(),
                   ),
                 ),
                 IconButton(
