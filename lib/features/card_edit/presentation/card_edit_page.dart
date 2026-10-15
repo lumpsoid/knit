@@ -129,7 +129,6 @@ class _CardEditPageState extends State<CardEditPage> {
               const SizedBox(height: 16),
               TextField(
                 controller: _field,
-                autofocus: true,
                 enabled: !saving,
                 minLines: 3,
                 maxLines: null,
