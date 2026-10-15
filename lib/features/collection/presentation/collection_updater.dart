@@ -130,6 +130,7 @@ class CollectionUpdater
               audio: PickedAudio(
                 bytes: pendingFile.bytes,
                 mime: pendingFile.mime,
+                name: pendingFile.name,
               ),
               caption: caption,
             ),

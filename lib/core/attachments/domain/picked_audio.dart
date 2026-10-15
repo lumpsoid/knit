@@ -6,8 +6,12 @@ import 'dart:typed_data';
 /// widget-/recorder-agnostic value so the [AudioRecorderPort] stays mockable in
 /// tests — the audio twin of [PickedImage].
 class PickedAudio {
-  const PickedAudio({required this.bytes, required this.mime});
+  const PickedAudio({required this.bytes, required this.mime, this.name});
 
   final Uint8List bytes;
   final String mime;
+
+  /// The original file name when the audio was picked from disk (§7.4.8); null
+  /// for an in-app recording, which has no name of its own.
+  final String? name;
 }

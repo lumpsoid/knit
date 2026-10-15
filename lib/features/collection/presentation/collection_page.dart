@@ -294,7 +294,7 @@ class _CollectionPageState extends State<CollectionPage> {
     if (text != null && text.isNotEmpty) return text;
     return switch (card.kind) {
       CardKind.image => l10n.collectionCardPhoto,
-      CardKind.audio => l10n.collectionCardAudio,
+      CardKind.audio => card.fileName ?? l10n.collectionCardAudio,
       CardKind.file => card.fileName ?? l10n.collectionCardFile,
       CardKind.link => l10n.collectionCardLink,
       CardKind.text || CardKind.unknown => l10n.labelEmptyNote,
@@ -889,6 +889,7 @@ class _CardBubble extends StatelessWidget {
         final audioCaption = card.text?.trim();
         final chip = _AudioCardChip(
           cardId: card.id,
+          name: card.fileName?.trim(),
           playback: playback,
           onToggle: onToggleAudio,
         );
@@ -999,11 +1000,16 @@ class _CardConnectionsBadge extends StatelessWidget {
 class _AudioCardChip extends StatelessWidget {
   const _AudioCardChip({
     required this.cardId,
+    required this.name,
     required this.playback,
     required this.onToggle,
   });
 
   final String cardId;
+
+  /// The picked file's name, shown in place of the generic "Audio" label; null
+  /// or empty for an in-app recording.
+  final String? name;
   final ValueListenable<PlaybackSnapshot>? playback;
   final VoidCallback? onToggle;
 
@@ -1072,9 +1078,16 @@ class _AudioCardChip extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          active ? l10n.collectionAudioNowPlaying : l10n.collectionCardAudio,
-          style: active ? TextStyle(color: color) : null,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 180),
+          child: Text(
+            active
+                ? l10n.collectionAudioNowPlaying
+                : (name?.isNotEmpty == true ? name! : l10n.collectionCardAudio),
+            style: active ? TextStyle(color: color) : null,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -1179,7 +1192,9 @@ class _ReorderRow extends StatelessWidget {
       CardKind.audio =>
         card.text?.trim().isNotEmpty == true
             ? card.text!.trim()
-            : l10n.collectionCardAudio,
+            : (card.fileName?.trim().isNotEmpty == true
+                  ? card.fileName!.trim()
+                  : l10n.collectionCardAudio),
       CardKind.file =>
         card.fileName?.trim().isNotEmpty == true
             ? card.fileName!.trim()

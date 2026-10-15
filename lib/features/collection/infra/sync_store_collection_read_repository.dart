@@ -30,12 +30,14 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       for (final card in await store.feed(id)) {
         final kind = CardKind.fromTag(card.content['kind'] as String?);
         final attachmentId = card.content['attachment_id'] as String?;
-        // A file card needs its attachment's name + size to label the chip;
-        // resolve the (tiny) metadata record eagerly so the feed renders it
-        // without a per-card bytes load (unlike image thumbnails).
+        // A file (or picked audio) card needs its attachment's name + size to
+        // label the chip; resolve the (tiny) metadata record eagerly so the
+        // feed renders it without a per-card bytes load (unlike image
+        // thumbnails).
         String? fileName;
         int? fileSize;
-        if (kind == CardKind.file && attachmentId != null) {
+        if ((kind == CardKind.file || kind == CardKind.audio) &&
+            attachmentId != null) {
           final att = await store.get(EntityType.attachment, attachmentId);
           if (att != null && !att.deleted) {
             fileName = att.content[AttachmentSchema.colName] as String?;

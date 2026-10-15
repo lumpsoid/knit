@@ -57,6 +57,28 @@ void main() {
     expect(await blobs.exists(hash), isTrue);
   });
 
+  test('picked audio keeps its file name; a recording has none', () async {
+    final picked = (await write.createFromAudio(
+      PickedAudio(
+        bytes: Uint8List.fromList([1]),
+        mime: 'audio/mpeg',
+        name: 'song.mp3',
+      ),
+    )).getOrThrow();
+    final recorded = (await write.createFromAudio(m4a([2]))).getOrThrow();
+
+    expect(
+      (await store.get(EntityType.attachment, picked))!
+          .content[AttachmentSchema.colName],
+      'song.mp3',
+    );
+    expect(
+      (await store.get(EntityType.attachment, recorded))!
+          .content[AttachmentSchema.colName],
+      isNull,
+    );
+  });
+
   test('identical bytes create distinct records sharing one blob', () async {
     final a = (await write.createFromPicked(png([9, 9, 9]))).getOrThrow();
     final b = (await write.createFromPicked(png([9, 9, 9]))).getOrThrow();

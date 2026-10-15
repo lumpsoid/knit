@@ -71,9 +71,10 @@ class FeedCard {
   /// `attachment_id` for image/audio/file cards (§7.4.3); null otherwise.
   final String? attachmentId;
 
-  /// For a file card, the attachment's original file name and byte size (§7.4.8),
-  /// resolved eagerly into the feed read so the chip can label/size it without a
-  /// per-card bytes load. Null for every other kind.
+  /// For a file or audio card, the attachment's original file name and byte size
+  /// (§7.4.8), resolved eagerly into the feed read so the chip can label/size it
+  /// without a per-card bytes load. The name is null for an in-app recording
+  /// (no original name) and for every other kind.
   final String? fileName;
   final int? fileSize;
 

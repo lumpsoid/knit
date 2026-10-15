@@ -46,7 +46,7 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
   @override
   Future<Result<String, AttachmentFailure>> createFromAudio(
     PickedAudio audio,
-  ) => _create(audio.bytes, audio.mime, _audioKind);
+  ) => _create(audio.bytes, audio.mime, _audioKind, name: audio.name);
 
   @override
   Future<Result<String, AttachmentFailure>> createFromFile(

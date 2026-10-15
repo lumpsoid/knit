@@ -217,7 +217,9 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
       CardKind.image => _attachmentWrite
           .createFromPicked(PickedImage(bytes: file.bytes, mime: file.mime)),
       CardKind.audio => _attachmentWrite
-          .createFromAudio(PickedAudio(bytes: file.bytes, mime: file.mime)),
+          .createFromAudio(
+            PickedAudio(bytes: file.bytes, mime: file.mime, name: file.name),
+          ),
       _ => _attachmentWrite.createFromFile(file),
     };
     if (created.isFailure) {
