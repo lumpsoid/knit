@@ -23,8 +23,9 @@ class GalleryImage {
 ///
 /// Swipe left/right to page between [images]. While an image is zoomed in, a
 /// one-finger drag pans it instead; once its left/right edge is flush with the
-/// screen, the next outward swipe turns the page. Double-tap toggles zoom;
-/// a single tap or the close button dismisses the viewer.
+/// screen, the next outward swipe turns the page. Double-tap toggles zoom. A
+/// single tap does nothing; only the close button or back navigation dismisses
+/// the viewer.
 class ImageGalleryPage extends StatefulWidget {
   ImageGalleryPage({super.key, required this.images, this.initialIndex = 0})
     : assert(images.isNotEmpty),
@@ -112,7 +113,6 @@ class _ImageGalleryPageState extends State<ImageGalleryPage> {
                   }
                 },
                 onEdgeSwipe: _turn,
-                onTap: () => Navigator.of(context).pop(),
               ),
             ),
           ),
@@ -147,7 +147,6 @@ class _ZoomableImage extends StatefulWidget {
     required this.image,
     required this.onZoomChanged,
     required this.onEdgeSwipe,
-    required this.onTap,
   });
 
   final GalleryImage image;
@@ -158,8 +157,6 @@ class _ZoomableImage extends StatefulWidget {
   /// Fired with -1 (previous) / +1 (next) when the user swipes outward while
   /// the zoomed image's left / right edge is already flush with the screen.
   final ValueChanged<int> onEdgeSwipe;
-
-  final VoidCallback onTap;
 
   @override
   State<_ZoomableImage> createState() => _ZoomableImageState();
@@ -296,7 +293,6 @@ class _ZoomableImageState extends State<_ZoomableImage>
       builder: (context, constraints) {
         _viewport = constraints.biggest;
         return GestureDetector(
-          onTap: widget.onTap,
           onDoubleTapDown: (details) => _doubleTapAt = details.localPosition,
           onDoubleTap: _onDoubleTap,
           child: InteractiveViewer(

@@ -112,7 +112,9 @@ void main() {
     },
   );
 
-  testWidgets('a single tap dismisses the viewer', (tester) async {
+  testWidgets('a single tap keeps the viewer; close dismisses it', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -134,6 +136,10 @@ void main() {
     // A single tap resolves only once the double-tap window has passed.
     await tester.tapAt(tester.getCenter(find.byType(PageView)));
     await tester.pump(kDoubleTapTimeout);
+    await tester.pumpAndSettle();
+    expect(find.byType(ImageGalleryPage), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
     expect(find.byType(ImageGalleryPage), findsNothing);
   });
