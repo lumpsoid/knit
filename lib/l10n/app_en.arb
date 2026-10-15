@@ -169,6 +169,40 @@
   "collectionEditAddCover": "Add cover photo",
   "collectionEditReplaceCover": "Replace cover",
   "collectionEditRemoveCover": "Remove cover",
+  "collectionEditMedia": "Media",
+  "collectionEditMediaEmpty": "No media yet",
+
+  "collectionMediaTitle": "Media",
+  "collectionMediaTabPhotos": "Photos",
+  "collectionMediaTabAudio": "Audio",
+  "collectionMediaTabFiles": "Files",
+  "collectionMediaTabLinks": "Links",
+  "collectionMediaEmptyTab": "Nothing here yet",
+  "collectionMediaLoadFailed": "Couldn't load media",
+  "collectionMediaPhotoCount": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@collectionMediaPhotoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionMediaAudioCount": "{count, plural, =1{1 audio} other{{count} audio}}",
+  "@collectionMediaAudioCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionMediaFileCount": "{count, plural, =1{1 file} other{{count} files}}",
+  "@collectionMediaFileCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionMediaLinkCount": "{count, plural, =1{1 link} other{{count} links}}",
+  "@collectionMediaLinkCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
 
   "cardEditTitle": "Edit card",
   "cardEditHint": "Edit this card…",

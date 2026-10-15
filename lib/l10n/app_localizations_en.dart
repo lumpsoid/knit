@@ -409,6 +409,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionEditRemoveCover => 'Remove cover';
 
   @override
+  String get collectionEditMedia => 'Media';
+
+  @override
+  String get collectionEditMediaEmpty => 'No media yet';
+
+  @override
+  String get collectionMediaTitle => 'Media';
+
+  @override
+  String get collectionMediaTabPhotos => 'Photos';
+
+  @override
+  String get collectionMediaTabAudio => 'Audio';
+
+  @override
+  String get collectionMediaTabFiles => 'Files';
+
+  @override
+  String get collectionMediaTabLinks => 'Links';
+
+  @override
+  String get collectionMediaEmptyTab => 'Nothing here yet';
+
+  @override
+  String get collectionMediaLoadFailed => 'Couldn\'t load media';
+
+  @override
+  String collectionMediaPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String collectionMediaAudioCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count audio',
+      one: '1 audio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String collectionMediaFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String collectionMediaLinkCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count links',
+      one: '1 link',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get cardEditTitle => 'Edit card';
 
   @override

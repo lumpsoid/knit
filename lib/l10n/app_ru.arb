@@ -166,6 +166,40 @@
   "collectionEditAddCover": "Добавить обложку",
   "collectionEditReplaceCover": "Заменить обложку",
   "collectionEditRemoveCover": "Удалить обложку",
+  "collectionEditMedia": "Медиа",
+  "collectionEditMediaEmpty": "Пока нет медиа",
+
+  "collectionMediaTitle": "Медиа",
+  "collectionMediaTabPhotos": "Фото",
+  "collectionMediaTabAudio": "Аудио",
+  "collectionMediaTabFiles": "Файлы",
+  "collectionMediaTabLinks": "Ссылки",
+  "collectionMediaEmptyTab": "Здесь пока пусто",
+  "collectionMediaLoadFailed": "Не удалось загрузить медиа",
+  "collectionMediaPhotoCount": "{count, plural, one{{count} фото} few{{count} фото} many{{count} фото} other{{count} фото}}",
+  "@collectionMediaPhotoCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionMediaAudioCount": "{count, plural, one{{count} аудио} few{{count} аудио} many{{count} аудио} other{{count} аудио}}",
+  "@collectionMediaAudioCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionMediaFileCount": "{count, plural, one{{count} файл} few{{count} файла} many{{count} файлов} other{{count} файла}}",
+  "@collectionMediaFileCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionMediaLinkCount": "{count, plural, one{{count} ссылка} few{{count} ссылки} many{{count} ссылок} other{{count} ссылки}}",
+  "@collectionMediaLinkCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
 
   "cardEditTitle": "Редактировать карточку",
   "cardEditHint": "Редактировать эту карточку…",

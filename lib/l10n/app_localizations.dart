@@ -812,6 +812,84 @@ abstract class AppLocalizations {
   /// **'Remove cover'**
   String get collectionEditRemoveCover;
 
+  /// No description provided for @collectionEditMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get collectionEditMedia;
+
+  /// No description provided for @collectionEditMediaEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No media yet'**
+  String get collectionEditMediaEmpty;
+
+  /// No description provided for @collectionMediaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get collectionMediaTitle;
+
+  /// No description provided for @collectionMediaTabPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get collectionMediaTabPhotos;
+
+  /// No description provided for @collectionMediaTabAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get collectionMediaTabAudio;
+
+  /// No description provided for @collectionMediaTabFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get collectionMediaTabFiles;
+
+  /// No description provided for @collectionMediaTabLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get collectionMediaTabLinks;
+
+  /// No description provided for @collectionMediaEmptyTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get collectionMediaEmptyTab;
+
+  /// No description provided for @collectionMediaLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load media'**
+  String get collectionMediaLoadFailed;
+
+  /// No description provided for @collectionMediaPhotoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String collectionMediaPhotoCount(int count);
+
+  /// No description provided for @collectionMediaAudioCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 audio} other{{count} audio}}'**
+  String collectionMediaAudioCount(int count);
+
+  /// No description provided for @collectionMediaFileCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file} other{{count} files}}'**
+  String collectionMediaFileCount(int count);
+
+  /// No description provided for @collectionMediaLinkCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 link} other{{count} links}}'**
+  String collectionMediaLinkCount(int count);
+
   /// No description provided for @cardEditTitle.
   ///
   /// In en, this message translates to:

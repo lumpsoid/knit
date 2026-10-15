@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
+import 'package:knit/features/collection_media/domain/collection_media_models.dart';
+import 'package:knit/features/collection_media/presentation/collection_media_page.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_controller.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_scope.dart';
@@ -8,7 +11,8 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_state
 import 'package:knit/features/collection_edit/presentation/collection_edit_ui_effect.dart';
 
 /// The Collection Edit page (§4.2/§4.3) — a dedicated page for editing a
-/// collection's title, description, and cover image. The edit target arrives via
+/// collection's title, description, and cover image, with a read-only Media
+/// summary row that opens the collection's media overview. The edit target arrives via
 /// the route-args carrier (cross_feature.md §2); on save the page pops and the
 /// Collection screen resyncs from the projection. Cover edits are applied in
 /// place.
@@ -70,6 +74,17 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
           context,
         ).showSnackBar(SnackBar(content: Text(text)));
     }
+  }
+
+  /// Hand the collection to the Media carrier (cross_feature.md §2) and open the
+  /// overview; on return, refresh the summary (a card edit there may change it).
+  Future<void> _openMedia(CollectionEditState state) async {
+    CollectionEditScope.mediaRouteArgsWriter.open(
+      collectionId: state.collectionId,
+      title: state.initialTitle,
+    );
+    await Navigator.of(context).push(CollectionMediaPage.route());
+    if (mounted) _controller.dispatch(const MediaSummaryReloadRequested());
   }
 
   void _save() => _controller.dispatch(
@@ -136,6 +151,14 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                   border: const OutlineInputBorder(),
                 ),
               ),
+              if (state.mediaCounts case final counts?) ...[
+                const SizedBox(height: 16),
+                _MediaSummaryRow(
+                  counts: counts,
+                  previews: state.mediaPreviews,
+                  onTap: counts.isEmpty ? null : () => _openMedia(state),
+                ),
+              ],
             ],
           ),
         );
@@ -208,6 +231,99 @@ class _CoverSection extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// The collection's Media summary (§4.2): the newest photo thumbnails over the
+/// per-kind counts. Tapping opens the full overview; with no media it is inert
+/// ([onTap] null) and says so.
+class _MediaSummaryRow extends StatelessWidget {
+  const _MediaSummaryRow({
+    required this.counts,
+    required this.previews,
+    required this.onTap,
+  });
+
+  static const double _thumbSize = 56;
+
+  final MediaCounts counts;
+  final List<Uint8List> previews;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final summary = counts.isEmpty
+        ? l10n.collectionEditMediaEmpty
+        : [
+            if (counts.photos > 0)
+              l10n.collectionMediaPhotoCount(counts.photos),
+            if (counts.audio > 0) l10n.collectionMediaAudioCount(counts.audio),
+            if (counts.files > 0) l10n.collectionMediaFileCount(counts.files),
+            if (counts.links > 0) l10n.collectionMediaLinkCount(counts.links),
+          ].join(' · ');
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.perm_media_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.collectionEditMedia,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        Text(
+                          summary,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (onTap != null) const Icon(Icons.chevron_right),
+                ],
+              ),
+              if (previews.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    for (final bytes in previews)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: AttachmentImage(
+                            bytes: bytes,
+                            width: _thumbSize,
+                            height: _thumbSize,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

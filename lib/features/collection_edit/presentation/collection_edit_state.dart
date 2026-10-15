@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:knit/features/collection_media/domain/collection_media_models.dart';
 
 enum CollectionEditStatus { editing, saving, failed }
 
@@ -17,6 +18,8 @@ class CollectionEditState {
     this.coverAttachmentId,
     this.coverBytes,
     this.coverBusy = false,
+    this.mediaCounts,
+    this.mediaPreviews = const [],
   });
 
   final CollectionEditStatus status;
@@ -34,6 +37,14 @@ class CollectionEditState {
   /// A cover add/replace/remove is in flight — gates the controls.
   final bool coverBusy;
 
+  /// Per-kind counts of the collection's media cards, for the Media summary
+  /// row; null until the summary has loaded.
+  final MediaCounts? mediaCounts;
+
+  /// Decoded bytes of the newest photos (newest first), for the summary row's
+  /// thumbnail strip.
+  final List<Uint8List> mediaPreviews;
+
   bool get hasCover => coverAttachmentId != null;
 
   static const Object _unset = Object();
@@ -46,6 +57,8 @@ class CollectionEditState {
     Object? coverAttachmentId = _unset,
     Object? coverBytes = _unset,
     bool? coverBusy,
+    MediaCounts? mediaCounts,
+    List<Uint8List>? mediaPreviews,
   }) => CollectionEditState(
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
@@ -60,5 +73,7 @@ class CollectionEditState {
         ? this.coverBytes
         : coverBytes as Uint8List?,
     coverBusy: coverBusy ?? this.coverBusy,
+    mediaCounts: mediaCounts ?? this.mediaCounts,
+    mediaPreviews: mediaPreviews ?? this.mediaPreviews,
   );
 }

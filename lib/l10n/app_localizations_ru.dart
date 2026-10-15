@@ -413,6 +413,85 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionEditRemoveCover => 'Удалить обложку';
 
   @override
+  String get collectionEditMedia => 'Медиа';
+
+  @override
+  String get collectionEditMediaEmpty => 'Пока нет медиа';
+
+  @override
+  String get collectionMediaTitle => 'Медиа';
+
+  @override
+  String get collectionMediaTabPhotos => 'Фото';
+
+  @override
+  String get collectionMediaTabAudio => 'Аудио';
+
+  @override
+  String get collectionMediaTabFiles => 'Файлы';
+
+  @override
+  String get collectionMediaTabLinks => 'Ссылки';
+
+  @override
+  String get collectionMediaEmptyTab => 'Здесь пока пусто';
+
+  @override
+  String get collectionMediaLoadFailed => 'Не удалось загрузить медиа';
+
+  @override
+  String collectionMediaPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count фото',
+      many: '$count фото',
+      few: '$count фото',
+      one: '$count фото',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String collectionMediaAudioCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count аудио',
+      many: '$count аудио',
+      few: '$count аудио',
+      one: '$count аудио',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String collectionMediaFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count файла',
+      many: '$count файлов',
+      few: '$count файла',
+      one: '$count файл',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String collectionMediaLinkCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ссылки',
+      many: '$count ссылок',
+      few: '$count ссылки',
+      one: '$count ссылка',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get cardEditTitle => 'Редактировать карточку';
 
   @override

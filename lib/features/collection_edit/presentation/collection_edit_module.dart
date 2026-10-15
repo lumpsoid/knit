@@ -6,6 +6,7 @@ import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/collection_edit/domain/collection_edit_write_repository.dart';
+import 'package:knit/features/collection_media/domain/collection_media_read_repository.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_controller.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_effect.dart';
@@ -18,13 +19,15 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_updat
 /// Composition root for the Collection Edit page (fcis.md §6.8): wires
 /// stateHolder → effectEmitter → shell → loop → controller. The shell gets the
 /// collection-edit write port plus the shared attachments foundation ports
-/// (read/write + picker) for the cover-image section.
+/// (read/write + picker) for the cover-image section, and the media read port
+/// for the Media summary row.
 class CollectionEditModule {
   CollectionEditModule({
     required CollectionEditWriteRepository writeRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
+    required CollectionMediaReadRepository mediaReadRepository,
     Logger? logger,
   }) {
     final stateHolder = ValueListenableStateHolder<CollectionEditState>(
@@ -36,6 +39,7 @@ class CollectionEditModule {
       attachmentReadRepository: attachmentReadRepository,
       attachmentWriteRepository: attachmentWriteRepository,
       imagePicker: imagePicker,
+      mediaReadRepository: mediaReadRepository,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.collection_edit'),
     );

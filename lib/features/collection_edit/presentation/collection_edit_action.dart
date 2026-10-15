@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:knit/features/collection_media/domain/collection_media_models.dart';
+
 /// Intents + async-result deliveries for the Collection Edit page (fcis.md §6.4).
 /// All payloads are scalars (no sync-core types).
 sealed class CollectionEditAction {
@@ -66,6 +68,23 @@ class CoverResolved extends CollectionEditAction {
 /// drop the busy flag, leave the current cover in place.
 class CoverEditEnded extends CollectionEditAction {
   const CoverEditEnded();
+}
+
+// --- media summary ---------------------------------------------------------
+
+/// Re-read the media summary — after returning from the Media page, where a
+/// card edit may have changed it.
+class MediaSummaryReloadRequested extends CollectionEditAction {
+  const MediaSummaryReloadRequested();
+}
+
+/// The media summary resolved: per-kind [counts] plus the decoded bytes of the
+/// newest photos for the thumbnail strip ([previews], newest first; photos whose
+/// blob is missing on this device are skipped).
+class MediaSummaryLoaded extends CollectionEditAction {
+  const MediaSummaryLoaded({required this.counts, required this.previews});
+  final MediaCounts counts;
+  final List<Uint8List> previews;
 }
 
 class DeactivateFeature extends CollectionEditAction {

@@ -23,6 +23,12 @@ class LoadCoverEffect extends CollectionEditEffect {
   final String attachmentId;
 }
 
+/// Load [collectionId]'s media summary (counts + newest photo thumbnails).
+class LoadMediaSummaryEffect extends CollectionEditEffect {
+  const LoadMediaSummaryEffect(this.collectionId);
+  final String collectionId;
+}
+
 /// Pick a photo (gallery/camera), store it, point [collectionId] at the new
 /// cover, and GC the [previousAttachmentId] it replaced (if any).
 class PickCoverEffect extends CollectionEditEffect {

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
@@ -5,6 +7,7 @@ import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/features/collection_edit/domain/collection_edit_write_repository.dart';
+import 'package:knit/features/collection_media/domain/collection_media_read_repository.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_effect.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_ui_effect.dart';
@@ -21,9 +24,11 @@ class CollectionEditShell
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
+    required CollectionMediaReadRepository mediaReadRepository,
     required EffectEmitter<CollectionEditUiEffect> effectEmitter,
     required Logger logger,
   }) : _write = writeRepository,
+       _mediaRead = mediaReadRepository,
        _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
        _picker = imagePicker,
@@ -34,8 +39,12 @@ class CollectionEditShell
   final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
   final ImagePickerPort _picker;
+  final CollectionMediaReadRepository _mediaRead;
   final EffectEmitter<CollectionEditUiEffect> _effectEmitter;
   final Logger _log;
+
+  /// How many of the newest photos the summary row previews.
+  static const int _previewCount = 4;
 
   @override
   Future<void> run(
@@ -88,6 +97,9 @@ class CollectionEditShell
             ),
           );
         }
+
+      case LoadMediaSummaryEffect(:final collectionId):
+        await _loadMediaSummary(collectionId, dispatch);
 
       case PickCoverEffect(:final collectionId, :final previousAttachmentId):
         await _pickCoverAndAttach(collectionId, previousAttachmentId, dispatch);
@@ -150,6 +162,32 @@ class CollectionEditShell
       await _gcAttachment(previousAttachmentId);
     }
     dispatch(CoverResolved(attachmentId: attachmentId, bytes: picked.bytes));
+  }
+
+  /// Read the media overview, then the bytes of its newest photos for the
+  /// thumbnail strip. A read failure leaves the row hidden (logged only — the
+  /// rest of the page is unaffected); a missing blob just drops its thumbnail.
+  Future<void> _loadMediaSummary(
+    String collectionId,
+    void Function(CollectionEditAction) dispatch,
+  ) async {
+    final result = await _mediaRead.loadMedia(collectionId);
+    if (result.isFailure) {
+      final failure = result.error!;
+      _log.severe(
+        'Collection media summary failed',
+        failure.error,
+        failure.stackTrace,
+      );
+      return;
+    }
+    final media = result.getOrThrow();
+    final previews = <Uint8List>[];
+    for (final photo in media.recentPhotos(_previewCount)) {
+      final bytes = await _attachmentRead.bytesOf(photo.attachmentId!);
+      if (bytes.isSuccess) previews.add(bytes.getOrThrow().bytes);
+    }
+    dispatch(MediaSummaryLoaded(counts: media.counts, previews: previews));
   }
 
   /// Surface a write failure and clear the in-flight flag, leaving the

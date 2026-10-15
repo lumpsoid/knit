@@ -36,6 +36,10 @@ import 'package:knit/features/collection_edit/infra/sync_store_collection_edit_w
 import 'package:knit/features/collection_edit/presentation/collection_edit_module.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_scope.dart';
+import 'package:knit/features/collection_media/infra/sync_store_collection_media_read_repository.dart';
+import 'package:knit/features/collection_media/presentation/collection_media_module.dart';
+import 'package:knit/features/collection_media/presentation/collection_media_route_args.dart';
+import 'package:knit/features/collection_media/presentation/collection_media_scope.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_read_repository.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_write_repository.dart';
 import 'package:knit/features/connections/presentation/connections_controller.dart';
@@ -188,6 +192,14 @@ void bootstrap(AppConfig config) {
   CollectionScope.setCollectionEditRouteArgsWriter(collectionEditRouteArgs);
   CollectionEditScope.setRouteArgs(collectionEditRouteArgs);
 
+  // A fifth carrier for the Collection Media overview (§4.2): the Collection
+  // Edit page writes the collection, the Media page reads it on entry. A
+  // long-press there opens the item's card through the Card Edit carrier.
+  final collectionMediaRouteArgs = InMemoryCollectionMediaRouteArgsStore();
+  CollectionEditScope.setMediaRouteArgsWriter(collectionMediaRouteArgs);
+  CollectionMediaScope.setRouteArgs(collectionMediaRouteArgs);
+  CollectionMediaScope.setCardEditRouteArgsWriter(cardEditRouteArgs);
+
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
 
@@ -222,12 +234,14 @@ void bootstrap(AppConfig config) {
   // The audio player is an app-wide singleton (not rebuilt per page entry) so a
   // clip survives the Collection feed's post-write re-syncs; the page stops it on
   // exit. It plays the same content-addressed bytes the read path already serves.
-  CollectionScope.setPlaybackController(
-    AudioPlaybackController(
-      player: AudioPlayersAudioPlayer(),
-      attachmentRead: SyncStoreAttachmentReadRepository(graph: graph),
-    ),
+  // The Media overview shares it, so a clip started there keeps playing in the
+  // feed's bar.
+  final playback = AudioPlaybackController(
+    player: AudioPlayersAudioPlayer(),
+    attachmentRead: SyncStoreAttachmentReadRepository(graph: graph),
   );
+  CollectionScope.setPlaybackController(playback);
+  CollectionMediaScope.setPlaybackController(playback);
   ConnectionsScope.setFactory(
     () => ConnectionsController(
       readRepository: SyncStoreConnectionsReadRepository(graph: graph),
@@ -263,6 +277,15 @@ void bootstrap(AppConfig config) {
         ids: ids,
       ),
       imagePicker: ImagePickerAdapter(),
+      mediaReadRepository: SyncStoreCollectionMediaReadRepository(graph: graph),
+    ).controller,
+  );
+  CollectionMediaScope.setFactory(
+    () => CollectionMediaModule(
+      readRepository: SyncStoreCollectionMediaReadRepository(graph: graph),
+      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      shareRepository: const SharePlusCardShareRepository(),
+      linkLauncher: const UrlLauncherLinkLauncher(),
     ).controller,
   );
 

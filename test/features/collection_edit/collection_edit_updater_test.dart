@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/features/collection_media/domain/collection_media_models.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_effect.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_state.dart';
@@ -10,24 +11,30 @@ void main() {
   const updater = CollectionEditUpdater();
 
   group('attach', () {
-    test('seeds the fields and loads no cover when there is none', () {
-      final (next, effects) = updater.update(
-        const CollectionEditState(),
-        const ViewAttached(
-          collectionId: 'col-1',
-          initialTitle: 'Espresso',
-          initialDescription: 'notes',
-          initialCoverAttachmentId: null,
-        ),
-      );
-      expect(next.status, CollectionEditStatus.editing);
-      expect(next.collectionId, 'col-1');
-      expect(next.initialTitle, 'Espresso');
-      expect(next.initialDescription, 'notes');
-      expect(next.coverAttachmentId, isNull);
-      expect(next.coverBusy, isFalse);
-      expect(effects, isNull);
-    });
+    test(
+      'seeds the fields and loads only the media summary without a cover',
+      () {
+        final (next, effects) = updater.update(
+          const CollectionEditState(),
+          const ViewAttached(
+            collectionId: 'col-1',
+            initialTitle: 'Espresso',
+            initialDescription: 'notes',
+            initialCoverAttachmentId: null,
+          ),
+        );
+        expect(next.status, CollectionEditStatus.editing);
+        expect(next.collectionId, 'col-1');
+        expect(next.initialTitle, 'Espresso');
+        expect(next.initialDescription, 'notes');
+        expect(next.coverAttachmentId, isNull);
+        expect(next.coverBusy, isFalse);
+        expect(
+          (effects!.single as LoadMediaSummaryEffect).collectionId,
+          'col-1',
+        );
+      },
+    );
 
     test('loads the cover bytes when a cover is set', () {
       final (next, effects) = updater.update(
@@ -40,7 +47,47 @@ void main() {
       );
       expect(next.coverAttachmentId, 'att-1');
       expect(next.coverBusy, isTrue);
-      expect((effects!.single as LoadCoverEffect).attachmentId, 'att-1');
+      expect((effects!.first as LoadCoverEffect).attachmentId, 'att-1');
+      expect(effects.last, isA<LoadMediaSummaryEffect>());
+    });
+
+    test('re-attaching drops the previous collection\'s media summary', () {
+      final (next, _) = updater.update(
+        CollectionEditState(
+          collectionId: 'col-0',
+          mediaCounts: const MediaCounts(photos: 3),
+          mediaPreviews: [Uint8List(1)],
+        ),
+        const ViewAttached(collectionId: 'col-1', initialTitle: 'Espresso'),
+      );
+      expect(next.mediaCounts, isNull);
+      expect(next.mediaPreviews, isEmpty);
+    });
+  });
+
+  group('media summary', () {
+    test('reload re-reads the current collection', () {
+      final (next, effects) = updater.update(
+        const CollectionEditState(collectionId: 'col-1'),
+        const MediaSummaryReloadRequested(),
+      );
+      expect(next.collectionId, 'col-1');
+      expect((effects!.single as LoadMediaSummaryEffect).collectionId, 'col-1');
+    });
+
+    test('loaded stores the counts and previews', () {
+      final preview = Uint8List.fromList([1, 2, 3]);
+      final (next, effects) = updater.update(
+        const CollectionEditState(collectionId: 'col-1'),
+        MediaSummaryLoaded(
+          counts: const MediaCounts(photos: 2, links: 1),
+          previews: [preview],
+        ),
+      );
+      expect(next.mediaCounts!.photos, 2);
+      expect(next.mediaCounts!.total, 3);
+      expect(next.mediaPreviews.single, same(preview));
+      expect(effects, isNull);
     });
   });
 

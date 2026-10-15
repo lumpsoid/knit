@@ -6,7 +6,8 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_state
 /// Pure reducer for the Collection Edit page (fcis.md §6.1). Title + description
 /// save on demand (a blank title is dropped — `title` is NOT NULL, spec §6.4);
 /// the cover is managed in place — each intent emits one write effect and the
-/// result resolves the cover section.
+/// result resolves the cover section. The read-only media summary loads on
+/// attach and again on return from the Media page.
 class CollectionEditUpdater
     implements
         Updater<
@@ -28,18 +29,21 @@ class CollectionEditUpdater
         :final initialDescription,
         :final initialCoverAttachmentId,
       ):
+        // The controller outlives one page visit: start from a fresh state so
+        // the previous collection's cover/media never flash on this one.
         return (
-          state.copyWith(
-            status: CollectionEditStatus.editing,
+          CollectionEditState(
             collectionId: collectionId,
             initialTitle: initialTitle,
             initialDescription: initialDescription,
             coverAttachmentId: initialCoverAttachmentId,
             coverBusy: initialCoverAttachmentId != null,
           ),
-          initialCoverAttachmentId == null
-              ? null
-              : [LoadCoverEffect(initialCoverAttachmentId)],
+          [
+            if (initialCoverAttachmentId != null)
+              LoadCoverEffect(initialCoverAttachmentId),
+            LoadMediaSummaryEffect(collectionId),
+          ],
         );
 
       case SaveRequested(:final title, :final description):
@@ -97,6 +101,15 @@ class CollectionEditUpdater
 
       case CoverEditEnded():
         return (state.copyWith(coverBusy: false), null);
+
+      case MediaSummaryReloadRequested():
+        return (state, [LoadMediaSummaryEffect(state.collectionId)]);
+
+      case MediaSummaryLoaded(:final counts, :final previews):
+        return (
+          state.copyWith(mediaCounts: counts, mediaPreviews: previews),
+          null,
+        );
 
       case DeactivateFeature():
         return (state, null);
