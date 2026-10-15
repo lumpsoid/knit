@@ -53,12 +53,63 @@ class _CollectionPageState extends State<CollectionPage> {
   /// the user backs out.
   bool _showAudioBar = false;
 
+  /// The feed's [SliverAnimatedList]. It owns its item count (initialItemCount
+  /// is read once, at mount), so every change to the feed data must be mirrored
+  /// into it via insertItem/removeItem — see [_syncFeedList].
+  final GlobalKey<SliverAnimatedListState> _feedListKey = GlobalKey();
+
+  /// The cards the animated list currently holds, oldest → newest (data order).
+  /// The list is reversed, so data index `i` is list index `length - 1 - i`:
+  /// the newest card is list item 0, at the bottom. Kept (not just ids) so a
+  /// removed card can still be drawn while it animates out.
+  List<FeedCard> _feedListCards = const [];
+
   @override
   void initState() {
     super.initState();
     _controller = CollectionScope.create()
       ..onAttach(_onUiEffect)
       ..dispatch(ViewAttached(CollectionScope.routeArgs.collectionId));
+    _controller.stateHolder.addListener(_syncFeedList);
+  }
+
+  /// Mirror the feed's cards into the animated list: an added card animates in,
+  /// a removed one animates out. Runs on every state change, before the rebuild
+  /// it schedules. While the list isn't mounted (loading, error, reorder mode)
+  /// the cards are only recorded — they seed its initialItemCount on (re)mount,
+  /// so the first load appears without animation.
+  void _syncFeedList() {
+    final next = _controller.stateHolder.value.cards;
+    final list = _feedListKey.currentState;
+    if (list == null) {
+      _feedListCards = next;
+      return;
+    }
+    final current = List.of(_feedListCards);
+    final nextIds = {for (final c in next) c.id};
+    for (var i = current.length - 1; i >= 0; i--) {
+      final card = current[i];
+      if (nextIds.contains(card.id)) continue;
+      // The removed builder can't read the state (the card is gone from it), so
+      // it draws the card captured here — inert while it animates out.
+      final imageBytes = _bytesFor(_controller.stateHolder.value, card);
+      list.removeItem(
+        current.length - 1 - i,
+        (context, animation) => _CardEntrance(
+          animation: animation,
+          child: IgnorePointer(child: _cardRow(card, imageBytes)),
+        ),
+        duration: _kFeedAnimation,
+      );
+      current.removeAt(i);
+    }
+    final currentIds = {for (final c in current) c.id};
+    for (var j = 0; j < next.length; j++) {
+      if (currentIds.contains(next[j].id)) continue;
+      current.insert(j, next[j]);
+      list.insertItem(current.length - 1 - j, duration: _kFeedAnimation);
+    }
+    _feedListCards = next;
   }
 
   @override
@@ -69,6 +120,7 @@ class _CollectionPageState extends State<CollectionPage> {
     // Cancel any in-flight recording, then tear down the page-owned controller
     // (detaches the effect seam and disposes the state-holder notifier).
     _controller
+      ..stateHolder.removeListener(_syncFeedList)
       ..dispatch(const DeactivateFeature())
       ..dispose();
     _composer.dispose();
@@ -500,84 +552,108 @@ class _CollectionPageState extends State<CollectionPage> {
         },
       );
     }
-    final isEmpty = state.isEmpty;
+    final cardCount = state.cards.length;
+    // Card id → its (reversed) list index, built once per build so the key
+    // lookup below stays O(1) however large the collection grows.
+    final listIndexById = <String, int>{
+      for (var i = 0; i < cardCount; i++) state.cards[i].id: cardCount - 1 - i,
+    };
     return RefreshIndicator(
       onRefresh: () async => _controller.dispatch(const ReloadRequested()),
-      child: ListView.builder(
+      // Chat-style: the scroll view is reversed, so its start — list item 0 —
+      // sits at the bottom, right above the composer, and holds the *newest*
+      // card. A new card is inserted at item 0: it appears in view, in place,
+      // with no scrolling. The title card comes after the cards, so it heads the
+      // feed once scrolled up; an empty feed shows a hint beneath it.
+      child: CustomScrollView(
+        reverse: true,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        // The title card is always item 0; an empty feed shows a hint beneath it.
-        itemCount: 1 + (isEmpty ? 1 : state.cards.length),
-        itemBuilder: (context, i) {
-          if (i == 0) return titleCard;
-          if (isEmpty) return const _EmptyHint();
-          final card = state.cards[i - 1];
-          final bytes = _bytesFor(state, card);
-          final audioId = card.kind == CardKind.audio
-              ? card.attachmentId
-              : null;
-          final bubble = _CardBubble(
-            card: card,
-            imageBytes: bytes,
-            onTap: () => _openCardActions(card),
-            onImageTap: bytes == null ? null : () => _openImagePreview(card),
-            // Tapping a captioned file card shares it through the system sheet
-            // (which offers "Open with…"); the same path the actions-sheet Share
-            // uses. A caption-less file card has no other tap target, so leave it
-            // null: the tap falls through to the bubble's actions sheet (which
-            // already carries Share) — otherwise the user could never reach
-            // Delete to remove the card.
-            onFileTap:
-                card.kind == CardKind.file &&
-                    (card.text?.trim().isNotEmpty ?? false)
-                ? () => _controller.dispatch(CardShareRequested(card.id))
-                : null,
-            // Tapping a link card opens its URL in the browser (dispatched as an
-            // intent — the launch itself lives behind the LinkLauncher port). A
-            // label-less link has no URL to open, so it falls through to the
-            // bubble's actions sheet (where Delete still lives).
-            onLinkTap:
-                card.kind == CardKind.link &&
-                    (card.text?.trim().isNotEmpty ?? false)
-                ? () => _controller.dispatch(LinkCardOpened(card.id))
-                : null,
-            // A playable audio card gets the shared player snapshot (to flip when
-            // it's the one playing) and a tap-to-toggle on its play button.
-            playback: audioId == null ? null : _playback.snapshot,
-            onToggleAudio: audioId == null
-                ? null
-                : () => unawaited(_playback.toggle(card.id, audioId)),
-          );
-          // A card with links-out (§4.4) gets a count badge under its bubble;
-          // tapping it opens the Connections page focused on that card — the
-          // same destination as the actions sheet's "Connections".
-          final item = card.connectionCount == 0
-              ? bubble
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    bubble,
-                    _CardConnectionsBadge(
-                      count: card.connectionCount,
-                      onTap: () => _openConnections(
-                        kind: ConnectedEntityKind.card,
-                        id: card.id,
-                        title: _cardLabel(AppLocalizations.of(context), card),
-                      ),
-                    ),
-                  ],
-                );
-          // The whole feed row — not just the bubble — opens the card-actions
-          // sheet: a tap on the empty space beside a short bubble lands here.
-          // Inner tap targets (bubble, image, link, badge) still win the arena.
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _openCardActions(card),
-            child: item,
-          );
-        },
+        slivers: [
+          const SliverPadding(padding: EdgeInsets.only(top: 8)),
+          SliverAnimatedList(
+            key: _feedListKey,
+            initialItemCount: _feedListCards.length,
+            // An insert at item 0 shifts every index: keep each card's element
+            // (and its decoded image) attached to its id rather than its slot.
+            findChildIndexCallback: (key) =>
+                key is ValueKey<String> ? listIndexById[key.value] : null,
+            itemBuilder: (context, i, animation) {
+              final card = state.cards[cardCount - 1 - i];
+              return _CardEntrance(
+                key: ValueKey(card.id),
+                animation: animation,
+                child: _cardRow(card, _bytesFor(state, card)),
+              );
+            },
+          ),
+          if (state.isEmpty) const SliverToBoxAdapter(child: _EmptyHint()),
+          SliverToBoxAdapter(child: titleCard),
+          const SliverPadding(padding: EdgeInsets.only(top: 8)),
+        ],
       ),
+    );
+  }
+
+  /// One feed row for [card]: its bubble, plus a connections badge when linked.
+  Widget _cardRow(FeedCard card, Uint8List? bytes) {
+    final audioId = card.kind == CardKind.audio ? card.attachmentId : null;
+    final bubble = _CardBubble(
+      card: card,
+      imageBytes: bytes,
+      onTap: () => _openCardActions(card),
+      onImageTap: bytes == null ? null : () => _openImagePreview(card),
+      // Tapping a captioned file card shares it through the system sheet
+      // (which offers "Open with…"); the same path the actions-sheet Share
+      // uses. A caption-less file card has no other tap target, so leave it
+      // null: the tap falls through to the bubble's actions sheet (which
+      // already carries Share) — otherwise the user could never reach
+      // Delete to remove the card.
+      onFileTap:
+          card.kind == CardKind.file && (card.text?.trim().isNotEmpty ?? false)
+          ? () => _controller.dispatch(CardShareRequested(card.id))
+          : null,
+      // Tapping a link card opens its URL in the browser (dispatched as an
+      // intent — the launch itself lives behind the LinkLauncher port). A
+      // label-less link has no URL to open, so it falls through to the
+      // bubble's actions sheet (where Delete still lives).
+      onLinkTap:
+          card.kind == CardKind.link && (card.text?.trim().isNotEmpty ?? false)
+          ? () => _controller.dispatch(LinkCardOpened(card.id))
+          : null,
+      // A playable audio card gets the shared player snapshot (to flip when
+      // it's the one playing) and a tap-to-toggle on its play button.
+      playback: audioId == null ? null : _playback.snapshot,
+      onToggleAudio: audioId == null
+          ? null
+          : () => unawaited(_playback.toggle(card.id, audioId)),
+    );
+    // A card with links-out (§4.4) gets a count badge under its bubble;
+    // tapping it opens the Connections page focused on that card — the
+    // same destination as the actions sheet's "Connections".
+    final item = card.connectionCount == 0
+        ? bubble
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              bubble,
+              _CardConnectionsBadge(
+                count: card.connectionCount,
+                onTap: () => _openConnections(
+                  kind: ConnectedEntityKind.card,
+                  id: card.id,
+                  title: _cardLabel(AppLocalizations.of(context), card),
+                ),
+              ),
+            ],
+          );
+    // The whole feed row — not just the bubble — opens the card-actions
+    // sheet: a tap on the empty space beside a short bubble lands here.
+    // Inner tap targets (bubble, image, link, badge) still win the arena.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openCardActions(card),
+      child: item,
     );
   }
 
@@ -593,6 +669,47 @@ class _CollectionPageState extends State<CollectionPage> {
 enum _CardAction { edit, delete, link, connections, share, reorder }
 
 // --- widgets ---------------------------------------------------------------
+
+/// How long a card takes to animate into (or out of) the feed.
+const Duration _kFeedAnimation = Duration(milliseconds: 280);
+
+/// A feed card's entrance/exit, driven by its [SliverAnimatedList] animation:
+/// the row opens its space (nudging the cards above it up), while the card
+/// fades in and rises slightly. Played in reverse when a card is removed. Initial
+/// items get a completed animation, so they render as-is.
+class _CardEntrance extends StatelessWidget {
+  const _CardEntrance({
+    super.key,
+    required this.animation,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return SizeTransition(
+      sizeFactor: curved,
+      alignment: Alignment.topCenter,
+      child: FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween(
+            begin: const Offset(0, 0.25),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
 
 /// The shared [Hero] tag tying a card's feed thumbnail to its full-screen
 /// preview, so the open/close transition flies between the two.
