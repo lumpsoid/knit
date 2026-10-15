@@ -10,10 +10,7 @@ void main() {
   });
 
   test('different bytes hash differently', () async {
-    expect(
-      await sha256Hex([1, 2, 3]),
-      isNot(await sha256Hex([1, 2, 4])),
-    );
+    expect(await sha256Hex([1, 2, 3]), isNot(await sha256Hex([1, 2, 4])));
   });
 
   test('matches the known SHA-256 empty-input vector', () async {

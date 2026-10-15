@@ -47,9 +47,18 @@ class Snapshot {
   /// The fixed envelope + placement keys (spec §6.3 / §6.4); everything else in a
   /// payload is entity-specific [content].
   static const Set<String> _envelopeKeys = {
-    't', 'id', 'author', 'created_by', 'created_at',
-    'hlc_ms', 'hlc_counter', 'deleted', 'sig',
-    'position', 'position_ms', 'position_counter',
+    't',
+    'id',
+    'author',
+    'created_by',
+    'created_at',
+    'hlc_ms',
+    'hlc_counter',
+    'deleted',
+    'sig',
+    'position',
+    'position_ms',
+    'position_counter',
   };
 
   // --- Envelope (spec §6.3) ---------------------------------------------------
@@ -110,9 +119,9 @@ class Snapshot {
     this.position,
     this.content = const {},
   }) : assert(
-          (type == EntityType.card) == (placement != null),
-          'cards carry a placement clock; non-cards must not',
-        );
+         (type == EntityType.card) == (placement != null),
+         'cards carry a placement clock; non-cards must not',
+       );
 
   bool get isCard => type == EntityType.card;
 
@@ -160,20 +169,19 @@ class Snapshot {
     Hlc? placement,
     String? position,
     Map<String, Object?>? content,
-  }) =>
-      Snapshot(
-        type: type ?? this.type,
-        id: id ?? this.id,
-        author: author ?? this.author,
-        createdBy: createdBy ?? this.createdBy,
-        createdAt: createdAt ?? this.createdAt,
-        hlc: hlc ?? this.hlc,
-        deleted: deleted ?? this.deleted,
-        sig: sig ?? this.sig,
-        placement: placement ?? this.placement,
-        position: position ?? this.position,
-        content: content ?? this.content,
-      );
+  }) => Snapshot(
+    type: type ?? this.type,
+    id: id ?? this.id,
+    author: author ?? this.author,
+    createdBy: createdBy ?? this.createdBy,
+    createdAt: createdAt ?? this.createdAt,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    sig: sig ?? this.sig,
+    placement: placement ?? this.placement,
+    position: position ?? this.position,
+    content: content ?? this.content,
+  );
 
   /// Parse a verified canonical payload map (spec §7.4) into a [Snapshot].
   /// Pulls the fixed envelope + placement fields and bundles the rest into
@@ -200,7 +208,10 @@ class Snapshot {
       // the apply path injects it here after verification.
       sig: payload['sig'] as String? ?? '',
       placement: isCard
-          ? Hlc(payload['position_ms'] as int, payload['position_counter'] as int)
+          ? Hlc(
+              payload['position_ms'] as int,
+              payload['position_counter'] as int,
+            )
           : null,
       position: isCard ? payload['position'] as String : null,
       content: content,

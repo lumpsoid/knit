@@ -6,5 +6,7 @@ import 'package:result_dart/result_dart.dart';
 /// preference set. Returns the saved [AppPreferences] so the shell can confirm
 /// what landed.
 abstract interface class SettingsWriteRepository {
-  Future<Result<AppPreferences, SettingsFailure>> save(AppPreferences preferences);
+  Future<Result<AppPreferences, SettingsFailure>> save(
+    AppPreferences preferences,
+  );
 }

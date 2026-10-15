@@ -31,11 +31,10 @@ class OnboardState {
     String? nickname,
     IdentityCard? identity,
     bool? hasError,
-  }) =>
-      OnboardState(
-        step: step ?? this.step,
-        nickname: nickname ?? this.nickname,
-        identity: identity ?? this.identity,
-        hasError: hasError ?? this.hasError,
-      );
+  }) => OnboardState(
+    step: step ?? this.step,
+    nickname: nickname ?? this.nickname,
+    identity: identity ?? this.identity,
+    hasError: hasError ?? this.hasError,
+  );
 }

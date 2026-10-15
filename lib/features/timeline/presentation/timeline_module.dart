@@ -25,8 +25,9 @@ class TimelineModule {
     required TimelineChannelReader channelReader,
     Logger? logger,
   }) {
-    final stateHolder =
-        ValueListenableStateHolder<TimelineState>(const TimelineState());
+    final stateHolder = ValueListenableStateHolder<TimelineState>(
+      const TimelineState(),
+    );
     final effectEmitter = EffectEmitter<TimelineUiEffect>();
     final shell = TimelineShell(
       readRepository: readRepository,
@@ -38,8 +39,9 @@ class TimelineModule {
     final loop = TimelineLoop(
       stateHolder: stateHolder,
       updater: const TimelineUpdater(),
-      effectRunner:
-          ShellEffectRunner<TimelineEffect, TimelineAction>(shell: shell),
+      effectRunner: ShellEffectRunner<TimelineEffect, TimelineAction>(
+        shell: shell,
+      ),
     );
     _controller = TimelineController(
       stateHolder: stateHolder,

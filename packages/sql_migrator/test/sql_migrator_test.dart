@@ -4,23 +4,23 @@ import 'package:sql_migrator/sql_migrator.dart';
 
 /// Two example migrations used across the suite.
 List<Migration> _migrations() => [
-      Migration(
-        version: 1,
-        description: 'create users',
-        up: (db) => db.execute(
-          'CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)',
-        ),
-        down: (db) => db.execute('DROP TABLE users'),
-      ),
-      Migration(
-        version: 2,
-        description: 'create posts',
-        up: (db) => db.execute(
-          'CREATE TABLE posts (id INTEGER PRIMARY KEY, body TEXT NOT NULL)',
-        ),
-        down: (db) => db.execute('DROP TABLE posts'),
-      ),
-    ];
+  Migration(
+    version: 1,
+    description: 'create users',
+    up: (db) => db.execute(
+      'CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)',
+    ),
+    down: (db) => db.execute('DROP TABLE users'),
+  ),
+  Migration(
+    version: 2,
+    description: 'create posts',
+    up: (db) => db.execute(
+      'CREATE TABLE posts (id INTEGER PRIMARY KEY, body TEXT NOT NULL)',
+    ),
+    down: (db) => db.execute('DROP TABLE posts'),
+  ),
+];
 
 void main() {
   sqfliteFfiInit();
@@ -28,12 +28,11 @@ void main() {
   Migrator migratorOf(
     MigrationExecutor executor, {
     List<Migration>? migrations,
-  }) =>
-      Migrator(
-        executor: executor,
-        migrations: migrations ?? _migrations(),
-        logger: const NoOpMigrationLogger(),
-      );
+  }) => Migrator(
+    executor: executor,
+    migrations: migrations ?? _migrations(),
+    logger: const NoOpMigrationLogger(),
+  );
 
   group('validation', () {
     test('duplicate versions throw MigrationValidationException', () {
@@ -63,13 +62,16 @@ void main() {
   });
 
   group('InMemoryExecutor', () {
-    test('migrate applies all pending, currentVersion tracks the tip', () async {
-      final m = migratorOf(InMemoryExecutor());
-      final applied = await m.migrate();
-      expect(applied.map((r) => r.version), [1, 2]);
-      expect(await m.currentVersion(), 2);
-      expect((await m.pendingMigrations()), isEmpty);
-    });
+    test(
+      'migrate applies all pending, currentVersion tracks the tip',
+      () async {
+        final m = migratorOf(InMemoryExecutor());
+        final applied = await m.migrate();
+        expect(applied.map((r) => r.version), [1, 2]);
+        expect(await m.currentVersion(), 2);
+        expect((await m.pendingMigrations()), isEmpty);
+      },
+    );
 
     test('migrate is idempotent — second run applies nothing', () async {
       final m = migratorOf(InMemoryExecutor());
@@ -100,8 +102,7 @@ void main() {
       final tampered = migratorOf(
         exec,
         migrations: [
-          Migration(
-              version: 1, description: 'CHANGED', up: _noop, down: _noop),
+          Migration(version: 1, description: 'CHANGED', up: _noop, down: _noop),
         ],
       );
       expect(
@@ -132,10 +133,7 @@ void main() {
       await m.migrateTo(0);
       expect(await m.currentVersion(), 0);
       // posts was dropped by its down migration.
-      expect(
-        () => exec.query('SELECT * FROM posts'),
-        throwsA(anything),
-      );
+      expect(() => exec.query('SELECT * FROM posts'), throwsA(anything));
     });
 
     test('status reports applied + pending after a partial migrate', () async {

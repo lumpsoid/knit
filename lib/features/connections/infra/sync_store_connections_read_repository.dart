@@ -12,7 +12,8 @@ import 'package:result_dart/result_dart.dart';
 /// rule lives in one place, not re-implemented here. The far endpoint's label
 /// is read from the projection only when it is live.
 class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
-  SyncStoreConnectionsReadRepository({required AppGraph graph}) : _graph = graph;
+  SyncStoreConnectionsReadRepository({required AppGraph graph})
+    : _graph = graph;
 
   final AppGraph _graph;
 
@@ -31,22 +32,14 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
       final outgoing = <ConnectionItem>[];
       for (final link in await store.linksOut(id)) {
         outgoing.add(
-          await _item(
-            store,
-            link,
-            direction: ConnectionDirection.outgoing,
-          ),
+          await _item(store, link, direction: ConnectionDirection.outgoing),
         );
       }
 
       final incoming = <ConnectionItem>[];
       for (final link in await store.backlinks(id)) {
         incoming.add(
-          await _item(
-            store,
-            link,
-            direction: ConnectionDirection.incoming,
-          ),
+          await _item(store, link, direction: ConnectionDirection.incoming),
         );
       }
 
@@ -81,7 +74,9 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
         link.content[outgoing ? 'target_id' : 'source_id'] as String;
     final broken = outgoing ? status.targetBroken : status.sourceBroken;
 
-    final other = broken ? null : await store.get(_entityType(otherKind), otherId);
+    final other = broken
+        ? null
+        : await store.get(_entityType(otherKind), otherId);
     return ConnectionItem(
       linkId: link.id,
       direction: direction,
@@ -89,7 +84,9 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
       otherId: otherId,
       broken: broken,
       label: other == null ? null : _label(other),
-      openCollectionId: other == null ? null : _openCollectionId(otherKind, other),
+      openCollectionId: other == null
+          ? null
+          : _openCollectionId(otherKind, other),
     );
   }
 
@@ -128,10 +125,10 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
   }
 
   EntityType _entityType(ConnectedEntityKind kind) => switch (kind) {
-        ConnectedEntityKind.collection => EntityType.collection,
-        ConnectedEntityKind.card => EntityType.card,
-        // An unknown endpoint kind can't be located; the resolver already
-        // marked it broken, so the table queried here is never actually read.
-        ConnectedEntityKind.unknown => EntityType.collection,
-      };
+    ConnectedEntityKind.collection => EntityType.collection,
+    ConnectedEntityKind.card => EntityType.card,
+    // An unknown endpoint kind can't be located; the resolver already
+    // marked it broken, so the table queried here is never actually read.
+    ConnectedEntityKind.unknown => EntityType.collection,
+  };
 }

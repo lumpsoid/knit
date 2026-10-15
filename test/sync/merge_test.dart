@@ -15,18 +15,17 @@ Snapshot collection({
   bool deleted = false,
   String sig = 'sig0',
   String title = 'untitled',
-}) =>
-    Snapshot(
-      type: EntityType.collection,
-      id: id,
-      author: author,
-      createdBy: createdBy ?? author,
-      createdAt: 1000,
-      hlc: Hlc(hlcMs, hlcCounter),
-      deleted: deleted,
-      sig: sig,
-      content: {'title': title, 'cover_attachment_id': null},
-    );
+}) => Snapshot(
+  type: EntityType.collection,
+  id: id,
+  author: author,
+  createdBy: createdBy ?? author,
+  createdAt: 1000,
+  hlc: Hlc(hlcMs, hlcCounter),
+  deleted: deleted,
+  sig: sig,
+  content: {'title': title, 'cover_attachment_id': null},
+);
 
 Snapshot card({
   String id = 'card-1',
@@ -41,20 +40,19 @@ Snapshot card({
   String position = 'a0',
   int posMs = 1000,
   int posCounter = 0,
-}) =>
-    Snapshot(
-      type: EntityType.card,
-      id: id,
-      author: author,
-      createdBy: createdBy ?? author,
-      createdAt: 1000,
-      hlc: Hlc(hlcMs, hlcCounter),
-      deleted: deleted,
-      sig: sig,
-      placement: Hlc(posMs, posCounter),
-      position: position,
-      content: {'collection_id': collectionId, 'kind': 'text', 'text': text},
-    );
+}) => Snapshot(
+  type: EntityType.card,
+  id: id,
+  author: author,
+  createdBy: createdBy ?? author,
+  createdAt: 1000,
+  hlc: Hlc(hlcMs, hlcCounter),
+  deleted: deleted,
+  sig: sig,
+  placement: Hlc(posMs, posCounter),
+  position: position,
+  content: {'collection_id': collectionId, 'kind': 'text', 'text': text},
+);
 
 void main() {
   group('content comparator (spec §6.9 / §8.5)', () {
@@ -88,17 +86,24 @@ void main() {
       expect(identical(merged, a), isTrue);
     });
 
-    test('created_by is not a comparator input and rides the winner unchanged', () {
-      // Original creator A; editor B authors a higher-HLC version but must
-      // preserve created_by = A (spec §6.2 honesty rule, modelled by the build).
-      final original = collection(hlcMs: 100, author: _authorA);
-      final edit = collection(
-          hlcMs: 200, author: _authorB, createdBy: _authorA, title: 'edited');
-      final won = merge(original, edit);
-      expect(won.content['title'], 'edited');
-      expect(won.author, _authorB);
-      expect(won.createdBy, _authorA, reason: 'original creator preserved');
-    });
+    test(
+      'created_by is not a comparator input and rides the winner unchanged',
+      () {
+        // Original creator A; editor B authors a higher-HLC version but must
+        // preserve created_by = A (spec §6.2 honesty rule, modelled by the build).
+        final original = collection(hlcMs: 100, author: _authorA);
+        final edit = collection(
+          hlcMs: 200,
+          author: _authorB,
+          createdBy: _authorA,
+          title: 'edited',
+        );
+        final won = merge(original, edit);
+        expect(won.content['title'], 'edited');
+        expect(won.author, _authorB);
+        expect(won.createdBy, _authorA, reason: 'original creator preserved');
+      },
+    );
   });
 
   group('delete vs edit (spec §6.9 — later HLC wins)', () {
@@ -124,11 +129,21 @@ void main() {
 
       // Device A: edit text → fresh content HLC, placement frozen.
       final textEdit = card(
-          hlcMs: 200, posMs: 100, text: 'edited', position: 'a0', sig: 'edit');
+        hlcMs: 200,
+        posMs: 100,
+        text: 'edited',
+        position: 'a0',
+        sig: 'edit',
+      );
 
       // Device B: reorder → fresh placement HLC, content HLC frozen at base.
       final reorder = card(
-          hlcMs: 100, posMs: 300, text: 'orig', position: 'a5', sig: 'move');
+        hlcMs: 100,
+        posMs: 300,
+        text: 'orig',
+        position: 'a5',
+        sig: 'move',
+      );
 
       var p = Projection()..apply(base);
       p.apply(textEdit);
@@ -138,18 +153,43 @@ void main() {
       // Content winner = textEdit; placement winner = reorder. Blended row.
       expect(row.content['text'], 'edited', reason: 'text edit preserved');
       expect(row.position, 'a5', reason: 'reorder preserved');
-      expect(row.sig, 'edit', reason: 'sig reflects content winner (spec §7.6)');
+      expect(
+        row.sig,
+        'edit',
+        reason: 'sig reflects content winner (spec §7.6)',
+      );
     });
 
-    test('a stale drag (frozen content HLC) cannot clobber a newer text edit', () {
-      final textEdit = card(hlcMs: 500, posMs: 100, text: 'keep-me', position: 'a0');
-      // Reorder carries the OLD content snapshot; its hlc_* stayed frozen low.
-      final staleReorder =
-          card(hlcMs: 100, posMs: 600, text: 'stale', position: 'b0', sig: 'r');
-      final merged = merge(textEdit, staleReorder);
-      expect(merged.content['text'], 'keep-me', reason: 'content edit survives');
-      expect(merged.position, 'b0', reason: 'but the placement still applies');
-    });
+    test(
+      'a stale drag (frozen content HLC) cannot clobber a newer text edit',
+      () {
+        final textEdit = card(
+          hlcMs: 500,
+          posMs: 100,
+          text: 'keep-me',
+          position: 'a0',
+        );
+        // Reorder carries the OLD content snapshot; its hlc_* stayed frozen low.
+        final staleReorder = card(
+          hlcMs: 100,
+          posMs: 600,
+          text: 'stale',
+          position: 'b0',
+          sig: 'r',
+        );
+        final merged = merge(textEdit, staleReorder);
+        expect(
+          merged.content['text'],
+          'keep-me',
+          reason: 'content edit survives',
+        );
+        expect(
+          merged.position,
+          'b0',
+          reason: 'but the placement still applies',
+        );
+      },
+    );
   });
 
   group('feed order (spec §8.7)', () {
@@ -162,7 +202,11 @@ void main() {
         ..apply(card(id: 'c-d', position: 'a9', hlcMs: 1, deleted: true));
 
       final ids = p.feed('col-1').map((s) => s.id).toList();
-      expect(ids, ['c-a', 'c-z', 'c-b'], reason: 'position asc, id asc, no tombstone');
+      expect(ids, [
+        'c-a',
+        'c-z',
+        'c-b',
+      ], reason: 'position asc, id asc, no tombstone');
     });
   });
 }

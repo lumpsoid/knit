@@ -45,10 +45,7 @@ class TimelineUpdater
           null,
         );
       case TimelineLoadFailed():
-        return (
-          state.copyWith(status: TimelineStatus.failed),
-          null,
-        );
+        return (state.copyWith(status: TimelineStatus.failed), null);
       case CollectionTapped(:final collectionId):
         return (state, [OpenCollectionEffect(collectionId)]);
       case CreateCollectionRequested(:final title):

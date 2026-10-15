@@ -67,11 +67,16 @@ class _AppLaunchPageState extends State<AppLaunchPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline,
-                        size: 48, color: theme.colorScheme.error),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: theme.colorScheme.error,
+                    ),
                     const SizedBox(height: 16),
-                    Text(l10n.appLaunchError,
-                        style: theme.textTheme.titleMedium),
+                    Text(
+                      l10n.appLaunchError,
+                      style: theme.textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       state.errorMessage ?? l10n.appLaunchUnknownError,
@@ -91,9 +96,12 @@ class _AppLaunchPageState extends State<AppLaunchPage> {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(l10n.appTitle,
-                    style: theme.textTheme.displaySmall
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  l10n.appTitle,
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 24),
                 const SizedBox(
                   width: 28,

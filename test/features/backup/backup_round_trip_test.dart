@@ -30,12 +30,11 @@ void main() {
     final graph = await emptyGraph();
     final store = graph.store;
     await store.create(EntityType.collection, colId, {'title': 'Espresso'});
-    await store.create(
-      EntityType.card,
-      cardId,
-      {'kind': 'text', 'collection_id': colId, 'text': 'hello'},
-      position: 'a0',
-    );
+    await store.create(EntityType.card, cardId, {
+      'kind': 'text',
+      'collection_id': colId,
+      'text': 'hello',
+    }, position: 'a0');
     final hash = await sha256Hex(blobBytes);
     await store.create(EntityType.attachment, attId, {
       'kind': 'image',
@@ -52,13 +51,15 @@ void main() {
     final src = await seededGraph();
     final hash = await sha256Hex(blobBytes);
 
-    final export = await SyncStoreBackupExportRepository(graph: src).exportAll();
+    final export = await SyncStoreBackupExportRepository(
+      graph: src,
+    ).exportAll();
     final archive = export.getOrThrow();
 
     final dst = await emptyGraph();
-    final summary = (await SyncStoreBackupImportRepository(graph: dst)
-            .importArchive(archive.bytes))
-        .getOrThrow();
+    final summary = (await SyncStoreBackupImportRepository(
+      graph: dst,
+    ).importArchive(archive.bytes)).getOrThrow();
 
     // Three signed ops (collection, card, attachment), all applied; one blob.
     expect(summary.opsApplied, 3);
@@ -82,9 +83,9 @@ void main() {
 
   test('re-importing the same bundle dedups every op (idempotent)', () async {
     final src = await seededGraph();
-    final archive =
-        (await SyncStoreBackupExportRepository(graph: src).exportAll())
-            .getOrThrow();
+    final archive = (await SyncStoreBackupExportRepository(
+      graph: src,
+    ).exportAll()).getOrThrow();
 
     final dst = await emptyGraph();
     final importer = SyncStoreBackupImportRepository(graph: dst);
@@ -96,39 +97,42 @@ void main() {
     expect(second.opsDeduped, 3);
   });
 
-  test('a blob whose bytes do not match its hash is skipped, op still applies',
-      () async {
-    final src = await seededGraph();
-    final archive =
-        (await SyncStoreBackupExportRepository(graph: src).exportAll())
-            .getOrThrow();
+  test(
+    'a blob whose bytes do not match its hash is skipped, op still applies',
+    () async {
+      final src = await seededGraph();
+      final archive = (await SyncStoreBackupExportRepository(
+        graph: src,
+      ).exportAll()).getOrThrow();
 
-    // Corrupt the blob bytes but keep its (now wrong) content-hash name.
-    const codec = BackupArchiveCodec();
-    final parsed = codec.decode(archive.bytes);
-    final tampered = codec.encode(
-      manifest: parsed.manifest,
-      opLines: parsed.opLines,
-      blobs: {
-        for (final e in parsed.blobs.entries)
-          e.key: Uint8List.fromList([...e.value, 99]),
-      },
-    );
+      // Corrupt the blob bytes but keep its (now wrong) content-hash name.
+      const codec = BackupArchiveCodec();
+      final parsed = codec.decode(archive.bytes);
+      final tampered = codec.encode(
+        manifest: parsed.manifest,
+        opLines: parsed.opLines,
+        blobs: {
+          for (final e in parsed.blobs.entries)
+            e.key: Uint8List.fromList([...e.value, 99]),
+        },
+      );
 
-    final dst = await emptyGraph();
-    final summary = (await SyncStoreBackupImportRepository(graph: dst)
-            .importArchive(tampered))
-        .getOrThrow();
+      final dst = await emptyGraph();
+      final summary = (await SyncStoreBackupImportRepository(
+        graph: dst,
+      ).importArchive(tampered)).getOrThrow();
 
-    expect(summary.blobsMismatched, 1);
-    expect(summary.blobsRestored, 0);
-    expect(summary.opsApplied, 3); // metadata ops still replay
-  });
+      expect(summary.blobsMismatched, 1);
+      expect(summary.blobsRestored, 0);
+      expect(summary.opsApplied, 3); // metadata ops still replay
+    },
+  );
 
   test('a non-archive input fails with BackupCorruptArchiveFailure', () async {
     final dst = await emptyGraph();
-    final result = await SyncStoreBackupImportRepository(graph: dst)
-        .importArchive(Uint8List.fromList([1, 2, 3, 4, 5]));
+    final result = await SyncStoreBackupImportRepository(
+      graph: dst,
+    ).importArchive(Uint8List.fromList([1, 2, 3, 4, 5]));
 
     expect(result.isFailure, isTrue);
     expect(result.error, isA<BackupCorruptArchiveFailure>());

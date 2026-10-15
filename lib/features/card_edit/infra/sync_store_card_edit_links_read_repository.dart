@@ -13,7 +13,7 @@ import 'package:result_dart/result_dart.dart';
 class SyncStoreCardEditLinksReadRepository
     implements CardEditLinksReadRepository {
   SyncStoreCardEditLinksReadRepository({required AppGraph graph})
-      : _graph = graph;
+    : _graph = graph;
 
   final AppGraph _graph;
 
@@ -31,8 +31,9 @@ class SyncStoreCardEditLinksReadRepository
         );
         final otherId = link.content['target_id'] as String;
         final broken = status.targetBroken;
-        final other =
-            broken ? null : await store.get(_entityType(otherKind), otherId);
+        final other = broken
+            ? null
+            : await store.get(_entityType(otherKind), otherId);
         items.add(
           ConnectionItem(
             linkId: link.id,
@@ -51,9 +52,9 @@ class SyncStoreCardEditLinksReadRepository
   }
 
   EntityType _entityType(ConnectedEntityKind kind) => switch (kind) {
-        ConnectedEntityKind.collection => EntityType.collection,
-        ConnectedEntityKind.card => EntityType.card,
-        // Unknown endpoints are already marked broken, so this table is unread.
-        ConnectedEntityKind.unknown => EntityType.collection,
-      };
+    ConnectedEntityKind.collection => EntityType.collection,
+    ConnectedEntityKind.card => EntityType.card,
+    // Unknown endpoints are already marked broken, so this table is unread.
+    ConnectedEntityKind.unknown => EntityType.collection,
+  };
 }

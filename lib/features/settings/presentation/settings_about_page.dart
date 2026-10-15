@@ -18,29 +18,32 @@ class SettingsAboutPage extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settingsAboutTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.settingsAboutTitle)),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
         children: [
           Center(
             child: Column(
               children: [
-                Icon(Icons.workspaces_outline,
-                    size: 64, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.workspaces_outline,
+                  size: 64,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   l10n.appTitle,
-                  style: theme.textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   l10n.settingsAboutTagline,
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

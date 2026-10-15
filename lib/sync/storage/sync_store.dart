@@ -36,9 +36,9 @@ class SyncStore {
     SecretBox secretBox = const PlaintextSecretBox(),
     DeviceClock? clock,
     this.maxSkewMs = kMaxSkewMs,
-  })  : _unitOfWork = unitOfWork,
-        _secretBox = secretBox,
-        _clock = clock ?? DeviceClock();
+  }) : _unitOfWork = unitOfWork,
+       _secretBox = secretBox,
+       _clock = clock ?? DeviceClock();
 
   /// Fully in-memory wiring for dev mode and tests — no SQLite, no transaction,
   /// no real crypto (a deterministic [FakeSigner]).
@@ -97,8 +97,7 @@ class SyncStore {
 
   // --- Reads (spec §8.6/§8.7) ------------------------------------------------
 
-  Future<Snapshot?> get(EntityType type, String id) =>
-      projection.get(type, id);
+  Future<Snapshot?> get(EntityType type, String id) => projection.get(type, id);
 
   /// Every projected row of [type] (including soft-deleted). Used by the
   /// attachment foundation for content-hash dedup and reference-counted blob GC.
@@ -160,32 +159,43 @@ class SyncStore {
     // Step 2: verify over `utf8(op.payload)`, never re-canonicalized. Trust the
     // payload's own author (the envelope `op.author` is only a hint, §7.2).
     final author = _payloadAuthor(op.payload);
-    final verified =
-        await signer.verify(author, utf8.encode(op.payload), op.sig);
+    final verified = await signer.verify(
+      author,
+      utf8.encode(op.payload),
+      op.sig,
+    );
     if (!verified) {
-      await quarantine.add(QuarantinedOp(
-        opId: op.opId,
-        reason: QuarantineReason.badSig,
-        rawOp: op.payload,
-        seenAt: physicalNowMs,
-      ));
+      await quarantine.add(
+        QuarantinedOp(
+          opId: op.opId,
+          reason: QuarantineReason.badSig,
+          rawOp: op.payload,
+          seenAt: physicalNowMs,
+        ),
+      );
       return ApplyOutcome.quarantinedBadSig;
     }
 
     final snapshot = op.toSnapshot();
     final observed = snapshot.observedClock;
     if (exceedsSkew(observed.ms, physicalNowMs, maxSkewMs: maxSkewMs)) {
-      await quarantine.add(QuarantinedOp(
-        opId: op.opId,
-        reason: QuarantineReason.skew,
-        rawOp: op.payload,
-        seenAt: physicalNowMs,
-      ));
+      await quarantine.add(
+        QuarantinedOp(
+          opId: op.opId,
+          reason: QuarantineReason.skew,
+          rawOp: op.payload,
+          seenAt: physicalNowMs,
+        ),
+      );
       return ApplyOutcome.quarantinedSkew;
     }
 
     await _unitOfWork.run((ctx) async {
-      final current = await projection.get(snapshot.type, snapshot.id, ctx: ctx);
+      final current = await projection.get(
+        snapshot.type,
+        snapshot.id,
+        ctx: ctx,
+      );
       _clock.observe(observed, physicalNowMs);
       final winner = merge(current, snapshot);
       await projection.upsert(winner, ctx: ctx);
@@ -265,11 +275,7 @@ class SyncStore {
 
   /// Soft-delete an entity (`deleted=1`) — a signed snapshot, not an unsigned op
   /// (§7.0). New content stamp; placement unchanged for cards (§8.4).
-  Future<PersistedOp> delete(
-    EntityType type,
-    String id, {
-    int? physicalNowMs,
-  }) {
+  Future<PersistedOp> delete(EntityType type, String id, {int? physicalNowMs}) {
     return _writeLocal(
       type: type,
       id: id,
@@ -425,21 +431,28 @@ class SyncStore {
     }
 
     final keypair = await signer.generate();
-    await localIdentity.save(LocalIdentity(
-      publicKeyHex: keypair.publicKeyHex,
-      secretKeyEnc: _secretBox.seal(keypair.secretKey),
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-    ));
-    return _identityCache =
-        (pubkey: keypair.publicKeyHex, secret: keypair.secretKey);
+    await localIdentity.save(
+      LocalIdentity(
+        publicKeyHex: keypair.publicKeyHex,
+        secretKeyEnc: _secretBox.seal(keypair.secretKey),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+    return _identityCache = (
+      pubkey: keypair.publicKeyHex,
+      secret: keypair.secretKey,
+    );
   }
 
   static String _payloadAuthor(String payload) =>
       (jsonDecode(payload) as Map<String, Object?>)['author'] as String;
 
   static Snapshot _require(
-          Snapshot? prior, String op, EntityType type, String id) =>
-      prior ?? (throw StateError('$op of missing ${type.name} $id'));
+    Snapshot? prior,
+    String op,
+    EntityType type,
+    String id,
+  ) => prior ?? (throw StateError('$op of missing ${type.name} $id'));
 
   /// Fill an entity's nullable content fields with explicit nulls so the
   /// canonical field set (§7.4) is complete even when the caller omits them.
@@ -449,18 +462,18 @@ class SyncStore {
   ) {
     final defaults = switch (type) {
       EntityType.collection => const {
-          'description': null,
-          'cover_attachment_id': null,
-        },
+        'description': null,
+        'cover_attachment_id': null,
+      },
       EntityType.card => const {'attachment_id': null, 'text': null},
       EntityType.link => const {'label': null},
       EntityType.profile => const {'nickname': null},
       EntityType.attachment => const {
-          'kind': null,
-          'mime': null,
-          'content_hash': null,
-          'size': null,
-        },
+        'kind': null,
+        'mime': null,
+        'content_hash': null,
+        'size': null,
+      },
     };
     return {...defaults, ...content};
   }

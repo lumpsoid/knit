@@ -17,10 +17,10 @@ enum ConnectedEntityKind {
   String get tag => this == ConnectedEntityKind.unknown ? 'collection' : name;
 
   static ConnectedEntityKind fromTag(String? tag) => switch (tag) {
-        'collection' => ConnectedEntityKind.collection,
-        'card' => ConnectedEntityKind.card,
-        _ => ConnectedEntityKind.unknown,
-      };
+    'collection' => ConnectedEntityKind.collection,
+    'card' => ConnectedEntityKind.card,
+    _ => ConnectedEntityKind.unknown,
+  };
 }
 
 /// Which way a link points relative to the focused entity (spec §4.4):

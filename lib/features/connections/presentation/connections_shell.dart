@@ -19,10 +19,10 @@ class ConnectionsShell extends Shell<ConnectionsEffect, ConnectionsAction> {
     required ConnectionsWriteRepository writeRepository,
     required EffectEmitter<ConnectionsUiEffect> effectEmitter,
     required Logger logger,
-  })  : _read = readRepository,
-        _write = writeRepository,
-        _effectEmitter = effectEmitter,
-        _log = logger;
+  }) : _read = readRepository,
+       _write = writeRepository,
+       _effectEmitter = effectEmitter,
+       _log = logger;
 
   final ConnectionsReadRepository _read;
   final ConnectionsWriteRepository _write;
@@ -37,30 +37,30 @@ class ConnectionsShell extends Shell<ConnectionsEffect, ConnectionsAction> {
     switch (effect) {
       case LoadConnectionsEffect(:final kind, :final id):
         final result = await _read.loadConnections(kind, id);
-        result.onTap(
-          (data) => dispatch(ConnectionsLoaded(data)),
-          (failure) {
-            _log.severe(
-                'Connections load failed', failure.error, failure.stackTrace);
-            dispatch(const LoadFailed());
-          },
-        );
+        result.onTap((data) => dispatch(ConnectionsLoaded(data)), (failure) {
+          _log.severe(
+            'Connections load failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const LoadFailed());
+        });
 
       case ClearLinkEffect(:final linkId):
         final result = await _write.clearLink(linkId);
-        result.onTap(
-          (_) => dispatch(const ReloadRequested()),
-          (failure) {
-            _log.severe('Connections clear-link failed', failure.error,
-                failure.stackTrace);
-            _effectEmitter.push(
-              const ConnectionsShowMessageUiEffect(
-                ConnectionsMessage.clearFailed,
-              ),
-            );
-            dispatch(const ReloadRequested());
-          },
-        );
+        result.onTap((_) => dispatch(const ReloadRequested()), (failure) {
+          _log.severe(
+            'Connections clear-link failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          _effectEmitter.push(
+            const ConnectionsShowMessageUiEffect(
+              ConnectionsMessage.clearFailed,
+            ),
+          );
+          dispatch(const ReloadRequested());
+        });
     }
   }
 }

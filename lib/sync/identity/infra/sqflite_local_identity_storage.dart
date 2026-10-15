@@ -33,16 +33,13 @@ class SqfliteLocalIdentityStorage implements LocalIdentityStorage {
 
   @override
   Future<void> save(LocalIdentity identity, {StorageContext? ctx}) async {
-    await _exec(ctx).insert(
-      LocalIdentitySchema.table,
-      {
-        LocalIdentitySchema.colPublicKey: identity.publicKeyHex,
-        LocalIdentitySchema.colSecretKeyEnc:
-            Uint8List.fromList(identity.secretKeyEnc),
-        LocalIdentitySchema.colCreatedAt: identity.createdAt,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _exec(ctx).insert(LocalIdentitySchema.table, {
+      LocalIdentitySchema.colPublicKey: identity.publicKeyHex,
+      LocalIdentitySchema.colSecretKeyEnc: Uint8List.fromList(
+        identity.secretKeyEnc,
+      ),
+      LocalIdentitySchema.colCreatedAt: identity.createdAt,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override

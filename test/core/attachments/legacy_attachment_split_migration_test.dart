@@ -32,8 +32,10 @@ void main() {
     graph.bindBlobStore(blobs);
     timelineWrite = SyncStoreTimelineWriteRepository(graph: graph, ids: ids);
     write = SyncStoreCollectionWriteRepository(graph: graph, ids: ids);
-    attachmentWrite =
-        SyncStoreAttachmentWriteRepository(graph: graph, ids: ids);
+    attachmentWrite = SyncStoreAttachmentWriteRepository(
+      graph: graph,
+      ids: ids,
+    );
     migration = LegacyAttachmentSplitMigration(
       SyncStoreLegacyAttachmentMigrationPort(graph: graph, ids: ids),
     );
@@ -52,57 +54,57 @@ void main() {
     return r.content[AttachmentSchema.colContentHash] as String?;
   }
 
-  Future<int> liveAttachmentCount() async =>
-      (await store.readAll(EntityType.attachment))
-          .where((s) => !s.deleted)
-          .length;
+  Future<int> liveAttachmentCount() async => (await store.readAll(
+    EntityType.attachment,
+  )).where((s) => !s.deleted).length;
 
   // Two cards in [colId] that both point at one shared attachment record — the
   // pre-fix N:1 shape.
   Future<({String cardA, String cardB, String attId})> sharedRecord(
     String colId,
   ) async {
-    final attId =
-        (await attachmentWrite.createFromPicked(png([1, 2, 3]))).getOrThrow();
+    final attId = (await attachmentWrite.createFromPicked(
+      png([1, 2, 3]),
+    )).getOrThrow();
     final cardA = (await write.addCard(
       collectionId: colId,
       kind: CardKind.image,
       position: 'a0',
       attachmentId: attId,
-    ))
-        .getOrThrow();
+    )).getOrThrow();
     final cardB = (await write.addCard(
       collectionId: colId,
       kind: CardKind.image,
       position: 'a1',
       attachmentId: attId,
-    ))
-        .getOrThrow();
+    )).getOrThrow();
     return (cardA: cardA, cardB: cardB, attId: attId);
   }
 
-  test('splits a record shared by two cards so each owns its own record',
-      () async {
-    final colId = (await timelineWrite.createCollection('C')).getOrThrow();
-    final shared = await sharedRecord(colId);
+  test(
+    'splits a record shared by two cards so each owns its own record',
+    () async {
+      final colId = (await timelineWrite.createCollection('C')).getOrThrow();
+      final shared = await sharedRecord(colId);
 
-    final repointed = await migration.run();
-    expect(repointed, 1);
+      final repointed = await migration.run();
+      expect(repointed, 1);
 
-    final attA = await attachmentIdOf(shared.cardA);
-    final attB = await attachmentIdOf(shared.cardB);
+      final attA = await attachmentIdOf(shared.cardA);
+      final attB = await attachmentIdOf(shared.cardB);
 
-    // Each card now points at a distinct, live record.
-    expect(attA, isNot(attB));
-    expect(await contentHashOf(attA), isNotNull);
-    expect(await contentHashOf(attB), isNotNull);
-    // One card keeps the original record; the other got a fresh one.
-    expect({attA, attB}, contains(shared.attId));
-    // Both still describe the same bytes → one shared, ref-counted blob.
-    expect(await contentHashOf(attA), await contentHashOf(attB));
-    // The split adds exactly one record (the clone); no bytes are duplicated.
-    expect(await liveAttachmentCount(), 2);
-  });
+      // Each card now points at a distinct, live record.
+      expect(attA, isNot(attB));
+      expect(await contentHashOf(attA), isNotNull);
+      expect(await contentHashOf(attB), isNotNull);
+      // One card keeps the original record; the other got a fresh one.
+      expect({attA, attB}, contains(shared.attId));
+      // Both still describe the same bytes → one shared, ref-counted blob.
+      expect(await contentHashOf(attA), await contentHashOf(attB));
+      // The split adds exactly one record (the clone); no bytes are duplicated.
+      expect(await liveAttachmentCount(), 2);
+    },
+  );
 
   test('is idempotent — a second run repoints nothing', () async {
     final colId = (await timelineWrite.createCollection('C')).getOrThrow();
@@ -118,10 +120,12 @@ void main() {
   test('no-op when records are already uniquely owned (1:1)', () async {
     final colId = (await timelineWrite.createCollection('C')).getOrThrow();
     // Two cards, each its own record (the post-fix shape).
-    final attA =
-        (await attachmentWrite.createFromPicked(png([1, 2, 3]))).getOrThrow();
-    final attB =
-        (await attachmentWrite.createFromPicked(png([4, 5, 6]))).getOrThrow();
+    final attA = (await attachmentWrite.createFromPicked(
+      png([1, 2, 3]),
+    )).getOrThrow();
+    final attB = (await attachmentWrite.createFromPicked(
+      png([4, 5, 6]),
+    )).getOrThrow();
     await write.addCard(
       collectionId: colId,
       kind: CardKind.image,
@@ -141,38 +145,41 @@ void main() {
 
   test('leaves a record referenced by a single card untouched', () async {
     final colId = (await timelineWrite.createCollection('C')).getOrThrow();
-    final attId =
-        (await attachmentWrite.createFromPicked(png([1, 2, 3]))).getOrThrow();
+    final attId = (await attachmentWrite.createFromPicked(
+      png([1, 2, 3]),
+    )).getOrThrow();
     final cardId = (await write.addCard(
       collectionId: colId,
       kind: CardKind.image,
       position: 'a0',
       attachmentId: attId,
-    ))
-        .getOrThrow();
+    )).getOrThrow();
 
     expect(await migration.run(), 0);
     expect(await attachmentIdOf(cardId), attId);
     expect(await liveAttachmentCount(), 1);
   });
 
-  test('skips a shared but missing/deleted attachment (broken reference)',
-      () async {
-    final colId = (await timelineWrite.createCollection('C')).getOrThrow();
-    final shared = await sharedRecord(colId);
-    // The shared record is gone, but both cards still reference its id.
-    await store.delete(EntityType.attachment, shared.attId);
+  test(
+    'skips a shared but missing/deleted attachment (broken reference)',
+    () async {
+      final colId = (await timelineWrite.createCollection('C')).getOrThrow();
+      final shared = await sharedRecord(colId);
+      // The shared record is gone, but both cards still reference its id.
+      await store.delete(EntityType.attachment, shared.attId);
 
-    expect(await migration.run(), 0);
-    // Both cards still point at the same (now-broken) id — nothing was split.
-    expect(await attachmentIdOf(shared.cardA), shared.attId);
-    expect(await attachmentIdOf(shared.cardB), shared.attId);
-  });
+      expect(await migration.run(), 0);
+      // Both cards still point at the same (now-broken) id — nothing was split.
+      expect(await attachmentIdOf(shared.cardA), shared.attId);
+      expect(await attachmentIdOf(shared.cardB), shared.attId);
+    },
+  );
 
   test('splits a record shared by three cards into three records', () async {
     final colId = (await timelineWrite.createCollection('C')).getOrThrow();
-    final attId =
-        (await attachmentWrite.createFromPicked(png([7, 8, 9]))).getOrThrow();
+    final attId = (await attachmentWrite.createFromPicked(
+      png([7, 8, 9]),
+    )).getOrThrow();
     final cardIds = <String>[];
     for (var i = 0; i < 3; i++) {
       cardIds.add(
@@ -181,16 +188,13 @@ void main() {
           kind: CardKind.image,
           position: 'a$i',
           attachmentId: attId,
-        ))
-            .getOrThrow(),
+        )).getOrThrow(),
       );
     }
 
     expect(await migration.run(), 2);
 
-    final atts = <String>{
-      for (final id in cardIds) await attachmentIdOf(id),
-    };
+    final atts = <String>{for (final id in cardIds) await attachmentIdOf(id)};
     expect(atts, hasLength(3), reason: 'each card owns a distinct record');
     expect(atts, contains(attId), reason: 'one card keeps the original');
     expect(await liveAttachmentCount(), 3);

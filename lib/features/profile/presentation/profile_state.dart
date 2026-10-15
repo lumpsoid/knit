@@ -24,10 +24,9 @@ class ProfileState {
     ProfilePhase? phase,
     ProfileView? profile,
     bool? isSaving,
-  }) =>
-      ProfileState(
-        phase: phase ?? this.phase,
-        profile: profile ?? this.profile,
-        isSaving: isSaving ?? this.isSaving,
-      );
+  }) => ProfileState(
+    phase: phase ?? this.phase,
+    profile: profile ?? this.profile,
+    isSaving: isSaving ?? this.isSaving,
+  );
 }

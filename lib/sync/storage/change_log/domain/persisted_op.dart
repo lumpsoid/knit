@@ -10,17 +10,18 @@ enum OpKind {
   delete;
 
   static OpKind fromDb(String str) => switch (str) {
-        'delete' => OpKind.delete,
-        _ => OpKind.put,
-      };
+    'delete' => OpKind.delete,
+    _ => OpKind.put,
+  };
 
   String toDb() => switch (this) {
-        OpKind.put => 'put',
-        OpKind.delete => 'delete',
-      };
+    OpKind.put => 'put',
+    OpKind.delete => 'delete',
+  };
 
   /// Derive the hint from a snapshot's tombstone flag.
-  static OpKind ofSnapshot(Snapshot s) => s.deleted ? OpKind.delete : OpKind.put;
+  static OpKind ofSnapshot(Snapshot s) =>
+      s.deleted ? OpKind.delete : OpKind.put;
 }
 
 /// Where a `change_log` op came from — spec §6.6.
@@ -29,14 +30,14 @@ enum SyncOrigin {
   remote;
 
   static SyncOrigin fromDb(String str) => switch (str) {
-        'remote' => SyncOrigin.remote,
-        _ => SyncOrigin.local,
-      };
+    'remote' => SyncOrigin.remote,
+    _ => SyncOrigin.local,
+  };
 
   String toDb() => switch (this) {
-        SyncOrigin.local => 'local',
-        SyncOrigin.remote => 'remote',
-      };
+    SyncOrigin.local => 'local',
+    SyncOrigin.remote => 'remote',
+  };
 }
 
 /// A `change_log` row (spec §6.6) — the durable, signed op. Holds the canonical
@@ -59,19 +60,19 @@ class PersistedOp {
   });
 
   factory PersistedOp.fromDb(Map<String, Object?> row) => PersistedOp(
-        seq: row[ChangeLogSchema.colSeq] as int?,
-        opId: row[ChangeLogSchema.colOpId]! as String,
-        entityType: row[ChangeLogSchema.colEntityType]! as String,
-        entityId: row[ChangeLogSchema.colEntityId]! as String,
-        op: OpKind.fromDb(row[ChangeLogSchema.colOp]! as String),
-        hlcMs: row[ChangeLogSchema.colHlcMs]! as int,
-        hlcCounter: row[ChangeLogSchema.colHlcCounter]! as int,
-        author: row[ChangeLogSchema.colAuthor]! as String,
-        payload: row[ChangeLogSchema.colPayload]! as String,
-        sig: row[ChangeLogSchema.colSig]! as String,
-        origin: SyncOrigin.fromDb(row[ChangeLogSchema.colOrigin]! as String),
-        acked: (row[ChangeLogSchema.colAcked]! as int) == 1,
-      );
+    seq: row[ChangeLogSchema.colSeq] as int?,
+    opId: row[ChangeLogSchema.colOpId]! as String,
+    entityType: row[ChangeLogSchema.colEntityType]! as String,
+    entityId: row[ChangeLogSchema.colEntityId]! as String,
+    op: OpKind.fromDb(row[ChangeLogSchema.colOp]! as String),
+    hlcMs: row[ChangeLogSchema.colHlcMs]! as int,
+    hlcCounter: row[ChangeLogSchema.colHlcCounter]! as int,
+    author: row[ChangeLogSchema.colAuthor]! as String,
+    payload: row[ChangeLogSchema.colPayload]! as String,
+    sig: row[ChangeLogSchema.colSig]! as String,
+    origin: SyncOrigin.fromDb(row[ChangeLogSchema.colOrigin]! as String),
+    acked: (row[ChangeLogSchema.colAcked]! as int) == 1,
+  );
 
   /// Build the durable op for a [snapshot] whose canonical signed [payload] has
   /// already been produced (canonical serialization + signing is the upstream
@@ -82,20 +83,19 @@ class PersistedOp {
     required String payload,
     required SyncOrigin origin,
     bool acked = false,
-  }) =>
-      PersistedOp(
-        opId: opId,
-        entityType: snapshot.type.name,
-        entityId: snapshot.id,
-        op: OpKind.ofSnapshot(snapshot),
-        hlcMs: snapshot.hlc.ms,
-        hlcCounter: snapshot.hlc.counter,
-        author: snapshot.author,
-        payload: payload,
-        sig: snapshot.sig,
-        origin: origin,
-        acked: acked,
-      );
+  }) => PersistedOp(
+    opId: opId,
+    entityType: snapshot.type.name,
+    entityId: snapshot.id,
+    op: OpKind.ofSnapshot(snapshot),
+    hlcMs: snapshot.hlc.ms,
+    hlcCounter: snapshot.hlc.counter,
+    author: snapshot.author,
+    payload: payload,
+    sig: snapshot.sig,
+    origin: origin,
+    acked: acked,
+  );
 
   /// Local-only autoincrement; null until persisted (the DB assigns it).
   final int? seq;
@@ -129,18 +129,18 @@ class PersistedOp {
 
   /// Row for insert. Omits [seq] so the DB assigns the autoincrement value.
   Map<String, Object?> toDb() => {
-        ChangeLogSchema.colOpId: opId,
-        ChangeLogSchema.colEntityType: entityType,
-        ChangeLogSchema.colEntityId: entityId,
-        ChangeLogSchema.colOp: op.toDb(),
-        ChangeLogSchema.colHlcMs: hlcMs,
-        ChangeLogSchema.colHlcCounter: hlcCounter,
-        ChangeLogSchema.colAuthor: author,
-        ChangeLogSchema.colPayload: payload,
-        ChangeLogSchema.colSig: sig,
-        ChangeLogSchema.colOrigin: origin.toDb(),
-        ChangeLogSchema.colAcked: acked ? 1 : 0,
-      };
+    ChangeLogSchema.colOpId: opId,
+    ChangeLogSchema.colEntityType: entityType,
+    ChangeLogSchema.colEntityId: entityId,
+    ChangeLogSchema.colOp: op.toDb(),
+    ChangeLogSchema.colHlcMs: hlcMs,
+    ChangeLogSchema.colHlcCounter: hlcCounter,
+    ChangeLogSchema.colAuthor: author,
+    ChangeLogSchema.colPayload: payload,
+    ChangeLogSchema.colSig: sig,
+    ChangeLogSchema.colOrigin: origin.toDb(),
+    ChangeLogSchema.colAcked: acked ? 1 : 0,
+  };
 
   /// Parse the canonical [payload] back into a verified [Snapshot] for the
   /// merge-core. The `sig` lives in the op envelope, not the signed payload

@@ -13,15 +13,12 @@ import 'package:knit/features/app_launch/infra/profile_destination_resolver.dart
 InitializationRepository resolveInitializationRepository(
   AppConfig config,
   AppGraph graph,
-) =>
-    switch (config.environment) {
-      AppEnvironment.prod =>
-        ProductionInitializationRepository(graph: graph),
-      AppEnvironment.dev => InMemoryInitializationRepository(graph: graph),
-    };
+) => switch (config.environment) {
+  AppEnvironment.prod => ProductionInitializationRepository(graph: graph),
+  AppEnvironment.dev => InMemoryInitializationRepository(graph: graph),
+};
 
 AppDestinationResolver resolveAppDestinationResolver(
   AppConfig config,
   AppGraph graph,
-) =>
-    ProfileAppDestinationResolver(graph: graph);
+) => ProfileAppDestinationResolver(graph: graph);

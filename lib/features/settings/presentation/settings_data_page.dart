@@ -42,16 +42,17 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context);
     final text = switch (effect) {
-      SettingsComingSoonUiEffect(:final action) =>
-        l10n.settingsComingSoon(_label(l10n, action)),
+      SettingsComingSoonUiEffect(:final action) => l10n.settingsComingSoon(
+        _label(l10n, action),
+      ),
       SettingsBackupExportedUiEffect(:final destination) =>
         destination == BackupDestination.saveFile
             ? l10n.settingsBackupSaved
             : l10n.settingsBackupExported,
       SettingsBackupImportedUiEffect(:final summary) => _importedText(
-          l10n,
-          summary,
-        ),
+        l10n,
+        summary,
+      ),
       SettingsBackupFailedUiEffect(:final action) =>
         action == DataAction.importData
             ? l10n.settingsBackupImportFailed
@@ -80,9 +81,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settingsDataTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.settingsDataTitle)),
       body: ValueListenableBuilder<SettingsState>(
         valueListenable: _controller.stateHolder,
         builder: (context, state, _) {
@@ -128,15 +127,19 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
         ),
         ListTile(
           leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-          title: Text(l10n.settingsWipeData,
-              style: TextStyle(color: theme.colorScheme.error)),
+          title: Text(
+            l10n.settingsWipeData,
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
           subtitle: Text(l10n.settingsWipeDataSubtitle),
           onTap: _confirmWipe,
         ),
         ListTile(
           leading: Icon(Icons.restart_alt, color: theme.colorScheme.error),
-          title: Text(l10n.settingsResetIdentity,
-              style: TextStyle(color: theme.colorScheme.error)),
+          title: Text(
+            l10n.settingsResetIdentity,
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
           subtitle: Text(l10n.settingsResetIdentitySubtitle),
           onTap: () => _request(DataAction.resetIdentity),
         ),
@@ -220,12 +223,12 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
   }
 
   String _label(AppLocalizations l10n, DataAction action) => switch (action) {
-        DataAction.exportData => l10n.settingsExport,
-        DataAction.importData => l10n.settingsImport,
-        DataAction.exportIdentity => l10n.settingsExportIdentity,
-        DataAction.wipeData => l10n.settingsWipeData,
-        DataAction.resetIdentity => l10n.settingsResetIdentity,
-      };
+    DataAction.exportData => l10n.settingsExport,
+    DataAction.importData => l10n.settingsImport,
+    DataAction.exportIdentity => l10n.settingsExportIdentity,
+    DataAction.wipeData => l10n.settingsWipeData,
+    DataAction.resetIdentity => l10n.settingsResetIdentity,
+  };
 }
 
 /// A blocking, semi-transparent scrim with a spinner shown while a backup is

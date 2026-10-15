@@ -14,14 +14,12 @@ void main() {
   sqfliteFfiInit();
 
   Future<Database> openDb() => databaseFactoryFfi.openDatabase(
-        inMemoryDatabasePath,
-        options: OpenDatabaseOptions(singleInstance: false),
-      );
+    inMemoryDatabasePath,
+    options: OpenDatabaseOptions(singleInstance: false),
+  );
 
-  Migrator migratorFor(Database db) => Migrator(
-        executor: SqfliteExecutor(db),
-        migrations: knitMigrations(),
-      );
+  Migrator migratorFor(Database db) =>
+      Migrator(executor: SqfliteExecutor(db), migrations: knitMigrations());
 
   Future<Set<String>> columnsOf(Database db, String table) async {
     final rows = await db.rawQuery('PRAGMA table_info($table)');
@@ -45,20 +43,22 @@ void main() {
     );
   });
 
-  test('frozen v1 lacks the later columns; migrateTo(1) is the old-device shape',
-      () async {
-    final db = await openDb();
-    await migratorFor(db).migrateTo(1);
+  test(
+    'frozen v1 lacks the later columns; migrateTo(1) is the old-device shape',
+    () async {
+      final db = await openDb();
+      await migratorFor(db).migrateTo(1);
 
-    expect(
-      await columnsOf(db, AttachmentSchema.table),
-      isNot(contains(AttachmentSchema.colName)),
-    );
-    expect(
-      await columnsOf(db, CollectionSchema.table),
-      isNot(contains(CollectionSchema.colDescription)),
-    );
-  });
+      expect(
+        await columnsOf(db, AttachmentSchema.table),
+        isNot(contains(AttachmentSchema.colName)),
+      );
+      expect(
+        await columnsOf(db, CollectionSchema.table),
+        isNot(contains(CollectionSchema.colDescription)),
+      );
+    },
+  );
 
   test('an old v1 device backfills cleanly when it upgrades', () async {
     final db = await openDb();

@@ -305,10 +305,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
 
   /// Run a fire-and-forget recorder call (pause/resume/cancel); the phase was
   /// already moved optimistically, so a failure is logged only.
-  Future<void> _safeRecorder(
-    Future<void> Function() op,
-    String label,
-  ) async {
+  Future<void> _safeRecorder(Future<void> Function() op, String label) async {
     try {
       await op();
     } catch (e, s) {

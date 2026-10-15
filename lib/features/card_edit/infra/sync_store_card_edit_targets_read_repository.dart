@@ -13,7 +13,7 @@ import 'package:result_dart/result_dart.dart';
 class SyncStoreCardEditTargetsReadRepository
     implements CardEditTargetsReadRepository {
   SyncStoreCardEditTargetsReadRepository({required AppGraph graph})
-      : _graph = graph;
+    : _graph = graph;
 
   final AppGraph _graph;
 

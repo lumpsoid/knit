@@ -58,8 +58,9 @@ class _TimelinePageState extends State<TimelinePage> {
           TimelineMessage.createFailed => l10n.timelineCreateFailed,
           TimelineMessage.deleteFailed => l10n.timelineDeleteFailed,
         };
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(text)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -79,8 +80,9 @@ class _TimelinePageState extends State<TimelinePage> {
 
   Future<void> _confirmDelete(CollectionSummary summary) async {
     final l10n = AppLocalizations.of(context);
-    final title =
-        summary.title.trim().isEmpty ? l10n.labelUntitled : summary.title;
+    final title = summary.title.trim().isEmpty
+        ? l10n.labelUntitled
+        : summary.title;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -149,8 +151,7 @@ class _TimelinePageState extends State<TimelinePage> {
             case TimelineStatus.failed:
               return _ErrorView(
                 message: l10n.timelineLoadError,
-                onRetry: () =>
-                    _controller.dispatch(const RefreshRequested()),
+                onRetry: () => _controller.dispatch(const RefreshRequested()),
               );
             case TimelineStatus.ready:
               if (state.isEmpty) return const _EmptyView();
@@ -248,8 +249,9 @@ class _CollectionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final title =
-        summary.title.trim().isEmpty ? l10n.labelUntitled : summary.title;
+    final title = summary.title.trim().isEmpty
+        ? l10n.labelUntitled
+        : summary.title;
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -263,8 +265,9 @@ class _CollectionTile extends StatelessWidget {
       ),
       trailing: Text(
         _relative(l10n, summary.lastUpdated),
-        style: theme.textTheme.labelSmall
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -288,12 +291,12 @@ class _CollectionTile extends StatelessWidget {
   }
 
   Widget _letterAvatar(String title) => CircleAvatar(
-        backgroundColor: _tint(summary.collectionId),
-        child: Text(
-          title.substring(0, 1).toUpperCase(),
-          style: const TextStyle(color: Colors.white),
-        ),
-      );
+    backgroundColor: _tint(summary.collectionId),
+    child: Text(
+      title.substring(0, 1).toUpperCase(),
+      style: const TextStyle(color: Colors.white),
+    ),
+  );
 
   Color _tint(String seed) {
     final h = seed.codeUnits.fold<int>(0, (a, c) => (a * 31 + c) & 0xFFFF);
@@ -318,8 +321,9 @@ class _CollectionTile extends StatelessWidget {
   }
 
   String _relative(AppLocalizations l10n, int ms) {
-    final delta = DateTime.now()
-        .difference(DateTime.fromMillisecondsSinceEpoch(ms));
+    final delta = DateTime.now().difference(
+      DateTime.fromMillisecondsSinceEpoch(ms),
+    );
     if (delta.inMinutes < 1) return l10n.timeNow;
     if (delta.inHours < 1) return l10n.timeMinutesShort(delta.inMinutes);
     if (delta.inDays < 1) return l10n.timeHoursShort(delta.inHours);
@@ -344,8 +348,10 @@ class _CollectionActionsSheet extends StatelessWidget {
         children: [
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            title: Text(l10n.actionDelete,
-                style: TextStyle(color: theme.colorScheme.error)),
+            title: Text(
+              l10n.actionDelete,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
             onTap: () => Navigator.of(context).pop(_CollectionAction.delete),
           ),
         ],
@@ -366,18 +372,25 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.workspaces_outline,
-                size: 72, color: theme.colorScheme.primary),
+            Icon(
+              Icons.workspaces_outline,
+              size: 72,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: 20),
-            Text(AppLocalizations.of(context).timelineEmptyTitle,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              AppLocalizations.of(context).timelineEmptyTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               AppLocalizations.of(context).timelineEmptyBody,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -400,16 +413,18 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline,
-                size: 48, color: theme.colorScheme.error),
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 16),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 24),
             FilledButton(
-                onPressed: onRetry,
-                child: Text(AppLocalizations.of(context).actionRetry)),
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).actionRetry),
+            ),
           ],
         ),
       ),

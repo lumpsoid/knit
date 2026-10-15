@@ -35,18 +35,12 @@ class OnboardUpdater
       case GenerateIdentityTapped():
         // Fresh state clears any prior error and shows the generating moment.
         return (
-          OnboardState(
-            step: OnboardStep.generating,
-            nickname: state.nickname,
-          ),
+          OnboardState(step: OnboardStep.generating, nickname: state.nickname),
           [CreateIdentityEffect(state.nickname.trim())],
         );
 
       case IdentityCreated(:final card):
-        return (
-          state.copyWith(step: OnboardStep.reveal, identity: card),
-          null,
-        );
+        return (state.copyWith(step: OnboardStep.reveal, identity: card), null);
 
       case IdentityCreationFailed():
         return (
@@ -64,9 +58,8 @@ class OnboardUpdater
   }
 
   OnboardState _back(OnboardState state) => switch (state.step) {
-        OnboardStep.nickname => state.copyWith(step: OnboardStep.welcome),
-        OnboardStep.explainIdentity =>
-          state.copyWith(step: OnboardStep.nickname),
-        _ => state,
-      };
+    OnboardStep.nickname => state.copyWith(step: OnboardStep.welcome),
+    OnboardStep.explainIdentity => state.copyWith(step: OnboardStep.nickname),
+    _ => state,
+  };
 }

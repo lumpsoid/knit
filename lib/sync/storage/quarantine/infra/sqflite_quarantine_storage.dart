@@ -32,12 +32,11 @@ class SqfliteQuarantineStorage implements QuarantineStorage {
   }
 
   @override
-  Future<void> remove(String opId, {StorageContext? ctx}) =>
-      _exec(ctx).delete(
-        QuarantineSchema.table,
-        where: '${QuarantineSchema.colOpId} = ?',
-        whereArgs: [opId],
-      );
+  Future<void> remove(String opId, {StorageContext? ctx}) => _exec(ctx).delete(
+    QuarantineSchema.table,
+    where: '${QuarantineSchema.colOpId} = ?',
+    whereArgs: [opId],
+  );
 
   @override
   Future<void> clear({StorageContext? ctx}) =>

@@ -41,15 +41,19 @@ void main() {
         expect(got.hlc, const Hlc(100, 0));
       });
 
-      test('upsert + get round-trips a card with its placement clock', () async {
-        await store.upsert(
-            card(hlcMs: 100, posMs: 300, text: 'grind finer', position: 'a5'));
-        final got = await store.get(EntityType.card, 'card-1');
-        expect(got!.position, 'a5');
-        expect(got.placement, const Hlc(300, 0));
-        expect(got.content['text'], 'grind finer');
-        expect(got.content['collection_id'], 'col-1');
-      });
+      test(
+        'upsert + get round-trips a card with its placement clock',
+        () async {
+          await store.upsert(
+            card(hlcMs: 100, posMs: 300, text: 'grind finer', position: 'a5'),
+          );
+          final got = await store.get(EntityType.card, 'card-1');
+          expect(got!.position, 'a5');
+          expect(got.placement, const Hlc(300, 0));
+          expect(got.content['text'], 'grind finer');
+          expect(got.content['collection_id'], 'col-1');
+        },
+      );
 
       test('upsert replaces an existing row by id', () async {
         await store.upsert(collection(hlcMs: 100, title: 'old'));
@@ -58,20 +62,31 @@ void main() {
         expect(got!.content['title'], 'new');
       });
 
-      test('feed: position ASC, id ASC, excludes tombstones (spec §8.7)', () async {
-        await store.upsert(card(id: 'c-b', position: 'a2', hlcMs: 1));
-        await store.upsert(card(id: 'c-a', position: 'a1', hlcMs: 1));
-        await store.upsert(card(id: 'c-z', position: 'a1', hlcMs: 1)); // tie → id
-        await store.upsert(card(id: 'c-d', position: 'a9', hlcMs: 1, deleted: true));
-        await store.upsert(card(id: 'other', collectionId: 'col-2', position: 'a0', hlcMs: 1));
+      test(
+        'feed: position ASC, id ASC, excludes tombstones (spec §8.7)',
+        () async {
+          await store.upsert(card(id: 'c-b', position: 'a2', hlcMs: 1));
+          await store.upsert(card(id: 'c-a', position: 'a1', hlcMs: 1));
+          await store.upsert(
+            card(id: 'c-z', position: 'a1', hlcMs: 1),
+          ); // tie → id
+          await store.upsert(
+            card(id: 'c-d', position: 'a9', hlcMs: 1, deleted: true),
+          );
+          await store.upsert(
+            card(id: 'other', collectionId: 'col-2', position: 'a0', hlcMs: 1),
+          );
 
-        final ids = (await store.feed('col-1')).map((s) => s.id).toList();
-        expect(ids, ['c-a', 'c-z', 'c-b']);
-      });
+          final ids = (await store.feed('col-1')).map((s) => s.id).toList();
+          expect(ids, ['c-a', 'c-z', 'c-b']);
+        },
+      );
 
       test('backlinks: live links to a target only (spec §8.6.2)', () async {
         await store.upsert(link(id: 'l1', targetId: 'col-1', hlcMs: 1));
-        await store.upsert(link(id: 'l2', targetId: 'col-1', hlcMs: 1, deleted: true));
+        await store.upsert(
+          link(id: 'l2', targetId: 'col-1', hlcMs: 1, deleted: true),
+        );
         await store.upsert(link(id: 'l3', targetId: 'col-2', hlcMs: 1));
 
         final ids = (await store.backlinks('col-1')).map((s) => s.id).toList();
@@ -80,7 +95,9 @@ void main() {
 
       test('linksOut: live links from a source only (spec §4.4)', () async {
         await store.upsert(link(id: 'l1', sourceId: 'card-1', hlcMs: 1));
-        await store.upsert(link(id: 'l2', sourceId: 'card-1', hlcMs: 1, deleted: true));
+        await store.upsert(
+          link(id: 'l2', sourceId: 'card-1', hlcMs: 1, deleted: true),
+        );
         await store.upsert(link(id: 'l3', sourceId: 'card-9', hlcMs: 1));
 
         final ids = (await store.linksOut('card-1')).map((s) => s.id).toList();

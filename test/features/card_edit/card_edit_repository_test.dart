@@ -39,7 +39,10 @@ void main() {
     graph.bindBlobStore(InMemoryAttachmentBlobStore());
     timelineWrite = SyncStoreTimelineWriteRepository(graph: graph, ids: ids);
     read = SyncStoreCollectionReadRepository(graph: graph);
-    collectionWrite = SyncStoreCollectionWriteRepository(graph: graph, ids: ids);
+    collectionWrite = SyncStoreCollectionWriteRepository(
+      graph: graph,
+      ids: ids,
+    );
     cardEditWrite = SyncStoreCardEditWriteRepository(graph: graph);
     linksRead = SyncStoreCardEditLinksReadRepository(graph: graph);
     linksWrite = SyncStoreCardEditLinksWriteRepository(graph: graph, ids: ids);
@@ -52,16 +55,18 @@ void main() {
         kind: CardKind.text,
         position: 'a0',
         text: text,
-      ))
-          .getOrThrow();
+      )).getOrThrow();
 
   test('editCard updates the card body in the feed', () async {
-    final colId =
-        (await timelineWrite.createCollection('Espresso')).getOrThrow();
+    final colId = (await timelineWrite.createCollection(
+      'Espresso',
+    )).getOrThrow();
     final cardId = await newCard(colId, 'first');
 
-    final result =
-        await cardEditWrite.editCard(cardId: cardId, text: 'first (edited)');
+    final result = await cardEditWrite.editCard(
+      cardId: cardId,
+      text: 'first (edited)',
+    );
     expect(result.getOrThrow(), cardId);
 
     final data = (await read.loadCollection(colId)).getOrThrow();
@@ -69,40 +74,46 @@ void main() {
   });
 
   group('links', () {
-    test('add a card→collection and a card→card link, then read them back',
-        () async {
-      final colA = (await timelineWrite.createCollection('A')).getOrThrow();
-      final colB = (await timelineWrite.createCollection('B')).getOrThrow();
-      final source = await newCard(colA, 'source');
-      final targetCard = await newCard(colB, 'target card');
+    test(
+      'add a card→collection and a card→card link, then read them back',
+      () async {
+        final colA = (await timelineWrite.createCollection('A')).getOrThrow();
+        final colB = (await timelineWrite.createCollection('B')).getOrThrow();
+        final source = await newCard(colA, 'source');
+        final targetCard = await newCard(colB, 'target card');
 
-      await linksWrite.addLink(
-        sourceCardId: source,
-        targetKind: ConnectedEntityKind.collection,
-        targetId: colB,
-      );
-      await linksWrite.addLink(
-        sourceCardId: source,
-        targetKind: ConnectedEntityKind.card,
-        targetId: targetCard,
-      );
+        await linksWrite.addLink(
+          sourceCardId: source,
+          targetKind: ConnectedEntityKind.collection,
+          targetId: colB,
+        );
+        await linksWrite.addLink(
+          sourceCardId: source,
+          targetKind: ConnectedEntityKind.card,
+          targetId: targetCard,
+        );
 
-      final links = (await linksRead.linksOf(source)).getOrThrow();
-      expect(links, hasLength(2));
-      expect(links.every((l) => l.direction == ConnectionDirection.outgoing),
-          isTrue);
+        final links = (await linksRead.linksOf(source)).getOrThrow();
+        expect(links, hasLength(2));
+        expect(
+          links.every((l) => l.direction == ConnectionDirection.outgoing),
+          isTrue,
+        );
 
-      final toCol =
-          links.firstWhere((l) => l.otherKind == ConnectedEntityKind.collection);
-      expect((toCol.otherId, toCol.label, toCol.broken), (colB, 'B', false));
+        final toCol = links.firstWhere(
+          (l) => l.otherKind == ConnectedEntityKind.collection,
+        );
+        expect((toCol.otherId, toCol.label, toCol.broken), (colB, 'B', false));
 
-      final toCard =
-          links.firstWhere((l) => l.otherKind == ConnectedEntityKind.card);
-      expect(
-        (toCard.otherId, toCard.label, toCard.broken),
-        (targetCard, 'target card', false),
-      );
-    });
+        final toCard = links.firstWhere(
+          (l) => l.otherKind == ConnectedEntityKind.card,
+        );
+        expect(
+          (toCard.otherId, toCard.label, toCard.broken),
+          (targetCard, 'target card', false),
+        );
+      },
+    );
 
     test('a link to a deleted target reads back as broken (§8.6.1)', () async {
       final colA = (await timelineWrite.createCollection('A')).getOrThrow();
@@ -129,8 +140,7 @@ void main() {
         sourceCardId: source,
         targetKind: ConnectedEntityKind.collection,
         targetId: colA,
-      ))
-          .getOrThrow();
+      )).getOrThrow();
 
       await linksWrite.removeLink(linkId);
 
@@ -142,71 +152,80 @@ void main() {
   });
 
   group('targets', () {
-    test('loadTargets lists collections + their cards, excluding self',
-        () async {
-      final colA = (await timelineWrite.createCollection('A')).getOrThrow();
-      final colB = (await timelineWrite.createCollection('B')).getOrThrow();
-      final self = await newCard(colA, 'self');
-      final sibling = await newCard(colA, 'sibling');
-      final inB = await newCard(colB, 'in B');
+    test(
+      'loadTargets lists collections + their cards, excluding self',
+      () async {
+        final colA = (await timelineWrite.createCollection('A')).getOrThrow();
+        final colB = (await timelineWrite.createCollection('B')).getOrThrow();
+        final self = await newCard(colA, 'self');
+        final sibling = await newCard(colA, 'sibling');
+        final inB = await newCard(colB, 'in B');
 
-      final tree =
-          (await targetsRead.loadTargets(excludeCardId: self)).getOrThrow();
-      expect(tree, hasLength(2));
+        final tree = (await targetsRead.loadTargets(
+          excludeCardId: self,
+        )).getOrThrow();
+        expect(tree, hasLength(2));
 
-      final a = tree.firstWhere((t) => t.collection.id == colA);
-      final aCardIds = a.cards.map((c) => c.id).toList();
-      expect(aCardIds, contains(sibling));
-      expect(aCardIds, isNot(contains(self))); // no self-link
+        final a = tree.firstWhere((t) => t.collection.id == colA);
+        final aCardIds = a.cards.map((c) => c.id).toList();
+        expect(aCardIds, contains(sibling));
+        expect(aCardIds, isNot(contains(self))); // no self-link
 
-      final b = tree.firstWhere((t) => t.collection.id == colB);
-      expect(b.cards.single.id, inB);
-      expect(b.collection.kind, ConnectedEntityKind.collection);
-    });
+        final b = tree.firstWhere((t) => t.collection.id == colB);
+        expect(b.cards.single.id, inB);
+        expect(b.collection.kind, ConnectedEntityKind.collection);
+      },
+    );
   });
 
   group('attachment', () {
     PickedImage png(List<int> b) =>
         PickedImage(bytes: Uint8List.fromList(b), mime: 'image/png');
 
-    test('setCardAttachment flips kind to image and points at the attachment',
-        () async {
-      final colA = (await timelineWrite.createCollection('A')).getOrThrow();
-      final cardId = await newCard(colA, 'note');
-      final attachmentWrite =
-          SyncStoreAttachmentWriteRepository(graph: graph, ids: ids);
-      final attId =
-          (await attachmentWrite.createFromPicked(png([1, 2, 3]))).getOrThrow();
+    test(
+      'setCardAttachment flips kind to image and points at the attachment',
+      () async {
+        final colA = (await timelineWrite.createCollection('A')).getOrThrow();
+        final cardId = await newCard(colA, 'note');
+        final attachmentWrite = SyncStoreAttachmentWriteRepository(
+          graph: graph,
+          ids: ids,
+        );
+        final attId = (await attachmentWrite.createFromPicked(
+          png([1, 2, 3]),
+        )).getOrThrow();
 
-      await cardEditWrite.setCardAttachment(
-        cardId: cardId,
-        attachmentId: attId,
-        kind: CardKind.image,
-      );
+        await cardEditWrite.setCardAttachment(
+          cardId: cardId,
+          attachmentId: attId,
+          kind: CardKind.image,
+        );
 
-      final snap = (await store.get(EntityType.card, cardId))!;
-      expect(snap.content['kind'], 'image');
-      expect(snap.content['attachment_id'], attId);
-      expect(snap.content['text'], 'note'); // text preserved by the overlay
+        final snap = (await store.get(EntityType.card, cardId))!;
+        expect(snap.content['kind'], 'image');
+        expect(snap.content['attachment_id'], attId);
+        expect(snap.content['text'], 'note'); // text preserved by the overlay
 
-      final data = (await read.loadCollection(colA)).getOrThrow();
-      expect(data.cards.single.attachmentId, attId);
-      expect(data.cards.single.kind, CardKind.image);
-    });
+        final data = (await read.loadCollection(colA)).getOrThrow();
+        expect(data.cards.single.attachmentId, attId);
+        expect(data.cards.single.kind, CardKind.image);
+      },
+    );
 
     test('setCardAttachment can flip a card to a file attachment', () async {
       final colA = (await timelineWrite.createCollection('A')).getOrThrow();
       final cardId = await newCard(colA, 'note');
-      final attachmentWrite =
-          SyncStoreAttachmentWriteRepository(graph: graph, ids: ids);
+      final attachmentWrite = SyncStoreAttachmentWriteRepository(
+        graph: graph,
+        ids: ids,
+      );
       final attId = (await attachmentWrite.createFromFile(
         PickedFile(
           bytes: Uint8List.fromList([7, 7, 7]),
           mime: 'application/pdf',
           name: 'report.pdf',
         ),
-      ))
-          .getOrThrow();
+      )).getOrThrow();
 
       await cardEditWrite.setCardAttachment(
         cardId: cardId,
@@ -224,29 +243,33 @@ void main() {
     });
 
     test(
-        'removeCardAttachment clears the attachment and flips kind back to text',
-        () async {
-      final colA = (await timelineWrite.createCollection('A')).getOrThrow();
-      final cardId = await newCard(colA, 'note');
-      final attachmentWrite =
-          SyncStoreAttachmentWriteRepository(graph: graph, ids: ids);
-      final attId =
-          (await attachmentWrite.createFromPicked(png([4, 5]))).getOrThrow();
-      await cardEditWrite.setCardAttachment(
-        cardId: cardId,
-        attachmentId: attId,
-        kind: CardKind.image,
-      );
+      'removeCardAttachment clears the attachment and flips kind back to text',
+      () async {
+        final colA = (await timelineWrite.createCollection('A')).getOrThrow();
+        final cardId = await newCard(colA, 'note');
+        final attachmentWrite = SyncStoreAttachmentWriteRepository(
+          graph: graph,
+          ids: ids,
+        );
+        final attId = (await attachmentWrite.createFromPicked(
+          png([4, 5]),
+        )).getOrThrow();
+        await cardEditWrite.setCardAttachment(
+          cardId: cardId,
+          attachmentId: attId,
+          kind: CardKind.image,
+        );
 
-      await cardEditWrite.removeCardAttachment(cardId: cardId);
+        await cardEditWrite.removeCardAttachment(cardId: cardId);
 
-      final snap = (await store.get(EntityType.card, cardId))!;
-      expect(snap.content['kind'], 'text');
-      expect(snap.content['attachment_id'], isNull);
+        final snap = (await store.get(EntityType.card, cardId))!;
+        expect(snap.content['kind'], 'text');
+        expect(snap.content['attachment_id'], isNull);
 
-      final data = (await read.loadCollection(colA)).getOrThrow();
-      expect(data.cards.single.attachmentId, isNull);
-      expect(data.cards.single.kind, CardKind.text);
-    });
+        final data = (await read.loadCollection(colA)).getOrThrow();
+        expect(data.cards.single.attachmentId, isNull);
+        expect(data.cards.single.kind, CardKind.text);
+      },
+    );
   });
 }

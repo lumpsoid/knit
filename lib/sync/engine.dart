@@ -46,8 +46,8 @@ class MergeEngine {
     Projection? projection,
     DeviceClock? clock,
     this.maxSkewMs = kMaxSkewMs,
-  })  : projection = projection ?? Projection(),
-        clock = clock ?? DeviceClock();
+  }) : projection = projection ?? Projection(),
+       clock = clock ?? DeviceClock();
 
   /// Apply a verified remote op — spec §8.5 steps 4–6.
   ///

@@ -5,8 +5,16 @@ void main() {
   group('Hlc comparator (spec §6.1)', () {
     test('orders by ms then counter, never by string', () {
       expect(const Hlc(1, 0) < const Hlc(2, 0), isTrue);
-      expect(const Hlc(2, 0) > const Hlc(1, 99), isTrue, reason: 'ms dominates');
-      expect(const Hlc(5, 1) > const Hlc(5, 0), isTrue, reason: 'counter breaks tie');
+      expect(
+        const Hlc(2, 0) > const Hlc(1, 99),
+        isTrue,
+        reason: 'ms dominates',
+      );
+      expect(
+        const Hlc(5, 1) > const Hlc(5, 0),
+        isTrue,
+        reason: 'counter breaks tie',
+      );
       expect(const Hlc(5, 0) == const Hlc(5, 0), isTrue);
     });
 
@@ -24,8 +32,16 @@ void main() {
 
     test('same/earlier physical time bumps counter (monotonic)', () {
       final c = DeviceClock(const Hlc(100, 4));
-      expect(c.localTick(100), const Hlc(100, 5), reason: 'equal ms → counter+1');
-      expect(c.localTick(50), const Hlc(100, 6), reason: 'past pt → counter+1, ms held');
+      expect(
+        c.localTick(100),
+        const Hlc(100, 5),
+        reason: 'equal ms → counter+1',
+      );
+      expect(
+        c.localTick(50),
+        const Hlc(100, 6),
+        reason: 'past pt → counter+1, ms held',
+      );
     });
 
     test('a burst of ticks within one ms strictly increases', () {
@@ -64,14 +80,22 @@ void main() {
     test('observing a losing (older) op still advances counter', () {
       final c = DeviceClock(const Hlc(500, 3));
       c.observe(const Hlc(200, 0), 100); // far in the past, lost LWW
-      expect(c.now, const Hlc(500, 4), reason: 'must still move past what it saw');
+      expect(
+        c.now,
+        const Hlc(500, 4),
+        reason: 'must still move past what it saw',
+      );
     });
   });
 
   group('skew guard (spec §8.3)', () {
     test('future beyond bound is flagged; within bound and past are not', () {
       expect(exceedsSkew(1000 + kMaxSkewMs + 1, 1000), isTrue);
-      expect(exceedsSkew(1000 + kMaxSkewMs, 1000), isFalse, reason: 'boundary inclusive');
+      expect(
+        exceedsSkew(1000 + kMaxSkewMs, 1000),
+        isFalse,
+        reason: 'boundary inclusive',
+      );
       expect(exceedsSkew(1, 10_000_000), isFalse, reason: 'past is harmless');
     });
   });

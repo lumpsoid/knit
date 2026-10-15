@@ -15,9 +15,9 @@ class OnboardShell extends Shell<OnboardEffect, OnboardAction> {
     required OnboardRepository repository,
     required EffectEmitter<OnboardUiEffect> effectEmitter,
     required Logger logger,
-  })  : _repository = repository,
-        _effectEmitter = effectEmitter,
-        _log = logger;
+  }) : _repository = repository,
+       _effectEmitter = effectEmitter,
+       _log = logger;
 
   final OnboardRepository _repository;
   final EffectEmitter<OnboardUiEffect> _effectEmitter;
@@ -31,14 +31,14 @@ class OnboardShell extends Shell<OnboardEffect, OnboardAction> {
     switch (effect) {
       case CreateIdentityEffect(:final nickname):
         final result = await _repository.createIdentity(nickname);
-        result.onTap(
-          (card) => dispatch(IdentityCreated(card)),
-          (failure) {
-            _log.severe(
-                'Identity creation failed', failure.error, failure.stackTrace);
-            dispatch(const IdentityCreationFailed());
-          },
-        );
+        result.onTap((card) => dispatch(IdentityCreated(card)), (failure) {
+          _log.severe(
+            'Identity creation failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const IdentityCreationFailed());
+        });
       case EnterAppEffect():
         _effectEmitter.push(const OnboardEnterAppUiEffect());
     }

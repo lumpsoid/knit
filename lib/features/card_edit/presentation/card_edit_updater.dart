@@ -19,13 +19,13 @@ class CardEditUpdater
   ) {
     switch (action) {
       case ViewAttached(
-          :final cardId,
-          :final initialText,
-          :final initialAttachmentId,
-          :final initialAttachmentKind,
-          :final initialFileName,
-          :final initialFileSize
-        ):
+        :final cardId,
+        :final initialText,
+        :final initialAttachmentId,
+        :final initialAttachmentKind,
+        :final initialFileName,
+        :final initialFileSize,
+      ):
         // An image attachment needs its bytes fetched to render the thumbnail;
         // audio/file render straight from the metadata the carrier passed.
         final isImage = initialAttachmentKind == CardKind.image;
@@ -61,10 +61,7 @@ class CardEditUpdater
         return (state, null);
 
       case SaveFailed():
-        return (
-          state.copyWith(status: CardEditStatus.failed),
-          null,
-        );
+        return (state.copyWith(status: CardEditStatus.failed), null);
 
       // --- links ------------------------------------------------------------
 
@@ -90,10 +87,7 @@ class CardEditUpdater
         );
 
       case RemoveLinkRequested(:final linkId):
-        return (
-          state.copyWith(linksLoading: true),
-          [RemoveLinkEffect(linkId)],
-        );
+        return (state.copyWith(linksLoading: true), [RemoveLinkEffect(linkId)]);
 
       case LinksChanged():
         return (
@@ -137,12 +131,12 @@ class CardEditUpdater
         );
 
       case AttachmentResolved(
-          :final attachmentId,
-          :final kind,
-          :final bytes,
-          :final name,
-          :final size
-        ):
+        :final attachmentId,
+        :final kind,
+        :final bytes,
+        :final name,
+        :final size,
+      ):
         return (
           state.copyWith(
             attachmentId: attachmentId,

@@ -20,8 +20,9 @@ class ProfileModule {
     required ProfileWriteRepository writeRepository,
     Logger? logger,
   }) {
-    final stateHolder =
-        ValueListenableStateHolder<ProfileState>(const ProfileState());
+    final stateHolder = ValueListenableStateHolder<ProfileState>(
+      const ProfileState(),
+    );
     final effectEmitter = EffectEmitter<ProfileUiEffect>();
     final shell = ProfileShell(
       readRepository: readRepository,
@@ -32,8 +33,9 @@ class ProfileModule {
     final loop = ProfileLoop(
       stateHolder: stateHolder,
       updater: const ProfileUpdater(),
-      effectRunner:
-          ShellEffectRunner<ProfileEffect, ProfileAction>(shell: shell),
+      effectRunner: ShellEffectRunner<ProfileEffect, ProfileAction>(
+        shell: shell,
+      ),
     );
     _controller = ProfileController(
       stateHolder: stateHolder,

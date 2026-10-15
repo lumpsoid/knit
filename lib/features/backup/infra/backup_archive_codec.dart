@@ -27,13 +27,13 @@ class BackupManifest {
   });
 
   factory BackupManifest.fromJson(Map<String, Object?> json) => BackupManifest(
-        format: json['format'] as String? ?? '',
-        version: (json['version'] as num?)?.toInt() ?? 0,
-        createdAtMs: (json['createdAtMs'] as num?)?.toInt() ?? 0,
-        author: json['author'] as String? ?? '',
-        opCount: (json['opCount'] as num?)?.toInt() ?? 0,
-        blobCount: (json['blobCount'] as num?)?.toInt() ?? 0,
-      );
+    format: json['format'] as String? ?? '',
+    version: (json['version'] as num?)?.toInt() ?? 0,
+    createdAtMs: (json['createdAtMs'] as num?)?.toInt() ?? 0,
+    author: json['author'] as String? ?? '',
+    opCount: (json['opCount'] as num?)?.toInt() ?? 0,
+    blobCount: (json['blobCount'] as num?)?.toInt() ?? 0,
+  );
 
   final String format;
   final int version;
@@ -43,13 +43,13 @@ class BackupManifest {
   final int blobCount;
 
   Map<String, Object?> toJson() => {
-        'format': format,
-        'version': version,
-        'createdAtMs': createdAtMs,
-        'author': author,
-        'opCount': opCount,
-        'blobCount': blobCount,
-      };
+    'format': format,
+    'version': version,
+    'createdAtMs': createdAtMs,
+    'author': author,
+    'opCount': opCount,
+    'blobCount': blobCount,
+  };
 }
 
 /// The decoded contents of a bundle, ready to replay/rehydrate.
@@ -116,9 +116,9 @@ class BackupArchiveCodec {
     final opLines = logFile == null
         ? const <String>[]
         : const LineSplitter()
-            .convert(utf8.decode(logFile.content))
-            .where((line) => line.trim().isNotEmpty)
-            .toList(growable: false);
+              .convert(utf8.decode(logFile.content))
+              .where((line) => line.trim().isNotEmpty)
+              .toList(growable: false);
 
     final blobs = <String, Uint8List>{};
     for (final file in archive.files) {

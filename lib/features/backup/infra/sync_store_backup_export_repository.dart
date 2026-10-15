@@ -22,9 +22,9 @@ class SyncStoreBackupExportRepository implements BackupExportRepository {
     required AppGraph graph,
     BackupArchiveCodec codec = const BackupArchiveCodec(),
     DateTime Function() now = DateTime.now,
-  })  : _graph = graph,
-        _codec = codec,
-        _now = now;
+  }) : _graph = graph,
+       _codec = codec,
+       _now = now;
 
   final AppGraph _graph;
   final BackupArchiveCodec _codec;
@@ -63,8 +63,7 @@ class SyncStoreBackupExportRepository implements BackupExportRepository {
         opLines: opLines,
         blobs: blobs,
       );
-      final shortAuthor =
-          author.length >= 8 ? author.substring(0, 8) : author;
+      final shortAuthor = author.length >= 8 ? author.substring(0, 8) : author;
       return Ok(
         BackupArchive(
           bytes: bytes,

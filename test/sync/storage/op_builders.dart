@@ -29,22 +29,21 @@ Snapshot collection({
   String title = 't',
   String? description,
   String? coverAttachmentId,
-}) =>
-    Snapshot(
-      type: EntityType.collection,
-      id: id,
-      author: author,
-      createdBy: author,
-      createdAt: createdAt,
-      hlc: Hlc(hlcMs, 0),
-      deleted: deleted,
-      sig: '$sig$hlcMs',
-      content: {
-        'title': title,
-        'description': description,
-        'cover_attachment_id': coverAttachmentId,
-      },
-    );
+}) => Snapshot(
+  type: EntityType.collection,
+  id: id,
+  author: author,
+  createdBy: author,
+  createdAt: createdAt,
+  hlc: Hlc(hlcMs, 0),
+  deleted: deleted,
+  sig: '$sig$hlcMs',
+  content: {
+    'title': title,
+    'description': description,
+    'cover_attachment_id': coverAttachmentId,
+  },
+);
 
 Snapshot link({
   String id = 'link-1',
@@ -54,24 +53,23 @@ Snapshot link({
   bool deleted = false,
   String? label,
   String sig = 'sig',
-}) =>
-    Snapshot(
-      type: EntityType.link,
-      id: id,
-      author: 'aa',
-      createdBy: 'aa',
-      createdAt: 1000,
-      hlc: Hlc(hlcMs, 0),
-      deleted: deleted,
-      sig: '$sig$hlcMs',
-      content: {
-        'source_type': 'card',
-        'source_id': sourceId,
-        'target_type': 'collection',
-        'target_id': targetId,
-        'label': label,
-      },
-    );
+}) => Snapshot(
+  type: EntityType.link,
+  id: id,
+  author: 'aa',
+  createdBy: 'aa',
+  createdAt: 1000,
+  hlc: Hlc(hlcMs, 0),
+  deleted: deleted,
+  sig: '$sig$hlcMs',
+  content: {
+    'source_type': 'card',
+    'source_id': sourceId,
+    'target_type': 'collection',
+    'target_id': targetId,
+    'label': label,
+  },
+);
 
 Snapshot profile({
   String id = 'pk-mira',
@@ -79,18 +77,17 @@ Snapshot profile({
   String nickname = 'mira',
   bool deleted = false,
   String sig = 'sig',
-}) =>
-    Snapshot(
-      type: EntityType.profile,
-      id: id,
-      author: id,
-      createdBy: id,
-      createdAt: 1000,
-      hlc: Hlc(hlcMs, 0),
-      deleted: deleted,
-      sig: '$sig$hlcMs',
-      content: {'nickname': nickname},
-    );
+}) => Snapshot(
+  type: EntityType.profile,
+  id: id,
+  author: id,
+  createdBy: id,
+  createdAt: 1000,
+  hlc: Hlc(hlcMs, 0),
+  deleted: deleted,
+  sig: '$sig$hlcMs',
+  content: {'nickname': nickname},
+);
 
 Snapshot card({
   String id = 'card-1',
@@ -104,22 +101,21 @@ Snapshot card({
   String position = 'a0',
   bool deleted = false,
   String sig = 'sig',
-}) =>
-    Snapshot(
-      type: EntityType.card,
-      id: id,
-      author: 'aa',
-      createdBy: 'aa',
-      createdAt: createdAt,
-      hlc: Hlc(hlcMs, 0),
-      deleted: deleted,
-      sig: '$sig$id$hlcMs$posMs',
-      placement: Hlc(posMs, 0),
-      position: position,
-      content: {
-        'collection_id': collectionId,
-        'kind': kind,
-        'text': text,
-        'attachment_id': attachmentId,
-      },
-    );
+}) => Snapshot(
+  type: EntityType.card,
+  id: id,
+  author: 'aa',
+  createdBy: 'aa',
+  createdAt: createdAt,
+  hlc: Hlc(hlcMs, 0),
+  deleted: deleted,
+  sig: '$sig$id$hlcMs$posMs',
+  placement: Hlc(posMs, 0),
+  position: position,
+  content: {
+    'collection_id': collectionId,
+    'kind': kind,
+    'text': text,
+    'attachment_id': attachmentId,
+  },
+);

@@ -38,17 +38,17 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
     required EffectEmitter<SettingsUiEffect> effectEmitter,
     required TimelineChannelEmitter timelineChannel,
     required Logger logger,
-  })  : _read = readRepository,
-        _write = writeRepository,
-        _wipe = wipeRepository,
-        _export = backupExportRepository,
-        _import = backupImportRepository,
-        _delivery = backupDeliveryPort,
-        _save = backupSavePort,
-        _source = backupSourcePort,
-        _effectEmitter = effectEmitter,
-        _timelineChannel = timelineChannel,
-        _log = logger;
+  }) : _read = readRepository,
+       _write = writeRepository,
+       _wipe = wipeRepository,
+       _export = backupExportRepository,
+       _import = backupImportRepository,
+       _delivery = backupDeliveryPort,
+       _save = backupSavePort,
+       _source = backupSourcePort,
+       _effectEmitter = effectEmitter,
+       _timelineChannel = timelineChannel,
+       _log = logger;
 
   final SettingsReadRepository _read;
   final SettingsWriteRepository _write;
@@ -73,23 +73,26 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
         result.onTap(
           (preferences) => dispatch(PreferencesLoaded(preferences)),
           (failure) {
-            _log.severe('Preferences load failed', failure.error,
-                failure.stackTrace);
+            _log.severe(
+              'Preferences load failed',
+              failure.error,
+              failure.stackTrace,
+            );
             dispatch(const PreferencesLoadFailed());
           },
         );
       case SavePreferencesEffect(:final preferences):
         final result = await _write.save(preferences);
-        result.onTap(
-          (saved) => dispatch(PreferencesSaved(saved)),
-          (failure) {
-            // The optimistic state already reflects the choice; only the
-            // persisted copy was lost, so we log rather than alarm the user.
-            _log.severe('Preferences save failed', failure.error,
-                failure.stackTrace);
-            dispatch(const PreferencesSaveFailed());
-          },
-        );
+        result.onTap((saved) => dispatch(PreferencesSaved(saved)), (failure) {
+          // The optimistic state already reflects the choice; only the
+          // persisted copy was lost, so we log rather than alarm the user.
+          _log.severe(
+            'Preferences save failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const PreferencesSaveFailed());
+        });
       case RunExportEffect(:final destination):
         await _runExport(destination, dispatch);
       case RunDataActionEffect(:final action):
@@ -124,8 +127,9 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
         }
       case Failure(:final error):
         _log.severe('Backup export failed', error.error, error.stackTrace);
-        _effectEmitter
-            .push(const SettingsBackupFailedUiEffect(DataAction.exportData));
+        _effectEmitter.push(
+          const SettingsBackupFailedUiEffect(DataAction.exportData),
+        );
     }
     dispatch(const DataActionFinished());
   }
@@ -139,8 +143,9 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
         );
       case Failure(:final error):
         _log.severe('Backup share failed', error.error, error.stackTrace);
-        _effectEmitter
-            .push(const SettingsBackupFailedUiEffect(DataAction.exportData));
+        _effectEmitter.push(
+          const SettingsBackupFailedUiEffect(DataAction.exportData),
+        );
     }
   }
 
@@ -153,11 +158,12 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
             const SettingsBackupExportedUiEffect(BackupDestination.saveFile),
           );
         }
-        // A cancelled save dialog is silent — no error, no confirmation.
+      // A cancelled save dialog is silent — no error, no confirmation.
       case Failure(:final error):
         _log.severe('Backup save failed', error.error, error.stackTrace);
-        _effectEmitter
-            .push(const SettingsBackupFailedUiEffect(DataAction.exportData));
+        _effectEmitter.push(
+          const SettingsBackupFailedUiEffect(DataAction.exportData),
+        );
     }
   }
 
@@ -177,7 +183,10 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
               _effectEmitter.push(SettingsBackupImportedUiEffect(summary));
             case Failure(:final error):
               _log.severe(
-                  'Backup import failed', error.error, error.stackTrace);
+                'Backup import failed',
+                error.error,
+                error.stackTrace,
+              );
               _effectEmitter.push(
                 const SettingsBackupFailedUiEffect(DataAction.importData),
               );
@@ -185,8 +194,9 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
         }
       case Failure(:final error):
         _log.severe('Backup pick failed', error.error, error.stackTrace);
-        _effectEmitter
-            .push(const SettingsBackupFailedUiEffect(DataAction.importData));
+        _effectEmitter.push(
+          const SettingsBackupFailedUiEffect(DataAction.importData),
+        );
     }
     dispatch(const DataActionFinished());
   }

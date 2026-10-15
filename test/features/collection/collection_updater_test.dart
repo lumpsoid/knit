@@ -342,19 +342,16 @@ void main() {
       final state = ready(
         const [],
       ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(
-        state,
-        const AudioRecorded(null),
-      );
+      final (next, effects) = updater.update(state, const AudioRecorded(null));
       expect(next.pendingAudio, isNull);
       expect(next.recordingPhase, isNull);
       expect(effects, isNull);
     });
 
     test('cancel drops everything and discards the recording', () {
-      final state = ready(const []).copyWith(
-        recordingPhase: AudioRecordingPhase.recording,
-      );
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
       final (next, effects) = updater.update(
         state,
         const AudioRecordingCancelled(),
@@ -400,12 +397,10 @@ void main() {
     });
 
     test('a pending image wins over a pending clip on send', () {
-      final state = ready(const [])
-          .copyWith(pendingImage: image, pendingAudio: audio);
-      final (_, effects) = updater.update(
-        state,
-        const ComposerSubmitted('hi'),
-      );
+      final state = ready(
+        const [],
+      ).copyWith(pendingImage: image, pendingAudio: audio);
+      final (_, effects) = updater.update(state, const ComposerSubmitted('hi'));
       expect(effects!.single, isA<AddPhotoCardEffect>());
     });
 
@@ -425,10 +420,7 @@ void main() {
       final state = ready(
         const [],
       ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(
-        state,
-        const DeactivateFeature(),
-      );
+      final (next, effects) = updater.update(state, const DeactivateFeature());
       expect(next.recordingPhase, isNull);
       expect(effects!.single, isA<CancelAudioRecordingEffect>());
     });
@@ -473,10 +465,7 @@ void main() {
 
     test('clearing the pending file drops it with no effect', () {
       final state = ready(const []).copyWith(pendingFile: pickedFile);
-      final (next, effects) = updater.update(
-        state,
-        const PendingFileCleared(),
-      );
+      final (next, effects) = updater.update(state, const PendingFileCleared());
       expect(next.pendingFile, isNull);
       expect(effects, isNull);
     });
@@ -544,12 +533,10 @@ void main() {
     });
 
     test('a pending image wins over a pending file on send', () {
-      final state = ready(const [])
-          .copyWith(pendingImage: image, pendingFile: pickedFile);
-      final (_, effects) = updater.update(
-        state,
-        const ComposerSubmitted('hi'),
-      );
+      final state = ready(
+        const [],
+      ).copyWith(pendingImage: image, pendingFile: pickedFile);
+      final (_, effects) = updater.update(state, const ComposerSubmitted('hi'));
       expect(effects!.single, isA<AddPhotoCardEffect>());
     });
 

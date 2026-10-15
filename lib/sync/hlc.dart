@@ -25,8 +25,8 @@ class Hlc implements Comparable<Hlc> {
   final int counter;
 
   const Hlc(this.ms, this.counter)
-      : assert(ms >= 0, 'hlc_ms must be non-negative'),
-        assert(counter >= 0, 'hlc_counter must be non-negative');
+    : assert(ms >= 0, 'hlc_ms must be non-negative'),
+      assert(counter >= 0, 'hlc_counter must be non-negative');
 
   /// The zero clock — a fresh device before any event.
   static const Hlc zero = Hlc(0, 0);
@@ -79,8 +79,11 @@ class ClockSkewException implements Exception {
 /// Returns true when [observedMs] is further in the future than the skew bound —
 /// the op should be quarantined (`reason="skew"`), not applied, and must NOT
 /// advance the clock (spec §8.3). Note: one-directional, future only.
-bool exceedsSkew(int observedMs, int physicalNowMs, {int maxSkewMs = kMaxSkewMs}) =>
-    observedMs - physicalNowMs > maxSkewMs;
+bool exceedsSkew(
+  int observedMs,
+  int physicalNowMs, {
+  int maxSkewMs = kMaxSkewMs,
+}) => observedMs - physicalNowMs > maxSkewMs;
 
 /// The single per-device HLC — spec §8.1/§8.2.
 ///

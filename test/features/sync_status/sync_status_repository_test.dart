@@ -24,7 +24,10 @@ void main() {
     graph.bindStore(store);
     const ids = UuidIdGenerator();
     timelineWrite = SyncStoreTimelineWriteRepository(graph: graph, ids: ids);
-    collectionWrite = SyncStoreCollectionWriteRepository(graph: graph, ids: ids);
+    collectionWrite = SyncStoreCollectionWriteRepository(
+      graph: graph,
+      ids: ids,
+    );
     read = SyncStoreSyncStatusReadRepository(graph: graph);
   });
 
@@ -35,8 +38,9 @@ void main() {
   });
 
   test('every local op stays pending until a relay acks it (§6.6)', () async {
-    final collection =
-        (await timelineWrite.createCollection('Espresso')).getOrThrow();
+    final collection = (await timelineWrite.createCollection(
+      'Espresso',
+    )).getOrThrow();
     expect(await pending(), 1);
 
     await collectionWrite.addCard(

@@ -55,12 +55,15 @@ Snapshot merge(Snapshot? current, Snapshot incoming) {
   if (current == null) return incoming;
   assert(current.id == incoming.id, 'merge is per-entity (same id)');
 
-  final contentWinner = compareContent(incoming, current) > 0 ? incoming : current;
+  final contentWinner = compareContent(incoming, current) > 0
+      ? incoming
+      : current;
 
   if (!incoming.isCard) return contentWinner;
 
-  final placementWinner =
-      comparePlacement(incoming, current) > 0 ? incoming : current;
+  final placementWinner = comparePlacement(incoming, current) > 0
+      ? incoming
+      : current;
 
   if (identical(placementWinner, contentWinner)) return contentWinner;
   return contentWinner.withPlacementFrom(placementWinner);
@@ -100,10 +103,10 @@ class Projection {
   /// lexicographic by design; `id` (UUIDv7) is the deterministic tiebreak when
   /// concurrent inserts into one gap mint identical positions on different cards.
   List<Snapshot> feed(String collectionId) {
-    final cards = _rows.values.where((s) =>
-        s.isCard &&
-        !s.deleted &&
-        s.content['collection_id'] == collectionId);
+    final cards = _rows.values.where(
+      (s) =>
+          s.isCard && !s.deleted && s.content['collection_id'] == collectionId,
+    );
     final sorted = cards.toList()
       ..sort((a, b) {
         final p = a.position!.compareTo(b.position!);

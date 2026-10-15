@@ -35,8 +35,9 @@ class CardEditModule {
     required FilePickerPort filePicker,
     Logger? logger,
   }) {
-    final stateHolder =
-        ValueListenableStateHolder<CardEditState>(const CardEditState());
+    final stateHolder = ValueListenableStateHolder<CardEditState>(
+      const CardEditState(),
+    );
     final effectEmitter = EffectEmitter<CardEditUiEffect>();
     final shell = CardEditShell(
       writeRepository: writeRepository,
@@ -53,8 +54,9 @@ class CardEditModule {
     final loop = CardEditLoop(
       stateHolder: stateHolder,
       updater: const CardEditUpdater(),
-      effectRunner:
-          ShellEffectRunner<CardEditEffect, CardEditAction>(shell: shell),
+      effectRunner: ShellEffectRunner<CardEditEffect, CardEditAction>(
+        shell: shell,
+      ),
     );
     _controller = CardEditController(
       stateHolder: stateHolder,

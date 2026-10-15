@@ -31,10 +31,13 @@ class SyncStoreAttachmentReadRepository implements AttachmentReadRepository {
     final bytes = await _blobs.readBytes(hash);
     if (bytes == null) return Failure(AttachmentBytesMissing(hash));
 
-    final mime = record.content[AttachmentSchema.colMime] as String? ??
+    final mime =
+        record.content[AttachmentSchema.colMime] as String? ??
         'application/octet-stream';
     final name = record.content[AttachmentSchema.colName] as String?;
     final size = (record.content[AttachmentSchema.colSize] as num?)?.toInt();
-    return Ok(AttachmentBytes(bytes: bytes, mime: mime, name: name, size: size));
+    return Ok(
+      AttachmentBytes(bytes: bytes, mime: mime, name: name, size: size),
+    );
   }
 }

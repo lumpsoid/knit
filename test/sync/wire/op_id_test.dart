@@ -23,9 +23,16 @@ void main() {
       // Edit and reorder share entity_id + content hlc (reorder freezes hlc_*),
       // but differ in payload → different sig → different sig16 → distinct op_id.
       const hlc = Hlc(1718020800000, 0);
-      final editOpId = OpId.build(entityId: 'card-1', hlc: hlc, sig: 'aaaa1111aaaa1111rest');
-      final reorderOpId =
-          OpId.build(entityId: 'card-1', hlc: hlc, sig: 'bbbb2222bbbb2222rest');
+      final editOpId = OpId.build(
+        entityId: 'card-1',
+        hlc: hlc,
+        sig: 'aaaa1111aaaa1111rest',
+      );
+      final reorderOpId = OpId.build(
+        entityId: 'card-1',
+        hlc: hlc,
+        sig: 'bbbb2222bbbb2222rest',
+      );
       expect(editOpId, isNot(reorderOpId));
     });
   });

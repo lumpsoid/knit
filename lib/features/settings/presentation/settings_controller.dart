@@ -13,8 +13,8 @@ class SettingsController {
     required this.stateHolder,
     required EffectEmitter<SettingsUiEffect> effectEmitter,
     required ActionSink<SettingsAction> sink,
-  })  : _effectEmitter = effectEmitter,
-        _sink = sink;
+  }) : _effectEmitter = effectEmitter,
+       _sink = sink;
 
   final ValueListenable<SettingsState> stateHolder;
   final EffectEmitter<SettingsUiEffect> _effectEmitter;

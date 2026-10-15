@@ -345,7 +345,9 @@ String _formatBytes(int bytes) {
     value /= 1024;
     unit++;
   }
-  final text = value >= 10 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+  final text = value >= 10
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1);
   return '$text ${units[unit]}';
 }
 

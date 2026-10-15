@@ -50,7 +50,8 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         // shows it's connected. The two sets are disjoint per card (a card's own
         // outgoing link never appears in its own backlinks), so this never
         // double-counts a single link.
-        final connectionCount = (await store.linksOut(card.id)).length +
+        final connectionCount =
+            (await store.linksOut(card.id)).length +
             (await store.backlinks(card.id)).length;
         cards.add(
           FeedCard(
@@ -70,7 +71,8 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       // own links-out plus backlinks (cards/collections linked to it). Disjoint
       // sets, so a single link is never double-counted (mirrors the per-card
       // badge).
-      final connectionCount = (await store.linksOut(id)).length +
+      final connectionCount =
+          (await store.linksOut(id)).length +
           (await store.backlinks(id)).length;
 
       return Ok(
@@ -135,9 +137,9 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
   ) async {
     try {
       // readAll, not feed: a card in *any* collection counts as a referent.
-      final referenced = (await _graph.store.readAll(EntityType.card)).any(
-        (c) => !c.deleted && c.content['attachment_id'] == attachmentId,
-      );
+      final referenced = (await _graph.store.readAll(
+        EntityType.card,
+      )).any((c) => !c.deleted && c.content['attachment_id'] == attachmentId);
       return Ok(referenced);
     } catch (e, st) {
       return Failure(CollectionLoadFailure(e, st));

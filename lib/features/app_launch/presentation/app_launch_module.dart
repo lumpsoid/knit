@@ -22,8 +22,9 @@ class AppLaunchModule {
     required AppDestinationResolver destinationResolver,
     Logger? logger,
   }) {
-    final stateHolder =
-        ValueListenableStateHolder<AppLaunchState>(const AppLaunchState());
+    final stateHolder = ValueListenableStateHolder<AppLaunchState>(
+      const AppLaunchState(),
+    );
     final effectEmitter = EffectEmitter<AppLaunchUiEffect>();
     final shell = AppLaunchShell(
       initialization: initialization,

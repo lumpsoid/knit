@@ -65,7 +65,8 @@ class SqfliteProjectionStorage implements ProjectionStorage {
   }) async {
     final rows = await _exec(ctx).query(
       CardSchema.table,
-      where: '${CardSchema.colCollectionId} = ? AND ${EnvelopeColumns.colDeleted} = 0',
+      where:
+          '${CardSchema.colCollectionId} = ? AND ${EnvelopeColumns.colDeleted} = 0',
       whereArgs: [collectionId],
       // spec §8.7 — position lexicographic, id (UUIDv7) breaks ties.
       orderBy: '${CardSchema.colPosition} ASC, ${EnvelopeColumns.colId} ASC',
@@ -82,7 +83,8 @@ class SqfliteProjectionStorage implements ProjectionStorage {
   }) async {
     final rows = await _exec(ctx).query(
       LinkSchema.table,
-      where: '${LinkSchema.colTargetId} = ? AND ${EnvelopeColumns.colDeleted} = 0',
+      where:
+          '${LinkSchema.colTargetId} = ? AND ${EnvelopeColumns.colDeleted} = 0',
       whereArgs: [targetId],
     );
     return rows
@@ -97,7 +99,8 @@ class SqfliteProjectionStorage implements ProjectionStorage {
   }) async {
     final rows = await _exec(ctx).query(
       LinkSchema.table,
-      where: '${LinkSchema.colSourceId} = ? AND ${EnvelopeColumns.colDeleted} = 0',
+      where:
+          '${LinkSchema.colSourceId} = ? AND ${EnvelopeColumns.colDeleted} = 0',
       whereArgs: [sourceId],
     );
     return rows

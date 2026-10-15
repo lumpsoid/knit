@@ -14,8 +14,8 @@ class TimelineChannelBinder {
   TimelineChannelBinder({
     required TimelineChannelReader reader,
     required ActionSink<TimelineAction> sink,
-  })  : _reader = reader,
-        _sink = sink;
+  }) : _reader = reader,
+       _sink = sink;
 
   final TimelineChannelReader _reader;
   final ActionSink<TimelineAction> _sink;

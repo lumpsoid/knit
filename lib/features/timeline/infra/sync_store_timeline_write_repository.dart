@@ -12,23 +12,20 @@ class SyncStoreTimelineWriteRepository implements TimelineWriteRepository {
   SyncStoreTimelineWriteRepository({
     required AppGraph graph,
     required IdGenerator ids,
-  })  : _graph = graph,
-        _ids = ids;
+  }) : _graph = graph,
+       _ids = ids;
 
   final AppGraph _graph;
   final IdGenerator _ids;
 
   @override
-  Future<Result<String, TimelineFailure>> createCollection(
-    String title,
-  ) async {
+  Future<Result<String, TimelineFailure>> createCollection(String title) async {
     try {
       final id = _ids.newId();
-      await _graph.store.create(
-        EntityType.collection,
-        id,
-        {'title': title, 'cover_attachment_id': null},
-      );
+      await _graph.store.create(EntityType.collection, id, {
+        'title': title,
+        'cover_attachment_id': null,
+      });
       return Ok(id);
     } catch (e, st) {
       return Failure(TimelineWriteFailure(e, st));

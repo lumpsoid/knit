@@ -13,7 +13,7 @@ class SyncStoreTimelineRepository implements TimelineReadRepository {
 
   @override
   Future<Result<List<CollectionSummary>, TimelineFailure>>
-      loadTimeline() async {
+  loadTimeline() async {
     try {
       return Ok(await _graph.store.homeTimeline());
     } catch (e, st) {

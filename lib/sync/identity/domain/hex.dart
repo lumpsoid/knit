@@ -27,7 +27,8 @@ Uint8List hexDecode(String hex) {
   }
   final out = Uint8List(hex.length ~/ 2);
   for (var i = 0; i < out.length; i++) {
-    out[i] = (_nibble(hex.codeUnitAt(i * 2)) << 4) |
+    out[i] =
+        (_nibble(hex.codeUnitAt(i * 2)) << 4) |
         _nibble(hex.codeUnitAt(i * 2 + 1));
   }
   return out;

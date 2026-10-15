@@ -9,8 +9,7 @@ import 'package:knit/features/connections/presentation/connections_state.dart';
 /// tap (or a back) truncates the stack, and each move re-loads the focus. The
 /// loaded payload refines the current crumb's title to the entity's real label.
 class ConnectionsUpdater
-    implements
-        Updater<ConnectionsState, ConnectionsAction, ConnectionsEffect> {
+    implements Updater<ConnectionsState, ConnectionsAction, ConnectionsEffect> {
   const ConnectionsUpdater();
 
   @override
@@ -32,10 +31,7 @@ class ConnectionsUpdater
       case ReloadRequested():
         if (state.breadcrumb.isEmpty) return (state, null);
         final focus = state.breadcrumb.last;
-        return (
-          state,
-          [LoadConnectionsEffect(kind: focus.kind, id: focus.id)],
-        );
+        return (state, [LoadConnectionsEffect(kind: focus.kind, id: focus.id)]);
 
       case ConnectionsLoaded(:final data):
         return (
@@ -48,10 +44,7 @@ class ConnectionsUpdater
         );
 
       case LoadFailed():
-        return (
-          state.copyWith(status: ConnectionsStatus.failed),
-          null,
-        );
+        return (state.copyWith(status: ConnectionsStatus.failed), null);
 
       case ConnectionTapped(:final item):
         if (item.broken) return (state, null);
@@ -93,10 +86,7 @@ class ConnectionsUpdater
     final trimmed = state.breadcrumb.sublist(0, index + 1);
     final focus = trimmed.last;
     return (
-      state.copyWith(
-        status: ConnectionsStatus.loading,
-        breadcrumb: trimmed,
-      ),
+      state.copyWith(status: ConnectionsStatus.loading, breadcrumb: trimmed),
       [LoadConnectionsEffect(kind: focus.kind, id: focus.id)],
     );
   }

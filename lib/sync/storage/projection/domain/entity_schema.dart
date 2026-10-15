@@ -144,12 +144,12 @@ abstract class ProfileSchema {
 /// statements (used by `ensureSchema` / rebuild truncation).
 abstract class ProjectionTables {
   static String of(EntityType type) => switch (type) {
-        EntityType.collection => CollectionSchema.table,
-        EntityType.card => CardSchema.table,
-        EntityType.link => LinkSchema.table,
-        EntityType.attachment => AttachmentSchema.table,
-        EntityType.profile => ProfileSchema.table,
-      };
+    EntityType.collection => CollectionSchema.table,
+    EntityType.card => CardSchema.table,
+    EntityType.link => LinkSchema.table,
+    EntityType.attachment => AttachmentSchema.table,
+    EntityType.profile => ProfileSchema.table,
+  };
 
   static const List<String> createStatements = [
     CollectionSchema.createTable,

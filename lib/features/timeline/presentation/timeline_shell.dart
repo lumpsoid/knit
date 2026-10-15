@@ -18,11 +18,11 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
     required AttachmentReadRepository attachmentReadRepository,
     required EffectEmitter<TimelineUiEffect> effectEmitter,
     required Logger logger,
-  })  : _read = readRepository,
-        _write = writeRepository,
-        _attachmentRead = attachmentReadRepository,
-        _effectEmitter = effectEmitter,
-        _log = logger;
+  }) : _read = readRepository,
+       _write = writeRepository,
+       _attachmentRead = attachmentReadRepository,
+       _effectEmitter = effectEmitter,
+       _log = logger;
 
   final TimelineReadRepository _read;
   final TimelineWriteRepository _write;
@@ -42,24 +42,27 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
           (collections) => dispatch(CollectionsLoaded(collections)),
           (failure) {
             _log.severe(
-                'Timeline load failed', failure.error, failure.stackTrace);
+              'Timeline load failed',
+              failure.error,
+              failure.stackTrace,
+            );
             dispatch(const TimelineLoadFailed());
           },
         );
 
       case CreateCollectionEffect(:final title):
         final result = await _write.createCollection(title);
-        result.onTap(
-          (id) => dispatch(CollectionCreated(id)),
-          (failure) {
-            _log.severe(
-                'Create collection failed', failure.error, failure.stackTrace);
-            _effectEmitter.push(
-              const TimelineShowMessageUiEffect(TimelineMessage.createFailed),
-            );
-            dispatch(const CollectionCreateFailed());
-          },
-        );
+        result.onTap((id) => dispatch(CollectionCreated(id)), (failure) {
+          _log.severe(
+            'Create collection failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          _effectEmitter.push(
+            const TimelineShowMessageUiEffect(TimelineMessage.createFailed),
+          );
+          dispatch(const CollectionCreateFailed());
+        });
 
       case LoadCoverBytesEffect(:final attachmentId):
         final result = await _attachmentRead.bytesOf(attachmentId);
@@ -75,17 +78,17 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
 
       case DeleteCollectionEffect(:final collectionId):
         final result = await _write.deleteCollection(collectionId);
-        result.onTap(
-          (id) => dispatch(CollectionDeleted(id)),
-          (failure) {
-            _log.severe(
-                'Delete collection failed', failure.error, failure.stackTrace);
-            _effectEmitter.push(
-              const TimelineShowMessageUiEffect(TimelineMessage.deleteFailed),
-            );
-            dispatch(const CollectionDeleteFailed());
-          },
-        );
+        result.onTap((id) => dispatch(CollectionDeleted(id)), (failure) {
+          _log.severe(
+            'Delete collection failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          _effectEmitter.push(
+            const TimelineShowMessageUiEffect(TimelineMessage.deleteFailed),
+          );
+          dispatch(const CollectionDeleteFailed());
+        });
     }
   }
 }

@@ -27,9 +27,9 @@ class SyncStoreBackupImportRepository implements BackupImportRepository {
     required AppGraph graph,
     BackupArchiveCodec codec = const BackupArchiveCodec(),
     DateTime Function() now = DateTime.now,
-  })  : _graph = graph,
-        _codec = codec,
-        _now = now;
+  }) : _graph = graph,
+       _codec = codec,
+       _now = now;
 
   final AppGraph _graph;
   final BackupArchiveCodec _codec;
@@ -64,9 +64,7 @@ class SyncStoreBackupImportRepository implements BackupImportRepository {
       var opsDeduped = 0;
       var opsQuarantined = 0;
       for (final line in parsed.opLines) {
-        final op = PersistedOp.fromDb(
-          jsonDecode(line) as Map<String, Object?>,
-        );
+        final op = PersistedOp.fromDb(jsonDecode(line) as Map<String, Object?>);
         final outcome = await _graph.store.applyRemote(
           op,
           _now().millisecondsSinceEpoch,

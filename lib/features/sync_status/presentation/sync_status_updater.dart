@@ -28,10 +28,7 @@ class SyncStatusUpdater
           null,
         );
       case PendingCountFailed():
-        return (
-          state.copyWith(phase: SyncStatusPhase.failed),
-          null,
-        );
+        return (state.copyWith(phase: SyncStatusPhase.failed), null);
     }
   }
 }

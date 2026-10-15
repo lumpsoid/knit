@@ -26,10 +26,9 @@ class TimelineState {
     TimelineStatus? status,
     List<CollectionSummary>? collections,
     Map<String, Uint8List>? coverBytes,
-  }) =>
-      TimelineState(
-        status: status ?? this.status,
-        collections: collections ?? this.collections,
-        coverBytes: coverBytes ?? this.coverBytes,
-      );
+  }) => TimelineState(
+    status: status ?? this.status,
+    collections: collections ?? this.collections,
+    coverBytes: coverBytes ?? this.coverBytes,
+  );
 }

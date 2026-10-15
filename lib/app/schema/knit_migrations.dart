@@ -23,49 +23,50 @@ import 'package:sql_migrator/sql_migrator.dart';
 /// into the frozen baseline. Every device — fresh or upgrading — then runs the
 /// same honest linear chain to the current schema.
 List<Migration> knitMigrations() => [
-      Migration(
-        version: 1,
-        description: 'baseline sync schema (collection/card/link/attachment/'
-            'profile + change_log/device_clock/local_identity/quarantine)',
-        up: (db) async {
-          for (final ddl in _v1BaselineDdl) {
-            await db.execute(ddl);
-          }
-        },
-        down: (db) async {
-          for (final table in _v1BaselineTables) {
-            await db.execute('DROP TABLE IF EXISTS $table');
-          }
-        },
-      ),
-      // v2: the file-attachment `name` field (spec §7.4.8). Absent from the v1
-      // baseline, so this adds it on every device — no guard needed.
-      Migration(
-        version: 2,
-        description: 'add attachment.name for file attachments (§7.4.8)',
-        up: (db) => db.execute(
-          'ALTER TABLE ${AttachmentSchema.table} '
-          'ADD COLUMN ${AttachmentSchema.colName} TEXT',
-        ),
-        down: (db) => db.execute(
-          'ALTER TABLE ${AttachmentSchema.table} '
-          'DROP COLUMN ${AttachmentSchema.colName}',
-        ),
-      ),
-      // v3: the optional `description` field on a collection (spec §3.1/§7.4).
-      Migration(
-        version: 3,
-        description: 'add collection.description (§3.1/§7.4)',
-        up: (db) => db.execute(
-          'ALTER TABLE ${CollectionSchema.table} '
-          'ADD COLUMN ${CollectionSchema.colDescription} TEXT',
-        ),
-        down: (db) => db.execute(
-          'ALTER TABLE ${CollectionSchema.table} '
-          'DROP COLUMN ${CollectionSchema.colDescription}',
-        ),
-      ),
-    ];
+  Migration(
+    version: 1,
+    description:
+        'baseline sync schema (collection/card/link/attachment/'
+        'profile + change_log/device_clock/local_identity/quarantine)',
+    up: (db) async {
+      for (final ddl in _v1BaselineDdl) {
+        await db.execute(ddl);
+      }
+    },
+    down: (db) async {
+      for (final table in _v1BaselineTables) {
+        await db.execute('DROP TABLE IF EXISTS $table');
+      }
+    },
+  ),
+  // v2: the file-attachment `name` field (spec §7.4.8). Absent from the v1
+  // baseline, so this adds it on every device — no guard needed.
+  Migration(
+    version: 2,
+    description: 'add attachment.name for file attachments (§7.4.8)',
+    up: (db) => db.execute(
+      'ALTER TABLE ${AttachmentSchema.table} '
+      'ADD COLUMN ${AttachmentSchema.colName} TEXT',
+    ),
+    down: (db) => db.execute(
+      'ALTER TABLE ${AttachmentSchema.table} '
+      'DROP COLUMN ${AttachmentSchema.colName}',
+    ),
+  ),
+  // v3: the optional `description` field on a collection (spec §3.1/§7.4).
+  Migration(
+    version: 3,
+    description: 'add collection.description (§3.1/§7.4)',
+    up: (db) => db.execute(
+      'ALTER TABLE ${CollectionSchema.table} '
+      'ADD COLUMN ${CollectionSchema.colDescription} TEXT',
+    ),
+    down: (db) => db.execute(
+      'ALTER TABLE ${CollectionSchema.table} '
+      'DROP COLUMN ${CollectionSchema.colDescription}',
+    ),
+  ),
+];
 
 /// The frozen v1 schema — literal DDL, the shape the first build shipped.
 /// `attachment.name` (v2) and `collection.description` (v3) are intentionally

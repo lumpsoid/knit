@@ -32,8 +32,11 @@ class FakeSigner implements Signer {
       fakeSignHex(secretKey, bytes);
 
   @override
-  Future<bool> verify(String publicKeyHex, List<int> bytes, String sigHex) async =>
-      fakeSignHex(utf8.encode(publicKeyHex), bytes) == sigHex;
+  Future<bool> verify(
+    String publicKeyHex,
+    List<int> bytes,
+    String sigHex,
+  ) async => fakeSignHex(utf8.encode(publicKeyHex), bytes) == sigHex;
 
   @override
   Future<String> fingerprintOf(String publicKeyHex) async =>

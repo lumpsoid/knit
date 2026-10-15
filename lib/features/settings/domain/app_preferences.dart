@@ -10,8 +10,10 @@ enum AppThemeMode {
 
   /// Tolerant tag→enum resolver (dart-helper-fn-placement): unknown / missing
   /// persisted values fall back to [system].
-  static AppThemeMode fromName(String? name) => AppThemeMode.values
-      .firstWhere((m) => m.name == name, orElse: () => AppThemeMode.system);
+  static AppThemeMode fromName(String? name) => AppThemeMode.values.firstWhere(
+    (m) => m.name == name,
+    orElse: () => AppThemeMode.system,
+  );
 }
 
 /// The app's UI language. [system] defers to the device locale; the others pin
@@ -21,8 +23,10 @@ enum AppLanguage {
   english,
   russian;
 
-  static AppLanguage fromName(String? name) => AppLanguage.values
-      .firstWhere((l) => l.name == name, orElse: () => AppLanguage.system);
+  static AppLanguage fromName(String? name) => AppLanguage.values.firstWhere(
+    (l) => l.name == name,
+    orElse: () => AppLanguage.system,
+  );
 }
 
 /// This device's UI preferences (theme + language). Device-local config, not
@@ -37,10 +41,7 @@ class AppPreferences {
   final AppThemeMode themeMode;
   final AppLanguage language;
 
-  AppPreferences copyWith({
-    AppThemeMode? themeMode,
-    AppLanguage? language,
-  }) =>
+  AppPreferences copyWith({AppThemeMode? themeMode, AppLanguage? language}) =>
       AppPreferences(
         themeMode: themeMode ?? this.themeMode,
         language: language ?? this.language,

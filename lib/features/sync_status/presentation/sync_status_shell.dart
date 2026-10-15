@@ -11,8 +11,8 @@ class SyncStatusShell extends Shell<SyncStatusEffect, SyncStatusAction> {
   SyncStatusShell({
     required SyncStatusReadRepository readRepository,
     required Logger logger,
-  })  : _read = readRepository,
-        _log = logger;
+  }) : _read = readRepository,
+       _log = logger;
 
   final SyncStatusReadRepository _read;
   final Logger _log;
@@ -25,14 +25,14 @@ class SyncStatusShell extends Shell<SyncStatusEffect, SyncStatusAction> {
     switch (effect) {
       case LoadPendingCountEffect():
         final result = await _read.pendingCount();
-        result.onTap(
-          (count) => dispatch(PendingCountLoaded(count)),
-          (failure) {
-            _log.severe(
-                'Pending count read failed', failure.error, failure.stackTrace);
-            dispatch(const PendingCountFailed());
-          },
-        );
+        result.onTap((count) => dispatch(PendingCountLoaded(count)), (failure) {
+          _log.severe(
+            'Pending count read failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const PendingCountFailed());
+        });
     }
   }
 }

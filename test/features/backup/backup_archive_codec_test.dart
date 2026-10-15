@@ -7,19 +7,23 @@ import 'package:knit/features/backup/infra/backup_archive_codec.dart';
 void main() {
   const codec = BackupArchiveCodec();
 
-  BackupManifest manifest({String format = kBackupFormat, int version = kBackupVersion}) =>
-      BackupManifest(
-        format: format,
-        version: version,
-        createdAtMs: 123,
-        author: 'abcd1234',
-        opCount: 2,
-        blobCount: 1,
-      );
+  BackupManifest manifest({
+    String format = kBackupFormat,
+    int version = kBackupVersion,
+  }) => BackupManifest(
+    format: format,
+    version: version,
+    createdAtMs: 123,
+    author: 'abcd1234',
+    opCount: 2,
+    blobCount: 1,
+  );
 
   test('round-trips manifest, op lines, and blobs', () {
     final opLines = ['{"a":1}', '{"b":2}'];
-    final blobs = {'hash1': Uint8List.fromList([1, 2, 3, 4])};
+    final blobs = {
+      'hash1': Uint8List.fromList([1, 2, 3, 4]),
+    };
 
     final bytes = codec.encode(
       manifest: manifest(),

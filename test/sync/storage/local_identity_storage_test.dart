@@ -24,9 +24,9 @@ void main() {
 
   for (final (name, open)
       in <(String, Future<LocalIdentityStorage> Function())>[
-    ('InMemoryLocalIdentityStorage', inMemory),
-    ('SqfliteLocalIdentityStorage', sqflite),
-  ]) {
+        ('InMemoryLocalIdentityStorage', inMemory),
+        ('SqfliteLocalIdentityStorage', sqflite),
+      ]) {
     group(name, () {
       late LocalIdentityStorage store;
       setUp(() async => store = await open());
@@ -35,24 +35,31 @@ void main() {
         expect(await store.load(), isNull);
       });
 
-      test('save then load round-trips the identity (incl. secret BLOB)', () async {
-        await store.save(const LocalIdentity(
-          publicKeyHex: '9f86d0',
-          secretKeyEnc: [1, 2, 3, 250, 0, 128],
-          createdAt: 1718020800000,
-        ));
-        final got = (await store.load())!;
-        expect(got.publicKeyHex, '9f86d0');
-        expect(got.secretKeyEnc, [1, 2, 3, 250, 0, 128]);
-        expect(got.createdAt, 1718020800000);
-      });
+      test(
+        'save then load round-trips the identity (incl. secret BLOB)',
+        () async {
+          await store.save(
+            const LocalIdentity(
+              publicKeyHex: '9f86d0',
+              secretKeyEnc: [1, 2, 3, 250, 0, 128],
+              createdAt: 1718020800000,
+            ),
+          );
+          final got = (await store.load())!;
+          expect(got.publicKeyHex, '9f86d0');
+          expect(got.secretKeyEnc, [1, 2, 3, 250, 0, 128]);
+          expect(got.createdAt, 1718020800000);
+        },
+      );
 
       test('clear resets to null', () async {
-        await store.save(const LocalIdentity(
-          publicKeyHex: 'p',
-          secretKeyEnc: [9],
-          createdAt: 1,
-        ));
+        await store.save(
+          const LocalIdentity(
+            publicKeyHex: 'p',
+            secretKeyEnc: [9],
+            createdAt: 1,
+          ),
+        );
         await store.clear();
         expect(await store.load(), isNull);
       });

@@ -26,11 +26,12 @@ class FetchRelayPublishClient implements RelayPublishClient {
   String _url(String path) => '$_base$path';
 
   @override
-  Future<Result<RelayTopic, RelayFailure>> createTopic(String ownerPubkey) async {
-    final req = RequestBuilder()
-        .post(_url('/v1/topics'))
-        .jsonBody({'owner_pubkey': ownerPubkey})
-        .build();
+  Future<Result<RelayTopic, RelayFailure>> createTopic(
+    String ownerPubkey,
+  ) async {
+    final req = RequestBuilder().post(_url('/v1/topics')).jsonBody({
+      'owner_pubkey': ownerPubkey,
+    }).build();
 
     final res = await _run(() => _client.send<dynamic>(req));
     if (res.isFailure) return Failure(res.error!);
@@ -39,10 +40,12 @@ class FetchRelayPublishClient implements RelayPublishClient {
     final topic = body?['topic'];
     final token = body?['token'];
     if (topic is! String || token is! String) {
-      return const Failure(RelayResponseFailure(
-        statusCode: 201,
-        error: 'malformed create-topic response',
-      ));
+      return const Failure(
+        RelayResponseFailure(
+          statusCode: 201,
+          error: 'malformed create-topic response',
+        ),
+      );
     }
     return Ok(RelayTopic(topicId: topic, writeToken: token));
   }
@@ -89,10 +92,12 @@ class FetchRelayPublishClient implements RelayPublishClient {
 
     final ref = _parseRef(_json(res.getOrThrow()));
     return ref == null
-        ? const Failure(RelayResponseFailure(
-            statusCode: 200,
-            error: 'malformed publication response',
-          ))
+        ? const Failure(
+            RelayResponseFailure(
+              statusCode: 200,
+              error: 'malformed publication response',
+            ),
+          )
         : Ok(ref);
   }
 
@@ -113,11 +118,13 @@ class FetchRelayPublishClient implements RelayPublishClient {
       return Ok(_parseRef(_json(res)));
     } on HttpError catch (e) {
       if (e.statusCode == 404) return const Ok(null);
-      return Failure(RelayResponseFailure(
-        statusCode: e.statusCode,
-        code: _errorCode(e.response),
-        error: e.message,
-      ));
+      return Failure(
+        RelayResponseFailure(
+          statusCode: e.statusCode,
+          code: _errorCode(e.response),
+          error: e.message,
+        ),
+      );
     } on FetchError catch (e, st) {
       return Failure(RelayNetworkFailure(e, st));
     } catch (e, st) {
@@ -147,17 +154,21 @@ class FetchRelayPublishClient implements RelayPublishClient {
     try {
       final res = await send();
       if (res.isSuccess) return Ok(res);
-      return Failure(RelayResponseFailure(
-        statusCode: res.statusCode,
-        code: _errorCode(res),
-        error: 'HTTP ${res.statusCode}',
-      ));
+      return Failure(
+        RelayResponseFailure(
+          statusCode: res.statusCode,
+          code: _errorCode(res),
+          error: 'HTTP ${res.statusCode}',
+        ),
+      );
     } on HttpError catch (e) {
-      return Failure(RelayResponseFailure(
-        statusCode: e.statusCode,
-        code: _errorCode(e.response),
-        error: e.message,
-      ));
+      return Failure(
+        RelayResponseFailure(
+          statusCode: e.statusCode,
+          code: _errorCode(e.response),
+          error: e.message,
+        ),
+      );
     } on FetchError catch (e, st) {
       return Failure(RelayNetworkFailure(e, st));
     } catch (e, st) {

@@ -12,13 +12,13 @@ void main() {
   const updater = CardEditUpdater();
 
   ConnectionItem link(String id, {bool broken = false}) => ConnectionItem(
-        linkId: id,
-        direction: ConnectionDirection.outgoing,
-        otherKind: ConnectedEntityKind.collection,
-        otherId: 'col-$id',
-        broken: broken,
-        label: broken ? null : 'Target $id',
-      );
+    linkId: id,
+    direction: ConnectionDirection.outgoing,
+    otherKind: ConnectedEntityKind.collection,
+    otherId: 'col-$id',
+    broken: broken,
+    label: broken ? null : 'Target $id',
+  );
 
   group('attach', () {
     test('seeds id/text, loads links + targets, no attachment when none', () {
@@ -54,7 +54,10 @@ void main() {
       expect(next.attachmentId, 'att-1');
       expect(next.attachmentKind, CardKind.image);
       expect(next.attachmentBusy, isTrue);
-      expect(effects!.whereType<LoadImageEffect>().single.attachmentId, 'att-1');
+      expect(
+        effects!.whereType<LoadImageEffect>().single.attachmentId,
+        'att-1',
+      );
     });
 
     test('renders an audio/file attachment from metadata without a load', () {
@@ -83,29 +86,34 @@ void main() {
         const CardEditState(cardId: 'c1', initialText: 'hello');
 
     test('SaveRequested emits SaveCardEffect and enters saving', () {
-      final (next, effects) =
-          updater.update(attached(), const SaveRequested('new body'));
+      final (next, effects) = updater.update(
+        attached(),
+        const SaveRequested('new body'),
+      );
       expect(next.status, CardEditStatus.saving);
       final effect = effects!.single as SaveCardEffect;
       expect((effect.cardId, effect.text), ('c1', 'new body'));
     });
 
     test('surrounding whitespace is trimmed', () {
-      final (_, effects) =
-          updater.update(attached(), const SaveRequested('  trimmed  '));
+      final (_, effects) = updater.update(
+        attached(),
+        const SaveRequested('  trimmed  '),
+      );
       expect((effects!.single as SaveCardEffect).text, 'trimmed');
     });
 
     test('blank / whitespace-only save is dropped', () {
-      final (_, effects) =
-          updater.update(attached(), const SaveRequested('   '));
+      final (_, effects) = updater.update(
+        attached(),
+        const SaveRequested('   '),
+      );
       expect(effects, isNull);
     });
 
     test('SaveFailed marks the page failed', () {
       final saving = attached().copyWith(status: CardEditStatus.saving);
-      final (next, effects) =
-          updater.update(saving, const SaveFailed());
+      final (next, effects) = updater.update(saving, const SaveFailed());
       expect(next.status, CardEditStatus.failed);
       expect(effects, isNull);
     });
@@ -114,8 +122,10 @@ void main() {
   group('links', () {
     test('LinksLoaded fills the list and clears the spinner', () {
       const loading = CardEditState(cardId: 'c1', linksLoading: true);
-      final (next, effects) =
-          updater.update(loading, LinksLoaded([link('l1')]));
+      final (next, effects) = updater.update(
+        loading,
+        LinksLoaded([link('l1')]),
+      );
       expect(next.links, hasLength(1));
       expect(next.linksLoading, isFalse);
       expect(effects, isNull);
@@ -140,8 +150,10 @@ void main() {
 
     test('RemoveLinkRequested emits RemoveLinkEffect', () {
       const state = CardEditState(cardId: 'c1');
-      final (_, effects) =
-          updater.update(state, const RemoveLinkRequested('l1'));
+      final (_, effects) = updater.update(
+        state,
+        const RemoveLinkRequested('l1'),
+      );
       expect((effects!.single as RemoveLinkEffect).linkId, 'l1');
     });
 
@@ -156,8 +168,7 @@ void main() {
   group('attachment', () {
     test('PickImageRequested carries the previous attachment for GC', () {
       const state = CardEditState(cardId: 'c1', attachmentId: 'old');
-      final (next, effects) =
-          updater.update(state, const PickImageRequested());
+      final (next, effects) = updater.update(state, const PickImageRequested());
       expect(next.attachmentBusy, isTrue);
       expect((effects!.single as PickImageEffect).previousAttachmentId, 'old');
     });
@@ -169,16 +180,21 @@ void main() {
       expect((effects!.single as PickFileEffect).previousAttachmentId, 'old');
     });
 
-    test('RemoveAttachmentRequested carries the previous attachment for GC', () {
-      const state = CardEditState(cardId: 'c1', attachmentId: 'old');
-      final (next, effects) =
-          updater.update(state, const RemoveAttachmentRequested());
-      expect(next.attachmentBusy, isTrue);
-      expect(
-        (effects!.single as RemoveAttachmentEffect).previousAttachmentId,
-        'old',
-      );
-    });
+    test(
+      'RemoveAttachmentRequested carries the previous attachment for GC',
+      () {
+        const state = CardEditState(cardId: 'c1', attachmentId: 'old');
+        final (next, effects) = updater.update(
+          state,
+          const RemoveAttachmentRequested(),
+        );
+        expect(next.attachmentBusy, isTrue);
+        expect(
+          (effects!.single as RemoveAttachmentEffect).previousAttachmentId,
+          'old',
+        );
+      },
+    );
 
     test('AttachmentResolved with an image fills bytes and clears busy', () {
       const state = CardEditState(cardId: 'c1', attachmentBusy: true);
@@ -224,8 +240,10 @@ void main() {
         imageBytes: Uint8List.fromList([1]),
         attachmentBusy: true,
       );
-      final (next, effects) =
-          updater.update(state, const AttachmentResolved(attachmentId: null));
+      final (next, effects) = updater.update(
+        state,
+        const AttachmentResolved(attachmentId: null),
+      );
       expect(next.attachmentId, isNull);
       expect(next.attachmentKind, isNull);
       expect(next.imageBytes, isNull);
@@ -235,8 +253,10 @@ void main() {
 
     test('AttachmentEditEnded just drops the busy flag', () {
       const state = CardEditState(cardId: 'c1', attachmentBusy: true);
-      final (next, effects) =
-          updater.update(state, const AttachmentEditEnded());
+      final (next, effects) = updater.update(
+        state,
+        const AttachmentEditEnded(),
+      );
       expect(next.attachmentBusy, isFalse);
       expect(effects, isNull);
     });

@@ -12,8 +12,8 @@ class ProfileController {
     required this.stateHolder,
     required EffectEmitter<ProfileUiEffect> effectEmitter,
     required ActionSink<ProfileAction> sink,
-  })  : _effectEmitter = effectEmitter,
-        _sink = sink;
+  }) : _effectEmitter = effectEmitter,
+       _sink = sink;
 
   final ValueListenable<ProfileState> stateHolder;
   final EffectEmitter<ProfileUiEffect> _effectEmitter;

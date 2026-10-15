@@ -21,8 +21,8 @@ class ProductionInitializationRepository implements InitializationRepository {
   ProductionInitializationRepository({
     required AppGraph graph,
     String databaseName = 'knit.db',
-  })  : _graph = graph,
-        _databaseName = databaseName;
+  }) : _graph = graph,
+       _databaseName = databaseName;
 
   final AppGraph _graph;
   final String _databaseName;

@@ -74,27 +74,28 @@ class CardEditState {
     Object? attachmentName = _unset,
     Object? attachmentSize = _unset,
     bool? attachmentBusy,
-  }) =>
-      CardEditState(
-        status: status ?? this.status,
-        cardId: cardId ?? this.cardId,
-        initialText: initialText ?? this.initialText,
-        links: links ?? this.links,
-        linksLoading: linksLoading ?? this.linksLoading,
-        targets: targets ?? this.targets,
-        attachmentId:
-            attachmentId == _unset ? this.attachmentId : attachmentId as String?,
-        attachmentKind: attachmentKind == _unset
-            ? this.attachmentKind
-            : attachmentKind as CardKind?,
-        imageBytes:
-            imageBytes == _unset ? this.imageBytes : imageBytes as Uint8List?,
-        attachmentName: attachmentName == _unset
-            ? this.attachmentName
-            : attachmentName as String?,
-        attachmentSize: attachmentSize == _unset
-            ? this.attachmentSize
-            : attachmentSize as int?,
-        attachmentBusy: attachmentBusy ?? this.attachmentBusy,
-      );
+  }) => CardEditState(
+    status: status ?? this.status,
+    cardId: cardId ?? this.cardId,
+    initialText: initialText ?? this.initialText,
+    links: links ?? this.links,
+    linksLoading: linksLoading ?? this.linksLoading,
+    targets: targets ?? this.targets,
+    attachmentId: attachmentId == _unset
+        ? this.attachmentId
+        : attachmentId as String?,
+    attachmentKind: attachmentKind == _unset
+        ? this.attachmentKind
+        : attachmentKind as CardKind?,
+    imageBytes: imageBytes == _unset
+        ? this.imageBytes
+        : imageBytes as Uint8List?,
+    attachmentName: attachmentName == _unset
+        ? this.attachmentName
+        : attachmentName as String?,
+    attachmentSize: attachmentSize == _unset
+        ? this.attachmentSize
+        : attachmentSize as int?,
+    attachmentBusy: attachmentBusy ?? this.attachmentBusy,
+  );
 }

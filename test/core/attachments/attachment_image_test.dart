@@ -5,17 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/core/attachments/attachments.dart';
 
 void main() {
-  testWidgets('shows the placeholder glyph when bytes are null',
-      (tester) async {
-    await tester.pumpWidget(const MaterialApp(
-      home: Scaffold(body: AttachmentImage(bytes: null)),
-    ));
+  testWidgets('shows the placeholder glyph when bytes are null', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: AttachmentImage(bytes: null))),
+    );
     expect(find.byIcon(Icons.image_outlined), findsOneWidget);
     expect(find.byType(Image), findsNothing);
   });
 
-  testWidgets('renders an Image.memory when bytes are present',
-      (tester) async {
+  testWidgets('renders an Image.memory when bytes are present', (tester) async {
     // A 1x1 transparent PNG.
     final png = Uint8List.fromList(const [
       0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, //
@@ -28,9 +28,11 @@ void main() {
       0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
       0x42, 0x60, 0x82,
     ]);
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: AttachmentImage(bytes: png)),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: AttachmentImage(bytes: png)),
+      ),
+    );
     expect(find.byType(Image), findsOneWidget);
   });
 }

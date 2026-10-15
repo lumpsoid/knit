@@ -37,16 +37,16 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     required FilePickerPort filePicker,
     required EffectEmitter<CardEditUiEffect> effectEmitter,
     required Logger logger,
-  })  : _write = writeRepository,
-        _linksRead = linksReadRepository,
-        _linksWrite = linksWriteRepository,
-        _targetsRead = targetsReadRepository,
-        _attachmentRead = attachmentReadRepository,
-        _attachmentWrite = attachmentWriteRepository,
-        _picker = imagePicker,
-        _filePicker = filePicker,
-        _effectEmitter = effectEmitter,
-        _log = logger;
+  }) : _write = writeRepository,
+       _linksRead = linksReadRepository,
+       _linksWrite = linksWriteRepository,
+       _targetsRead = targetsReadRepository,
+       _attachmentRead = attachmentReadRepository,
+       _attachmentWrite = attachmentWriteRepository,
+       _picker = imagePicker,
+       _filePicker = filePicker,
+       _effectEmitter = effectEmitter,
+       _log = logger;
 
   final CardEditWriteRepository _write;
   final CardEditLinksReadRepository _linksRead;
@@ -74,7 +74,9 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
           },
           (failure) {
             _log.severe('Card edit failed', failure.error, failure.stackTrace);
-            _effectEmitter.push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
+            _effectEmitter.push(
+              const CardEditShowMessageUiEffect(CardEditMessage.saveFailed),
+            );
             dispatch(const SaveFailed());
           },
         );
@@ -83,21 +85,24 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
       case LoadLinksEffect(:final cardId):
         final result = await _linksRead.linksOf(cardId);
-        result.onTap(
-          (links) => dispatch(LinksLoaded(links)),
-          (failure) {
-            _log.severe(
-                'Card links load failed', failure.error, failure.stackTrace);
-            dispatch(const LinksLoadFailed());
-          },
-        );
+        result.onTap((links) => dispatch(LinksLoaded(links)), (failure) {
+          _log.severe(
+            'Card links load failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const LinksLoadFailed());
+        });
 
       case LoadTargetsEffect(:final cardId):
         final result = await _targetsRead.loadTargets(excludeCardId: cardId);
         result.onTap(
           (targets) => dispatch(TargetsLoaded(targets)),
-          (failure) => _log.severe('Card link targets load failed',
-              failure.error, failure.stackTrace),
+          (failure) => _log.severe(
+            'Card link targets load failed',
+            failure.error,
+            failure.stackTrace,
+          ),
         );
 
       case AddLinkEffect(:final cardId, :final targetKind, :final targetId):
@@ -122,11 +127,13 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
           _log.warning('Card image bytes missing for $attachmentId');
           dispatch(const AttachmentEditEnded());
         } else {
-          dispatch(AttachmentResolved(
-            attachmentId: attachmentId,
-            kind: CardKind.image,
-            bytes: result.getOrThrow().bytes,
-          ));
+          dispatch(
+            AttachmentResolved(
+              attachmentId: attachmentId,
+              kind: CardKind.image,
+              bytes: result.getOrThrow().bytes,
+            ),
+          );
         }
 
       case PickImageEffect(:final cardId, :final previousAttachmentId):
@@ -139,9 +146,14 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         final result = await _write.removeCardAttachment(cardId: cardId);
         if (result.isFailure) {
           final failure = result.error!;
-          _log.severe('Remove card attachment failed', failure.error,
-              failure.stackTrace);
-          _effectEmitter.push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
+          _log.severe(
+            'Remove card attachment failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          _effectEmitter.push(
+            const CardEditShowMessageUiEffect(CardEditMessage.saveFailed),
+          );
           dispatch(const AttachmentEditEnded());
         } else {
           await _gcAttachment(previousAttachmentId);
@@ -157,14 +169,13 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     String label,
     void Function(CardEditAction) dispatch,
   ) {
-    result.onTap(
-      (_) => dispatch(const LinksChanged()),
-      (failure) {
-        _log.severe('Card $label failed', failure.error, failure.stackTrace);
-        _effectEmitter.push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
-        dispatch(const LinksChanged());
-      },
-    );
+    result.onTap((_) => dispatch(const LinksChanged()), (failure) {
+      _log.severe('Card $label failed', failure.error, failure.stackTrace);
+      _effectEmitter.push(
+        const CardEditShowMessageUiEffect(CardEditMessage.saveFailed),
+      );
+      dispatch(const LinksChanged());
+    });
   }
 
   /// Pick a photo → store it → point the card at the new image → GC the one it
@@ -214,12 +225,12 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     // only routes the matching store call and labels the result.
     final kind = CardKind.forFileMime(file.mime);
     final created = await switch (kind) {
-      CardKind.image => _attachmentWrite
-          .createFromPicked(PickedImage(bytes: file.bytes, mime: file.mime)),
-      CardKind.audio => _attachmentWrite
-          .createFromAudio(
-            PickedAudio(bytes: file.bytes, mime: file.mime, name: file.name),
-          ),
+      CardKind.image => _attachmentWrite.createFromPicked(
+        PickedImage(bytes: file.bytes, mime: file.mime),
+      ),
+      CardKind.audio => _attachmentWrite.createFromAudio(
+        PickedAudio(bytes: file.bytes, mime: file.mime, name: file.name),
+      ),
       _ => _attachmentWrite.createFromFile(file),
     };
     if (created.isFailure) {
@@ -259,7 +270,10 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     if (attached.isFailure) {
       final failure = attached.error!;
       _log.severe(
-          'Attach card attachment failed', failure.error, failure.stackTrace);
+        'Attach card attachment failed',
+        failure.error,
+        failure.stackTrace,
+      );
       _failAttachment(dispatch);
       return;
     }
@@ -267,20 +281,23 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     if (previousAttachmentId != null && previousAttachmentId != attachmentId) {
       await _gcAttachment(previousAttachmentId);
     }
-    dispatch(AttachmentResolved(
-      attachmentId: attachmentId,
-      kind: kind,
-      bytes: bytes,
-      name: name,
-      size: size,
-    ));
+    dispatch(
+      AttachmentResolved(
+        attachmentId: attachmentId,
+        kind: kind,
+        bytes: bytes,
+        name: name,
+        size: size,
+      ),
+    );
   }
 
   /// Surface a write failure and clear the in-flight flag, leaving the card's
   /// current attachment untouched.
   void _failAttachment(void Function(CardEditAction) dispatch) {
-    _effectEmitter
-        .push(const CardEditShowMessageUiEffect(CardEditMessage.saveFailed));
+    _effectEmitter.push(
+      const CardEditShowMessageUiEffect(CardEditMessage.saveFailed),
+    );
     dispatch(const AttachmentEditEnded());
   }
 

@@ -25,8 +25,8 @@ class ProfileView {
   String get handle => '$nickname#$fingerprint';
 
   ProfileView copyWith({String? nickname}) => ProfileView(
-        nickname: nickname ?? this.nickname,
-        publicKeyHex: publicKeyHex,
-        fingerprint: fingerprint,
-      );
+    nickname: nickname ?? this.nickname,
+    publicKeyHex: publicKeyHex,
+    fingerprint: fingerprint,
+  );
 }

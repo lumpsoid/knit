@@ -19,37 +19,34 @@ class SyncStoreCardEditWriteRepository implements CardEditWriteRepository {
   Future<Result<String, CardEditFailure>> editCard({
     required String cardId,
     String? text,
-  }) =>
-      _write(() async {
-        await _graph.store.edit(EntityType.card, cardId, {'text': text});
-        return cardId;
-      });
+  }) => _write(() async {
+    await _graph.store.edit(EntityType.card, cardId, {'text': text});
+    return cardId;
+  });
 
   @override
   Future<Result<String, CardEditFailure>> setCardAttachment({
     required String cardId,
     required String attachmentId,
     required CardKind kind,
-  }) =>
-      _write(() async {
-        await _graph.store.edit(EntityType.card, cardId, {
-          'kind': kind.tag,
-          'attachment_id': attachmentId,
-        });
-        return cardId;
-      });
+  }) => _write(() async {
+    await _graph.store.edit(EntityType.card, cardId, {
+      'kind': kind.tag,
+      'attachment_id': attachmentId,
+    });
+    return cardId;
+  });
 
   @override
   Future<Result<String, CardEditFailure>> removeCardAttachment({
     required String cardId,
-  }) =>
-      _write(() async {
-        await _graph.store.edit(EntityType.card, cardId, {
-          'kind': 'text',
-          'attachment_id': null,
-        });
-        return cardId;
-      });
+  }) => _write(() async {
+    await _graph.store.edit(EntityType.card, cardId, {
+      'kind': 'text',
+      'attachment_id': null,
+    });
+    return cardId;
+  });
 
   Future<Result<String, CardEditFailure>> _write(
     Future<String> Function() op,

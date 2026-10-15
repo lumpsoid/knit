@@ -37,7 +37,8 @@ abstract interface class TimelineChannelObserver {
 /// Consumer half — subscribe *and* read the latest event. The Timeline
 /// controller holds this: it subscribes via [addListener], then reads
 /// [latestEvent] on each notification to learn which event fired.
-abstract interface class TimelineChannelReader implements TimelineChannelObserver {
+abstract interface class TimelineChannelReader
+    implements TimelineChannelObserver {
   /// The most recent event pushed, or `null` before any emit.
   TimelineChannelEvent? get latestEvent;
 }

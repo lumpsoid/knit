@@ -10,7 +10,7 @@ import 'package:result_dart/result_dart.dart';
 class SyncStoreConnectionsWriteRepository
     implements ConnectionsWriteRepository {
   SyncStoreConnectionsWriteRepository({required AppGraph graph})
-      : _graph = graph;
+    : _graph = graph;
 
   final AppGraph _graph;
 

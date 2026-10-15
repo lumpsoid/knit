@@ -9,8 +9,10 @@ void main() {
   const updater = OnboardUpdater();
 
   test('Get started advances welcome → nickname', () {
-    final (next, effects) =
-        updater.update(const OnboardState(), const GetStartedTapped());
+    final (next, effects) = updater.update(
+      const OnboardState(),
+      const GetStartedTapped(),
+    );
     expect(next.step, OnboardStep.nickname);
     expect(effects, isNull);
   });
@@ -25,21 +27,30 @@ void main() {
     expect(go.step, OnboardStep.explainIdentity);
   });
 
-  test('Generate goes to generating and emits CreateIdentityEffect (trimmed)',
-      () {
-    const state =
-        OnboardState(step: OnboardStep.explainIdentity, nickname: '  mira ');
-    final (next, effects) =
-        updater.update(state, const GenerateIdentityTapped());
-    expect(next.step, OnboardStep.generating);
-    expect(next.hasError, isFalse);
-    expect(effects, hasLength(1));
-    expect((effects!.single as CreateIdentityEffect).nickname, 'mira');
-  });
+  test(
+    'Generate goes to generating and emits CreateIdentityEffect (trimmed)',
+    () {
+      const state = OnboardState(
+        step: OnboardStep.explainIdentity,
+        nickname: '  mira ',
+      );
+      final (next, effects) = updater.update(
+        state,
+        const GenerateIdentityTapped(),
+      );
+      expect(next.step, OnboardStep.generating);
+      expect(next.hasError, isFalse);
+      expect(effects, hasLength(1));
+      expect((effects!.single as CreateIdentityEffect).nickname, 'mira');
+    },
+  );
 
   test('IdentityCreated reveals the identity', () {
     const card = IdentityCard(
-        nickname: 'mira', publicKeyHex: 'ab12', fingerprint: 'a4f9');
+      nickname: 'mira',
+      publicKeyHex: 'ab12',
+      fingerprint: 'a4f9',
+    );
     final (next, _) = updater.update(
       const OnboardState(step: OnboardStep.generating, nickname: 'mira'),
       const IdentityCreated(card),
@@ -71,8 +82,7 @@ void main() {
       const BackTapped(),
     );
     expect(toNickname.step, OnboardStep.nickname);
-    final (toWelcome, _) =
-        updater.update(toNickname, const BackTapped());
+    final (toWelcome, _) = updater.update(toNickname, const BackTapped());
     expect(toWelcome.step, OnboardStep.welcome);
   });
 }

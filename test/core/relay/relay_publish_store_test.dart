@@ -34,18 +34,23 @@ void main() {
       test('relay url round-trips; null before any save', () async {
         expect(await store.loadRelayUrl(), isNull);
         await store.saveRelayUrl(Uri.parse('https://relay.example:4000'));
-        expect(await store.loadRelayUrl(), Uri.parse('https://relay.example:4000'));
+        expect(
+          await store.loadRelayUrl(),
+          Uri.parse('https://relay.example:4000'),
+        );
       });
 
       test('publication round-trips with a null slug', () async {
         expect(await store.loadPublication('c1'), isNull);
 
-        await store.savePublication(const CollectionPublication(
-          collectionId: 'c1',
-          topicId: 'topic-1',
-          writeToken: 'wtok-1',
-          visibility: PublishVisibility.private,
-        ));
+        await store.savePublication(
+          const CollectionPublication(
+            collectionId: 'c1',
+            topicId: 'topic-1',
+            writeToken: 'wtok-1',
+            visibility: PublishVisibility.private,
+          ),
+        );
 
         final got = (await store.loadPublication('c1'))!;
         expect(got.topicId, 'topic-1');
@@ -56,20 +61,24 @@ void main() {
       });
 
       test('upsert by collection id replaces the row', () async {
-        await store.savePublication(const CollectionPublication(
-          collectionId: 'c1',
-          topicId: 'topic-1',
-          writeToken: 'wtok-1',
-          visibility: PublishVisibility.private,
-        ));
-        await store.savePublication(const CollectionPublication(
-          collectionId: 'c1',
-          topicId: 'topic-1',
-          writeToken: 'wtok-1',
-          slug: 'slug-1',
-          visibility: PublishVisibility.public,
-          publishedAt: 1718020800000,
-        ));
+        await store.savePublication(
+          const CollectionPublication(
+            collectionId: 'c1',
+            topicId: 'topic-1',
+            writeToken: 'wtok-1',
+            visibility: PublishVisibility.private,
+          ),
+        );
+        await store.savePublication(
+          const CollectionPublication(
+            collectionId: 'c1',
+            topicId: 'topic-1',
+            writeToken: 'wtok-1',
+            slug: 'slug-1',
+            visibility: PublishVisibility.public,
+            publishedAt: 1718020800000,
+          ),
+        );
 
         final got = (await store.loadPublication('c1'))!;
         expect(got.slug, 'slug-1');
@@ -78,12 +87,14 @@ void main() {
       });
 
       test('delete removes the record', () async {
-        await store.savePublication(const CollectionPublication(
-          collectionId: 'c1',
-          topicId: 'topic-1',
-          writeToken: 'wtok-1',
-          visibility: PublishVisibility.public,
-        ));
+        await store.savePublication(
+          const CollectionPublication(
+            collectionId: 'c1',
+            topicId: 'topic-1',
+            writeToken: 'wtok-1',
+            visibility: PublishVisibility.public,
+          ),
+        );
         await store.deletePublication('c1');
         expect(await store.loadPublication('c1'), isNull);
       });

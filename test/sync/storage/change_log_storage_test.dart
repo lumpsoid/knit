@@ -56,7 +56,9 @@ void main() {
 
       test('pending = local & !acked; markAcked clears it', () async {
         await store.append(opOf(collection(hlcMs: 100)));
-        await store.append(opOf(collection(id: 'r', hlcMs: 100), origin: SyncOrigin.remote));
+        await store.append(
+          opOf(collection(id: 'r', hlcMs: 100), origin: SyncOrigin.remote),
+        );
         expect(await store.pendingCount(), 1, reason: 'remote not pending');
 
         final local = (await store.readPending()).single;
@@ -65,7 +67,9 @@ void main() {
       });
 
       test('payload round-trips back into a Snapshot', () async {
-        await store.append(opOf(card(hlcMs: 100, text: 'grind finer', position: 'a3')));
+        await store.append(
+          opOf(card(hlcMs: 100, text: 'grind finer', position: 'a3')),
+        );
         final snap = (await store.readOrdered()).single.toSnapshot();
         expect(snap.type, EntityType.card);
         expect(snap.content['text'], 'grind finer');

@@ -16,10 +16,10 @@ class ProfileShell extends Shell<ProfileEffect, ProfileAction> {
     required ProfileWriteRepository writeRepository,
     required EffectEmitter<ProfileUiEffect> effectEmitter,
     required Logger logger,
-  })  : _read = readRepository,
-        _write = writeRepository,
-        _effectEmitter = effectEmitter,
-        _log = logger;
+  }) : _read = readRepository,
+       _write = writeRepository,
+       _effectEmitter = effectEmitter,
+       _log = logger;
 
   final ProfileReadRepository _read;
   final ProfileWriteRepository _write;
@@ -34,26 +34,25 @@ class ProfileShell extends Shell<ProfileEffect, ProfileAction> {
     switch (effect) {
       case LoadProfileEffect():
         final result = await _read.load();
-        result.onTap(
-          (profile) => dispatch(ProfileLoaded(profile)),
-          (failure) {
-            _log.severe(
-                'Profile load failed', failure.error, failure.stackTrace);
-            dispatch(const ProfileLoadFailed());
-          },
-        );
+        result.onTap((profile) => dispatch(ProfileLoaded(profile)), (failure) {
+          _log.severe('Profile load failed', failure.error, failure.stackTrace);
+          dispatch(const ProfileLoadFailed());
+        });
       case RenameProfileEffect(:final nickname):
         final result = await _write.rename(nickname);
-        result.onTap(
-          (profile) => dispatch(RenameSucceeded(profile)),
-          (failure) {
-            _log.severe('Profile rename failed', failure.error,
-                failure.stackTrace);
-            _effectEmitter
-                .push(const ProfileShowMessageUiEffect(ProfileMessage.renameFailed));
-            dispatch(const RenameFailed());
-          },
-        );
+        result.onTap((profile) => dispatch(RenameSucceeded(profile)), (
+          failure,
+        ) {
+          _log.severe(
+            'Profile rename failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          _effectEmitter.push(
+            const ProfileShowMessageUiEffect(ProfileMessage.renameFailed),
+          );
+          dispatch(const RenameFailed());
+        });
     }
   }
 }

@@ -6,16 +6,16 @@ import 'package:knit/sync/sync.dart';
 // *is* local-first (spec §8.9).
 
 Snapshot col(int hlcMs, {bool deleted = false, String title = 't'}) => Snapshot(
-      type: EntityType.collection,
-      id: 'col-1',
-      author: 'aa',
-      createdBy: 'aa',
-      createdAt: 1000,
-      hlc: Hlc(hlcMs, 0),
-      deleted: deleted,
-      sig: 's$hlcMs',
-      content: {'title': title, 'cover_attachment_id': null},
-    );
+  type: EntityType.collection,
+  id: 'col-1',
+  author: 'aa',
+  createdBy: 'aa',
+  createdAt: 1000,
+  hlc: Hlc(hlcMs, 0),
+  deleted: deleted,
+  sig: 's$hlcMs',
+  content: {'title': title, 'cover_attachment_id': null},
+);
 
 Snapshot crd(
   String id, {
@@ -24,20 +24,19 @@ Snapshot crd(
   String text = '',
   String position = 'a0',
   bool deleted = false,
-}) =>
-    Snapshot(
-      type: EntityType.card,
-      id: id,
-      author: 'aa',
-      createdBy: 'aa',
-      createdAt: 1000,
-      hlc: Hlc(hlcMs, 0),
-      deleted: deleted,
-      sig: 's$id$hlcMs$posMs',
-      placement: Hlc(posMs, 0),
-      position: position,
-      content: {'collection_id': 'col-1', 'kind': 'text', 'text': text},
-    );
+}) => Snapshot(
+  type: EntityType.card,
+  id: id,
+  author: 'aa',
+  createdBy: 'aa',
+  createdAt: 1000,
+  hlc: Hlc(hlcMs, 0),
+  deleted: deleted,
+  sig: 's$id$hlcMs$posMs',
+  placement: Hlc(posMs, 0),
+  position: position,
+  content: {'collection_id': 'col-1', 'kind': 'text', 'text': text},
+);
 
 void main() {
   test('projection is identical across all arrival orders (spec §8.9)', () {
@@ -47,11 +46,24 @@ void main() {
       crd('c1', hlcMs: 110, posMs: 110, text: 'grind finer', position: 'a0'),
       crd('c2', hlcMs: 120, posMs: 120, text: 'tamp level', position: 'a1'),
       // edit c1 text (content bumps, placement frozen)
-      crd('c1', hlcMs: 200, posMs: 110, text: 'grind much finer', position: 'a0'),
+      crd(
+        'c1',
+        hlcMs: 200,
+        posMs: 110,
+        text: 'grind much finer',
+        position: 'a0',
+      ),
       // reorder c1 (placement bumps, content frozen at the edit's base)
       crd('c1', hlcMs: 110, posMs: 300, text: 'grind finer', position: 'a5'),
       // delete c2 then resurrect
-      crd('c2', hlcMs: 220, posMs: 120, text: 'tamp level', position: 'a1', deleted: true),
+      crd(
+        'c2',
+        hlcMs: 220,
+        posMs: 120,
+        text: 'tamp level',
+        position: 'a1',
+        deleted: true,
+      ),
       crd('c2', hlcMs: 400, posMs: 120, text: 'tamp 30lb', position: 'a1'),
       col(150, title: 'Espresso dialing-in'),
     ];
@@ -69,9 +81,11 @@ void main() {
     String fingerprint(Projection p) {
       final rows = p.rows.toList()..sort((a, b) => a.id.compareTo(b.id));
       return rows
-          .map((s) =>
-              '${s.id}|hlc=${s.hlc}|pos=${s.position}@${s.placement}|del=${s.deleted}'
-              '|sig=${s.sig}|text=${s.content['text'] ?? s.content['title']}')
+          .map(
+            (s) =>
+                '${s.id}|hlc=${s.hlc}|pos=${s.position}@${s.placement}|del=${s.deleted}'
+                '|sig=${s.sig}|text=${s.content['text'] ?? s.content['title']}',
+          )
           .join(';');
     }
 

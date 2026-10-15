@@ -38,14 +38,10 @@ class SqfliteRelayPublishStore implements RelayPublishStore {
 
   @override
   Future<void> saveRelayUrl(Uri url, {StorageContext? ctx}) async {
-    await _exec(ctx).insert(
-      RelayPublishSchema.settingTable,
-      {
-        RelayPublishSchema.colSettingKey: RelayPublishSchema.relayUrlKey,
-        RelayPublishSchema.colSettingValue: url.toString(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _exec(ctx).insert(RelayPublishSchema.settingTable, {
+      RelayPublishSchema.colSettingKey: RelayPublishSchema.relayUrlKey,
+      RelayPublishSchema.colSettingValue: url.toString(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -68,18 +64,14 @@ class SqfliteRelayPublishStore implements RelayPublishStore {
     CollectionPublication record, {
     StorageContext? ctx,
   }) async {
-    await _exec(ctx).insert(
-      RelayPublishSchema.publicationTable,
-      {
-        RelayPublishSchema.colCollectionId: record.collectionId,
-        RelayPublishSchema.colTopicId: record.topicId,
-        RelayPublishSchema.colWriteToken: record.writeToken,
-        RelayPublishSchema.colSlug: record.slug,
-        RelayPublishSchema.colVisibility: record.visibility.tag,
-        RelayPublishSchema.colPublishedAt: record.publishedAt,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _exec(ctx).insert(RelayPublishSchema.publicationTable, {
+      RelayPublishSchema.colCollectionId: record.collectionId,
+      RelayPublishSchema.colTopicId: record.topicId,
+      RelayPublishSchema.colWriteToken: record.writeToken,
+      RelayPublishSchema.colSlug: record.slug,
+      RelayPublishSchema.colVisibility: record.visibility.tag,
+      RelayPublishSchema.colPublishedAt: record.publishedAt,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -94,14 +86,15 @@ class SqfliteRelayPublishStore implements RelayPublishStore {
     );
   }
 
-  CollectionPublication _fromRow(Map<String, Object?> row) => CollectionPublication(
-    collectionId: row[RelayPublishSchema.colCollectionId]! as String,
-    topicId: row[RelayPublishSchema.colTopicId]! as String,
-    writeToken: row[RelayPublishSchema.colWriteToken]! as String,
-    slug: row[RelayPublishSchema.colSlug] as String?,
-    visibility: PublishVisibility.fromTag(
-      row[RelayPublishSchema.colVisibility] as String?,
-    ),
-    publishedAt: row[RelayPublishSchema.colPublishedAt] as int?,
-  );
+  CollectionPublication _fromRow(Map<String, Object?> row) =>
+      CollectionPublication(
+        collectionId: row[RelayPublishSchema.colCollectionId]! as String,
+        topicId: row[RelayPublishSchema.colTopicId]! as String,
+        writeToken: row[RelayPublishSchema.colWriteToken]! as String,
+        slug: row[RelayPublishSchema.colSlug] as String?,
+        visibility: PublishVisibility.fromTag(
+          row[RelayPublishSchema.colVisibility] as String?,
+        ),
+        publishedAt: row[RelayPublishSchema.colPublishedAt] as int?,
+      );
 }

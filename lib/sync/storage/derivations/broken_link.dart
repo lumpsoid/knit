@@ -44,7 +44,10 @@ class BrokenLinkResolver {
   /// Resolve both endpoints of [link]. [link] is expected to be a live link
   /// (`deleted=0`); callers get live links from
   /// [ProjectionStorage.backlinks]/[ProjectionStorage.linksOut].
-  Future<LinkEndpointStatus> resolve(Snapshot link, {StorageContext? ctx}) async {
+  Future<LinkEndpointStatus> resolve(
+    Snapshot link, {
+    StorageContext? ctx,
+  }) async {
     assert(link.type == EntityType.link, 'broken-link resolution is link-only');
     final source = await _endpoint(
       link.content['source_type'] as String,
@@ -62,6 +65,9 @@ class BrokenLinkResolver {
     );
   }
 
-  Future<Snapshot?> _endpoint(String typeTag, String id, {StorageContext? ctx}) =>
-      _projection.get(EntityType.fromTag(typeTag), id, ctx: ctx);
+  Future<Snapshot?> _endpoint(
+    String typeTag,
+    String id, {
+    StorageContext? ctx,
+  }) => _projection.get(EntityType.fromTag(typeTag), id, ctx: ctx);
 }

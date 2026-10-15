@@ -16,8 +16,8 @@ class SyncStoreCardEditLinksWriteRepository
   SyncStoreCardEditLinksWriteRepository({
     required AppGraph graph,
     required IdGenerator ids,
-  })  : _graph = graph,
-        _ids = ids;
+  }) : _graph = graph,
+       _ids = ids;
 
   final AppGraph _graph;
   final IdGenerator _ids;
@@ -27,18 +27,17 @@ class SyncStoreCardEditLinksWriteRepository
     required String sourceCardId,
     required ConnectedEntityKind targetKind,
     required String targetId,
-  }) =>
-      _write(() async {
-        final id = _ids.newId();
-        await _graph.store.create(EntityType.link, id, {
-          'source_type': EntityType.card.name,
-          'source_id': sourceCardId,
-          'target_type': targetKind.tag,
-          'target_id': targetId,
-          'label': null,
-        });
-        return id;
-      });
+  }) => _write(() async {
+    final id = _ids.newId();
+    await _graph.store.create(EntityType.link, id, {
+      'source_type': EntityType.card.name,
+      'source_id': sourceCardId,
+      'target_type': targetKind.tag,
+      'target_id': targetId,
+      'label': null,
+    });
+    return id;
+  });
 
   @override
   Future<Result<String, CardEditFailure>> removeLink(String linkId) =>

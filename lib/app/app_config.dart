@@ -22,29 +22,29 @@ enum Flavor {
   /// on the in-memory graph (no SQLite, any platform); `staging` and `prod`
   /// persist to the sqflite DB (one file per device, §6.1).
   AppConfig get config => switch (this) {
-        Flavor.dev => const AppConfig(
-            flavor: Flavor.dev,
-            environment: AppEnvironment.dev,
-            backend: BackendMode.localOnly,
-          ),
-        Flavor.staging => const AppConfig(
-            flavor: Flavor.staging,
-            environment: AppEnvironment.prod,
-            backend: BackendMode.localOnly,
-          ),
-        Flavor.prod => const AppConfig(
-            flavor: Flavor.prod,
-            environment: AppEnvironment.prod,
-            backend: BackendMode.localOnly,
-          ),
-      };
+    Flavor.dev => const AppConfig(
+      flavor: Flavor.dev,
+      environment: AppEnvironment.dev,
+      backend: BackendMode.localOnly,
+    ),
+    Flavor.staging => const AppConfig(
+      flavor: Flavor.staging,
+      environment: AppEnvironment.prod,
+      backend: BackendMode.localOnly,
+    ),
+    Flavor.prod => const AppConfig(
+      flavor: Flavor.prod,
+      environment: AppEnvironment.prod,
+      backend: BackendMode.localOnly,
+    ),
+  };
 
   /// Short upper-case tag for the in-app flavor banner and diagnostics.
   String get label => switch (this) {
-        Flavor.dev => 'DEV',
-        Flavor.staging => 'STAGING',
-        Flavor.prod => 'PROD',
-      };
+    Flavor.dev => 'DEV',
+    Flavor.staging => 'STAGING',
+    Flavor.prod => 'PROD',
+  };
 }
 
 /// The immutable value that selects the dependency graph (composition.md §2).

@@ -135,18 +135,21 @@ void main() {
     expect(c.snapshot.value.position, Duration.zero);
   });
 
-  test('replay after completion reuses cached bytes (no second read)', () async {
-    final read = _FakeRead(Ok(clip));
-    player = _FakePlayer();
-    final c = AudioPlaybackController(player: player, attachmentRead: read);
-    await c.toggle('c1', 'a1');
-    player.emitPhase(PlaybackPhase.completed);
-    await pumpEventQueue();
+  test(
+    'replay after completion reuses cached bytes (no second read)',
+    () async {
+      final read = _FakeRead(Ok(clip));
+      player = _FakePlayer();
+      final c = AudioPlaybackController(player: player, attachmentRead: read);
+      await c.toggle('c1', 'a1');
+      player.emitPhase(PlaybackPhase.completed);
+      await pumpEventQueue();
 
-    await c.toggle('c1', 'a1'); // completed → replay
-    expect(player.calls, ['play', 'play']);
-    expect(read.calls, 1, reason: 'replay must not re-read the blob store');
-  });
+      await c.toggle('c1', 'a1'); // completed → replay
+      expect(player.calls, ['play', 'play']);
+      expect(read.calls, 1, reason: 'replay must not re-read the blob store');
+    },
+  );
 
   test('close stops playback and clears the snapshot', () async {
     final c = controllerWith(Ok(clip));

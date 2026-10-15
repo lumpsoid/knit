@@ -28,7 +28,10 @@ void main() {
     graph.bindStore(store);
     const ids = UuidIdGenerator();
     timelineWrite = SyncStoreTimelineWriteRepository(graph: graph, ids: ids);
-    collectionWrite = SyncStoreCollectionWriteRepository(graph: graph, ids: ids);
+    collectionWrite = SyncStoreCollectionWriteRepository(
+      graph: graph,
+      ids: ids,
+    );
     read = SyncStoreConnectionsReadRepository(graph: graph);
     write = SyncStoreConnectionsWriteRepository(graph: graph);
   });
@@ -36,8 +39,10 @@ void main() {
   Future<String> createCollection(String title) async =>
       (await timelineWrite.createCollection(title)).getOrThrow();
 
-  Future<ConnectionsData> connections(ConnectedEntityKind kind, String id) async =>
-      (await read.loadConnections(kind, id)).getOrThrow();
+  Future<ConnectionsData> connections(
+    ConnectedEntityKind kind,
+    String id,
+  ) async => (await read.loadConnections(kind, id)).getOrThrow();
 
   /// Builds: collection A holding a card linked to collection B.
   Future<({String a, String b, String card, String link})> linkedGraph() async {
@@ -48,8 +53,7 @@ void main() {
       kind: CardKind.text,
       position: 'a0',
       text: 'see recipes',
-    ))
-        .getOrThrow();
+    )).getOrThrow();
     await collectionWrite.linkCardToTarget(
       cardId: card,
       targetKind: ConnectedEntityKind.collection,
@@ -91,20 +95,26 @@ void main() {
     expect(back.openCollectionId, g.a);
   });
 
-  test('deleting the source card renders the backlink broken, not gone (§8.6.1)',
-      () async {
-    final g = await linkedGraph();
-    await collectionWrite.deleteCard(g.card);
+  test(
+    'deleting the source card renders the backlink broken, not gone (§8.6.1)',
+    () async {
+      final g = await linkedGraph();
+      await collectionWrite.deleteCard(g.card);
 
-    final data = await connections(ConnectedEntityKind.collection, g.b);
-    expect(data.incoming, hasLength(1), reason: 'the link is never auto-removed');
-    final back = data.incoming.single;
-    expect(back.broken, isTrue);
-    expect(back.label, isNull);
-    expect(back.linkId, g.link);
-    // A broken endpoint can't be located, so there's nothing to open.
-    expect(back.openCollectionId, isNull);
-  });
+      final data = await connections(ConnectedEntityKind.collection, g.b);
+      expect(
+        data.incoming,
+        hasLength(1),
+        reason: 'the link is never auto-removed',
+      );
+      final back = data.incoming.single;
+      expect(back.broken, isTrue);
+      expect(back.label, isNull);
+      expect(back.linkId, g.link);
+      // A broken endpoint can't be located, so there's nothing to open.
+      expect(back.openCollectionId, isNull);
+    },
+  );
 
   test('deleting the target collection renders the links-out broken', () async {
     final g = await linkedGraph();
@@ -123,8 +133,11 @@ void main() {
 
     final data = await connections(ConnectedEntityKind.collection, g.b);
     expect(data.isEmpty, isTrue, reason: 'the link is gone');
-    expect(await store.get(EntityType.collection, g.b), isNotNull,
-        reason: 'clearing a link never deletes an endpoint');
+    expect(
+      await store.get(EntityType.collection, g.b),
+      isNotNull,
+      reason: 'clearing a link never deletes an endpoint',
+    );
   });
 
   test('loading connections for a missing entity fails', () async {

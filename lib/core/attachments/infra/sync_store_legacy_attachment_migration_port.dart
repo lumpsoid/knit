@@ -12,8 +12,8 @@ class SyncStoreLegacyAttachmentMigrationPort
   SyncStoreLegacyAttachmentMigrationPort({
     required AppGraph graph,
     required IdGenerator ids,
-  })  : _graph = graph,
-        _ids = ids;
+  }) : _graph = graph,
+       _ids = ids;
 
   final AppGraph _graph;
   final IdGenerator _ids;
@@ -23,8 +23,7 @@ class SyncStoreLegacyAttachmentMigrationPort
     final refs = <CardAttachmentRef>[];
     for (final card in await _graph.store.readAll(EntityType.card)) {
       if (card.deleted) continue;
-      final attachmentId =
-          card.content[CardSchema.colAttachmentId] as String?;
+      final attachmentId = card.content[CardSchema.colAttachmentId] as String?;
       if (attachmentId != null) {
         refs.add(
           CardAttachmentRef(cardId: card.id, attachmentId: attachmentId),

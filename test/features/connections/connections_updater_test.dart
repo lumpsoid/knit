@@ -15,29 +15,27 @@ void main() {
     String otherId = 'other',
     bool broken = false,
     String? label = 'Other',
-  }) =>
-      ConnectionItem(
-        linkId: linkId,
-        direction: direction,
-        otherKind: otherKind,
-        otherId: otherId,
-        broken: broken,
-        label: label,
-      );
+  }) => ConnectionItem(
+    linkId: linkId,
+    direction: direction,
+    otherKind: otherKind,
+    otherId: otherId,
+    broken: broken,
+    label: label,
+  );
 
   ConnectionsData data({
     String focusId = 'root',
     String focusTitle = 'Root',
     List<ConnectionItem> outgoing = const [],
     List<ConnectionItem> incoming = const [],
-  }) =>
-      ConnectionsData(
-        focusKind: ConnectedEntityKind.collection,
-        focusId: focusId,
-        focusTitle: focusTitle,
-        outgoing: outgoing,
-        incoming: incoming,
-      );
+  }) => ConnectionsData(
+    focusKind: ConnectedEntityKind.collection,
+    focusId: focusId,
+    focusTitle: focusTitle,
+    outgoing: outgoing,
+    incoming: incoming,
+  );
 
   test('ViewAttached seeds the root crumb and loads it', () {
     final (next, effects) = updater.update(
@@ -67,8 +65,10 @@ void main() {
         ),
       ],
     );
-    final (next, effects) =
-        updater.update(seeded, ConnectionsLoaded(data(focusTitle: 'Recipes')));
+    final (next, effects) = updater.update(
+      seeded,
+      ConnectionsLoaded(data(focusTitle: 'Recipes')),
+    );
     expect(next.status, ConnectionsStatus.ready);
     expect(next.breadcrumb.single.title, 'Recipes');
     expect(effects, isNull);
@@ -115,7 +115,9 @@ void main() {
     );
     final (next, effects) = updater.update(
       seeded,
-      ConnectionTapped(item('l1', direction: ConnectionDirection.outgoing, broken: true)),
+      ConnectionTapped(
+        item('l1', direction: ConnectionDirection.outgoing, broken: true),
+      ),
     );
     expect(next.breadcrumb, hasLength(1));
     expect(effects, isNull);
@@ -125,9 +127,17 @@ void main() {
     const seeded = ConnectionsState(
       status: ConnectionsStatus.ready,
       breadcrumb: [
-        ConnectionCrumb(kind: ConnectedEntityKind.collection, id: 'a', title: 'A'),
+        ConnectionCrumb(
+          kind: ConnectedEntityKind.collection,
+          id: 'a',
+          title: 'A',
+        ),
         ConnectionCrumb(kind: ConnectedEntityKind.card, id: 'b', title: 'B'),
-        ConnectionCrumb(kind: ConnectedEntityKind.collection, id: 'c', title: 'C'),
+        ConnectionCrumb(
+          kind: ConnectedEntityKind.collection,
+          id: 'c',
+          title: 'C',
+        ),
       ],
     );
     final (next, effects) = updater.update(seeded, const CrumbTapped(0));
@@ -139,7 +149,11 @@ void main() {
     const seeded = ConnectionsState(
       status: ConnectionsStatus.ready,
       breadcrumb: [
-        ConnectionCrumb(kind: ConnectedEntityKind.collection, id: 'a', title: 'A'),
+        ConnectionCrumb(
+          kind: ConnectedEntityKind.collection,
+          id: 'a',
+          title: 'A',
+        ),
         ConnectionCrumb(kind: ConnectedEntityKind.card, id: 'b', title: 'B'),
       ],
     );
@@ -152,7 +166,11 @@ void main() {
     const deep = ConnectionsState(
       status: ConnectionsStatus.ready,
       breadcrumb: [
-        ConnectionCrumb(kind: ConnectedEntityKind.collection, id: 'a', title: 'A'),
+        ConnectionCrumb(
+          kind: ConnectedEntityKind.collection,
+          id: 'a',
+          title: 'A',
+        ),
         ConnectionCrumb(kind: ConnectedEntityKind.card, id: 'b', title: 'B'),
       ],
     );
@@ -160,8 +178,7 @@ void main() {
     expect(popped.breadcrumb.map((c) => c.id), ['a']);
     expect((popEffects!.single as LoadConnectionsEffect).id, 'a');
 
-    final (atRoot, rootEffects) =
-        updater.update(popped, const BackRequested());
+    final (atRoot, rootEffects) = updater.update(popped, const BackRequested());
     expect(atRoot.breadcrumb, hasLength(1));
     expect(rootEffects, isNull);
   });

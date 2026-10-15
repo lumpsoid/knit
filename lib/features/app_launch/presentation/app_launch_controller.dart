@@ -13,8 +13,8 @@ class AppLaunchController {
     required this.stateHolder,
     required EffectEmitter<AppLaunchUiEffect> effectEmitter,
     required ActionSink<AppLaunchAction> sink,
-  })  : _effectEmitter = effectEmitter,
-        _sink = sink;
+  }) : _effectEmitter = effectEmitter,
+       _sink = sink;
 
   /// Read-only state for `ValueListenableBuilder`.
   final ValueListenable<AppLaunchState> stateHolder;

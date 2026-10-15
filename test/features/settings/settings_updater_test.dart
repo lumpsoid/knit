@@ -10,8 +10,10 @@ void main() {
   const updater = SettingsUpdater();
 
   test('ViewAttached requests a preferences read', () {
-    final (next, effects) =
-        updater.update(const SettingsState(), const ViewAttached());
+    final (next, effects) = updater.update(
+      const SettingsState(),
+      const ViewAttached(),
+    );
     expect(next.preferences, const AppPreferences()); // unchanged
     expect(effects, const [LoadPreferencesEffect()]);
   });
@@ -21,15 +23,19 @@ void main() {
       themeMode: AppThemeMode.dark,
       language: AppLanguage.russian,
     );
-    final (next, effects) =
-        updater.update(const SettingsState(), const PreferencesLoaded(loaded));
+    final (next, effects) = updater.update(
+      const SettingsState(),
+      const PreferencesLoaded(loaded),
+    );
     expect(next.preferences, loaded);
     expect(effects, isNull);
   });
 
   test('PreferencesLoadFailed keeps the defaults without effects', () {
-    final (next, effects) =
-        updater.update(const SettingsState(), const PreferencesLoadFailed());
+    final (next, effects) = updater.update(
+      const SettingsState(),
+      const PreferencesLoadFailed(),
+    );
     expect(next.preferences, const AppPreferences());
     expect(effects, isNull);
   });
@@ -49,10 +55,13 @@ void main() {
   });
 
   test('LanguageSelected applies optimistically and persists', () {
-    const prior =
-        SettingsState(preferences: AppPreferences(themeMode: AppThemeMode.dark));
-    final (next, effects) =
-        updater.update(prior, const LanguageSelected(AppLanguage.english));
+    const prior = SettingsState(
+      preferences: AppPreferences(themeMode: AppThemeMode.dark),
+    );
+    final (next, effects) = updater.update(
+      prior,
+      const LanguageSelected(AppLanguage.english),
+    );
     expect(next.preferences.language, AppLanguage.english);
     expect(next.preferences.themeMode, AppThemeMode.dark); // untouched
     expect(
@@ -62,10 +71,13 @@ void main() {
   });
 
   test('PreferencesSaveFailed leaves the optimistic state intact', () {
-    const prior =
-        SettingsState(preferences: AppPreferences(themeMode: AppThemeMode.dark));
-    final (next, effects) =
-        updater.update(prior, const PreferencesSaveFailed());
+    const prior = SettingsState(
+      preferences: AppPreferences(themeMode: AppThemeMode.dark),
+    );
+    final (next, effects) = updater.update(
+      prior,
+      const PreferencesSaveFailed(),
+    );
     expect(next.preferences.themeMode, AppThemeMode.dark);
     expect(effects, isNull);
   });
@@ -94,17 +106,20 @@ void main() {
     );
   });
 
-  test('ExportRequested sets busy and runs the export with its destination', () {
-    final (next, effects) = updater.update(
-      const SettingsState(),
-      const ExportRequested(BackupDestination.saveFile),
-    );
-    expect(next.busy, isTrue);
-    expect(
-      (effects!.single as RunExportEffect).destination,
-      BackupDestination.saveFile,
-    );
-  });
+  test(
+    'ExportRequested sets busy and runs the export with its destination',
+    () {
+      final (next, effects) = updater.update(
+        const SettingsState(),
+        const ExportRequested(BackupDestination.saveFile),
+      );
+      expect(next.busy, isTrue);
+      expect(
+        (effects!.single as RunExportEffect).destination,
+        BackupDestination.saveFile,
+      );
+    },
+  );
 
   test('DataActionFinished clears busy', () {
     final (next, effects) = updater.update(

@@ -28,10 +28,9 @@ class InMemoryChangeLogStorage implements ChangeLogStorage {
       List.unmodifiable(_ops); // already appended in seq order
 
   @override
-  Future<List<PersistedOp>> readPending({StorageContext? ctx}) async =>
-      _ops
-          .where((o) => o.origin == SyncOrigin.local && !o.acked)
-          .toList(growable: false);
+  Future<List<PersistedOp>> readPending({StorageContext? ctx}) async => _ops
+      .where((o) => o.origin == SyncOrigin.local && !o.acked)
+      .toList(growable: false);
 
   @override
   Future<int> pendingCount({StorageContext? ctx}) async =>

@@ -20,34 +20,84 @@ abstract class CanonicalSerializer {
   // (it lives in the op envelope, never signed-over, §7.2); local-only fields
   // (`local_path`, `seq`, `acked`, `origin`) are excluded too (§7.1).
   static const Set<String> _collectionKeys = {
-    'author', 'cover_attachment_id', 'created_at', 'created_by', 'deleted',
-    'description', 'hlc_counter', 'hlc_ms', 'id', 't', 'title',
+    'author',
+    'cover_attachment_id',
+    'created_at',
+    'created_by',
+    'deleted',
+    'description',
+    'hlc_counter',
+    'hlc_ms',
+    'id',
+    't',
+    'title',
   };
   static const Set<String> _cardKeys = {
-    'attachment_id', 'author', 'collection_id', 'created_at', 'created_by',
-    'deleted', 'hlc_counter', 'hlc_ms', 'id', 'kind', 'position',
-    'position_counter', 'position_ms', 't', 'text',
+    'attachment_id',
+    'author',
+    'collection_id',
+    'created_at',
+    'created_by',
+    'deleted',
+    'hlc_counter',
+    'hlc_ms',
+    'id',
+    'kind',
+    'position',
+    'position_counter',
+    'position_ms',
+    't',
+    'text',
   };
   static const Set<String> _linkKeys = {
-    'author', 'created_at', 'created_by', 'deleted', 'hlc_counter', 'hlc_ms',
-    'id', 'label', 'source_id', 'source_type', 't', 'target_id', 'target_type',
+    'author',
+    'created_at',
+    'created_by',
+    'deleted',
+    'hlc_counter',
+    'hlc_ms',
+    'id',
+    'label',
+    'source_id',
+    'source_type',
+    't',
+    'target_id',
+    'target_type',
   };
   static const Set<String> _profileKeys = {
-    'author', 'created_at', 'created_by', 'deleted', 'hlc_counter', 'hlc_ms',
-    'id', 'nickname', 't',
+    'author',
+    'created_at',
+    'created_by',
+    'deleted',
+    'hlc_counter',
+    'hlc_ms',
+    'id',
+    'nickname',
+    't',
   };
   static const Set<String> _attachmentKeys = {
-    'author', 'content_hash', 'created_at', 'created_by', 'deleted',
-    'hlc_counter', 'hlc_ms', 'id', 'kind', 'mime', 'name', 'size', 't',
+    'author',
+    'content_hash',
+    'created_at',
+    'created_by',
+    'deleted',
+    'hlc_counter',
+    'hlc_ms',
+    'id',
+    'kind',
+    'mime',
+    'name',
+    'size',
+    't',
   };
 
   static Set<String> _fieldSet(EntityType type) => switch (type) {
-        EntityType.collection => _collectionKeys,
-        EntityType.card => _cardKeys,
-        EntityType.link => _linkKeys,
-        EntityType.profile => _profileKeys,
-        EntityType.attachment => _attachmentKeys,
-      };
+    EntityType.collection => _collectionKeys,
+    EntityType.card => _cardKeys,
+    EntityType.link => _linkKeys,
+    EntityType.profile => _profileKeys,
+    EntityType.attachment => _attachmentKeys,
+  };
 
   /// Envelope + content (+ placement for cards) as a raw map, before filtering.
   /// `content` already holds the §7.4 entity keys on the same names
@@ -79,9 +129,7 @@ abstract class CanonicalSerializer {
   static Map<String, Object?> fieldMap(Snapshot s) {
     final required = _fieldSet(s.type);
     final raw = _rawMap(s);
-    final map = <String, Object?>{
-      for (final key in required) key: raw[key],
-    };
+    final map = <String, Object?>{for (final key in required) key: raw[key]};
     assert(
       raw.keys.toSet().containsAll(required),
       'canonical field set for ${s.type.name} is missing '

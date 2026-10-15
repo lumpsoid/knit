@@ -25,9 +25,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settingsTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: ValueListenableBuilder<SettingsState>(
         valueListenable: _controller.stateHolder,
         builder: (context, state, _) {
@@ -87,8 +85,7 @@ class SettingsPage extends StatelessWidget {
     if (picked != null) _controller.dispatch(ThemeModeSelected(picked));
   }
 
-  Future<void> _pickLanguage(
-      BuildContext context, AppLanguage current) async {
+  Future<void> _pickLanguage(BuildContext context, AppLanguage current) async {
     final l10n = AppLocalizations.of(context);
     final picked = await showModalBottomSheet<AppLanguage>(
       context: context,

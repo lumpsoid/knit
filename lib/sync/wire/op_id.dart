@@ -13,7 +13,8 @@ import 'package:knit/sync/snapshot.dart';
 abstract class OpId {
   /// First 16 hex chars of [sig] (8 bytes — enough to beat a birthday collision
   /// among a handful of devices on one `(entity_id, hlc)` triple, §7.3).
-  static String sig16(String sig) => sig.length >= 16 ? sig.substring(0, 16) : sig;
+  static String sig16(String sig) =>
+      sig.length >= 16 ? sig.substring(0, 16) : sig;
 
   /// Build the key from its parts. Uses the **content** `hlc_*` (which a reorder
   /// leaves frozen, §8.4) — distinctness comes from `sig16`, not the HLC.
@@ -21,8 +22,7 @@ abstract class OpId {
     required String entityId,
     required Hlc hlc,
     required String sig,
-  }) =>
-      '$entityId@${hlc.ms}.${hlc.counter}.${sig16(sig)}';
+  }) => '$entityId@${hlc.ms}.${hlc.counter}.${sig16(sig)}';
 
   /// Convenience for an already-signed [Snapshot].
   static String ofSnapshot(Snapshot s) =>

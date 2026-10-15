@@ -118,23 +118,25 @@ class _WelcomeView extends StatelessWidget {
         const Spacer(),
         Icon(Icons.hub_outlined, size: 96, color: theme.colorScheme.primary),
         const SizedBox(height: 32),
-        Text(l10n.onboardWelcomeTitle,
-            style: theme.textTheme.headlineMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
-            textAlign: TextAlign.center),
+        Text(
+          l10n.onboardWelcomeTitle,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 12),
         Text(
           l10n.onboardWelcomeBody,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
         const Spacer(),
         FilledButton(
           onPressed: onGetStarted,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-          ),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
           child: Text(l10n.onboardGetStarted),
         ),
       ],
@@ -165,14 +167,18 @@ class _NicknameView extends StatelessWidget {
       onBack: onBack,
       children: [
         const SizedBox(height: 24),
-        Text(l10n.onboardNicknameTitle,
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          l10n.onboardNicknameTitle,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 12),
         Text(
           l10n.onboardNicknameBody,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 28),
         TextField(
@@ -193,9 +199,7 @@ class _NicknameView extends StatelessWidget {
         const Spacer(),
         FilledButton(
           onPressed: canContinue ? onContinue : null,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-          ),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
           child: Text(l10n.actionContinue),
         ),
       ],
@@ -224,17 +228,26 @@ class _ExplainView extends StatelessWidget {
       onBack: onBack,
       children: [
         const SizedBox(height: 24),
-        Icon(Icons.vpn_key_outlined,
-            size: 64, color: theme.colorScheme.primary),
+        Icon(
+          Icons.vpn_key_outlined,
+          size: 64,
+          color: theme.colorScheme.primary,
+        ),
         const SizedBox(height: 24),
-        Text(l10n.onboardExplainTitle,
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          l10n.onboardExplainTitle,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 16),
         _bullet(theme, Icons.fingerprint, l10n.onboardExplainKeyPair),
         _bullet(theme, Icons.lock_outline, l10n.onboardExplainPrivate),
-        _bullet(theme, Icons.badge_outlined,
-            l10n.onboardExplainNickname(nickname)),
+        _bullet(
+          theme,
+          Icons.badge_outlined,
+          l10n.onboardExplainNickname(nickname),
+        ),
         if (hasError) ...[
           const SizedBox(height: 16),
           _ErrorBanner(message: l10n.onboardIdentityError),
@@ -244,27 +257,23 @@ class _ExplainView extends StatelessWidget {
           onPressed: onGenerate,
           icon: const Icon(Icons.auto_awesome),
           label: Text(l10n.onboardGenerate),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-          ),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         ),
       ],
     );
   }
 
   Widget _bullet(ThemeData theme, IconData icon, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 22, color: theme.colorScheme.primary),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(text, style: theme.textTheme.bodyMedium),
-            ),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 22, color: theme.colorScheme.primary),
+        const SizedBox(width: 14),
+        Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+      ],
+    ),
+  );
 }
 
 class _GeneratingView extends StatefulWidget {
@@ -304,29 +313,37 @@ class _GeneratingViewState extends State<_GeneratingView>
                 height: 120,
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
-                  valueColor:
-                      AlwaysStoppedAnimation(theme.colorScheme.primary),
+                  valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
                 ),
               ),
               ScaleTransition(
                 scale: Tween<double>(begin: 0.9, end: 1.1).animate(
                   CurvedAnimation(parent: _anim, curve: Curves.easeInOut),
                 ),
-                child: Icon(Icons.vpn_key,
-                    size: 44, color: theme.colorScheme.primary),
+                child: Icon(
+                  Icons.vpn_key,
+                  size: 44,
+                  color: theme.colorScheme.primary,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 32),
-        Text(AppLocalizations.of(context).onboardGeneratingTitle,
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          AppLocalizations.of(context).onboardGeneratingTitle,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 8),
-        Text(AppLocalizations.of(context).onboardGeneratingBody,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            textAlign: TextAlign.center),
+        Text(
+          AppLocalizations.of(context).onboardGeneratingBody,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
         const Spacer(),
       ],
     );
@@ -346,9 +363,12 @@ class _RevealView extends StatelessWidget {
     return _Frame(
       children: [
         const SizedBox(height: 16),
-        Text(l10n.onboardRevealTitle,
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          l10n.onboardRevealTitle,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 24),
         CircleAvatar(
           radius: 44,
@@ -357,25 +377,36 @@ class _RevealView extends StatelessWidget {
             identity.nickname.isEmpty
                 ? '?'
                 : identity.nickname.substring(0, 1).toUpperCase(),
-            style: theme.textTheme.headlineMedium
-                ?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+            style: theme.textTheme.headlineMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         const SizedBox(height: 16),
-        Text(identity.handle,
-            style: theme.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          identity.handle,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(l10n.onboardKeyTagline,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text(
+          l10n.onboardKeyTagline,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 24),
         _PubkeyBox(publicKeyHex: identity.publicKeyHex),
         const SizedBox(height: 12),
         Row(
           children: [
-            Icon(Icons.shield_outlined,
-                size: 18, color: theme.colorScheme.primary),
+            Icon(
+              Icons.shield_outlined,
+              size: 18,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -388,9 +419,7 @@ class _RevealView extends StatelessWidget {
         const Spacer(),
         FilledButton(
           onPressed: onEnter,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-          ),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
           child: Text(l10n.onboardEnter),
         ),
       ],
@@ -476,7 +505,9 @@ class _PubkeyBox extends StatelessWidget {
               Clipboard.setData(ClipboardData(text: publicKeyHex));
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(AppLocalizations.of(context).onboardPublicKeyCopied),
+                  content: Text(
+                    AppLocalizations.of(context).onboardPublicKeyCopied,
+                  ),
                 ),
               );
             },
@@ -502,14 +533,18 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline,
-              size: 20, color: theme.colorScheme.onErrorContainer),
+          Icon(
+            Icons.error_outline,
+            size: 20,
+            color: theme.colorScheme.onErrorContainer,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onErrorContainer),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onErrorContainer,
+              ),
             ),
           ),
         ],

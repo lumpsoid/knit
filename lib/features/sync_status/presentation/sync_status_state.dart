@@ -16,10 +16,7 @@ class SyncStatusState {
   /// grows; the view reads it calmly ("saved on this device").
   final int pendingCount;
 
-  SyncStatusState copyWith({
-    SyncStatusPhase? phase,
-    int? pendingCount,
-  }) =>
+  SyncStatusState copyWith({SyncStatusPhase? phase, int? pendingCount}) =>
       SyncStatusState(
         phase: phase ?? this.phase,
         pendingCount: pendingCount ?? this.pendingCount,

@@ -29,8 +29,8 @@ class _FakeSettingsRead implements SettingsReadRepository {
 class _FakeSettingsWrite implements SettingsWriteRepository {
   @override
   Future<Result<AppPreferences, SettingsFailure>> save(
-          AppPreferences preferences) async =>
-      Ok(preferences);
+    AppPreferences preferences,
+  ) async => Ok(preferences);
 }
 
 void main() {
@@ -135,11 +135,9 @@ void main() {
   });
 
   test('wipe clears the store, keeps identity, and confirms', () async {
-    await graph.store.create(
-      EntityType.collection,
-      'col-1',
-      const {'title': 'Notes'},
-    );
+    await graph.store.create(EntityType.collection, 'col-1', const {
+      'title': 'Notes',
+    });
     final authorBefore = await graph.store.authorPubkey();
     expect(await graph.store.pendingCount(), greaterThan(0));
 
@@ -160,10 +158,10 @@ void main() {
 
   test('wipe keeps the identity profile but removes other entities', () async {
     final pubkey = await graph.store.authorPubkey();
-    await graph.store
-        .create(EntityType.profile, pubkey, {'nickname': 'Ada'});
-    await graph.store
-        .create(EntityType.collection, 'col-1', const {'title': 'Notes'});
+    await graph.store.create(EntityType.profile, pubkey, {'nickname': 'Ada'});
+    await graph.store.create(EntityType.collection, 'col-1', const {
+      'title': 'Notes',
+    });
 
     await shell.run(
       const RunDataActionEffect(DataAction.wipeData),

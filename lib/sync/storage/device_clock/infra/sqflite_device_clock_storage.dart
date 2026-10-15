@@ -35,15 +35,11 @@ class SqfliteDeviceClockStorage implements DeviceClockStorage {
 
   @override
   Future<void> save(Hlc clock, {StorageContext? ctx}) async {
-    await _exec(ctx).insert(
-      DeviceClockSchema.table,
-      {
-        DeviceClockSchema.colId: DeviceClockSchema.rowId,
-        DeviceClockSchema.colHlcMs: clock.ms,
-        DeviceClockSchema.colHlcCounter: clock.counter,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _exec(ctx).insert(DeviceClockSchema.table, {
+      DeviceClockSchema.colId: DeviceClockSchema.rowId,
+      DeviceClockSchema.colHlcMs: clock.ms,
+      DeviceClockSchema.colHlcCounter: clock.counter,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override

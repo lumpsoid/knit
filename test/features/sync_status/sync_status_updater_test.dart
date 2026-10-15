@@ -8,14 +8,19 @@ void main() {
   const updater = SyncStatusUpdater();
 
   test('ViewAttached requests a count read', () {
-    final (next, effects) =
-        updater.update(const SyncStatusState(), const ViewAttached());
+    final (next, effects) = updater.update(
+      const SyncStatusState(),
+      const ViewAttached(),
+    );
     expect(next.phase, SyncStatusPhase.loading);
     expect(effects, const [LoadPendingCountEffect()]);
   });
 
   test('RefreshRequested keeps the last known count while loading', () {
-    const prior = SyncStatusState(phase: SyncStatusPhase.ready, pendingCount: 3);
+    const prior = SyncStatusState(
+      phase: SyncStatusPhase.ready,
+      pendingCount: 3,
+    );
     final (next, effects) = updater.update(prior, const RefreshRequested());
     expect(next.phase, SyncStatusPhase.loading);
     expect(next.pendingCount, 3); // reused — the view won't flicker

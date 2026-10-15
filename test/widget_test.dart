@@ -31,15 +31,17 @@ void main() {
     final graph = AppGraph();
     AppLaunchScope.setController(
       AppLaunchModule(
-        initialization:
-            resolveInitializationRepository(AppConfig.dev, graph),
-        destinationResolver:
-            resolveAppDestinationResolver(AppConfig.dev, graph),
+        initialization: resolveInitializationRepository(AppConfig.dev, graph),
+        destinationResolver: resolveAppDestinationResolver(
+          AppConfig.dev,
+          graph,
+        ),
       ).controller,
     );
     OnboardScope.setFactory(
-      () => OnboardModule(repository: SyncStoreOnboardRepository(graph: graph))
-          .controller,
+      () => OnboardModule(
+        repository: SyncStoreOnboardRepository(graph: graph),
+      ).controller,
     );
     TimelineScope.setRouteArgsWriter(InMemoryCollectionRouteArgsStore());
     TimelineScope.setFactory(
@@ -49,8 +51,9 @@ void main() {
           graph: graph,
           ids: const UuidIdGenerator(),
         ),
-        attachmentReadRepository:
-            SyncStoreAttachmentReadRepository(graph: graph),
+        attachmentReadRepository: SyncStoreAttachmentReadRepository(
+          graph: graph,
+        ),
         channelReader: TimelineChannelNotifier(),
       ).controller,
     );
@@ -79,8 +82,9 @@ void main() {
     SettingsScope.reset();
   });
 
-  testWidgets('boots through the splash into onboarding on a fresh device',
-      (tester) async {
+  testWidgets('boots through the splash into onboarding on a fresh device', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues(const <String, Object>{});
     wire();
     await tester.pumpWidget(const KnitApp(config: AppConfig.dev));
@@ -90,9 +94,11 @@ void main() {
 
     // Init → destination resolve → navigation are microtask/animation driven;
     // pump in bounded steps until the onboarding welcome lands.
-    for (var i = 0;
-        i < 40 && find.text('Get started').evaluate().isEmpty;
-        i++) {
+    for (
+      var i = 0;
+      i < 40 && find.text('Get started').evaluate().isEmpty;
+      i++
+    ) {
       await tester.pump(const Duration(milliseconds: 50));
     }
 

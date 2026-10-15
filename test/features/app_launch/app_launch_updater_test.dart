@@ -8,15 +8,19 @@ void main() {
   const updater = AppLaunchUpdater();
 
   test('ViewAttached requests initialization', () {
-    final (next, effects) =
-        updater.update(const AppLaunchState(), const ViewAttached());
+    final (next, effects) = updater.update(
+      const AppLaunchState(),
+      const ViewAttached(),
+    );
     expect(next.phase, AppLaunchPhase.initializing);
     expect(effects, const [InitializeEffect()]);
   });
 
   test('Retry re-requests initialization from a clean state', () {
     const failed = AppLaunchState(
-        phase: AppLaunchPhase.failed, errorMessage: 'boom');
+      phase: AppLaunchPhase.failed,
+      errorMessage: 'boom',
+    );
     final (next, effects) = updater.update(failed, const RetryRequested());
     expect(next.phase, AppLaunchPhase.initializing);
     expect(next.errorMessage, isNull);

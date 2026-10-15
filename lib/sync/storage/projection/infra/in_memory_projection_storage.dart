@@ -14,8 +14,11 @@ class InMemoryProjectionStorage implements ProjectionStorage {
   Future<void> ensureSchema({StorageContext? ctx}) async {}
 
   @override
-  Future<Snapshot?> get(EntityType type, String id, {StorageContext? ctx}) async =>
-      _tables[type]![id];
+  Future<Snapshot?> get(
+    EntityType type,
+    String id, {
+    StorageContext? ctx,
+  }) async => _tables[type]![id];
 
   @override
   Future<void> upsert(Snapshot snapshot, {StorageContext? ctx}) async {
@@ -23,33 +26,39 @@ class InMemoryProjectionStorage implements ProjectionStorage {
   }
 
   @override
-  Future<List<Snapshot>> readAll({StorageContext? ctx}) async =>
-      [for (final table in _tables.values) ...table.values];
+  Future<List<Snapshot>> readAll({StorageContext? ctx}) async => [
+    for (final table in _tables.values) ...table.values,
+  ];
 
   @override
-  Future<List<Snapshot>> feed(String collectionId, {StorageContext? ctx}) async {
-    final cards = _tables[EntityType.card]!.values.where((s) =>
-        !s.deleted && s.content['collection_id'] == collectionId);
-    return cards.toList()
-      ..sort((a, b) {
-        final p = a.position!.compareTo(b.position!);
-        return p != 0 ? p : a.id.compareTo(b.id);
-      });
+  Future<List<Snapshot>> feed(
+    String collectionId, {
+    StorageContext? ctx,
+  }) async {
+    final cards = _tables[EntityType.card]!.values.where(
+      (s) => !s.deleted && s.content['collection_id'] == collectionId,
+    );
+    return cards.toList()..sort((a, b) {
+      final p = a.position!.compareTo(b.position!);
+      return p != 0 ? p : a.id.compareTo(b.id);
+    });
   }
 
   @override
-  Future<List<Snapshot>> backlinks(String targetId, {StorageContext? ctx}) async =>
-      _tables[EntityType.link]!
-          .values
-          .where((s) => !s.deleted && s.content['target_id'] == targetId)
-          .toList();
+  Future<List<Snapshot>> backlinks(
+    String targetId, {
+    StorageContext? ctx,
+  }) async => _tables[EntityType.link]!.values
+      .where((s) => !s.deleted && s.content['target_id'] == targetId)
+      .toList();
 
   @override
-  Future<List<Snapshot>> linksOut(String sourceId, {StorageContext? ctx}) async =>
-      _tables[EntityType.link]!
-          .values
-          .where((s) => !s.deleted && s.content['source_id'] == sourceId)
-          .toList();
+  Future<List<Snapshot>> linksOut(
+    String sourceId, {
+    StorageContext? ctx,
+  }) async => _tables[EntityType.link]!.values
+      .where((s) => !s.deleted && s.content['source_id'] == sourceId)
+      .toList();
 
   @override
   Future<void> clear({StorageContext? ctx}) async {

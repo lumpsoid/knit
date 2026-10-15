@@ -87,8 +87,10 @@ void main() {
     graph.bindBlobStore(blobs);
     timelineWrite = SyncStoreTimelineWriteRepository(graph: graph, ids: ids);
     write = SyncStoreCollectionWriteRepository(graph: graph, ids: ids);
-    attachmentWrite =
-        SyncStoreAttachmentWriteRepository(graph: graph, ids: ids);
+    attachmentWrite = SyncStoreAttachmentWriteRepository(
+      graph: graph,
+      ids: ids,
+    );
     shell = CollectionShell(
       readRepository: SyncStoreCollectionReadRepository(graph: graph),
       writeRepository: write,
@@ -108,59 +110,63 @@ void main() {
   PickedImage png(List<int> b) =>
       PickedImage(bytes: Uint8List.fromList(b), mime: 'image/png');
 
-  test('deleting a card reclaims its uniquely-owned attachment record + blob',
-      () async {
-    final colId = (await timelineWrite.createCollection('C')).getOrThrow();
-    final attId =
-        (await attachmentWrite.createFromPicked(png([1, 2, 3]))).getOrThrow();
-    final hash = await sha256Hex(Uint8List.fromList([1, 2, 3]));
-    final cardId = (await write.addCard(
-      collectionId: colId,
-      kind: CardKind.image,
-      position: 'a0',
-      attachmentId: attId,
-    ))
-        .getOrThrow();
+  test(
+    'deleting a card reclaims its uniquely-owned attachment record + blob',
+    () async {
+      final colId = (await timelineWrite.createCollection('C')).getOrThrow();
+      final attId = (await attachmentWrite.createFromPicked(
+        png([1, 2, 3]),
+      )).getOrThrow();
+      final hash = await sha256Hex(Uint8List.fromList([1, 2, 3]));
+      final cardId = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.image,
+        position: 'a0',
+        attachmentId: attId,
+      )).getOrThrow();
 
-    await shell.run(
-      DeleteCardEffect(cardId, attachmentId: attId),
-      dispatch: (_) {},
-    );
+      await shell.run(
+        DeleteCardEffect(cardId, attachmentId: attId),
+        dispatch: (_) {},
+      );
 
-    expect((await store.get(EntityType.attachment, attId))!.deleted, isTrue);
-    expect(await blobs.exists(hash), isFalse);
-  });
+      expect((await store.get(EntityType.attachment, attId))!.deleted, isTrue);
+      expect(await blobs.exists(hash), isFalse);
+    },
+  );
 
-  test('deleting a card sharing a legacy attachment record keeps the sibling',
-      () async {
-    final colId = (await timelineWrite.createCollection('C')).getOrThrow();
-    final attId =
-        (await attachmentWrite.createFromPicked(png([1, 2, 3]))).getOrThrow();
-    final hash = await sha256Hex(Uint8List.fromList([1, 2, 3]));
-    final cardA = (await write.addCard(
-      collectionId: colId,
-      kind: CardKind.image,
-      position: 'a0',
-      attachmentId: attId,
-    ))
-        .getOrThrow();
-    // Sibling card B reuses the SAME record (simulates a pre-fix shared record).
-    await write.addCard(
-      collectionId: colId,
-      kind: CardKind.image,
-      position: 'a1',
-      attachmentId: attId,
-    );
+  test(
+    'deleting a card sharing a legacy attachment record keeps the sibling',
+    () async {
+      final colId = (await timelineWrite.createCollection('C')).getOrThrow();
+      final attId = (await attachmentWrite.createFromPicked(
+        png([1, 2, 3]),
+      )).getOrThrow();
+      final hash = await sha256Hex(Uint8List.fromList([1, 2, 3]));
+      final cardA = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.image,
+        position: 'a0',
+        attachmentId: attId,
+      )).getOrThrow();
+      // Sibling card B reuses the SAME record (simulates a pre-fix shared record).
+      await write.addCard(
+        collectionId: colId,
+        kind: CardKind.image,
+        position: 'a1',
+        attachmentId: attId,
+      );
 
-    await shell.run(
-      DeleteCardEffect(cardA, attachmentId: attId),
-      dispatch: (_) {},
-    );
+      await shell.run(
+        DeleteCardEffect(cardA, attachmentId: attId),
+        dispatch: (_) {},
+      );
 
-    // The guard skips GC because card B still references it → no orphan.
-    expect((await store.get(EntityType.attachment, attId))!.deleted, isFalse);
-    expect(await blobs.exists(hash), isTrue);
-  });
+      // The guard skips GC because card B still references it → no orphan.
+      expect((await store.get(EntityType.attachment, attId))!.deleted, isFalse);
+      expect(await blobs.exists(hash), isTrue);
+    },
+  );
 
   test('deleting a text card touches no attachment', () async {
     final colId = (await timelineWrite.createCollection('C')).getOrThrow();
@@ -169,8 +175,7 @@ void main() {
       kind: CardKind.text,
       position: 'a0',
       text: 'note',
-    ))
-        .getOrThrow();
+    )).getOrThrow();
 
     await shell.run(DeleteCardEffect(cardId), dispatch: (_) {});
     expect((await store.get(EntityType.card, cardId))!.deleted, isTrue);

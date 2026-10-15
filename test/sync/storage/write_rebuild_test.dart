@@ -39,57 +39,74 @@ void main() {
   String fingerprint(List<Snapshot> rows) {
     final sorted = rows.toList()..sort((a, b) => a.id.compareTo(b.id));
     return sorted
-        .map((s) => '${s.type.name}|${s.id}|hlc=${s.hlc}|'
-            'pos=${s.position}@${s.placement}|del=${s.deleted}|sig=${s.sig}|'
-            'text=${s.content['text'] ?? s.content['title']}')
+        .map(
+          (s) =>
+              '${s.type.name}|${s.id}|hlc=${s.hlc}|'
+              'pos=${s.position}@${s.placement}|del=${s.deleted}|sig=${s.sig}|'
+              'text=${s.content['text'] ?? s.content['title']}',
+        )
         .join(';');
   }
 
-  test('kill & reopen → rebuild byte-identical + clock strictly monotone', () async {
-    // --- Session 1: a realistic local edit history.
-    final (s1, db1) = await openStore();
-    await s1.create(EntityType.collection, 'col-1', {'title': 'Espresso'},
-        physicalNowMs: 1000);
-    await s1.create(
-      EntityType.card,
-      'c1',
-      {'collection_id': 'col-1', 'kind': 'text', 'text': 'grind'},
-      position: 'a0',
-      physicalNowMs: 1100,
-    );
-    await s1.create(
-      EntityType.card,
-      'c2',
-      {'collection_id': 'col-1', 'kind': 'text', 'text': 'tamp'},
-      position: 'a1',
-      physicalNowMs: 1200,
-    );
-    await s1.edit(EntityType.card, 'c1', {'text': 'grind finer'},
-        physicalNowMs: 1300);
-    await s1.reorder('c1', 'a5', physicalNowMs: 1400);
-    await s1.delete(EntityType.card, 'c2', physicalNowMs: 1500);
+  test(
+    'kill & reopen → rebuild byte-identical + clock strictly monotone',
+    () async {
+      // --- Session 1: a realistic local edit history.
+      final (s1, db1) = await openStore();
+      await s1.create(EntityType.collection, 'col-1', {
+        'title': 'Espresso',
+      }, physicalNowMs: 1000);
+      await s1.create(
+        EntityType.card,
+        'c1',
+        {'collection_id': 'col-1', 'kind': 'text', 'text': 'grind'},
+        position: 'a0',
+        physicalNowMs: 1100,
+      );
+      await s1.create(
+        EntityType.card,
+        'c2',
+        {'collection_id': 'col-1', 'kind': 'text', 'text': 'tamp'},
+        position: 'a1',
+        physicalNowMs: 1200,
+      );
+      await s1.edit(EntityType.card, 'c1', {
+        'text': 'grind finer',
+      }, physicalNowMs: 1300);
+      await s1.reorder('c1', 'a5', physicalNowMs: 1400);
+      await s1.delete(EntityType.card, 'c2', physicalNowMs: 1500);
 
-    final preFp = fingerprint(await s1.projection.readAll());
-    final preClock = s1.clock.now;
-    expect(preClock >= const Hlc(1500, 0), isTrue);
-    await db1.close(); // simulate kill
+      final preFp = fingerprint(await s1.projection.readAll());
+      final preClock = s1.clock.now;
+      expect(preClock >= const Hlc(1500, 0), isTrue);
+      await db1.close(); // simulate kill
 
-    // --- Session 2: reopen the same DB, rebuild from change_log.
-    final (s2, db2) = await openStore();
-    // Projection survived the kill; rebuild must reproduce it exactly.
-    await s2.rebuild();
-    final postFp = fingerprint(await s2.projection.readAll());
+      // --- Session 2: reopen the same DB, rebuild from change_log.
+      final (s2, db2) = await openStore();
+      // Projection survived the kill; rebuild must reproduce it exactly.
+      await s2.rebuild();
+      final postFp = fingerprint(await s2.projection.readAll());
 
-    expect(postFp, preFp, reason: 'projection byte-identical after rebuild');
-    expect(s2.clock.now >= preClock, isTrue, reason: 'clock recovered (§8.9 step 3)');
+      expect(postFp, preFp, reason: 'projection byte-identical after rebuild');
+      expect(
+        s2.clock.now >= preClock,
+        isTrue,
+        reason: 'clock recovered (§8.9 step 3)',
+      );
 
-    // A post-rebuild local write is strictly monotone (out-ranks all history).
-    final next = await s2.create(EntityType.collection, 'col-2', {'title': 'x'},
-        physicalNowMs: 1000);
-    expect(next.hlcMs >= preClock.ms, isTrue);
-    final newRow = (await s2.get(EntityType.collection, 'col-2'))!;
-    expect(newRow.hlc > preClock, isTrue, reason: 'strictly greater than pre-kill max');
+      // A post-rebuild local write is strictly monotone (out-ranks all history).
+      final next = await s2.create(EntityType.collection, 'col-2', {
+        'title': 'x',
+      }, physicalNowMs: 1000);
+      expect(next.hlcMs >= preClock.ms, isTrue);
+      final newRow = (await s2.get(EntityType.collection, 'col-2'))!;
+      expect(
+        newRow.hlc > preClock,
+        isTrue,
+        reason: 'strictly greater than pre-kill max',
+      );
 
-    await db2.close();
-  });
+      await db2.close();
+    },
+  );
 }

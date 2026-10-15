@@ -7,8 +7,8 @@ import 'package:knit/sync/identity/domain/domain.dart';
 /// the private-key bytes); the keypair is reconstructed from it on each sign.
 class Ed25519Signer implements Signer {
   Ed25519Signer({Ed25519? algorithm, Sha256? sha256})
-      : _ed = algorithm ?? Ed25519(),
-        _sha = sha256 ?? Sha256();
+    : _ed = algorithm ?? Ed25519(),
+      _sha = sha256 ?? Sha256();
 
   final Ed25519 _ed;
   final Sha256 _sha;
@@ -29,7 +29,11 @@ class Ed25519Signer implements Signer {
   }
 
   @override
-  Future<bool> verify(String publicKeyHex, List<int> bytes, String sigHex) async {
+  Future<bool> verify(
+    String publicKeyHex,
+    List<int> bytes,
+    String sigHex,
+  ) async {
     try {
       final publicKey = SimplePublicKey(
         hexDecode(publicKeyHex),

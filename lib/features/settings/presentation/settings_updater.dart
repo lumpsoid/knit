@@ -44,12 +44,9 @@ class SettingsUpdater
       case DataActionRequested(:final action):
         // Import and wipe touch the store and run async; the remaining
         // placeholders resolve instantly.
-        final busy = action == DataAction.importData ||
-            action == DataAction.wipeData;
-        return (
-          state.copyWith(busy: busy),
-          [RunDataActionEffect(action)],
-        );
+        final busy =
+            action == DataAction.importData || action == DataAction.wipeData;
+        return (state.copyWith(busy: busy), [RunDataActionEffect(action)]);
       case DataActionFinished():
         return (state.copyWith(busy: false), null);
     }

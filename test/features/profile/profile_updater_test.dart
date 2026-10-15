@@ -15,8 +15,10 @@ void main() {
   );
 
   test('ViewAttached requests an identity read', () {
-    final (next, effects) =
-        updater.update(const ProfileState(), const ViewAttached());
+    final (next, effects) = updater.update(
+      const ProfileState(),
+      const ViewAttached(),
+    );
     expect(next.phase, ProfilePhase.loading);
     expect(effects, const [LoadProfileEffect()]);
   });
@@ -68,7 +70,10 @@ void main() {
     );
     final (next, effects) = updater.update(
       const ProfileState(
-          phase: ProfilePhase.ready, profile: sample, isSaving: true),
+        phase: ProfilePhase.ready,
+        profile: sample,
+        isSaving: true,
+      ),
       const RenameSucceeded(renamed),
     );
     expect(next.phase, ProfilePhase.ready);
@@ -80,7 +85,10 @@ void main() {
   test('RenameFailed clears the saving flag, keeping the prior profile', () {
     final (next, effects) = updater.update(
       const ProfileState(
-          phase: ProfilePhase.ready, profile: sample, isSaving: true),
+        phase: ProfilePhase.ready,
+        profile: sample,
+        isSaving: true,
+      ),
       const RenameFailed(),
     );
     expect(next.isSaving, isFalse);

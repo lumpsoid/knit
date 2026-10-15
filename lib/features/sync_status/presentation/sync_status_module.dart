@@ -16,8 +16,9 @@ class SyncStatusModule {
     required SyncStatusReadRepository readRepository,
     Logger? logger,
   }) {
-    final stateHolder =
-        ValueListenableStateHolder<SyncStatusState>(const SyncStatusState());
+    final stateHolder = ValueListenableStateHolder<SyncStatusState>(
+      const SyncStatusState(),
+    );
     final shell = SyncStatusShell(
       readRepository: readRepository,
       logger: logger ?? Logger('knit.sync_status'),
@@ -25,8 +26,9 @@ class SyncStatusModule {
     final loop = SyncStatusLoop(
       stateHolder: stateHolder,
       updater: const SyncStatusUpdater(),
-      effectRunner:
-          ShellEffectRunner<SyncStatusEffect, SyncStatusAction>(shell: shell),
+      effectRunner: ShellEffectRunner<SyncStatusEffect, SyncStatusAction>(
+        shell: shell,
+      ),
     );
     _controller = SyncStatusController(stateHolder: stateHolder, sink: loop);
   }

@@ -30,10 +30,9 @@ class ConnectionsState {
     ConnectionsStatus? status,
     List<ConnectionCrumb>? breadcrumb,
     ConnectionsData? data,
-  }) =>
-      ConnectionsState(
-        status: status ?? this.status,
-        breadcrumb: breadcrumb ?? this.breadcrumb,
-        data: data ?? this.data,
-      );
+  }) => ConnectionsState(
+    status: status ?? this.status,
+    breadcrumb: breadcrumb ?? this.breadcrumb,
+    data: data ?? this.data,
+  );
 }

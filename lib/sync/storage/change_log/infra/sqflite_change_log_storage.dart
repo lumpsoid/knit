@@ -42,10 +42,9 @@ class SqfliteChangeLogStorage implements ChangeLogStorage {
 
   @override
   Future<List<PersistedOp>> readOrdered({StorageContext? ctx}) async {
-    final rows = await _exec(ctx).query(
-      ChangeLogSchema.table,
-      orderBy: '${ChangeLogSchema.colSeq} ASC',
-    );
+    final rows = await _exec(
+      ctx,
+    ).query(ChangeLogSchema.table, orderBy: '${ChangeLogSchema.colSeq} ASC');
     return rows.map(PersistedOp.fromDb).toList();
   }
 
@@ -53,7 +52,8 @@ class SqfliteChangeLogStorage implements ChangeLogStorage {
   Future<List<PersistedOp>> readPending({StorageContext? ctx}) async {
     final rows = await _exec(ctx).query(
       ChangeLogSchema.table,
-      where: '${ChangeLogSchema.colOrigin} = ? AND ${ChangeLogSchema.colAcked} = 0',
+      where:
+          '${ChangeLogSchema.colOrigin} = ? AND ${ChangeLogSchema.colAcked} = 0',
       whereArgs: [SyncOrigin.local.toDb()],
       orderBy: '${ChangeLogSchema.colSeq} ASC',
     );

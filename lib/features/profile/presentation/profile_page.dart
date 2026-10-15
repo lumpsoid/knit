@@ -48,8 +48,9 @@ class _ProfilePageState extends State<ProfilePage> {
         final text = switch (message) {
           ProfileMessage.renameFailed => l10n.profileRenameFailed,
         };
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(text)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -67,9 +68,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.profileTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.profileTitle)),
       body: ValueListenableBuilder<ProfileState>(
         valueListenable: _controller.stateHolder,
         builder: (context, state, _) {
@@ -83,8 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
             case ProfilePhase.failed:
               return _ErrorView(
                 message: l10n.profileLoadError,
-                onRetry: () =>
-                    _controller.dispatch(const RefreshRequested()),
+                onRetry: () => _controller.dispatch(const RefreshRequested()),
               );
             case ProfilePhase.ready:
               if (profile == null) {
@@ -117,13 +115,18 @@ class _ProfilePageState extends State<ProfilePage> {
                         ? '?'
                         : profile.nickname.substring(0, 1).toUpperCase(),
                     style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.white, fontWeight: FontWeight.w700),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(profile.handle,
-                    style: theme.textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  profile.handle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
@@ -131,9 +134,12 @@ class _ProfilePageState extends State<ProfilePage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.badge_outlined),
-            title: Text(l10n.profileNicknameLabel,
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            title: Text(
+              l10n.profileNicknameLabel,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             subtitle: Text(
               profile.nickname.isEmpty ? l10n.labelUntitled : profile.nickname,
               style: theme.textTheme.bodyLarge,
@@ -153,12 +159,18 @@ class _ProfilePageState extends State<ProfilePage> {
           const Divider(height: 32),
           Row(
             children: [
-              Icon(Icons.key_outlined,
-                  size: 18, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.key_outlined,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 8),
-              Text(l10n.profilePublicKeyLabel,
-                  style: theme.textTheme.labelMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              Text(
+                l10n.profilePublicKeyLabel,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -187,8 +199,9 @@ class _RenameDialog extends StatefulWidget {
 }
 
 class _RenameDialogState extends State<_RenameDialog> {
-  late final TextEditingController _field =
-      TextEditingController(text: widget.initial);
+  late final TextEditingController _field = TextEditingController(
+    text: widget.initial,
+  );
 
   @override
   void dispose() {
@@ -253,9 +266,9 @@ class _PubkeyBox extends StatelessWidget {
             icon: const Icon(Icons.copy, size: 18),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: publicKeyHex));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.profileKeyCopied)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l10n.profileKeyCopied)));
             },
           ),
         ],
@@ -278,16 +291,18 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline,
-                size: 48, color: theme.colorScheme.error),
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 16),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 24),
             FilledButton(
-                onPressed: onRetry,
-                child: Text(AppLocalizations.of(context).actionRetry)),
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).actionRetry),
+            ),
           ],
         ),
       ),

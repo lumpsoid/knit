@@ -30,7 +30,8 @@ class _SyncStatusIndicatorState extends State<SyncStatusIndicator> {
     // another page's already-mounted marker mid-build (setState/markNeedsBuild
     // called during build). Defer past the current frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) SyncStatusScope.controller.dispatch(const RefreshRequested());
+      if (mounted)
+        SyncStatusScope.controller.dispatch(const RefreshRequested());
     });
   }
 

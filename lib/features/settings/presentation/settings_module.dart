@@ -34,8 +34,9 @@ class SettingsModule {
     required TimelineChannelEmitter timelineChannel,
     Logger? logger,
   }) {
-    final stateHolder =
-        ValueListenableStateHolder<SettingsState>(const SettingsState());
+    final stateHolder = ValueListenableStateHolder<SettingsState>(
+      const SettingsState(),
+    );
     final effectEmitter = EffectEmitter<SettingsUiEffect>();
     final shell = SettingsShell(
       readRepository: readRepository,
@@ -53,8 +54,9 @@ class SettingsModule {
     final loop = SettingsLoop(
       stateHolder: stateHolder,
       updater: const SettingsUpdater(),
-      effectRunner:
-          ShellEffectRunner<SettingsEffect, SettingsAction>(shell: shell),
+      effectRunner: ShellEffectRunner<SettingsEffect, SettingsAction>(
+        shell: shell,
+      ),
     );
     _controller = SettingsController(
       stateHolder: stateHolder,

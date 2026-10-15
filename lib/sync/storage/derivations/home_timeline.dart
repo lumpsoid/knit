@@ -24,9 +24,9 @@ class CardPreview {
   final String? text;
 
   factory CardPreview.of(Snapshot card) => CardPreview(
-        kind: card.content['kind'] as String,
-        text: card.content['text'] as String?,
-      );
+    kind: card.content['kind'] as String,
+    text: card.content['text'] as String?,
+  );
 }
 
 /// One row of the home timeline (spec §8.6.3) — a collection plus its derived
@@ -70,8 +70,7 @@ List<CollectionSummary> buildHomeTimeline(List<Snapshot> all) {
   final cardsByCollection = <String, List<Snapshot>>{};
   for (final s in all) {
     if (s.type == EntityType.card && !s.deleted) {
-      (cardsByCollection[s.content['collection_id'] as String] ??= [])
-          .add(s);
+      (cardsByCollection[s.content['collection_id'] as String] ??= []).add(s);
     }
   }
 

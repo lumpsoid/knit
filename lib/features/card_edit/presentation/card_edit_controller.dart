@@ -11,8 +11,8 @@ class CardEditController {
     required this.stateHolder,
     required EffectEmitter<CardEditUiEffect> effectEmitter,
     required ActionSink<CardEditAction> sink,
-  })  : _effectEmitter = effectEmitter,
-        _sink = sink;
+  }) : _effectEmitter = effectEmitter,
+       _sink = sink;
 
   final ValueListenable<CardEditState> stateHolder;
   final EffectEmitter<CardEditUiEffect> _effectEmitter;

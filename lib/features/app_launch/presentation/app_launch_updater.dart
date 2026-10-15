@@ -22,10 +22,7 @@ class AppLaunchUpdater
         return (state, null);
       case InitializationFailed(:final message):
         return (
-          AppLaunchState(
-            phase: AppLaunchPhase.failed,
-            errorMessage: message,
-          ),
+          AppLaunchState(phase: AppLaunchPhase.failed, errorMessage: message),
           null,
         );
       case DeactivateFeature():

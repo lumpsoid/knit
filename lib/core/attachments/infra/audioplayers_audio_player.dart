@@ -56,9 +56,8 @@ class AudioPlayersAudioPlayer implements AudioPlayerPort {
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
 
-  void _emitProgress() => _progress.add(
-    PlaybackProgress(position: _position, duration: _duration),
-  );
+  void _emitProgress() =>
+      _progress.add(PlaybackProgress(position: _position, duration: _duration));
 
   @override
   Stream<PlaybackProgress> get progress => _progress.stream;

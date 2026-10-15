@@ -10,7 +10,11 @@ import 'package:result_dart/result_dart.dart';
 
 /// A blob to upload before publishing — content-addressed bytes (relay §7.7).
 class PendingBlob {
-  const PendingBlob({required this.hash, required this.mime, required this.bytes});
+  const PendingBlob({
+    required this.hash,
+    required this.mime,
+    required this.bytes,
+  });
 
   final String hash;
   final String mime;
@@ -67,12 +71,14 @@ class SnapshotBuilder {
           final r = await _resolve(c.attachmentId!, blobs);
           if (r.isFailure) return Failure(r.error!);
           final b = r.getOrThrow();
-          cards.add(SnapshotCard(
-            id: c.id,
-            kind: 'image',
-            text: _clean(c.text),
-            image: SnapshotBlob(hash: b.hash, mime: b.mime),
-          ));
+          cards.add(
+            SnapshotCard(
+              id: c.id,
+              kind: 'image',
+              text: _clean(c.text),
+              image: SnapshotBlob(hash: b.hash, mime: b.mime),
+            ),
+          );
         } else if ((kind == CardKind.file || kind == CardKind.audio) &&
             c.attachmentId != null) {
           // Audio has no dedicated web widget (§2.6), so publish it as a
@@ -80,42 +86,50 @@ class SnapshotBuilder {
           final r = await _resolve(c.attachmentId!, blobs);
           if (r.isFailure) return Failure(r.error!);
           final b = r.getOrThrow();
-          cards.add(SnapshotCard(
-            id: c.id,
-            kind: kind.tag,
-            text: _clean(c.text),
-            file: SnapshotFile(
-              hash: b.hash,
-              name: c.fileName ?? b.name,
-              size: c.fileSize ?? b.size,
+          cards.add(
+            SnapshotCard(
+              id: c.id,
+              kind: kind.tag,
+              text: _clean(c.text),
+              file: SnapshotFile(
+                hash: b.hash,
+                name: c.fileName ?? b.name,
+                size: c.fileSize ?? b.size,
+              ),
             ),
-          ));
+          );
         } else if (kind == CardKind.link) {
           // Knit stores a link card's URL as its body (collection_updater.dart).
-          cards.add(SnapshotCard(
-            id: c.id,
-            kind: 'link',
-            link: SnapshotLink(url: _clean(c.text)),
-          ));
+          cards.add(
+            SnapshotCard(
+              id: c.id,
+              kind: 'link',
+              link: SnapshotLink(url: _clean(c.text)),
+            ),
+          );
         } else {
           // text, unknown, or a media card whose attachment went missing.
-          cards.add(SnapshotCard(
-            id: c.id,
-            kind: kind == CardKind.unknown ? 'text' : kind.tag,
-            text: _clean(c.text),
-          ));
+          cards.add(
+            SnapshotCard(
+              id: c.id,
+              kind: kind == CardKind.unknown ? 'text' : kind.tag,
+              text: _clean(c.text),
+            ),
+          );
         }
       }
 
-      return Ok(BuiltSnapshot(
-        snapshot: PublicationSnapshot(
-          title: data.title,
-          description: _clean(data.description),
-          cover: cover,
-          cards: cards,
+      return Ok(
+        BuiltSnapshot(
+          snapshot: PublicationSnapshot(
+            title: data.title,
+            description: _clean(data.description),
+            cover: cover,
+            cards: cards,
+          ),
+          blobs: blobs.values.toList(growable: false),
         ),
-        blobs: blobs.values.toList(growable: false),
-      ));
+      );
     } catch (e, st) {
       return Failure(RelayUnexpected(e, st));
     }
@@ -137,7 +151,9 @@ class SnapshotBuilder {
       hash,
       () => PendingBlob(hash: hash, mime: a.mime, bytes: a.bytes),
     );
-    return Ok(_ResolvedBlob(hash: hash, mime: a.mime, name: a.name, size: a.size));
+    return Ok(
+      _ResolvedBlob(hash: hash, mime: a.mime, name: a.name, size: a.size),
+    );
   }
 
   static String? _clean(String? s) {

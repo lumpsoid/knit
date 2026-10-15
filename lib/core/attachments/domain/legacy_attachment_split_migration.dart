@@ -67,7 +67,7 @@ abstract interface class LegacyAttachmentMigrationPort {
 /// determinism/merge handling is needed — it is a plain local pass.
 class LegacyAttachmentSplitMigration {
   LegacyAttachmentSplitMigration(this._port, {Logger? logger})
-      : _log = logger ?? Logger('knit.attachment_migration');
+    : _log = logger ?? Logger('knit.attachment_migration');
 
   final LegacyAttachmentMigrationPort _port;
   final Logger _log;
@@ -90,7 +90,8 @@ class LegacyAttachmentSplitMigration {
       if (cardIds.length < 2) continue; // uniquely owned → already 1:1.
 
       final content = await _port.attachmentContent(entry.key);
-      if (content == null) continue; // broken/dangling reference → nothing to split.
+      if (content == null)
+        continue; // broken/dangling reference → nothing to split.
 
       // Keep the first card on the original record; give every other card its
       // own fresh record (same blob, ref-counted) so each ends up 1:1.
@@ -102,7 +103,9 @@ class LegacyAttachmentSplitMigration {
     }
 
     if (repointed > 0) {
-      _log.info('Split legacy attachment records: repointed $repointed card(s)');
+      _log.info(
+        'Split legacy attachment records: repointed $repointed card(s)',
+      );
     }
     return repointed;
   }

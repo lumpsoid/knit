@@ -10,7 +10,7 @@ import 'package:result_dart/result_dart.dart';
 class InMemorySettingsRepository
     implements SettingsReadRepository, SettingsWriteRepository {
   InMemorySettingsRepository([AppPreferences initial = const AppPreferences()])
-      : _preferences = initial;
+    : _preferences = initial;
 
   AppPreferences _preferences;
 

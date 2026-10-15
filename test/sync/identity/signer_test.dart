@@ -54,24 +54,32 @@ void main() {
       expect(await signer.verify(kp.publicKeyHex, message, sig), isTrue);
     });
 
-    test('same payload → same sig (idempotency §7.3); tampered → different', () async {
-      final signer = FakeSigner();
-      final kp = await signer.generate();
-      final a = await signer.sign(kp.secretKey, message);
-      final b = await signer.sign(kp.secretKey, message);
-      expect(a, b);
-      final c = await signer.sign(kp.secretKey, utf8.encode('different'));
-      expect(c, isNot(a));
-    });
+    test(
+      'same payload → same sig (idempotency §7.3); tampered → different',
+      () async {
+        final signer = FakeSigner();
+        final kp = await signer.generate();
+        final a = await signer.sign(kp.secretKey, message);
+        final b = await signer.sign(kp.secretKey, message);
+        expect(a, b);
+        final c = await signer.sign(kp.secretKey, utf8.encode('different'));
+        expect(c, isNot(a));
+      },
+    );
 
-    test('verifies a signature made from author alone (the op-builder convention)',
-        () async {
-      // sig = fakeSignHex(utf8(author), message); verify recomputes the same.
-      const author = 'aa';
-      final sig = fakeSignHex(utf8.encode(author), message);
-      expect(await FakeSigner().verify(author, message, sig), isTrue);
-      expect(await FakeSigner().verify(author, utf8.encode('x'), sig), isFalse);
-    });
+    test(
+      'verifies a signature made from author alone (the op-builder convention)',
+      () async {
+        // sig = fakeSignHex(utf8(author), message); verify recomputes the same.
+        const author = 'aa';
+        final sig = fakeSignHex(utf8.encode(author), message);
+        expect(await FakeSigner().verify(author, message, sig), isTrue);
+        expect(
+          await FakeSigner().verify(author, utf8.encode('x'), sig),
+          isFalse,
+        );
+      },
+    );
 
     test('distinct seeds yield distinct identities', () async {
       final a = await FakeSigner(identitySeed: 'dev-a').generate();

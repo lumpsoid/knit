@@ -27,21 +27,30 @@ void main() {
     client = _FakeClient();
     store = InMemoryRelayPublishStore();
     identity = InMemoryLocalIdentityStorage();
-    await identity.save(const LocalIdentity(
-      publicKeyHex: 'owner-pub',
-      secretKeyEnc: [0],
-      createdAt: 0,
-    ));
+    await identity.save(
+      const LocalIdentity(
+        publicKeyHex: 'owner-pub',
+        secretKeyEnc: [0],
+        createdAt: 0,
+      ),
+    );
 
-    final collectionRead = _FakeCollectionRead(const CollectionData(
-      collectionId: 'c1',
-      title: 'Trip',
-      description: null,
-      coverAttachmentId: 'photo',
-      cards: [
-        FeedCard(id: 'k1', kind: CardKind.image, position: 'a', attachmentId: 'photo'),
-      ],
-    ));
+    final collectionRead = _FakeCollectionRead(
+      const CollectionData(
+        collectionId: 'c1',
+        title: 'Trip',
+        description: null,
+        coverAttachmentId: 'photo',
+        cards: [
+          FeedCard(
+            id: 'k1',
+            kind: CardKind.image,
+            position: 'a',
+            attachmentId: 'photo',
+          ),
+        ],
+      ),
+    );
     final attachmentRead = _FakeAttachmentRead({
       'photo': AttachmentBytes(bytes: photo, mime: 'image/jpeg'),
     });
@@ -57,39 +66,51 @@ void main() {
     );
   });
 
-  test('first publish mints a topic, uploads blobs, publishes, and persists', () async {
-    final result = await publisher.publish(
+  test(
+    'first publish mints a topic, uploads blobs, publishes, and persists',
+    () async {
+      final result = await publisher.publish(
+        collectionId: 'c1',
+        visibility: PublishVisibility.public,
+      );
+
+      final ref = result.getOrThrow();
+      expect(ref.slug, 'slug-1');
+      expect(ref.url, 'https://relay.test/c/slug-1');
+
+      // topic minted once, bound to the local identity.
+      expect(client.createTopicCalls, ['owner-pub']);
+      // the referenced photo was uploaded before publishing.
+      expect(client.uploadedHashes, hasLength(1));
+      expect(client.putPublicationCalls, 1);
+      expect(client.lastVisibility, PublishVisibility.public);
+
+      // persisted locally: topic/token + slug + visibility.
+      final saved = (await store.loadPublication('c1'))!;
+      expect(saved.topicId, 'topic-1');
+      expect(saved.writeToken, 'wtok-1');
+      expect(saved.slug, 'slug-1');
+      expect(saved.visibility, PublishVisibility.public);
+    },
+  );
+
+  test('re-publishing reuses the stored topic, minting no new one', () async {
+    await publisher.publish(
       collectionId: 'c1',
       visibility: PublishVisibility.public,
     );
-
-    final ref = result.getOrThrow();
-    expect(ref.slug, 'slug-1');
-    expect(ref.url, 'https://relay.test/c/slug-1');
-
-    // topic minted once, bound to the local identity.
-    expect(client.createTopicCalls, ['owner-pub']);
-    // the referenced photo was uploaded before publishing.
-    expect(client.uploadedHashes, hasLength(1));
-    expect(client.putPublicationCalls, 1);
-    expect(client.lastVisibility, PublishVisibility.public);
-
-    // persisted locally: topic/token + slug + visibility.
-    final saved = (await store.loadPublication('c1'))!;
-    expect(saved.topicId, 'topic-1');
-    expect(saved.writeToken, 'wtok-1');
-    expect(saved.slug, 'slug-1');
-    expect(saved.visibility, PublishVisibility.public);
-  });
-
-  test('re-publishing reuses the stored topic, minting no new one', () async {
-    await publisher.publish(collectionId: 'c1', visibility: PublishVisibility.public);
-    await publisher.publish(collectionId: 'c1', visibility: PublishVisibility.private);
+    await publisher.publish(
+      collectionId: 'c1',
+      visibility: PublishVisibility.private,
+    );
 
     expect(client.createTopicCalls, ['owner-pub']); // only once
     expect(client.putPublicationCalls, 2);
     expect(client.lastVisibility, PublishVisibility.private);
-    expect((await store.loadPublication('c1'))!.visibility, PublishVisibility.private);
+    expect(
+      (await store.loadPublication('c1'))!.visibility,
+      PublishVisibility.private,
+    );
   });
 
   test('publish fails cleanly when no identity is provisioned', () async {
@@ -106,7 +127,10 @@ void main() {
   });
 
   test('unpublish deletes on the relay and clears the local slug', () async {
-    await publisher.publish(collectionId: 'c1', visibility: PublishVisibility.public);
+    await publisher.publish(
+      collectionId: 'c1',
+      visibility: PublishVisibility.public,
+    );
 
     final result = await publisher.unpublish('c1');
     expect(result.isSuccess, isTrue);
@@ -142,10 +166,14 @@ class _FakeClient implements RelayPublishClient {
   int _slugSeq = 0;
 
   @override
-  Future<Result<RelayTopic, RelayFailure>> createTopic(String ownerPubkey) async {
+  Future<Result<RelayTopic, RelayFailure>> createTopic(
+    String ownerPubkey,
+  ) async {
     createTopicCalls.add(ownerPubkey);
     _topicSeq++;
-    return Ok(RelayTopic(topicId: 'topic-$_topicSeq', writeToken: 'wtok-$_topicSeq'));
+    return Ok(
+      RelayTopic(topicId: 'topic-$_topicSeq', writeToken: 'wtok-$_topicSeq'),
+    );
   }
 
   @override
@@ -157,7 +185,13 @@ class _FakeClient implements RelayPublishClient {
     required Uint8List bytes,
   }) async {
     if (failBlob) {
-      return const Failure(RelayResponseFailure(statusCode: 400, code: 'hash_mismatch', error: 'x'));
+      return const Failure(
+        RelayResponseFailure(
+          statusCode: 400,
+          code: 'hash_mismatch',
+          error: 'x',
+        ),
+      );
     }
     uploadedHashes.add(hash);
     return const Ok(null);
@@ -174,13 +208,15 @@ class _FakeClient implements RelayPublishClient {
     putPublicationCalls++;
     lastVisibility = visibility;
     _slugSeq++;
-    return Ok(PublishedRef(
-      slug: 'slug-$_slugSeq',
-      url: 'https://relay.test/c/slug-$_slugSeq',
-      visibility: visibility,
-      revoked: false,
-      publishedAt: 1000 + _slugSeq,
-    ));
+    return Ok(
+      PublishedRef(
+        slug: 'slug-$_slugSeq',
+        url: 'https://relay.test/c/slug-$_slugSeq',
+        visibility: visibility,
+        revoked: false,
+        publishedAt: 1000 + _slugSeq,
+      ),
+    );
   }
 
   @override
@@ -204,16 +240,18 @@ class _FakeCollectionRead implements CollectionReadRepository {
   final CollectionData _data;
 
   @override
-  Future<Result<CollectionData, CollectionFailure>> loadCollection(String id) async =>
-      Ok(_data);
+  Future<Result<CollectionData, CollectionFailure>> loadCollection(
+    String id,
+  ) async => Ok(_data);
 
   @override
   Future<Result<List<LinkOption>, CollectionFailure>> loadLinkCollections() =>
       throw UnimplementedError();
 
   @override
-  Future<Result<List<LinkOption>, CollectionFailure>> loadCollectionCards(String c) =>
-      throw UnimplementedError();
+  Future<Result<List<LinkOption>, CollectionFailure>> loadCollectionCards(
+    String c,
+  ) => throw UnimplementedError();
 
   @override
   Future<Result<bool, CollectionFailure>> isAttachmentReferenced(String a) =>
@@ -225,7 +263,9 @@ class _FakeAttachmentRead implements AttachmentReadRepository {
   final Map<String, AttachmentBytes> _byId;
 
   @override
-  Future<Result<AttachmentBytes, AttachmentFailure>> bytesOf(String attachmentId) async {
+  Future<Result<AttachmentBytes, AttachmentFailure>> bytesOf(
+    String attachmentId,
+  ) async {
     final a = _byId[attachmentId];
     if (a == null) return Failure(AttachmentNotFound(attachmentId));
     return Ok(a);

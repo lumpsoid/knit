@@ -23,11 +23,11 @@ void main() {
   }
 
   QuarantinedOp op(String id, QuarantineReason reason) => QuarantinedOp(
-        opId: id,
-        reason: reason,
-        rawOp: '{"id":"$id"}',
-        seenAt: 1718020800000,
-      );
+    opId: id,
+    reason: reason,
+    rawOp: '{"id":"$id"}',
+    seenAt: 1718020800000,
+  );
 
   for (final (name, open) in <(String, Future<QuarantineStorage> Function())>[
     ('InMemoryQuarantineStorage', inMemory),

@@ -14,12 +14,10 @@ import 'package:knit/features/onboard/presentation/onboard_updater.dart';
 
 /// Composition root for Onboard (fcis.md §6.8).
 class OnboardModule {
-  OnboardModule({
-    required OnboardRepository repository,
-    Logger? logger,
-  }) {
-    final stateHolder =
-        ValueListenableStateHolder<OnboardState>(const OnboardState());
+  OnboardModule({required OnboardRepository repository, Logger? logger}) {
+    final stateHolder = ValueListenableStateHolder<OnboardState>(
+      const OnboardState(),
+    );
     final effectEmitter = EffectEmitter<OnboardUiEffect>();
     final shell = OnboardShell(
       repository: repository,
@@ -29,8 +27,9 @@ class OnboardModule {
     final loop = OnboardLoop(
       stateHolder: stateHolder,
       updater: const OnboardUpdater(),
-      effectRunner:
-          ShellEffectRunner<OnboardEffect, OnboardAction>(shell: shell),
+      effectRunner: ShellEffectRunner<OnboardEffect, OnboardAction>(
+        shell: shell,
+      ),
     );
     _controller = OnboardController(
       stateHolder: stateHolder,

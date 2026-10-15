@@ -96,7 +96,9 @@ abstract final class FractionalIndex {
       }
     }
     final digitA = a.isNotEmpty ? _digits.indexOf(a[0]) : 0;
-    final digitB = b != null && b.isNotEmpty ? _digits.indexOf(b[0]) : _digits.length;
+    final digitB = b != null && b.isNotEmpty
+        ? _digits.indexOf(b[0])
+        : _digits.length;
     if (digitB - digitA > 1) {
       final midDigit = (0.5 * (digitA + digitB)).round();
       return _digits[midDigit];
@@ -104,7 +106,8 @@ abstract final class FractionalIndex {
     if (b != null && b.length > 1) {
       return b.substring(0, 1);
     }
-    return _digits[digitA] + _midpoint(a.isNotEmpty ? a.substring(1) : '', null);
+    return _digits[digitA] +
+        _midpoint(a.isNotEmpty ? a.substring(1) : '', null);
   }
 
   static int _integerLength(String head) {
@@ -129,7 +132,9 @@ abstract final class FractionalIndex {
     final i = _integerPart(key);
     final f = key.substring(i.length);
     if (f.isNotEmpty && f[f.length - 1] == '0') {
-      throw ArgumentError('fractional index: invalid key (trailing zero) "$key"');
+      throw ArgumentError(
+        'fractional index: invalid key (trailing zero) "$key"',
+      );
     }
   }
 

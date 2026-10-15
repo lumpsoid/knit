@@ -18,10 +18,10 @@ class AppLaunchShell extends Shell<AppLaunchEffect, AppLaunchAction> {
     required AppDestinationResolver destinationResolver,
     required EffectEmitter<AppLaunchUiEffect> effectEmitter,
     required Logger logger,
-  })  : _initialization = initialization,
-        _destinationResolver = destinationResolver,
-        _effectEmitter = effectEmitter,
-        _log = logger;
+  }) : _initialization = initialization,
+       _destinationResolver = destinationResolver,
+       _effectEmitter = effectEmitter,
+       _log = logger;
 
   final InitializationRepository _initialization;
   final AppDestinationResolver _destinationResolver;

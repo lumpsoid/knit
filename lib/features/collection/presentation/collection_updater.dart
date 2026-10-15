@@ -265,7 +265,10 @@ class CollectionUpdater
         // delete; a text/link card (or a card not in the feed) has none →
         // nothing to GC.
         final card = _cardById(state.cards, cardId);
-        return (state, [DeleteCardEffect(cardId, attachmentId: card?.attachmentId)]);
+        return (
+          state,
+          [DeleteCardEffect(cardId, attachmentId: card?.attachmentId)],
+        );
 
       case CardShareRequested(:final cardId):
         return _shareCard(state, cardId);

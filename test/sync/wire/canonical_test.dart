@@ -38,37 +38,40 @@ void main() {
       expect(CanonicalSerializer.string(s), expected);
     });
 
-    test('7.4.3 card put matches (full key substituted for the abbreviation)', () {
-      final s = Snapshot(
-        type: EntityType.card,
-        id: '0192f1a2-3b4c-7def-8123-00000000000a',
-        author: pub,
-        createdBy: pub,
-        createdAt: 1718020860000,
-        hlc: const Hlc(1718020860000, 0),
-        deleted: false,
-        sig: '',
-        placement: const Hlc(1718020860000, 0),
-        position: 'a0',
-        content: const {
-          'collection_id': '0192f1a2-3b4c-7def-8123-000000000001',
-          'kind': 'text',
-          'text': 'Grind finer if the shot runs too fast.',
-          'attachment_id': null,
-        },
-      );
+    test(
+      '7.4.3 card put matches (full key substituted for the abbreviation)',
+      () {
+        final s = Snapshot(
+          type: EntityType.card,
+          id: '0192f1a2-3b4c-7def-8123-00000000000a',
+          author: pub,
+          createdBy: pub,
+          createdAt: 1718020860000,
+          hlc: const Hlc(1718020860000, 0),
+          deleted: false,
+          sig: '',
+          placement: const Hlc(1718020860000, 0),
+          position: 'a0',
+          content: const {
+            'collection_id': '0192f1a2-3b4c-7def-8123-000000000001',
+            'kind': 'text',
+            'text': 'Grind finer if the shot runs too fast.',
+            'attachment_id': null,
+          },
+        );
 
-      const expected =
-          '{"attachment_id":null,"author":"$pub",'
-          '"collection_id":"0192f1a2-3b4c-7def-8123-000000000001",'
-          '"created_at":1718020860000,"created_by":"$pub","deleted":0,'
-          '"hlc_counter":0,"hlc_ms":1718020860000,'
-          '"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text",'
-          '"position":"a0","position_counter":0,"position_ms":1718020860000,'
-          '"t":"card","text":"Grind finer if the shot runs too fast."}';
+        const expected =
+            '{"attachment_id":null,"author":"$pub",'
+            '"collection_id":"0192f1a2-3b4c-7def-8123-000000000001",'
+            '"created_at":1718020860000,"created_by":"$pub","deleted":0,'
+            '"hlc_counter":0,"hlc_ms":1718020860000,'
+            '"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text",'
+            '"position":"a0","position_counter":0,"position_ms":1718020860000,'
+            '"t":"card","text":"Grind finer if the shot runs too fast."}';
 
-      expect(CanonicalSerializer.string(s), expected);
-    });
+        expect(CanonicalSerializer.string(s), expected);
+      },
+    );
 
     test('7.4.4 card delete keeps placement, bumps hlc, deleted:1', () {
       final s = Snapshot(
@@ -177,16 +180,18 @@ void main() {
       return RegExp(r'"title":(".*")\}$').firstMatch(out)!.group(1)!;
     }
 
-    test('escapes only what JSON requires; emits / < > & and non-ASCII verbatim',
-        () {
-      expect(titleEncoding('a"b'), r'"a\"b"');
-      expect(titleEncoding(r'a\b'), r'"a\\b"');
-      expect(titleEncoding('a\nb'), r'"a\nb"');
-      expect(titleEncoding('a\tb'), r'"a\tb"');
-      expect(titleEncoding('a\rb'), r'"a\rb"');
-      expect(titleEncoding('</>&'), '"</>&"');
-      expect(titleEncoding('café — ☕'), '"café — ☕"');
-    });
+    test(
+      'escapes only what JSON requires; emits / < > & and non-ASCII verbatim',
+      () {
+        expect(titleEncoding('a"b'), r'"a\"b"');
+        expect(titleEncoding(r'a\b'), r'"a\\b"');
+        expect(titleEncoding('a\nb'), r'"a\nb"');
+        expect(titleEncoding('a\tb'), r'"a\tb"');
+        expect(titleEncoding('a\rb'), r'"a\rb"');
+        expect(titleEncoding('</>&'), '"</>&"');
+        expect(titleEncoding('café — ☕'), '"café — ☕"');
+      },
+    );
 
     test('control chars: short escapes, else lowercase backslash-u', () {
       expect(titleEncoding(String.fromCharCode(0x08)), r'"\b"');
@@ -235,7 +240,10 @@ void main() {
           'cover_attachment_id': null,
         },
       );
-      expect(CanonicalSerializer.string(s), contains('"created_at":1718020800000'));
+      expect(
+        CanonicalSerializer.string(s),
+        contains('"created_at":1718020800000'),
+      );
       expect(CanonicalSerializer.string(s), contains('"hlc_ms":0'));
     });
   });

@@ -16,9 +16,9 @@ class TimelineController {
     required EffectEmitter<TimelineUiEffect> effectEmitter,
     required ActionSink<TimelineAction> sink,
     required TimelineChannelBinder channelBinder,
-  })  : _effectEmitter = effectEmitter,
-        _sink = sink,
-        _channelBinder = channelBinder;
+  }) : _effectEmitter = effectEmitter,
+       _sink = sink,
+       _channelBinder = channelBinder;
 
   final ValueListenable<TimelineState> stateHolder;
   final EffectEmitter<TimelineUiEffect> _effectEmitter;

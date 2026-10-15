@@ -26,8 +26,8 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
   SyncStoreAttachmentWriteRepository({
     required AppGraph graph,
     required IdGenerator ids,
-  })  : _graph = graph,
-        _ids = ids;
+  }) : _graph = graph,
+       _ids = ids;
 
   final AppGraph _graph;
   final IdGenerator _ids;
@@ -49,9 +49,8 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
   ) => _create(audio.bytes, audio.mime, _audioKind, name: audio.name);
 
   @override
-  Future<Result<String, AttachmentFailure>> createFromFile(
-    PickedFile file,
-  ) => _create(file.bytes, file.mime, _fileKind, name: file.name);
+  Future<Result<String, AttachmentFailure>> createFromFile(PickedFile file) =>
+      _create(file.bytes, file.mime, _fileKind, name: file.name);
 
   /// Shared capture path (spec §7.4.8): hash → blob put → signed metadata
   /// record. Identical bytes share one content-addressed blob (idempotent put),
@@ -84,20 +83,24 @@ class SyncStoreAttachmentWriteRepository implements AttachmentWriteRepository {
   @override
   Future<Result<String, AttachmentFailure>> delete(String attachmentId) async {
     try {
-      final record = await _graph.store.get(EntityType.attachment, attachmentId);
+      final record = await _graph.store.get(
+        EntityType.attachment,
+        attachmentId,
+      );
       if (record == null) return Failure(AttachmentNotFound(attachmentId));
 
-      final hash =
-          record.content[AttachmentSchema.colContentHash] as String?;
+      final hash = record.content[AttachmentSchema.colContentHash] as String?;
       await _graph.store.delete(EntityType.attachment, attachmentId);
 
       // Reference-counted GC: drop the blob only when no live record shares it.
       if (hash != null) {
         final stillShared = (await _graph.store.readAll(EntityType.attachment))
-            .any((s) =>
-                !s.deleted &&
-                s.id != attachmentId &&
-                s.content[AttachmentSchema.colContentHash] == hash);
+            .any(
+              (s) =>
+                  !s.deleted &&
+                  s.id != attachmentId &&
+                  s.content[AttachmentSchema.colContentHash] == hash,
+            );
         if (!stillShared) await _blobs.delete(hash);
       }
       return Ok(attachmentId);

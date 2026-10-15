@@ -27,9 +27,9 @@ void main() {
     expect(topic.writeToken, isNotEmpty);
 
     // 2. upload a content-addressed blob (a tiny 1x1 gif).
-    final gif = Uint8List.fromList(base64Decode(
-      'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-    ));
+    final gif = Uint8List.fromList(
+      base64Decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'),
+    );
     final hash = await sha256Hex(gif);
     final blob = await client.putBlob(
       topic: topic.topicId,

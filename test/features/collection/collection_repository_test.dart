@@ -69,8 +69,7 @@ void main() {
       kind: CardKind.text,
       position: 'a0',
       text: 'first',
-    ))
-        .getOrThrow();
+    )).getOrThrow();
     await write.addCard(
       collectionId: colId,
       kind: CardKind.text,
@@ -98,17 +97,15 @@ void main() {
       kind: CardKind.text,
       position: 'a0',
       text: 'pour-over',
-    ))
-        .getOrThrow();
+    )).getOrThrow();
 
     // First level: every live collection (including the source's own).
     final collections = (await read.loadLinkCollections()).getOrThrow();
+    expect(collections.map((o) => o.id).toSet(), {colId, otherId});
     expect(
-      collections.map((o) => o.id).toSet(),
-      {colId, otherId},
+      collections.every((o) => o.kind == ConnectedEntityKind.collection),
+      isTrue,
     );
-    expect(collections.every((o) => o.kind == ConnectedEntityKind.collection),
-        isTrue);
 
     // Drilled level: that collection's cards (the page drops the source card).
     final cards = (await read.loadCollectionCards(otherId)).getOrThrow();
@@ -117,36 +114,37 @@ void main() {
     expect(cards.single.label, 'pour-over');
   });
 
-  test('link a card to a collection; deleting the target breaks the link',
-      () async {
-    final colId = await createCollection('Espresso');
-    final otherId = await createCollection('Recipes');
-    final cardId = (await write.addCard(
-      collectionId: colId,
-      kind: CardKind.text,
-      position: 'a0',
-      text: 'see recipes',
-    ))
-        .getOrThrow();
+  test(
+    'link a card to a collection; deleting the target breaks the link',
+    () async {
+      final colId = await createCollection('Espresso');
+      final otherId = await createCollection('Recipes');
+      final cardId = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.text,
+        position: 'a0',
+        text: 'see recipes',
+      )).getOrThrow();
 
-    await write.linkCardToTarget(
-      cardId: cardId,
-      targetKind: ConnectedEntityKind.collection,
-      targetId: otherId,
-    );
+      await write.linkCardToTarget(
+        cardId: cardId,
+        targetKind: ConnectedEntityKind.collection,
+        targetId: otherId,
+      );
 
-    final links = await store.linksOut(cardId);
-    expect(links, hasLength(1));
-    expect((await store.linkStatus(links.single)).isBroken, isFalse);
+      final links = await store.linksOut(cardId);
+      expect(links, hasLength(1));
+      expect((await store.linkStatus(links.single)).isBroken, isFalse);
 
-    // Delete the target endpoint → the link renders broken (§8.6.1), not gone.
-    await store.delete(EntityType.collection, otherId);
-    final after = await store.linksOut(cardId);
-    expect(after, hasLength(1), reason: 'the link is never auto-removed');
-    final status = await store.linkStatus(after.single);
-    expect(status.isBroken, isTrue);
-    expect(status.targetBroken, isTrue);
-  });
+      // Delete the target endpoint → the link renders broken (§8.6.1), not gone.
+      await store.delete(EntityType.collection, otherId);
+      final after = await store.linksOut(cardId);
+      expect(after, hasLength(1), reason: 'the link is never auto-removed');
+      final status = await store.linkStatus(after.single);
+      expect(status.isBroken, isTrue);
+      expect(status.targetBroken, isTrue);
+    },
+  );
 
   test('link a card to another card writes a card→card link', () async {
     final colId = await createCollection('Espresso');
@@ -155,15 +153,13 @@ void main() {
       kind: CardKind.text,
       position: 'a0',
       text: 'source',
-    ))
-        .getOrThrow();
+    )).getOrThrow();
     final dst = (await write.addCard(
       collectionId: colId,
       kind: CardKind.text,
       position: 'a1',
       text: 'target',
-    ))
-        .getOrThrow();
+    )).getOrThrow();
 
     await write.linkCardToTarget(
       cardId: src,
@@ -178,69 +174,70 @@ void main() {
     expect(await store.backlinks(dst), hasLength(1));
   });
 
-  test('connectionCount counts links at both ends, without double-counting',
-      () async {
-    final colId = await createCollection('Espresso');
-    final src = (await write.addCard(
-      collectionId: colId,
-      kind: CardKind.text,
-      position: 'a0',
-      text: 'source',
-    ))
-        .getOrThrow();
-    final dst = (await write.addCard(
-      collectionId: colId,
-      kind: CardKind.text,
-      position: 'a1',
-      text: 'target',
-    ))
-        .getOrThrow();
+  test(
+    'connectionCount counts links at both ends, without double-counting',
+    () async {
+      final colId = await createCollection('Espresso');
+      final src = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.text,
+        position: 'a0',
+        text: 'source',
+      )).getOrThrow();
+      final dst = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.text,
+        position: 'a1',
+        text: 'target',
+      )).getOrThrow();
 
-    // No links yet → no badge for either card.
-    var cards = (await load(colId)).cards;
-    expect(cards.map((c) => c.connectionCount), [0, 0]);
+      // No links yet → no badge for either card.
+      var cards = (await load(colId)).cards;
+      expect(cards.map((c) => c.connectionCount), [0, 0]);
 
-    // Link source → target. Both ends show the link once: the source via its
-    // link-out, the target via its backlink. Neither is double-counted.
-    await write.linkCardToTarget(
-      cardId: src,
-      targetKind: ConnectedEntityKind.card,
-      targetId: dst,
-    );
-    cards = (await load(colId)).cards;
-    expect({for (final c in cards) c.id: c.connectionCount}, {
-      src: 1,
-      dst: 1,
-    });
-  });
+      // Link source → target. Both ends show the link once: the source via its
+      // link-out, the target via its backlink. Neither is double-counted.
+      await write.linkCardToTarget(
+        cardId: src,
+        targetKind: ConnectedEntityKind.card,
+        targetId: dst,
+      );
+      cards = (await load(colId)).cards;
+      expect(
+        {for (final c in cards) c.id: c.connectionCount},
+        {src: 1, dst: 1},
+      );
+    },
+  );
 
-  test('collection connectionCount counts links to the collection itself',
-      () async {
-    final colId = await createCollection('Espresso');
-    final otherId = await createCollection('Recipes');
-    final cardId = (await write.addCard(
-      collectionId: colId,
-      kind: CardKind.text,
-      position: 'a0',
-      text: 'see recipes',
-    ))
-        .getOrThrow();
+  test(
+    'collection connectionCount counts links to the collection itself',
+    () async {
+      final colId = await createCollection('Espresso');
+      final otherId = await createCollection('Recipes');
+      final cardId = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.text,
+        position: 'a0',
+        text: 'see recipes',
+      )).getOrThrow();
 
-    // Before linking: neither collection is linked.
-    expect((await load(colId)).connectionCount, 0);
-    expect((await load(otherId)).connectionCount, 0);
+      // Before linking: neither collection is linked.
+      expect((await load(colId)).connectionCount, 0);
+      expect((await load(otherId)).connectionCount, 0);
 
-    await write.linkCardToTarget(
-      cardId: cardId,
-      targetKind: ConnectedEntityKind.collection,
-      targetId: otherId,
-    );
+      await write.linkCardToTarget(
+        cardId: cardId,
+        targetKind: ConnectedEntityKind.collection,
+        targetId: otherId,
+      );
 
-    // The target collection now has one backlink; the source collection is
-    // unaffected (the link sits on the card, not the collection itself).
-    expect((await load(otherId)).connectionCount, 1);
-    expect((await load(colId)).connectionCount, 0);
-  });
+      // The target collection now has one backlink; the source collection is
+      // unaffected (the link sits on the card, not the collection itself).
+      expect((await load(otherId)).connectionCount, 1);
+      expect((await load(colId)).connectionCount, 0);
+    },
+  );
 
   test('deleting a card removes it from the feed', () async {
     final colId = await createCollection('Espresso');
@@ -249,29 +246,35 @@ void main() {
       kind: CardKind.text,
       position: 'a0',
       text: 'temp note',
-    ))
-        .getOrThrow();
+    )).getOrThrow();
 
     expect((await load(colId)).cards, hasLength(1));
     await write.deleteCard(cardId);
     expect((await load(colId)).cards, isEmpty);
   });
 
-  test('isAttachmentReferenced tracks live cards pointing at an attachment',
-      () async {
-    final colId = await createCollection('Espresso');
-    final cardId = (await write.addCard(
-      collectionId: colId,
-      kind: CardKind.image,
-      position: 'a0',
-      attachmentId: 'att-1',
-    ))
-        .getOrThrow();
+  test(
+    'isAttachmentReferenced tracks live cards pointing at an attachment',
+    () async {
+      final colId = await createCollection('Espresso');
+      final cardId = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.image,
+        position: 'a0',
+        attachmentId: 'att-1',
+      )).getOrThrow();
 
-    expect((await read.isAttachmentReferenced('att-1')).getOrThrow(), isTrue);
-    expect((await read.isAttachmentReferenced('missing')).getOrThrow(), isFalse);
+      expect((await read.isAttachmentReferenced('att-1')).getOrThrow(), isTrue);
+      expect(
+        (await read.isAttachmentReferenced('missing')).getOrThrow(),
+        isFalse,
+      );
 
-    await write.deleteCard(cardId);
-    expect((await read.isAttachmentReferenced('att-1')).getOrThrow(), isFalse);
-  });
+      await write.deleteCard(cardId);
+      expect(
+        (await read.isAttachmentReferenced('att-1')).getOrThrow(),
+        isFalse,
+      );
+    },
+  );
 }

@@ -52,12 +52,14 @@ class RelayCollectionPublisher implements CollectionPublisher {
         final created = await _client.createTopic(id.publicKeyHex);
         if (created.isFailure) return Failure(created.error!);
         topic = created.getOrThrow();
-        await _store.savePublication(CollectionPublication(
-          collectionId: collectionId,
-          topicId: topic.topicId,
-          writeToken: topic.writeToken,
-          visibility: visibility,
-        ));
+        await _store.savePublication(
+          CollectionPublication(
+            collectionId: collectionId,
+            topicId: topic.topicId,
+            writeToken: topic.writeToken,
+            visibility: visibility,
+          ),
+        );
       }
 
       // 2. build snapshot + blobs.
@@ -88,14 +90,16 @@ class RelayCollectionPublisher implements CollectionPublisher {
       final ref = published.getOrThrow();
 
       // 4. persist the public address + toggle.
-      await _store.savePublication(CollectionPublication(
-        collectionId: collectionId,
-        topicId: topic.topicId,
-        writeToken: topic.writeToken,
-        slug: ref.slug,
-        visibility: visibility,
-        publishedAt: ref.publishedAt,
-      ));
+      await _store.savePublication(
+        CollectionPublication(
+          collectionId: collectionId,
+          topicId: topic.topicId,
+          writeToken: topic.writeToken,
+          slug: ref.slug,
+          visibility: visibility,
+          publishedAt: ref.publishedAt,
+        ),
+      );
 
       return Ok(ref);
     } catch (e, st) {
@@ -116,12 +120,14 @@ class RelayCollectionPublisher implements CollectionPublisher {
       if (deleted.isFailure) return Failure(deleted.error!);
 
       // Keep the topic/token (so a re-publish reuses them) but drop the slug.
-      await _store.savePublication(CollectionPublication(
-        collectionId: existing.collectionId,
-        topicId: existing.topicId,
-        writeToken: existing.writeToken,
-        visibility: PublishVisibility.private,
-      ));
+      await _store.savePublication(
+        CollectionPublication(
+          collectionId: existing.collectionId,
+          topicId: existing.topicId,
+          writeToken: existing.writeToken,
+          visibility: PublishVisibility.private,
+        ),
+      );
 
       return const Ok<void, RelayFailure>(null);
     } catch (e, st) {
@@ -130,7 +136,9 @@ class RelayCollectionPublisher implements CollectionPublisher {
   }
 
   @override
-  Future<Result<PublishedRef?, RelayFailure>> status(String collectionId) async {
+  Future<Result<PublishedRef?, RelayFailure>> status(
+    String collectionId,
+  ) async {
     try {
       final existing = await _store.loadPublication(collectionId);
       if (existing == null) return const Ok<PublishedRef?, RelayFailure>(null);

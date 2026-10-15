@@ -25,7 +25,10 @@ class RecordAudioRecorder implements AudioRecorderPort {
     final dir = await getTemporaryDirectory();
     final stamp = DateTime.now().microsecondsSinceEpoch;
     final path = '${dir.path}/knit-recording-$stamp.m4a';
-    await _recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+    await _recorder.start(
+      const RecordConfig(encoder: AudioEncoder.aacLc),
+      path: path,
+    );
     return true;
   }
 
