@@ -246,6 +246,17 @@ class _CollectionPageState extends State<CollectionPage> {
     );
   }
 
+  /// Open the collection's cover full-screen for pinch-to-zoom viewing — the
+  /// same viewer as a card image, with the banner as its [Hero] source.
+  void _openCoverPreview(String collectionId, Uint8List bytes) {
+    Navigator.of(context).push(
+      _ImagePreviewPage.route(
+        bytes: bytes,
+        heroTag: _coverHeroTag(collectionId),
+      ),
+    );
+  }
+
   /// Hand the focused entity to the Connections carrier (cross_feature.md §2),
   /// then navigate (§4.4). The carrier is the payload — navigation stays empty.
   void _openConnections({
@@ -433,15 +444,20 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   Widget _feed(CollectionState state) {
+    final coverBytes = state.coverAttachmentId == null
+        ? null
+        : state.imageBytes[state.coverAttachmentId];
     final titleCard = _CollectionTitleCard(
       title: state.title,
       description: state.description,
       hasCover: state.coverAttachmentId != null,
-      coverBytes: state.coverAttachmentId == null
-          ? null
-          : state.imageBytes[state.coverAttachmentId],
+      coverBytes: coverBytes,
+      coverHeroTag: _coverHeroTag(state.collectionId),
       connectionCount: state.connectionCount,
       onTap: () => _openCollectionEdit(state),
+      onCoverTap: coverBytes == null
+          ? null
+          : () => _openCoverPreview(state.collectionId, coverBytes),
       onConnectionsTap: () => _openConnections(
         kind: ConnectedEntityKind.collection,
         id: state.collectionId,
@@ -559,6 +575,10 @@ enum _CardAction { edit, delete, link, connections, share, reorder }
 /// preview, so the open/close transition flies between the two.
 Object _imageHeroTag(String cardId) => 'card-image-$cardId';
 
+/// The shared [Hero] tag tying a collection's cover banner to its full-screen
+/// preview.
+Object _coverHeroTag(String collectionId) => 'collection-cover-$collectionId';
+
 /// The collection's header, rendered as a distinct top-most card in the feed
 /// (§4.2) — visually set apart from the chat bubbles (a full-width elevated card
 /// with an optional cover banner). Shows the cover (if set), the title, the
@@ -571,9 +591,11 @@ class _CollectionTitleCard extends StatelessWidget {
     required this.description,
     required this.hasCover,
     required this.coverBytes,
+    required this.coverHeroTag,
     required this.connectionCount,
     required this.onTap,
     required this.onConnectionsTap,
+    this.onCoverTap,
   });
 
   final String title;
@@ -584,6 +606,13 @@ class _CollectionTitleCard extends StatelessWidget {
   final bool hasCover;
   final Uint8List? coverBytes;
 
+  /// The [Hero] tag the cover shares with its full-screen preview.
+  final Object coverHeroTag;
+
+  /// Open the cover full-screen to zoom; null while its bytes are loading, so
+  /// a tap on the placeholder falls through to [onTap].
+  final VoidCallback? onCoverTap;
+
   /// How many links the collection itself takes part in (§4.4); a number rides
   /// next to the Connections icon when > 0.
   final int connectionCount;
@@ -591,6 +620,22 @@ class _CollectionTitleCard extends StatelessWidget {
 
   /// Open the collection's Connections view (§4.4).
   final VoidCallback onConnectionsTap;
+
+  /// The cover banner. Once loaded, tapping it opens the zoom viewer (its own
+  /// GestureDetector wins over the card's InkWell, which opens the edit page).
+  Widget _cover() {
+    final image = AttachmentImage(
+      bytes: coverBytes,
+      height: 160,
+      fit: BoxFit.cover,
+    );
+    final onCoverTap = this.onCoverTap;
+    if (onCoverTap == null) return image;
+    return GestureDetector(
+      onTap: onCoverTap,
+      child: Hero(tag: coverHeroTag, child: image),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -610,12 +655,7 @@ class _CollectionTitleCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (hasCover)
-                AttachmentImage(
-                  bytes: coverBytes,
-                  height: 160,
-                  fit: BoxFit.cover,
-                ),
+              if (hasCover) _cover(),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
