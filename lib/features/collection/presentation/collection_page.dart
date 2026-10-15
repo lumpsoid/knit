@@ -537,21 +537,30 @@ class _CollectionPageState extends State<CollectionPage> {
           // A card with links-out (§4.4) gets a count badge under its bubble;
           // tapping it opens the Connections page focused on that card — the
           // same destination as the actions sheet's "Connections".
-          if (card.connectionCount == 0) return bubble;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              bubble,
-              _CardConnectionsBadge(
-                count: card.connectionCount,
-                onTap: () => _openConnections(
-                  kind: ConnectedEntityKind.card,
-                  id: card.id,
-                  title: _cardLabel(AppLocalizations.of(context), card),
-                ),
-              ),
-            ],
+          final item = card.connectionCount == 0
+              ? bubble
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    bubble,
+                    _CardConnectionsBadge(
+                      count: card.connectionCount,
+                      onTap: () => _openConnections(
+                        kind: ConnectedEntityKind.card,
+                        id: card.id,
+                        title: _cardLabel(AppLocalizations.of(context), card),
+                      ),
+                    ),
+                  ],
+                );
+          // The whole feed row — not just the bubble — opens the card-actions
+          // sheet: a tap on the empty space beside a short bubble lands here.
+          // Inner tap targets (bubble, image, link, badge) still win the arena.
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _openCardActions(card),
+            child: item,
           );
         },
       ),
