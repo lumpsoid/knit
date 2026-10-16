@@ -1555,6 +1555,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open'**
   String get collectionCardsMovedOpen;
+
+  /// No description provided for @shareCaptureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Knit'**
+  String get shareCaptureTitle;
+
+  /// No description provided for @shareCaptureSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a collection'**
+  String get shareCaptureSearchHint;
+
+  /// No description provided for @shareCaptureNewCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'New collection'**
+  String get shareCaptureNewCollection;
+
+  /// No description provided for @shareCaptureEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No collections yet — create one to save into'**
+  String get shareCaptureEmpty;
+
+  /// No description provided for @shareCaptureNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching collections'**
+  String get shareCaptureNoMatches;
+
+  /// No description provided for @shareCaptureLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your collections'**
+  String get shareCaptureLoadError;
+
+  /// No description provided for @shareCaptureSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save everything — try again'**
+  String get shareCaptureSaveError;
+
+  /// No description provided for @shareCaptureNeedsSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up Knit first — the shared item wasn\'t saved'**
+  String get shareCaptureNeedsSetup;
+
+  /// No description provided for @shareCaptureItemCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String shareCaptureItemCount(int count);
+
+  /// No description provided for @shareCaptureSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Saved 1 card to “{title}”} other{Saved {count} cards to “{title}”}}'**
+  String shareCaptureSaved(int count, String title);
 }
 
 class _AppLocalizationsDelegate

@@ -855,4 +855,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collectionCardsMovedOpen => 'Open';
+
+  @override
+  String get shareCaptureTitle => 'Save to Knit';
+
+  @override
+  String get shareCaptureSearchHint => 'Find a collection';
+
+  @override
+  String get shareCaptureNewCollection => 'New collection';
+
+  @override
+  String get shareCaptureEmpty =>
+      'No collections yet — create one to save into';
+
+  @override
+  String get shareCaptureNoMatches => 'No matching collections';
+
+  @override
+  String get shareCaptureLoadError => 'Couldn\'t load your collections';
+
+  @override
+  String get shareCaptureSaveError => 'Couldn\'t save everything — try again';
+
+  @override
+  String get shareCaptureNeedsSetup =>
+      'Set up Knit first — the shared item wasn\'t saved';
+
+  @override
+  String shareCaptureItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareCaptureSaved(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Saved $count cards to “$title”',
+      one: 'Saved 1 card to “$title”',
+    );
+    return '$_temp0';
+  }
 }

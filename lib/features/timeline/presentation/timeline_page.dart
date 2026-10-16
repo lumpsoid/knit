@@ -7,6 +7,7 @@ import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/profile/presentation/profile_page.dart';
 import 'package:knit/features/search/presentation/search_page.dart';
 import 'package:knit/features/settings/presentation/settings_page.dart';
+import 'package:knit/features/share_capture/presentation/incoming_share_gate.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_controller.dart';
@@ -136,59 +137,63 @@ class _TimelinePageState extends State<TimelinePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.appTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.searchOpen,
-            icon: const Icon(Icons.search),
-            onPressed: () => Navigator.of(
-              context,
-            ).push(SearchPage.route(TimelineScope.createSearch())),
-          ),
-          IconButton(
-            tooltip: l10n.profileOpen,
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () => Navigator.of(context).push(ProfilePage.route()),
-          ),
-          IconButton(
-            tooltip: l10n.settingsOpen,
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(SettingsPage.route()),
-          ),
-          const SyncStatusIndicator(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createCollection,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.timelineCollectionFab),
-      ),
-      body: ListenableBuilder(
-        listenable: Listenable.merge([
-          _controller.stateHolder,
-          TimelineScope.collectionDetails,
-          TimelineScope.images,
-        ]),
-        builder: (context, _) {
-          final state = _controller.stateHolder.value;
-          switch (state.status) {
-            case TimelineStatus.loading:
-              if (state.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return _list(state);
-            case TimelineStatus.failed:
-              return _ErrorView(
-                message: l10n.timelineLoadError,
-                onRetry: () => _controller.dispatch(const RefreshRequested()),
-              );
-            case TimelineStatus.ready:
-              if (state.isEmpty) return const _EmptyView();
-              return _list(state);
-          }
-        },
+    // Shares from other apps open the capture screen over whatever is on top.
+    return IncomingShareGate(
+      mode: IncomingShareGateMode.capture,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.appTitle),
+          actions: [
+            IconButton(
+              tooltip: l10n.searchOpen,
+              icon: const Icon(Icons.search),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(SearchPage.route(TimelineScope.createSearch())),
+            ),
+            IconButton(
+              tooltip: l10n.profileOpen,
+              icon: const Icon(Icons.account_circle_outlined),
+              onPressed: () => Navigator.of(context).push(ProfilePage.route()),
+            ),
+            IconButton(
+              tooltip: l10n.settingsOpen,
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => Navigator.of(context).push(SettingsPage.route()),
+            ),
+            const SyncStatusIndicator(),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _createCollection,
+          icon: const Icon(Icons.add),
+          label: Text(l10n.timelineCollectionFab),
+        ),
+        body: ListenableBuilder(
+          listenable: Listenable.merge([
+            _controller.stateHolder,
+            TimelineScope.collectionDetails,
+            TimelineScope.images,
+          ]),
+          builder: (context, _) {
+            final state = _controller.stateHolder.value;
+            switch (state.status) {
+              case TimelineStatus.loading:
+                if (state.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return _list(state);
+              case TimelineStatus.failed:
+                return _ErrorView(
+                  message: l10n.timelineLoadError,
+                  onRetry: () => _controller.dispatch(const RefreshRequested()),
+                );
+              case TimelineStatus.ready:
+                if (state.isEmpty) return const _EmptyView();
+                return _list(state);
+            }
+          },
+        ),
       ),
     );
   }

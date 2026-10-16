@@ -7,6 +7,7 @@ import 'package:knit/features/onboard/presentation/onboard_controller.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
 import 'package:knit/features/onboard/presentation/onboard_state.dart';
 import 'package:knit/features/onboard/presentation/onboard_ui_effect.dart';
+import 'package:knit/features/share_capture/presentation/incoming_share_gate.dart';
 import 'package:knit/features/timeline/presentation/timeline_page.dart';
 
 /// The first-run identity ceremony (spec §5): welcome → nickname → explain →
@@ -52,19 +53,23 @@ class _OnboardPageState extends State<OnboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: ValueListenableBuilder<OnboardState>(
-          valueListenable: _controller.stateHolder,
-          builder: (context, state, _) {
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 350),
-              child: KeyedSubtree(
-                key: ValueKey(state.step),
-                child: _stepView(state),
-              ),
-            );
-          },
+    // No identity yet, so a share can't be signed: drop it and say so (§4.7).
+    return IncomingShareGate(
+      mode: IncomingShareGateMode.reject,
+      child: Scaffold(
+        body: SafeArea(
+          child: ValueListenableBuilder<OnboardState>(
+            valueListenable: _controller.stateHolder,
+            builder: (context, state, _) {
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                child: KeyedSubtree(
+                  key: ValueKey(state.step),
+                  child: _stepView(state),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

@@ -248,6 +248,15 @@ the `lib/sync/` core below.
   some words, then title > card text > description/label/file name, then
   word-start, then recency. A tapped hit writes `CollectionRouteArgs` with an
   optional `focusCardId`, which the Collection page scrolls to and highlights.
+- `share_capture` (§4.7, lightweight, **Android only**) takes text, photos and
+  files shared from other apps (`receive_sharing_intent`; `ACTION_SEND` /
+  `SEND_MULTIPLE` filters, activity `singleTask`). The app-wide
+  `IncomingShareController` holds the pending share. An `IncomingShareGate`
+  wraps the Timeline page, which opens `ShareCapturePage` (pick or create a
+  collection), and the Onboard page, which drops the share with "Set up Knit
+  first". The pure `ShareCapturePlanner` makes one card per item, appended
+  after the tail: a bare http(s) URL becomes a link card, other text a text
+  card, and a file an image, audio or file card by its mime.
 - `collection_details` is the first **shared controller** (lightweight, app-wide,
   no page): `CollectionDetailsController` + `CollectionDetailsState` own every
   collection's header (title, description, cover). The Timeline, Collection and

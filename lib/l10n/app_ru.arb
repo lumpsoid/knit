@@ -359,5 +359,26 @@
       "title": { "type": "String" }
     }
   },
-  "collectionCardsMovedOpen": "Открыть"
+  "collectionCardsMovedOpen": "Открыть",
+  "shareCaptureTitle": "Сохранить в Knit",
+  "shareCaptureSearchHint": "Найти коллекцию",
+  "shareCaptureNewCollection": "Новая коллекция",
+  "shareCaptureEmpty": "Коллекций пока нет — создайте новую",
+  "shareCaptureNoMatches": "Подходящих коллекций нет",
+  "shareCaptureLoadError": "Не удалось загрузить коллекции",
+  "shareCaptureSaveError": "Не удалось сохранить всё — попробуйте ещё раз",
+  "shareCaptureNeedsSetup": "Сначала настройте Knit — полученные данные не сохранены",
+  "shareCaptureItemCount": "{count, plural, =1{1 элемент} few{{count} элемента} many{{count} элементов} other{{count} элемента}}",
+  "@shareCaptureItemCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "shareCaptureSaved": "{count, plural, =1{1 карточка сохранена в «{title}»} few{{count} карточки сохранены в «{title}»} many{{count} карточек сохранено в «{title}»} other{{count} карточки сохранены в «{title}»}}",
+  "@shareCaptureSaved": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "title": { "type": "String" }
+    }
+  }
 }

@@ -873,4 +873,56 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get collectionCardsMovedOpen => 'Открыть';
+
+  @override
+  String get shareCaptureTitle => 'Сохранить в Knit';
+
+  @override
+  String get shareCaptureSearchHint => 'Найти коллекцию';
+
+  @override
+  String get shareCaptureNewCollection => 'Новая коллекция';
+
+  @override
+  String get shareCaptureEmpty => 'Коллекций пока нет — создайте новую';
+
+  @override
+  String get shareCaptureNoMatches => 'Подходящих коллекций нет';
+
+  @override
+  String get shareCaptureLoadError => 'Не удалось загрузить коллекции';
+
+  @override
+  String get shareCaptureSaveError =>
+      'Не удалось сохранить всё — попробуйте ещё раз';
+
+  @override
+  String get shareCaptureNeedsSetup =>
+      'Сначала настройте Knit — полученные данные не сохранены';
+
+  @override
+  String shareCaptureItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count элемента',
+      many: '$count элементов',
+      few: '$count элемента',
+      one: '1 элемент',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareCaptureSaved(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count карточки сохранены в «$title»',
+      many: '$count карточек сохранено в «$title»',
+      few: '$count карточки сохранены в «$title»',
+      one: '1 карточка сохранена в «$title»',
+    );
+    return '$_temp0';
+  }
 }

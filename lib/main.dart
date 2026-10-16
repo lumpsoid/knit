@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:io';
 
 import 'package:flutter/material.dart' hide SearchController;
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -58,6 +59,10 @@ import 'package:knit/features/profile/infra/sync_store_profile_write_repository.
 import 'package:knit/features/profile/presentation/profile_module.dart';
 import 'package:knit/features/profile/presentation/profile_scope.dart';
 import 'package:knit/features/settings/domain/app_preferences.dart';
+import 'package:knit/features/share_capture/infra/infra.dart';
+import 'package:knit/features/share_capture/presentation/incoming_share_controller.dart';
+import 'package:knit/features/share_capture/presentation/share_capture_controller.dart';
+import 'package:knit/features/share_capture/presentation/share_capture_scope.dart';
 import 'package:knit/features/settings/infra/shared_preferences_settings_repository.dart';
 import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
@@ -347,6 +352,29 @@ void bootstrap(AppConfig config) {
       shareRepository: const SharePlusCardShareRepository(),
       linkLauncher: const UrlLauncherLinkLauncher(),
     ).controller,
+  );
+
+  // Share-sheet capture (§4.7): one app-wide receiver collects what other apps
+  // share into Knit (Android only — other platforms have no share target); the
+  // Timeline's gate opens a capture screen per share, which appends the items
+  // to a picked or new collection and refreshes the home feed.
+  final incomingShares = IncomingShareController(
+    source: ReceiveSharingIntentShareSource(),
+  );
+  if (Platform.isAndroid) incomingShares.start();
+  ShareCaptureScope.setIncoming(incomingShares);
+  ShareCaptureScope.setCollectionRouteArgsWriter(routeArgs);
+  ShareCaptureScope.setFactory(
+    (items) => ShareCaptureController(
+      items: items,
+      readRepository: SyncStoreShareCaptureReadRepository(graph: graph),
+      writeRepository: SyncStoreShareCaptureWriteRepository(
+        graph: graph,
+        ids: ids,
+        attachments: SyncStoreAttachmentWriteRepository(graph: graph, ids: ids),
+      ),
+      timelineChannel: timelineChannel,
+    ),
   );
 
   runApp(KnitApp(config: config));
