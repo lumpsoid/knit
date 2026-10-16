@@ -88,9 +88,14 @@ class CollectionUpdater
             // Stay in reorder mode only while it remains reorderable (2+ cards),
             // so a feed that shrinks under it can't strand the user with no Done.
             reordering: state.reordering && data.cards.length > 1,
-            // A resync (pull-to-refresh / post-write) must not drop an image the
-            // user is still composing a caption for.
+            // A resync (pull-to-refresh / post-write) must not drop anything
+            // the composer holds: a staged image/audio/file the user is still
+            // captioning, or a recording that is still capturing (the recorder
+            // keeps running, so dropping its phase would orphan it).
             pendingImage: state.pendingImage,
+            recordingPhase: state.recordingPhase,
+            pendingAudio: state.pendingAudio,
+            pendingFile: state.pendingFile,
           ),
           toLoad.isEmpty
               ? null

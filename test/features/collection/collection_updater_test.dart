@@ -989,6 +989,37 @@ void main() {
     });
   });
 
+  group('a resync keeps what the composer holds', () {
+    const data = CollectionData(
+      collectionId: 'col',
+      title: 'Notes',
+      description: null,
+      coverAttachmentId: null,
+      cards: [],
+    );
+
+    test('an in-flight recording keeps its phase', () {
+      final state = ready(
+        const [],
+      ).copyWith(recordingPhase: AudioRecordingPhase.paused);
+      final (next, effects) = updater.update(state, CollectionLoaded(data));
+      expect(next.recordingPhase, AudioRecordingPhase.paused);
+      expect(effects, isNull);
+    });
+
+    test('staged image, audio and file all survive', () {
+      final state = ready(const []).copyWith(
+        pendingImage: image,
+        pendingAudio: audio,
+        pendingFile: pickedFile,
+      );
+      final (next, _) = updater.update(state, CollectionLoaded(data));
+      expect(next.pendingImage, same(image));
+      expect(next.pendingAudio, same(audio));
+      expect(next.pendingFile, same(pickedFile));
+    });
+  });
+
   test('title submit updates header optimistically and emits the write', () {
     final (next, effects) = updater.update(
       ready(const []),
