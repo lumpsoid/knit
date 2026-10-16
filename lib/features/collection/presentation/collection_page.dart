@@ -64,13 +64,76 @@ class _CollectionPageState extends State<CollectionPage> {
   /// removed card can still be drawn while it animates out.
   List<FeedCard> _feedListCards = const [];
 
+  /// The feed's scroll position — driven to reveal a focused card.
+  final ScrollController _feedScroll = ScrollController();
+
+  /// A card the route args asked to reveal on entry (e.g. a search hit),
+  /// waiting for the first loaded feed; null once handled.
+  String? _pendingFocusId;
+
+  /// The revealed card: its row carries [_focusCardKey] (so it can be scrolled
+  /// to) and, while [_highlightFocus] holds, a fading highlight.
+  String? _focusCardId;
+  bool _highlightFocus = false;
+  final GlobalKey _focusCardKey = GlobalKey();
+  Timer? _highlightTimer;
+
   @override
   void initState() {
     super.initState();
+    _pendingFocusId = CollectionScope.routeArgs.focusCardId;
     _controller = CollectionScope.create()
       ..onAttach(_onUiEffect)
       ..dispatch(ViewAttached(CollectionScope.routeArgs.collectionId));
-    _controller.stateHolder.addListener(_syncFeedList);
+    _controller.stateHolder
+      ..addListener(_syncFeedList)
+      ..addListener(_maybeRevealFocus);
+  }
+
+  /// On the first loaded feed, mark the requested card (if it still exists) and
+  /// scroll to it once the feed has been laid out. Runs before the rebuild the
+  /// state change schedules, so the row picks up the key in that build.
+  void _maybeRevealFocus() {
+    final cardId = _pendingFocusId;
+    final state = _controller.stateHolder.value;
+    if (cardId == null || state.status != CollectionStatus.ready) return;
+    _pendingFocusId = null;
+    if (!state.cards.any((c) => c.id == cardId)) return;
+    _focusCardId = cardId;
+    _highlightFocus = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revealFocusedCard());
+  }
+
+  /// Scroll the focused card into view. The feed builds lazily, so an older
+  /// card's row may not exist yet: step up the (reversed) feed a screen at a
+  /// time until it is built, then center it. Then let the highlight fade.
+  Future<void> _revealFocusedCard() async {
+    for (var step = 0; step < _kRevealMaxSteps; step++) {
+      final target = _focusCardKey.currentContext;
+      if (target != null && target.mounted) {
+        await Scrollable.ensureVisible(
+          target,
+          alignment: 0.5,
+          duration: _kFeedAnimation,
+          curve: Curves.easeOutCubic,
+        );
+        break;
+      }
+      if (!_feedScroll.hasClients) break;
+      final position = _feedScroll.position;
+      if (position.pixels >= position.maxScrollExtent) break;
+      _feedScroll.jumpTo(
+        (position.pixels + position.viewportDimension * 0.8)
+            .clamp(0.0, position.maxScrollExtent)
+            .toDouble(),
+      );
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+    if (!mounted) return;
+    _highlightTimer = Timer(_kFocusHighlight, () {
+      if (mounted) setState(() => _highlightFocus = false);
+    });
   }
 
   /// Mirror the feed's cards into the animated list: an added card animates in,
@@ -119,10 +182,13 @@ class _CollectionPageState extends State<CollectionPage> {
     unawaited(_playback.close());
     // Cancel any in-flight recording, then tear down the page-owned controller
     // (detaches the effect seam and disposes the state-holder notifier).
+    _highlightTimer?.cancel();
     _controller
       ..stateHolder.removeListener(_syncFeedList)
+      ..stateHolder.removeListener(_maybeRevealFocus)
       ..dispatch(const DeactivateFeature())
       ..dispose();
+    _feedScroll.dispose();
     _composer.dispose();
     super.dispose();
   }
@@ -566,6 +632,7 @@ class _CollectionPageState extends State<CollectionPage> {
       // with no scrolling. The title card comes after the cards, so it heads the
       // feed once scrolled up; an empty feed shows a hint beneath it.
       child: CustomScrollView(
+        controller: _feedScroll,
         reverse: true,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -579,10 +646,17 @@ class _CollectionPageState extends State<CollectionPage> {
                 key is ValueKey<String> ? listIndexById[key.value] : null,
             itemBuilder: (context, i, animation) {
               final card = state.cards[cardCount - 1 - i];
+              final row = _cardRow(card, _bytesFor(state, card));
               return _CardEntrance(
                 key: ValueKey(card.id),
                 animation: animation,
-                child: _cardRow(card, _bytesFor(state, card)),
+                child: card.id == _focusCardId
+                    ? _FocusHighlight(
+                        key: _focusCardKey,
+                        active: _highlightFocus,
+                        child: row,
+                      )
+                    : row,
               );
             },
           ),
@@ -672,6 +746,35 @@ enum _CardAction { edit, delete, link, connections, share, reorder }
 
 /// How long a card takes to animate into (or out of) the feed.
 const Duration _kFeedAnimation = Duration(milliseconds: 280);
+
+/// How long a revealed (focused) card stays highlighted before it fades.
+const Duration _kFocusHighlight = Duration(milliseconds: 1600);
+
+/// Upper bound on screen-sized scroll steps while looking for a focused card
+/// that hasn't been built yet — a guard, far above any real feed's need.
+const int _kRevealMaxSteps = 500;
+
+/// The tint behind a revealed card (e.g. opened from a search hit): shown at
+/// once, then faded out when [active] turns false.
+class _FocusHighlight extends StatelessWidget {
+  const _FocusHighlight({super.key, required this.active, required this.child});
+
+  final bool active;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = Theme.of(context).colorScheme.primaryContainer;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 600),
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: active ? 0.7 : 0),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: child,
+    );
+  }
+}
 
 /// A feed card's entrance/exit, driven by its [SliverAnimatedList] animation:
 /// the row opens its space (nudging the cards above it up), while the card

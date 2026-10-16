@@ -14,7 +14,8 @@ the storages, the §7.1 canonical serializer + Ed25519 signing,
 `SyncStore.create/edit/delete/reorder`, verify-on-apply, and the broken-link /
 links-out / home-timeline derivations.
 
-The **application is built** on the FCIS contract below — seven features wired
+The **application is built** on the FCIS contract below (new features use the
+lighter controller + `ChangeNotifier` pattern instead) — seven features wired
 through abstractions (252 tests total): **App Launch** (init seam + destination
 resolver), the **Onboard** identity ceremony (welcome → nickname → explain +
 Generate → generating → reveal `nickname#fingerprint`, writing the signed
@@ -41,11 +42,45 @@ gate-5 persistence check needs it). Current status + next step: **`TASK.md`**.
 
 ## Presentation architecture (UI layer)
 
-The UI follows a generalized, app-agnostic **FCIS** (Functional Core /
+### New features: lightweight controller pattern (preferred)
+
+New features keep the FCIS *ideas* (pure decisions in the domain, side effects
+at the edge, narrow `Result`-returning ports) but **drop the FCIS boilerplate**
+(no action / effect / ui_effect / updater / shell / loop / module / scope
+files). The goal is testability and ease of writing:
+
+- **Controller = the page's input object.** The page takes its controller via
+  its constructor and calls plain methods on it (`submit(query)`, `open(hit)`).
+- **State is a separate `ChangeNotifier`** (`<Feature>State`) owned and exposed
+  by the controller; the page listens to it. The controller mutates it.
+- **Dependencies are injected via the controller's constructor**: narrow ports
+  (business_logic.md §5), route-args writers, an injected `Logger`
+  (defaulting to `Logger('knit.<feature>')`).
+- **Business decisions stay in the domain** (pure functions or classes, for example a
+  ranker or policy). The controller orchestrates and doesn't decide.
+- **Shared, long-lived application state** gets its own controller with its
+  own `ChangeNotifier` state. Other UI controllers take that shared controller
+  as a constructor dependency to read its state or call it. This is for meaningful,
+  lasting app state only, **not navigation**.
+- **Navigation data stays in route-args carriers** (cross_feature §2, for example
+  `CollectionRouteArgs`): extend the carrier (add a field) instead of
+  modelling navigation as shared state.
+- **Tests** drive the controller directly with fake ports and assert on the
+  state notifier. No widget pumping is needed for logic. Domain logic gets plain unit
+  tests.
+
+`AudioPlaybackController` (`lib/features/collection/presentation/`) is the
+closest existing example. The features built so far (listed below) use the full
+FCIS shape. Leave them as they are unless asked to migrate them.
+
+### Existing features: FCIS contract
+
+The features built so far follow a generalized, app-agnostic **FCIS** (Functional Core /
 Imperative Shell) contract built on `package:fcis_core` + `package:result_dart`
-(both git deps). The initial features (`app_launch`, `onboard`, `timeline`)
-already realize it — copy their shape; new features MUST follow it too. These
-docs are the source of truth for the presentation layer — cite their `§`
+(both git deps): `app_launch`, `onboard`, `timeline`, `collection`,
+`connections`, `card_edit`, `sync_status`. Follow it when changing those
+features. New features use the lightweight pattern above. These
+docs are the source of truth for the FCIS presentation layer. Cite their `§`
 sections like `app_spec.md`:
 
 - **`docs/architecture/fcis.md`** — the `<Feature>Scope` rule (§4), the
@@ -178,10 +213,13 @@ the `lib/sync/` core below.
   `severe`; `main.dart` drains `Logger.root.onRecord` to the console (other
   consumers can subscribe to react).
 
-### `lib/features/<feature>/` — FCIS features (fcis.md §4–6.8)
+### `lib/features/<feature>/` — features
 - `domain/` (ports + models + failures) + `infra/` (impls over `AppGraph.store`)
-  + `presentation/` (state · action · effect · ui_effect · updater · shell ·
-  loop · controller · module · scope · page). Built: `app_launch`, `onboard`,
+  + `presentation/`. In new (lightweight) features, `presentation/` holds just
+  `<feature>_controller.dart` · `<feature>_state.dart` (ChangeNotifier) ·
+  `<feature>_page.dart`. In FCIS features (fcis.md §4–6.8), it holds state · action · effect ·
+  ui_effect · updater · shell · loop · controller · module · scope · page.
+  FCIS-built: `app_launch`, `onboard`,
   `timeline`, `collection`, `connections`, `card_edit`, `sync_status`.
   Per-feature **narrow** ports return
   `Result` (result.md §9). `collection` adds a `*_route_args.dart` carrier
@@ -193,6 +231,13 @@ the `lib/sync/` core below.
   its view is `SyncStatusIndicator`, an app-bar marker each content page embeds
   that shares one app-wide `SyncStatusScope` controller over `pendingCount()`;
   it carries no UiEffect/EffectEmitter (no one-shot effects).
+- `search` (§3.2/§4.1) is the first **lightweight** feature (controller +
+  `SearchState` ChangeNotifier + page). The Timeline app bar opens it; it
+  runs on submit. `SearchReadRepository` flattens live collections and cards into
+  `SearchDocument`s, and the pure `SearchRanker` ranks them: phrase > all words >
+  some words, then title > card text > description/label/file name, then
+  word-start, then recency. A tapped hit writes `CollectionRouteArgs` with an
+  optional `focusCardId`, which the Collection page scrolls to and highlights.
 
 ### `packages/` — extracted local packages (path deps)
 - `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod

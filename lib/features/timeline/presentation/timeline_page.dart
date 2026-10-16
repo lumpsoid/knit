@@ -5,6 +5,7 @@ import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/profile/presentation/profile_page.dart';
+import 'package:knit/features/search/presentation/search_page.dart';
 import 'package:knit/features/settings/presentation/settings_page.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
@@ -121,6 +122,13 @@ class _TimelinePageState extends State<TimelinePage> {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: [
+          IconButton(
+            tooltip: l10n.searchOpen,
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(SearchPage.route(TimelineScope.createSearch())),
+          ),
           IconButton(
             tooltip: l10n.profileOpen,
             icon: const Icon(Icons.account_circle_outlined),

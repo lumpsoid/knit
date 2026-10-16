@@ -1423,6 +1423,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 change saved on this device — not yet shared} other{{count} changes saved on this device — not yet shared}}'**
   String syncPending(int count);
+
+  /// No description provided for @searchOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchOpen;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search collections and cards'**
+  String get searchHint;
+
+  /// No description provided for @searchIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a query and press search'**
+  String get searchIdle;
+
+  /// No description provided for @searchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t run the search'**
+  String get searchFailed;
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found for “{query}”'**
+  String searchNoResults(String query);
+
+  /// No description provided for @searchFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get searchFilterAll;
+
+  /// No description provided for @searchFilterCollections.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections'**
+  String get searchFilterCollections;
+
+  /// No description provided for @searchFilterCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get searchFilterCards;
+
+  /// No description provided for @searchInCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'in {title}'**
+  String searchInCollection(String title);
 }
 
 class _AppLocalizationsDelegate

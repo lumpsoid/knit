@@ -1,6 +1,6 @@
 import 'dart:developer' as developer;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide SearchController;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/l10n/app_localizations.dart';
@@ -49,6 +49,8 @@ import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
 import 'package:knit/features/profile/infra/sync_store_profile_read_repository.dart';
+import 'package:knit/features/search/infra/sync_store_search_read_repository.dart';
+import 'package:knit/features/search/presentation/search_controller.dart';
 import 'package:knit/features/profile/infra/sync_store_profile_write_repository.dart';
 import 'package:knit/features/profile/presentation/profile_module.dart';
 import 'package:knit/features/profile/presentation/profile_scope.dart';
@@ -170,6 +172,14 @@ void bootstrap(AppConfig config) {
   final routeArgs = InMemoryCollectionRouteArgsStore();
   TimelineScope.setRouteArgsWriter(routeArgs);
   CollectionScope.setRouteArgs(routeArgs);
+  // Search (§3.2/§4.1), opened from the Timeline app bar: a fresh controller
+  // per page; a tapped hit writes the same carrier (with the card to reveal).
+  TimelineScope.setSearchFactory(
+    () => SearchController(
+      readRepository: SyncStoreSearchReadRepository(graph: graph),
+      collectionRouteArgs: routeArgs,
+    ),
+  );
   // The Connections view writes the same carrier to open a connected item
   // inside its collection (§4.2/§4.4) before navigating to the Collection page.
   ConnectionsScope.setCollectionRouteArgsWriter(routeArgs);
