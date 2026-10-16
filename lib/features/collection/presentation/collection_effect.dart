@@ -202,9 +202,3 @@ class LinkEffect extends CollectionEffect {
   final ConnectedEntityKind targetKind;
   final String targetId;
 }
-
-class EditTitleEffect extends CollectionEffect {
-  const EditTitleEffect(this.collectionId, this.title);
-  final String collectionId;
-  final String title;
-}

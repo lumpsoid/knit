@@ -35,6 +35,7 @@ class CollectionSummary {
   const CollectionSummary({
     required this.collectionId,
     required this.title,
+    this.description,
     required this.coverAttachmentId,
     required this.cardCount,
     required this.lastCard,
@@ -43,6 +44,9 @@ class CollectionSummary {
 
   final String collectionId;
   final String title;
+
+  /// The optional free-text blurb (spec §3.1); null when unset.
+  final String? description;
 
   /// `cover_attachment_id` — nullable cover image (spec §6.4).
   final String? coverAttachmentId;
@@ -109,6 +113,7 @@ CollectionSummary _summarize(Snapshot collection, List<Snapshot> liveCards) {
   return CollectionSummary(
     collectionId: collection.id,
     title: collection.content['title'] as String,
+    description: collection.content['description'] as String?,
     coverAttachmentId: collection.content['cover_attachment_id'] as String?,
     cardCount: liveCards.length,
     lastCard: lastCard == null ? null : CardPreview.of(lastCard),

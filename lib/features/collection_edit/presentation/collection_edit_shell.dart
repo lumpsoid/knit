@@ -6,7 +6,7 @@ import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
-import 'package:knit/features/collection_edit/domain/collection_edit_write_repository.dart';
+import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/collection_media/domain/collection_media_read_repository.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_effect.dart';
@@ -14,20 +14,22 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_ui_ef
 
 /// Imperative shell for the Collection Edit page (fcis.md §6.6). Unwraps each
 /// repository [Result] at the seam (result.md §9.3): the updater never sees a
-/// Result. A details save pops the page; a cover edit resyncs only the cover
-/// section (the page-owned text fields are untouched). A failed write surfaces a
-/// message and clears the in-flight flag.
+/// Result. Header writes go through the shared [CollectionDetailsController], so
+/// the Timeline and the Collection screen see them at once. A details save pops
+/// the page; a cover edit resyncs only the cover section (the page-owned text
+/// fields are untouched). A failed write surfaces a message and clears the
+/// in-flight flag.
 class CollectionEditShell
     extends Shell<CollectionEditEffect, CollectionEditAction> {
   CollectionEditShell({
-    required CollectionEditWriteRepository writeRepository,
+    required CollectionDetailsController collectionDetails,
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
     required CollectionMediaReadRepository mediaReadRepository,
     required EffectEmitter<CollectionEditUiEffect> effectEmitter,
     required Logger logger,
-  }) : _write = writeRepository,
+  }) : _details = collectionDetails,
        _mediaRead = mediaReadRepository,
        _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
@@ -35,7 +37,7 @@ class CollectionEditShell
        _effectEmitter = effectEmitter,
        _log = logger;
 
-  final CollectionEditWriteRepository _write;
+  final CollectionDetailsController _details;
   final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
   final ImagePickerPort _picker;
@@ -57,7 +59,7 @@ class CollectionEditShell
         :final title,
         :final description,
       ):
-        final result = await _write.editDetails(
+        final result = await _details.saveDetails(
           collectionId: collectionId,
           title: title,
           description: description,
@@ -90,43 +92,33 @@ class CollectionEditShell
           _log.warning('Collection cover bytes missing for $attachmentId');
           dispatch(const CoverEditEnded());
         } else {
-          dispatch(
-            CoverResolved(
-              attachmentId: attachmentId,
-              bytes: result.getOrThrow().bytes,
-            ),
-          );
+          dispatch(CoverResolved(bytes: result.getOrThrow().bytes));
         }
 
       case LoadMediaSummaryEffect(:final collectionId):
         await _loadMediaSummary(collectionId, dispatch);
 
-      case PickCoverEffect(:final collectionId, :final previousAttachmentId):
-        await _pickCoverAndAttach(collectionId, previousAttachmentId, dispatch);
+      case PickCoverEffect(:final collectionId):
+        await _pickCoverAndAttach(collectionId, dispatch);
 
-      case RemoveCoverEffect(:final collectionId, :final previousAttachmentId):
-        final result = await _write.removeCover(collectionId: collectionId);
-        if (result.isFailure) {
-          final failure = result.error!;
+      case RemoveCoverEffect(:final collectionId):
+        final result = await _details.removeCover(collectionId);
+        result.onTap((_) => dispatch(const CoverResolved()), (failure) {
           _log.severe(
             'Remove collection cover failed',
             failure.error,
             failure.stackTrace,
           );
           _failCover(dispatch);
-        } else {
-          await _gcAttachment(previousAttachmentId);
-          dispatch(const CoverResolved());
-        }
+        });
     }
   }
 
-  /// Pick a photo → store it → point the collection at the new cover → GC the
-  /// one it replaced. Any abort (cancelled pick, store/write failure) ends the
-  /// busy state without changing the cover.
+  /// Pick a photo → store it → point the collection at the new cover (the
+  /// shared details GC the one it replaced). Any abort (cancelled pick,
+  /// store/write failure) ends the busy state without changing the cover.
   Future<void> _pickCoverAndAttach(
     String collectionId,
-    String? previousAttachmentId,
     void Function(CollectionEditAction) dispatch,
   ) async {
     final picked = await _picker.pickImage();
@@ -143,7 +135,7 @@ class CollectionEditShell
     }
 
     final attachmentId = created.getOrThrow();
-    final attached = await _write.setCover(
+    final attached = await _details.setCover(
       collectionId: collectionId,
       attachmentId: attachmentId,
     );
@@ -158,10 +150,7 @@ class CollectionEditShell
       return;
     }
 
-    if (previousAttachmentId != null && previousAttachmentId != attachmentId) {
-      await _gcAttachment(previousAttachmentId);
-    }
-    dispatch(CoverResolved(attachmentId: attachmentId, bytes: picked.bytes));
+    dispatch(CoverResolved(bytes: picked.bytes));
   }
 
   /// Read the media overview, then the bytes of its newest photos for the
@@ -197,15 +186,5 @@ class CollectionEditShell
       const CollectionEditShowMessageUiEffect(CollectionEditMessage.saveFailed),
     );
     dispatch(const CoverEditEnded());
-  }
-
-  /// Drop the replaced/removed attachment record (ref-counted blob GC happens
-  /// inside the repo). A GC failure is non-fatal — the header already points away.
-  Future<void> _gcAttachment(String? attachmentId) async {
-    if (attachmentId == null) return;
-    final result = await _attachmentWrite.delete(attachmentId);
-    if (result.isFailure) {
-      _log.warning('Attachment GC failed for $attachmentId: ${result.error}');
-    }
   }
 }

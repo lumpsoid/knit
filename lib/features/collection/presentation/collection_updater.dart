@@ -70,9 +70,6 @@ class CollectionUpdater
           CollectionState(
             status: CollectionStatus.ready,
             collectionId: data.collectionId,
-            title: data.title,
-            description: data.description,
-            coverAttachmentId: data.coverAttachmentId,
             cards: data.cards,
             olderBoundary: data.olderBoundary,
             connectionCount: data.connectionCount,
@@ -392,15 +389,6 @@ class CollectionUpdater
 
       case CardMoved(:final oldIndex, :final newIndex):
         return _moveCard(state, oldIndex, newIndex);
-
-      case TitleSubmitted(:final title):
-        final trimmed = title.trim();
-        if (trimmed.isEmpty) return (state, null);
-        // Optimistic header update; the reload after the write confirms it.
-        return (
-          state.copyWith(title: trimmed),
-          [EditTitleEffect(state.collectionId, trimmed)],
-        );
 
       case DeactivateFeature():
         // Leaving the page must release the recorder if it's still capturing.

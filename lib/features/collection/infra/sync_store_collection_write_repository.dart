@@ -74,17 +74,6 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
     return id;
   });
 
-  @override
-  Future<Result<String, CollectionFailure>> editTitle(
-    String collectionId,
-    String title,
-  ) => _write(() async {
-    await _graph.store.edit(EntityType.collection, collectionId, {
-      'title': title,
-    });
-    return collectionId;
-  });
-
   Future<Result<String, CollectionFailure>> _write(
     Future<String> Function() op,
   ) async {

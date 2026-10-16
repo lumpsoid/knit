@@ -16,6 +16,8 @@ import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
+import 'package:knit/features/collection_details/domain/collection_details.dart';
+import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
@@ -38,6 +40,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required FilePickerPort filePicker,
     required CardShareRepository shareRepository,
     required LinkLauncher linkLauncher,
+    required CollectionDetailsController collectionDetails,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
     required TimelineChannelEmitter timelineChannel,
     required Logger logger,
@@ -50,6 +53,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
        _filePicker = filePicker,
        _share = shareRepository,
        _links = linkLauncher,
+       _details = collectionDetails,
        _effectEmitter = effectEmitter,
        _timelineChannel = timelineChannel,
        _log = logger;
@@ -63,6 +67,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final FilePickerPort _filePicker;
   final CardShareRepository _share;
   final LinkLauncher _links;
+  final CollectionDetailsController _details;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
   final TimelineChannelEmitter _timelineChannel;
   final Logger _log;
@@ -75,14 +80,28 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     switch (effect) {
       case LoadCollectionEffect(:final collectionId, :final window):
         final result = await _read.loadCollection(collectionId, window: window);
-        result.onTap((data) => dispatch(CollectionLoaded(data)), (failure) {
-          _log.severe(
-            'Collection load failed',
-            failure.error,
-            failure.stackTrace,
-          );
-          dispatch(const LoadFailed());
-        });
+        result.onTap(
+          (data) {
+            // The header is shared app-wide state: refresh it from this read.
+            _details.remember(
+              CollectionDetails(
+                collectionId: data.collectionId,
+                title: data.title,
+                description: data.description,
+                coverAttachmentId: data.coverAttachmentId,
+              ),
+            );
+            dispatch(CollectionLoaded(data));
+          },
+          (failure) {
+            _log.severe(
+              'Collection load failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            dispatch(const LoadFailed());
+          },
+        );
 
       case LoadOlderCardsEffect(
         :final collectionId,
@@ -239,13 +258,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
             targetId: targetId,
           ),
           'create link',
-          dispatch,
-        );
-
-      case EditTitleEffect(:final collectionId, :final title):
-        await _runWrite(
-          () => _write.editTitle(collectionId, title),
-          'rename collection',
           dispatch,
         );
     }

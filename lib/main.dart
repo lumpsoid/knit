@@ -32,7 +32,8 @@ import 'package:knit/features/collection/presentation/audio_playback_controller.
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
-import 'package:knit/features/collection_edit/infra/sync_store_collection_edit_write_repository.dart';
+import 'package:knit/features/collection_details/infra/sync_store_collection_details_write_repository.dart';
+import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_module.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_scope.dart';
@@ -214,6 +215,20 @@ void bootstrap(AppConfig config) {
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
 
+  // The shared collection headers (title, description, cover — §3.1): one
+  // app-wide controller the Timeline, the Collection screen and the Collection
+  // Edit page all read, and every header edit goes through.
+  final collectionDetails = CollectionDetailsController(
+    writeRepository: SyncStoreCollectionDetailsWriteRepository(graph: graph),
+    attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
+      graph: graph,
+      ids: ids,
+    ),
+  );
+  TimelineScope.setCollectionDetails(collectionDetails.state);
+  CollectionScope.setCollectionDetails(collectionDetails.state);
+  CollectionEditScope.setCollectionDetails(collectionDetails.state);
+
   // Pinned collections (§4.1): a device-local view preference, persisted in
   // shared_preferences like Settings — never synced or signed.
   const timelinePins = SharedPreferencesTimelinePinRepository();
@@ -224,6 +239,7 @@ void bootstrap(AppConfig config) {
       pinReadRepository: timelinePins,
       pinWriteRepository: timelinePins,
       attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      collectionDetails: collectionDetails,
       channelReader: timelineChannel,
     ).controller,
   );
@@ -244,6 +260,7 @@ void bootstrap(AppConfig config) {
       filePicker: const FilePickerAdapter(),
       shareRepository: const SharePlusCardShareRepository(),
       linkLauncher: const UrlLauncherLinkLauncher(),
+      collectionDetails: collectionDetails,
       timelineChannel: timelineChannel,
     ),
   );
@@ -286,7 +303,7 @@ void bootstrap(AppConfig config) {
   );
   CollectionEditScope.setFactory(
     () => CollectionEditModule(
-      writeRepository: SyncStoreCollectionEditWriteRepository(graph: graph),
+      collectionDetails: collectionDetails,
       attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
       attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
         graph: graph,

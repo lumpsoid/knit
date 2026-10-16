@@ -14,15 +14,13 @@ enum AudioRecordingPhase { recording, paused }
 /// State for the Collection screen (§4.2). [reordering] is the *mode* of this
 /// screen (drag-to-reorder), not a separate screen — exactly as the spec frames
 /// it. Sheets/dialogs (compose, add-block, actions, finder, edit) are transient
-/// View concerns that dispatch intents; they are not modelled here.
+/// View concerns that dispatch intents; they are not modelled here. The header
+/// (title, description, cover) is the shared collection details, not a copy here.
 @immutable
 class CollectionState {
   const CollectionState({
     this.status = CollectionStatus.loading,
     this.collectionId = '',
-    this.title = '',
-    this.description,
-    this.coverAttachmentId,
     this.cards = const [],
     this.olderBoundary,
     this.loadingOlder = false,
@@ -39,12 +37,6 @@ class CollectionState {
 
   final CollectionStatus status;
   final String collectionId;
-  final String title;
-
-  /// The collection's optional free-text blurb (spec §3.1), shown on the title
-  /// card; null/empty when unset.
-  final String? description;
-  final String? coverAttachmentId;
 
   /// The loaded window of the feed, oldest → newest. A large collection is
   /// held as its newest end only; older cards page in on scroll (§8.7).
@@ -116,9 +108,6 @@ class CollectionState {
   CollectionState copyWith({
     CollectionStatus? status,
     String? collectionId,
-    String? title,
-    String? description,
-    String? coverAttachmentId,
     List<FeedCard>? cards,
     FeedCursor? olderBoundary,
     bool clearOlderBoundary = false,
@@ -139,9 +128,6 @@ class CollectionState {
   }) => CollectionState(
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
-    title: title ?? this.title,
-    description: description ?? this.description,
-    coverAttachmentId: coverAttachmentId ?? this.coverAttachmentId,
     cards: cards ?? this.cards,
     olderBoundary: clearOlderBoundary
         ? null

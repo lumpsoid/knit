@@ -3,6 +3,7 @@ import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
+import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
@@ -25,6 +26,7 @@ class TimelineModule {
     required TimelinePinReadRepository pinReadRepository,
     required TimelinePinWriteRepository pinWriteRepository,
     required AttachmentReadRepository attachmentReadRepository,
+    required CollectionDetailsController collectionDetails,
     required TimelineChannelReader channelReader,
     Logger? logger,
   }) {
@@ -38,6 +40,7 @@ class TimelineModule {
       pinReadRepository: pinReadRepository,
       pinWriteRepository: pinWriteRepository,
       attachmentReadRepository: attachmentReadRepository,
+      collectionDetails: collectionDetails,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.timeline'),
     );

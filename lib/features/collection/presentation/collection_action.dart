@@ -245,12 +245,6 @@ class CardMoved extends CollectionAction {
   final int newIndex;
 }
 
-/// Header long-press → rename the collection (§4.2).
-class TitleSubmitted extends CollectionAction {
-  const TitleSubmitted(this.title);
-  final String title;
-}
-
 class DeactivateFeature extends CollectionAction {
   const DeactivateFeature();
 }

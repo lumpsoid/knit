@@ -92,11 +92,16 @@ class _TimelinePageState extends State<TimelinePage> {
     }
   }
 
+  /// [summary]'s current title — the shared collection details' copy when
+  /// known, else the summary's own.
+  static String _titleOf(CollectionSummary summary) =>
+      TimelineScope.collectionDetails.of(summary.collectionId)?.title ??
+      summary.title;
+
   Future<void> _confirmDelete(CollectionSummary summary) async {
     final l10n = AppLocalizations.of(context);
-    final title = summary.title.trim().isEmpty
-        ? l10n.labelUntitled
-        : summary.title;
+    final name = _titleOf(summary);
+    final title = name.trim().isEmpty ? l10n.labelUntitled : name;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -160,9 +165,13 @@ class _TimelinePageState extends State<TimelinePage> {
         icon: const Icon(Icons.add),
         label: Text(l10n.timelineCollectionFab),
       ),
-      body: ValueListenableBuilder<TimelineState>(
-        valueListenable: _controller.stateHolder,
-        builder: (context, state, _) {
+      body: ListenableBuilder(
+        listenable: Listenable.merge([
+          _controller.stateHolder,
+          TimelineScope.collectionDetails,
+        ]),
+        builder: (context, _) {
+          final state = _controller.stateHolder.value;
           switch (state.status) {
             case TimelineStatus.loading:
               if (state.isEmpty) {
@@ -216,11 +225,17 @@ class _TimelinePageState extends State<TimelinePage> {
   }) sync* {
     for (var i = 0; i < collections.length; i++) {
       final summary = collections[i];
-      final coverId = summary.coverAttachmentId;
+      // The header comes from the shared collection details (kept fresh by
+      // every read and edit); the summary is the fallback before it lands.
+      final header = TimelineScope.collectionDetails.of(summary.collectionId);
+      final coverId = header == null
+          ? summary.coverAttachmentId
+          : header.coverAttachmentId;
       if (i > 0) yield const Divider(height: 1);
       yield _CollectionTile(
         key: ValueKey(summary.collectionId),
         summary: summary,
+        title: header?.title ?? summary.title,
         coverBytes: coverId == null ? null : state.coverBytes[coverId],
         onTap: () =>
             _controller.dispatch(CollectionTapped(summary.collectionId)),
@@ -306,11 +321,15 @@ class _CollectionTile extends StatelessWidget {
   const _CollectionTile({
     super.key,
     required this.summary,
+    required this.title,
     required this.coverBytes,
     required this.onTap,
     required this.onLongPress,
   });
   final CollectionSummary summary;
+
+  /// The collection's current title (blank ⇒ shown as untitled).
+  final String title;
 
   /// Decoded cover bytes, or null when the collection has no cover or its bytes
   /// haven't loaded — in which case the lettered-avatar placeholder is shown.
@@ -322,9 +341,7 @@ class _CollectionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final title = summary.title.trim().isEmpty
-        ? l10n.labelUntitled
-        : summary.title;
+    final title = this.title.trim().isEmpty ? l10n.labelUntitled : this.title;
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,

@@ -11,41 +11,22 @@ void main() {
   const updater = CollectionEditUpdater();
 
   group('attach', () {
-    test(
-      'seeds the fields and loads only the media summary without a cover',
-      () {
-        final (next, effects) = updater.update(
-          const CollectionEditState(),
-          const ViewAttached(
-            collectionId: 'col-1',
-            initialTitle: 'Espresso',
-            initialDescription: 'notes',
-            initialCoverAttachmentId: null,
-          ),
-        );
-        expect(next.status, CollectionEditStatus.editing);
-        expect(next.collectionId, 'col-1');
-        expect(next.initialTitle, 'Espresso');
-        expect(next.initialDescription, 'notes');
-        expect(next.coverAttachmentId, isNull);
-        expect(next.coverBusy, isFalse);
-        expect(
-          (effects!.single as LoadMediaSummaryEffect).collectionId,
-          'col-1',
-        );
-      },
-    );
+    test('loads only the media summary without a cover', () {
+      final (next, effects) = updater.update(
+        const CollectionEditState(),
+        const ViewAttached(collectionId: 'col-1'),
+      );
+      expect(next.status, CollectionEditStatus.editing);
+      expect(next.collectionId, 'col-1');
+      expect(next.coverBusy, isFalse);
+      expect((effects!.single as LoadMediaSummaryEffect).collectionId, 'col-1');
+    });
 
     test('loads the cover bytes when a cover is set', () {
       final (next, effects) = updater.update(
         const CollectionEditState(),
-        const ViewAttached(
-          collectionId: 'col-1',
-          initialTitle: 'Espresso',
-          initialCoverAttachmentId: 'att-1',
-        ),
+        const ViewAttached(collectionId: 'col-1', coverAttachmentId: 'att-1'),
       );
-      expect(next.coverAttachmentId, 'att-1');
       expect(next.coverBusy, isTrue);
       expect((effects!.first as LoadCoverEffect).attachmentId, 'att-1');
       expect(effects.last, isA<LoadMediaSummaryEffect>());
@@ -57,9 +38,11 @@ void main() {
           collectionId: 'col-0',
           mediaCounts: const MediaCounts(photos: 3),
           mediaPreviews: [Uint8List(1)],
+          coverBytes: Uint8List(1),
         ),
-        const ViewAttached(collectionId: 'col-1', initialTitle: 'Espresso'),
+        const ViewAttached(collectionId: 'col-1'),
       );
+      expect(next.coverBytes, isNull);
       expect(next.mediaCounts, isNull);
       expect(next.mediaPreviews, isEmpty);
     });
@@ -132,68 +115,51 @@ void main() {
   });
 
   group('cover', () {
-    test('pick marks busy and emits a pick effect with the previous id', () {
+    test('pick marks busy and emits a pick effect for the collection', () {
       final (next, effects) = updater.update(
-        const CollectionEditState(
-          collectionId: 'col-1',
-          coverAttachmentId: 'old',
-        ),
+        const CollectionEditState(collectionId: 'col-1'),
         const PickCoverRequested(),
       );
       expect(next.coverBusy, isTrue);
-      final effect = effects!.single as PickCoverEffect;
-      expect(effect.collectionId, 'col-1');
-      expect(effect.previousAttachmentId, 'old');
+      expect((effects!.single as PickCoverEffect).collectionId, 'col-1');
     });
 
     test('remove marks busy and emits a remove effect', () {
       final (next, effects) = updater.update(
-        const CollectionEditState(
-          collectionId: 'col-1',
-          coverAttachmentId: 'old',
-        ),
+        const CollectionEditState(collectionId: 'col-1'),
         const RemoveCoverRequested(),
       );
       expect(next.coverBusy, isTrue);
-      expect(
-        (effects!.single as RemoveCoverEffect).previousAttachmentId,
-        'old',
-      );
+      expect((effects!.single as RemoveCoverEffect).collectionId, 'col-1');
     });
 
-    test('CoverResolved sets the new cover + bytes and clears busy', () {
+    test('CoverResolved sets the new bytes and clears busy', () {
       final bytes = Uint8List.fromList([1, 2, 3]);
       final (next, effects) = updater.update(
         const CollectionEditState(coverBusy: true),
-        CoverResolved(attachmentId: 'att-2', bytes: bytes),
+        CoverResolved(bytes: bytes),
       );
-      expect(next.coverAttachmentId, 'att-2');
       expect(next.coverBytes, bytes);
       expect(next.coverBusy, isFalse);
       expect(effects, isNull);
     });
 
-    test('CoverResolved with nulls clears the cover (a removal)', () {
+    test('CoverResolved without bytes clears the preview (a removal)', () {
       final (next, _) = updater.update(
-        const CollectionEditState(
-          coverBusy: true,
-          coverAttachmentId: 'old',
-          coverBytes: null,
-        ),
+        CollectionEditState(coverBusy: true, coverBytes: Uint8List(1)),
         const CoverResolved(),
       );
-      expect(next.coverAttachmentId, isNull);
       expect(next.coverBytes, isNull);
       expect(next.coverBusy, isFalse);
     });
 
     test('CoverEditEnded just clears busy, leaving the cover unchanged', () {
       final (next, _) = updater.update(
-        const CollectionEditState(coverBusy: true, coverAttachmentId: 'keep'),
+        CollectionEditState(coverBusy: true, coverBytes: Uint8List(1)),
         const CoverEditEnded(),
       );
       expect(next.coverBusy, isFalse);
-      expect(next.coverAttachmentId, 'keep');
+      expect(next.coverBytes, isNotNull);
     });
   });
 }

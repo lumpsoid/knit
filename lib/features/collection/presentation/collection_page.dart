@@ -486,14 +486,11 @@ class _CollectionPageState extends State<CollectionPage> {
 
   /// Hand the collection to the Collection Edit carrier (cross_feature.md §2),
   /// then navigate to the dedicated edit page (§4.2) — title, description, cover.
-  /// On return, resync from the projection so the title card reflects the edit
-  /// (projection-is-truth — no push needed).
-  Future<void> _openCollectionEdit(CollectionState state) async {
+  /// The title card follows the shared collection details as they change; on
+  /// return, resync from the projection so a new cover's bytes load.
+  Future<void> _openCollectionEdit(String collectionId) async {
     CollectionScope.collectionEditRouteArgsWriter.open(
-      collectionId: state.collectionId,
-      initialTitle: state.title,
-      initialDescription: state.description,
-      initialCoverAttachmentId: state.coverAttachmentId,
+      collectionId: collectionId,
     );
     await Navigator.of(context).push(CollectionEditPage.route());
     if (mounted) _controller.dispatch(const ReloadRequested());
@@ -619,26 +616,7 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   Widget _feed(CollectionState state) {
-    final coverBytes = state.coverAttachmentId == null
-        ? null
-        : state.imageBytes[state.coverAttachmentId];
-    final titleCard = _CollectionTitleCard(
-      title: state.title,
-      description: state.description,
-      hasCover: state.coverAttachmentId != null,
-      coverBytes: coverBytes,
-      coverHeroTag: _coverHeroTag(state.collectionId),
-      connectionCount: state.connectionCount,
-      onTap: () => _openCollectionEdit(state),
-      onCoverTap: coverBytes == null
-          ? null
-          : () => _openCoverPreview(state.collectionId, coverBytes),
-      onConnectionsTap: () => _openConnections(
-        kind: ConnectedEntityKind.collection,
-        id: state.collectionId,
-        title: state.title,
-      ),
-    );
+    final titleCard = _titleCard(state);
 
     if (state.reordering) {
       // The title card heads the reorder list as a fixed, non-draggable header.
@@ -713,6 +691,39 @@ class _CollectionPageState extends State<CollectionPage> {
           const SliverPadding(padding: EdgeInsets.only(top: 8)),
         ],
       ),
+    );
+  }
+
+  /// The title card heading the feed: the collection's header from the shared
+  /// collection details (it rebuilds when they change), plus this screen's
+  /// connection count and decoded cover.
+  Widget _titleCard(CollectionState state) {
+    final details = CollectionScope.collectionDetails;
+    return ListenableBuilder(
+      listenable: details,
+      builder: (context, _) {
+        final header = details.of(state.collectionId);
+        final title = header?.title ?? '';
+        final coverId = header?.coverAttachmentId;
+        final coverBytes = coverId == null ? null : state.imageBytes[coverId];
+        return _CollectionTitleCard(
+          title: title,
+          description: header?.description,
+          hasCover: coverId != null,
+          coverBytes: coverBytes,
+          coverHeroTag: _coverHeroTag(state.collectionId),
+          connectionCount: state.connectionCount,
+          onTap: () => _openCollectionEdit(state.collectionId),
+          onCoverTap: coverBytes == null
+              ? null
+              : () => _openCoverPreview(state.collectionId, coverBytes),
+          onConnectionsTap: () => _openConnections(
+            kind: ConnectedEntityKind.collection,
+            id: state.collectionId,
+            title: title,
+          ),
+        );
+      },
     );
   }
 

@@ -14,6 +14,9 @@ import 'package:knit/features/onboard/presentation/onboard_scope.dart';
 import 'package:knit/core/attachments/infra/sync_store_attachment_read_repository.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
+import 'package:knit/core/attachments/infra/sync_store_attachment_write_repository.dart';
+import 'package:knit/features/collection_details/infra/sync_store_collection_details_write_repository.dart';
+import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/settings/infra/shared_preferences_settings_repository.dart';
 import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository.dart';
 import 'package:knit/features/settings/presentation/settings_module.dart';
@@ -45,6 +48,14 @@ void main() {
       ).controller,
     );
     TimelineScope.setRouteArgsWriter(InMemoryCollectionRouteArgsStore());
+    final collectionDetails = CollectionDetailsController(
+      writeRepository: SyncStoreCollectionDetailsWriteRepository(graph: graph),
+      attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
+        graph: graph,
+        ids: const UuidIdGenerator(),
+      ),
+    );
+    TimelineScope.setCollectionDetails(collectionDetails.state);
     TimelineScope.setFactory(
       () => TimelineModule(
         readRepository: SyncStoreTimelineRepository(graph: graph),
@@ -57,6 +68,7 @@ void main() {
         attachmentReadRepository: SyncStoreAttachmentReadRepository(
           graph: graph,
         ),
+        collectionDetails: collectionDetails,
         channelReader: TimelineChannelNotifier(),
       ).controller,
     );

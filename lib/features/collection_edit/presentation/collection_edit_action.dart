@@ -8,20 +8,14 @@ sealed class CollectionEditAction {
   const CollectionEditAction();
 }
 
-/// View attached for [collectionId], seeded with the title/description + cover id
-/// from the route-args carrier (cross_feature.md §2). Kicks off loading the cover
-/// image bytes when there's a cover.
+/// View attached for [collectionId] (read from the route-args carrier,
+/// cross_feature.md §2) with its current [coverAttachmentId] from the shared
+/// collection details. Kicks off loading the cover image bytes when there's a
+/// cover.
 class ViewAttached extends CollectionEditAction {
-  const ViewAttached({
-    required this.collectionId,
-    required this.initialTitle,
-    this.initialDescription,
-    this.initialCoverAttachmentId,
-  });
+  const ViewAttached({required this.collectionId, this.coverAttachmentId});
   final String collectionId;
-  final String initialTitle;
-  final String? initialDescription;
-  final String? initialCoverAttachmentId;
+  final String? coverAttachmentId;
 }
 
 /// Save tapped with the composed [title] and [description].
@@ -55,12 +49,12 @@ class RemoveCoverRequested extends CollectionEditAction {
   const RemoveCoverRequested();
 }
 
-/// The cover settled to [attachmentId] (null = removed), carrying its decoded
-/// [bytes] for the preview. Used both for the initial load and after a
-/// pick/remove, so the section never needs a follow-up reload.
+/// The cover settled, carrying its decoded [bytes] for the preview (null =
+/// removed). Used both for the initial load and after a pick/remove, so the
+/// section never needs a follow-up reload. The cover id itself lives in the
+/// shared collection details.
 class CoverResolved extends CollectionEditAction {
-  const CoverResolved({this.attachmentId, this.bytes});
-  final String? attachmentId;
+  const CoverResolved({this.bytes});
   final Uint8List? bytes;
 }
 

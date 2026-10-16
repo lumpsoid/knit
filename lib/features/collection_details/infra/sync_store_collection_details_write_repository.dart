@@ -1,23 +1,23 @@
 import 'package:knit/app/app_graph.dart';
-import 'package:knit/features/collection_edit/domain/collection_edit_failure.dart';
-import 'package:knit/features/collection_edit/domain/collection_edit_write_repository.dart';
+import 'package:knit/features/collection_details/domain/collection_details_failure.dart';
+import 'package:knit/features/collection_details/domain/collection_details_write_repository.dart';
 import 'package:knit/sync/sync.dart';
 import 'package:result_dart/result_dart.dart';
 
-/// [CollectionEditWriteRepository] over the graph's [SyncStore] §6.8 write path.
-/// Each edit is one signed local write committed in a single transaction (§8.5);
-/// the content stamp bumps. The fields overlay the prior content (the engine
-/// merges only changed keys), so editing the title never disturbs the cover and
-/// vice-versa.
-class SyncStoreCollectionEditWriteRepository
-    implements CollectionEditWriteRepository {
-  SyncStoreCollectionEditWriteRepository({required AppGraph graph})
+/// [CollectionDetailsWriteRepository] over the graph's [SyncStore] §6.8 write
+/// path. Each edit is one signed local write committed in a single transaction
+/// (§8.5); the content stamp bumps. The fields overlay the prior content (the
+/// engine merges only changed keys), so editing the title never disturbs the
+/// cover and vice-versa.
+class SyncStoreCollectionDetailsWriteRepository
+    implements CollectionDetailsWriteRepository {
+  SyncStoreCollectionDetailsWriteRepository({required AppGraph graph})
     : _graph = graph;
 
   final AppGraph _graph;
 
   @override
-  Future<Result<String, CollectionEditFailure>> editDetails({
+  Future<Result<String, CollectionDetailsFailure>> editDetails({
     required String collectionId,
     required String title,
     String? description,
@@ -30,7 +30,7 @@ class SyncStoreCollectionEditWriteRepository
   });
 
   @override
-  Future<Result<String, CollectionEditFailure>> setCover({
+  Future<Result<String, CollectionDetailsFailure>> setCover({
     required String collectionId,
     required String attachmentId,
   }) => _write(() async {
@@ -41,7 +41,7 @@ class SyncStoreCollectionEditWriteRepository
   });
 
   @override
-  Future<Result<String, CollectionEditFailure>> removeCover({
+  Future<Result<String, CollectionDetailsFailure>> removeCover({
     required String collectionId,
   }) => _write(() async {
     await _graph.store.edit(EntityType.collection, collectionId, {
@@ -50,13 +50,13 @@ class SyncStoreCollectionEditWriteRepository
     return collectionId;
   });
 
-  Future<Result<String, CollectionEditFailure>> _write(
+  Future<Result<String, CollectionDetailsFailure>> _write(
     Future<String> Function() op,
   ) async {
     try {
       return Ok(await op());
     } catch (e, st) {
-      return Failure(CollectionEditWriteFailure(e, st));
+      return Failure(CollectionDetailsWriteFailure(e, st));
     }
   }
 }

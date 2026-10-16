@@ -239,6 +239,12 @@ the `lib/sync/` core below.
   some words, then title > card text > description/label/file name, then
   word-start, then recency. A tapped hit writes `CollectionRouteArgs` with an
   optional `focusCardId`, which the Collection page scrolls to and highlights.
+- `collection_details` is the first **shared controller** (lightweight, app-wide,
+  no page): `CollectionDetailsController` + `CollectionDetailsState` own every
+  collection's header (title, description, cover). The Timeline, Collection and
+  Collection Edit read it via their scopes; their shells `remember` what they
+  read from the projection and route every header write through it (cover
+  writes also GC the replaced attachment).
 
 ### `packages/` — extracted local packages (path deps)
 - `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod

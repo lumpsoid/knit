@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
+import 'package:knit/features/collection_details/presentation/collection_details_state.dart';
 import 'package:knit/features/collection_media/domain/collection_media_models.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_page.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
@@ -13,9 +14,9 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_ui_ef
 /// The Collection Edit page (§4.2/§4.3) — a dedicated page for editing a
 /// collection's title, description, and cover image, with a read-only Media
 /// summary row that opens the collection's media overview. The edit target arrives via
-/// the route-args carrier (cross_feature.md §2); on save the page pops and the
-/// Collection screen resyncs from the projection. Cover edits are applied in
-/// place.
+/// the route-args carrier (cross_feature.md §2); the header comes from (and
+/// saves through) the shared collection details, so every page showing it
+/// updates at once. On save the page pops. Cover edits are applied in place.
 class CollectionEditPage extends StatefulWidget {
   const CollectionEditPage({super.key});
 
@@ -28,23 +29,24 @@ class CollectionEditPage extends StatefulWidget {
 
 class _CollectionEditPageState extends State<CollectionEditPage> {
   CollectionEditController get _controller => CollectionEditScope.controller;
+  CollectionDetailsState get _details => CollectionEditScope.collectionDetails;
+  late final String _collectionId;
   late final TextEditingController _title;
   late final TextEditingController _description;
 
   @override
   void initState() {
     super.initState();
-    final args = CollectionEditScope.routeArgs;
-    _title = TextEditingController(text: args.initialTitle);
-    _description = TextEditingController(text: args.initialDescription ?? '');
+    _collectionId = CollectionEditScope.routeArgs.collectionId;
+    final details = _details.of(_collectionId);
+    _title = TextEditingController(text: details?.title ?? '');
+    _description = TextEditingController(text: details?.description ?? '');
     _controller
       ..onAttach(_onUiEffect)
       ..dispatch(
         ViewAttached(
-          collectionId: args.collectionId,
-          initialTitle: args.initialTitle,
-          initialDescription: args.initialDescription,
-          initialCoverAttachmentId: args.initialCoverAttachmentId,
+          collectionId: _collectionId,
+          coverAttachmentId: details?.coverAttachmentId,
         ),
       );
   }
@@ -78,10 +80,10 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
 
   /// Hand the collection to the Media carrier (cross_feature.md §2) and open the
   /// overview; on return, refresh the summary (a card edit there may change it).
-  Future<void> _openMedia(CollectionEditState state) async {
+  Future<void> _openMedia() async {
     CollectionEditScope.mediaRouteArgsWriter.open(
-      collectionId: state.collectionId,
-      title: state.initialTitle,
+      collectionId: _collectionId,
+      title: _details.of(_collectionId)?.title ?? '',
     );
     await Navigator.of(context).push(CollectionMediaPage.route());
     if (mounted) _controller.dispatch(const MediaSummaryReloadRequested());
@@ -94,9 +96,10 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return ValueListenableBuilder<CollectionEditState>(
-      valueListenable: _controller.stateHolder,
-      builder: (context, state, _) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([_controller.stateHolder, _details]),
+      builder: (context, _) {
+        final state = _controller.stateHolder.value;
         final saving = state.status == CollectionEditStatus.saving;
         return Scaffold(
           appBar: AppBar(
@@ -120,7 +123,9 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
             padding: const EdgeInsets.all(16),
             children: [
               _CoverSection(
-                state: state,
+                hasCover: _details.of(_collectionId)?.hasCover ?? false,
+                coverBytes: state.coverBytes,
+                busy: state.coverBusy,
                 onPick: () => _controller.dispatch(const PickCoverRequested()),
                 onRemove: () =>
                     _controller.dispatch(const RemoveCoverRequested()),
@@ -156,7 +161,7 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                 _MediaSummaryRow(
                   counts: counts,
                   previews: state.mediaPreviews,
-                  onTap: counts.isEmpty ? null : () => _openMedia(state),
+                  onTap: counts.isEmpty ? null : _openMedia,
                 ),
               ],
             ],
@@ -172,25 +177,29 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
 /// has no audio/file media (spec §3.1), so the cover is image-only.
 class _CoverSection extends StatelessWidget {
   const _CoverSection({
-    required this.state,
+    required this.hasCover,
+    required this.coverBytes,
+    required this.busy,
     required this.onPick,
     required this.onRemove,
   });
 
-  final CollectionEditState state;
+  final bool hasCover;
+  final Uint8List? coverBytes;
+  final bool busy;
   final VoidCallback onPick;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (state.coverBusy) {
+    if (busy) {
       return const SizedBox(
         height: 160,
         child: Center(child: CircularProgressIndicator()),
       );
     }
-    if (!state.hasCover) {
+    if (!hasCover) {
       return OutlinedButton.icon(
         onPressed: onPick,
         icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -203,7 +212,7 @@ class _CoverSection extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: AttachmentImage(
-            bytes: state.coverBytes,
+            bytes: coverBytes,
             height: 220,
             fit: BoxFit.cover,
           ),

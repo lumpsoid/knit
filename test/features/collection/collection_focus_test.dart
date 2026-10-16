@@ -19,6 +19,8 @@ import 'package:knit/features/collection/presentation/collection_controller.dart
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
+import 'package:knit/features/collection_details/infra/sync_store_collection_details_write_repository.dart';
+import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/l10n/app_localizations.dart';
@@ -123,6 +125,14 @@ void main() {
     });
 
     CollectionScope.setRouteArgs(routeArgs);
+    final details = CollectionDetailsController(
+      writeRepository: SyncStoreCollectionDetailsWriteRepository(graph: graph),
+      attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
+        graph: graph,
+        ids: ids,
+      ),
+    );
+    CollectionScope.setCollectionDetails(details.state);
     CollectionScope.setPlaybackController(
       AudioPlaybackController(
         player: _SilentPlayer(),
@@ -148,6 +158,7 @@ void main() {
         filePicker: _UnusedFilePicker(),
         shareRepository: _UnusedShare(),
         linkLauncher: _UnusedLinkLauncher(),
+        collectionDetails: details,
         timelineChannel: _NoopTimelineChannel(),
       ),
     );

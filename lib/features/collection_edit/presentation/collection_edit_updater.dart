@@ -23,25 +23,16 @@ class CollectionEditUpdater
     CollectionEditAction action,
   ) {
     switch (action) {
-      case ViewAttached(
-        :final collectionId,
-        :final initialTitle,
-        :final initialDescription,
-        :final initialCoverAttachmentId,
-      ):
+      case ViewAttached(:final collectionId, :final coverAttachmentId):
         // The controller outlives one page visit: start from a fresh state so
         // the previous collection's cover/media never flash on this one.
         return (
           CollectionEditState(
             collectionId: collectionId,
-            initialTitle: initialTitle,
-            initialDescription: initialDescription,
-            coverAttachmentId: initialCoverAttachmentId,
-            coverBusy: initialCoverAttachmentId != null,
+            coverBusy: coverAttachmentId != null,
           ),
           [
-            if (initialCoverAttachmentId != null)
-              LoadCoverEffect(initialCoverAttachmentId),
+            if (coverAttachmentId != null) LoadCoverEffect(coverAttachmentId),
             LoadMediaSummaryEffect(collectionId),
           ],
         );
@@ -70,34 +61,17 @@ class CollectionEditUpdater
       case PickCoverRequested():
         return (
           state.copyWith(coverBusy: true),
-          [
-            PickCoverEffect(
-              collectionId: state.collectionId,
-              previousAttachmentId: state.coverAttachmentId,
-            ),
-          ],
+          [PickCoverEffect(state.collectionId)],
         );
 
       case RemoveCoverRequested():
         return (
           state.copyWith(coverBusy: true),
-          [
-            RemoveCoverEffect(
-              collectionId: state.collectionId,
-              previousAttachmentId: state.coverAttachmentId,
-            ),
-          ],
+          [RemoveCoverEffect(state.collectionId)],
         );
 
-      case CoverResolved(:final attachmentId, :final bytes):
-        return (
-          state.copyWith(
-            coverAttachmentId: attachmentId,
-            coverBytes: bytes,
-            coverBusy: false,
-          ),
-          null,
-        );
+      case CoverResolved(:final bytes):
+        return (state.copyWith(coverBytes: bytes, coverBusy: false), null);
 
       case CoverEditEnded():
         return (state.copyWith(coverBusy: false), null);

@@ -29,23 +29,15 @@ class LoadMediaSummaryEffect extends CollectionEditEffect {
   final String collectionId;
 }
 
-/// Pick a photo (gallery/camera), store it, point [collectionId] at the new
-/// cover, and GC the [previousAttachmentId] it replaced (if any).
+/// Pick a photo (gallery/camera), store it, and point [collectionId] at the new
+/// cover (the shared details reclaim the one it replaced).
 class PickCoverEffect extends CollectionEditEffect {
-  const PickCoverEffect({
-    required this.collectionId,
-    required this.previousAttachmentId,
-  });
+  const PickCoverEffect(this.collectionId);
   final String collectionId;
-  final String? previousAttachmentId;
 }
 
-/// Clear [collectionId]'s cover and GC the [previousAttachmentId].
+/// Clear [collectionId]'s cover (the shared details reclaim the image).
 class RemoveCoverEffect extends CollectionEditEffect {
-  const RemoveCoverEffect({
-    required this.collectionId,
-    required this.previousAttachmentId,
-  });
+  const RemoveCoverEffect(this.collectionId);
   final String collectionId;
-  final String? previousAttachmentId;
 }

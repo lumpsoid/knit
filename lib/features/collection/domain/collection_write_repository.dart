@@ -37,10 +37,4 @@ abstract interface class CollectionWriteRepository {
     required ConnectedEntityKind targetKind,
     required String targetId,
   });
-
-  /// Rename the collection (header long-press, §4.2).
-  Future<Result<String, CollectionFailure>> editTitle(
-    String collectionId,
-    String title,
-  );
 }

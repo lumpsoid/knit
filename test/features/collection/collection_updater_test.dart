@@ -37,7 +37,6 @@ void main() {
   CollectionState ready(List<FeedCard> cards) => CollectionState(
     status: CollectionStatus.ready,
     collectionId: 'col',
-    title: 'Notes',
     cards: cards,
   );
 
@@ -1018,16 +1017,6 @@ void main() {
       expect(next.pendingAudio, same(audio));
       expect(next.pendingFile, same(pickedFile));
     });
-  });
-
-  test('title submit updates header optimistically and emits the write', () {
-    final (next, effects) = updater.update(
-      ready(const []),
-      const TitleSubmitted('  Renamed  '),
-    );
-    expect(next.title, 'Renamed');
-    final effect = effects!.single as EditTitleEffect;
-    expect((effect.collectionId, effect.title), ('col', 'Renamed'));
   });
 
   group('CardKind.forFileMime', () {

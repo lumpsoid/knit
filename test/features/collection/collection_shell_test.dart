@@ -14,6 +14,8 @@ import 'package:knit/features/collection/infra/sync_store_collection_write_repos
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
 import 'package:knit/features/collection/presentation/collection_shell.dart';
+import 'package:knit/features/collection_details/infra/sync_store_collection_details_write_repository.dart';
+import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/sync/sync.dart';
@@ -101,6 +103,12 @@ void main() {
       filePicker: _UnusedFilePicker(),
       shareRepository: _UnusedShare(),
       linkLauncher: _UnusedLinkLauncher(),
+      collectionDetails: CollectionDetailsController(
+        writeRepository: SyncStoreCollectionDetailsWriteRepository(
+          graph: graph,
+        ),
+        attachmentWriteRepository: attachmentWrite,
+      ),
       effectEmitter: EffectEmitter<CollectionUiEffect>(),
       timelineChannel: _FakeTimelineChannel(),
       logger: Logger('test.collection'),
