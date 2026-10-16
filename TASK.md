@@ -62,10 +62,10 @@ so gate 5 can be checked through the live app.
    `collection`/`connections`; the attachments foundation (subtask 1) is the
    shared `lib/core/attachments/` library.
 9. **Sync indicator** (§4.8/§6.6) — `lib/features/sync_status/`. A small, calm
-   app-bar marker over `SyncStore.pendingCount()`, embedded in every content
-   page (`SyncStatusIndicator` in the Timeline / Collection / Connections / Card
-   Edit app bars). A single app-wide `SyncStatusScope` controller refreshes on
-   page mount. Relay-less today (nothing acks, §6.6), so it reads calmly ("saved
+   app-bar marker over `SyncStore.pendingCount()`. Only the Timeline app bar
+   embeds `SyncStatusIndicator` today. A single app-wide `SyncStatusScope`
+   controller reads the count when the marker mounts; nothing refreshes it
+   after a write. Relay-less today (nothing acks, §6.6), so it reads calmly ("saved
    on this device", never an alarm); the reactive push-on-change refresh is
    deferred to the relay via the §1 `ExternalSignalListener` seam. Read-only
    FCIS feature (no UiEffect/EffectEmitter — no one-shot effects).

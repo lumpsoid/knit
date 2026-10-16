@@ -26,8 +26,9 @@ mode, header rename), the **Connections** view (§4.4 — an entity's
 links-out + backlinks over `linksOut`/`backlinks`, a breadcrumb back-stack, and
 the §8.6.1 broken-link chip with clear), the **Card Edit** page (§4.3 — text +
 image + per-card links incl. card→card), and the app-wide **sync indicator**
-(§4.8/§6.6 — a calm app-bar marker over `pendingCount()`, embedded in every
-content page). Two shared primitives back the write
+(§4.8/§6.6 — a calm app-bar marker over `pendingCount()`, shown only in the
+Timeline app bar and read once when it mounts; it does not refresh after a
+write). Two shared primitives back the write
 path: `newUuidV7`
 (`lib/core/ids/`) and `FractionalIndex` (`lib/core/ordering/`, the §8.7 card
 position keys). Cross-page data uses the route-args carrier (cross_feature §2).
@@ -229,9 +230,10 @@ the `lib/sync/` core below.
   collection focus) and the Connections page reads, renders links-out +
   backlinks with the §8.6.1 broken-link chip, and keeps an in-state breadcrumb
   back-stack. `sync_status` (§4.8/§6.6) is a read-only feature with **no page**:
-  its view is `SyncStatusIndicator`, an app-bar marker each content page embeds
-  that shares one app-wide `SyncStatusScope` controller over `pendingCount()`;
-  it carries no UiEffect/EffectEmitter (no one-shot effects).
+  its view is `SyncStatusIndicator`, an app-bar marker over one app-wide
+  `SyncStatusScope` controller reading `pendingCount()`. Only the Timeline app
+  bar embeds it today, and it reads the count when it mounts — writes do not
+  refresh it. It carries no UiEffect/EffectEmitter (no one-shot effects).
 - `search` (§3.2/§4.1) is the first **lightweight** feature (controller +
   `SearchState` ChangeNotifier + page). The Timeline app bar opens it; it
   runs on submit. `SearchReadRepository` flattens live collections and cards into
