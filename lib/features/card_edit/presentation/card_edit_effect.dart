@@ -12,6 +12,21 @@ class SaveCardEffect extends CardEditEffect {
   final String text;
 }
 
+/// Find out whether [cardId] is [collectionId]'s home-timeline preview card.
+class LoadTimelinePreviewEffect extends CardEditEffect {
+  const LoadTimelinePreviewEffect({
+    required this.cardId,
+    required this.collectionId,
+  });
+  final String cardId;
+  final String collectionId;
+}
+
+/// Ask the Timeline to re-read: the edit changed its last-card preview.
+class RefreshTimelineEffect extends CardEditEffect {
+  const RefreshTimelineEffect();
+}
+
 // --- links (subtask 3) -----------------------------------------------------
 
 /// Load the card's outgoing links.

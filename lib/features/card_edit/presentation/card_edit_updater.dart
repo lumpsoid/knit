@@ -20,6 +20,7 @@ class CardEditUpdater
     switch (action) {
       case ViewAttached(
         :final cardId,
+        :final collectionId,
         :final initialText,
         :final initialAttachmentId,
         :final initialAttachmentKind,
@@ -43,9 +44,16 @@ class CardEditUpdater
           ),
           [
             LoadLinksEffect(cardId),
+            LoadTimelinePreviewEffect(
+              cardId: cardId,
+              collectionId: collectionId,
+            ),
             ShowImageEffect(isImage ? initialAttachmentId : null),
           ],
         );
+
+      case TimelinePreviewResolved(:final isTimelinePreview):
+        return (state.copyWith(isTimelinePreview: isTimelinePreview), null);
 
       case SaveRequested(:final text):
         final body = text.trim();
@@ -56,7 +64,7 @@ class CardEditUpdater
         );
 
       case SaveSucceeded():
-        return (state, null);
+        return (state, _refreshTimeline(state));
 
       case SaveFailed():
         return (state.copyWith(status: CardEditStatus.failed), null);
@@ -139,7 +147,10 @@ class CardEditUpdater
             attachmentSize: size,
             attachmentBusy: false,
           ),
-          [ShowImageEffect(kind == CardKind.image ? attachmentId : null)],
+          [
+            ShowImageEffect(kind == CardKind.image ? attachmentId : null),
+            ...?_refreshTimeline(state),
+          ],
         );
 
       case AttachmentEditEnded():
@@ -149,4 +160,9 @@ class CardEditUpdater
         return (state, const [ReleaseImageEffect()]);
     }
   }
+
+  /// A text or attachment edit changes the Timeline only when this card is the
+  /// one its collection's row previews (§8.6.3).
+  static List<CardEditEffect>? _refreshTimeline(CardEditState state) =>
+      state.isTimelinePreview ? const [RefreshTimelineEffect()] : null;
 }

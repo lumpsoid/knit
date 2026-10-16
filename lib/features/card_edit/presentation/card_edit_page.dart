@@ -41,6 +41,7 @@ class _CardEditPageState extends State<CardEditPage> {
       ..dispatch(
         ViewAttached(
           cardId: args.cardId,
+          collectionId: args.collectionId,
           initialText: args.initialText,
           initialAttachmentId: args.initialAttachmentId,
           initialAttachmentKind: args.initialAttachmentKind,

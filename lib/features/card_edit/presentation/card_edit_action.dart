@@ -9,10 +9,12 @@ sealed class CardEditAction {
 
 /// View attached for [cardId], seeded with the text + attachment metadata from
 /// the route-args carrier (cross_feature.md §2). Kicks off loading the card's
-/// links, and shows an image attachment.
+/// links and whether it is its collection's timeline preview, and shows an
+/// image attachment.
 class ViewAttached extends CardEditAction {
   const ViewAttached({
     required this.cardId,
+    required this.collectionId,
     required this.initialText,
     required this.initialAttachmentId,
     this.initialAttachmentKind,
@@ -20,11 +22,18 @@ class ViewAttached extends CardEditAction {
     this.initialFileSize,
   });
   final String cardId;
+  final String collectionId;
   final String initialText;
   final String? initialAttachmentId;
   final CardKind? initialAttachmentKind;
   final String? initialFileName;
   final int? initialFileSize;
+}
+
+/// Whether the card is its collection's home-timeline preview (§8.6.3).
+class TimelinePreviewResolved extends CardEditAction {
+  const TimelinePreviewResolved(this.isTimelinePreview);
+  final bool isTimelinePreview;
 }
 
 /// Save tapped with the composed [text].

@@ -24,6 +24,7 @@ void main() {
         const CardEditState(),
         const ViewAttached(
           cardId: 'c1',
+          collectionId: 'col-1',
           initialText: 'hello',
           initialAttachmentId: null,
         ),
@@ -34,8 +35,10 @@ void main() {
       expect(next.linksLoading, isTrue);
       expect(next.attachmentId, isNull);
       expect(next.attachmentBusy, isFalse);
-      expect(effects, hasLength(2));
+      expect(effects, hasLength(3));
       expect(effects!.whereType<LoadLinksEffect>().single.cardId, 'c1');
+      final preview = effects.whereType<LoadTimelinePreviewEffect>().single;
+      expect((preview.cardId, preview.collectionId), ('c1', 'col-1'));
       expect(effects.whereType<ShowImageEffect>().single.attachmentId, isNull);
     });
 
@@ -44,6 +47,7 @@ void main() {
         const CardEditState(),
         const ViewAttached(
           cardId: 'c1',
+          collectionId: 'col-1',
           initialText: '',
           initialAttachmentId: 'att-1',
           initialAttachmentKind: CardKind.image,
@@ -63,6 +67,7 @@ void main() {
         const CardEditState(),
         const ViewAttached(
           cardId: 'c1',
+          collectionId: 'col-1',
           initialText: '',
           initialAttachmentId: 'att-2',
           initialAttachmentKind: CardKind.file,
@@ -203,7 +208,7 @@ void main() {
       expect(next.attachmentId, 'new');
       expect(next.attachmentKind, CardKind.image);
       expect(next.attachmentBusy, isFalse);
-      expect((effects!.single as ShowImageEffect).attachmentId, 'new');
+      expect(effects!.whereType<ShowImageEffect>().single.attachmentId, 'new');
     });
 
     test('AttachmentResolved with a file fills name/size, no image', () {
@@ -221,7 +226,7 @@ void main() {
       expect(next.attachmentName, 'a.zip');
       expect(next.attachmentSize, 10);
       expect(next.attachmentBusy, isFalse);
-      expect((effects!.single as ShowImageEffect).attachmentId, isNull);
+      expect(effects!.whereType<ShowImageEffect>().single.attachmentId, isNull);
     });
 
     test('AttachmentResolved to null removes the attachment', () {
@@ -238,7 +243,7 @@ void main() {
       expect(next.attachmentId, isNull);
       expect(next.attachmentKind, isNull);
       expect(next.attachmentBusy, isFalse);
-      expect((effects!.single as ShowImageEffect).attachmentId, isNull);
+      expect(effects!.whereType<ShowImageEffect>().single.attachmentId, isNull);
     });
 
     test('AttachmentEditEnded just drops the busy flag', () {
@@ -249,6 +254,55 @@ void main() {
       );
       expect(next.attachmentBusy, isFalse);
       expect(effects, isNull);
+    });
+  });
+
+  group('timeline refresh', () {
+    const preview = CardEditState(cardId: 'c1');
+    final notPreview = preview.copyWith(isTimelinePreview: false);
+
+    test('assumes the card is the preview until the read resolves', () {
+      expect(preview.isTimelinePreview, isTrue);
+    });
+
+    test('TimelinePreviewResolved records the answer', () {
+      final (next, effects) = updater.update(
+        preview,
+        const TimelinePreviewResolved(false),
+      );
+      expect(next.isTimelinePreview, isFalse);
+      expect(effects, isNull);
+    });
+
+    test('a saved edit of the preview card refreshes the Timeline', () {
+      final (_, effects) = updater.update(preview, const SaveSucceeded());
+      expect(effects!.single, isA<RefreshTimelineEffect>());
+    });
+
+    test('a saved edit of any other card does not', () {
+      final (_, effects) = updater.update(notPreview, const SaveSucceeded());
+      expect(effects, isNull);
+    });
+
+    test('an attachment change on the preview card refreshes the Timeline', () {
+      final (_, effects) = updater.update(
+        preview,
+        const AttachmentResolved(attachmentId: 'a', kind: CardKind.image),
+      );
+      expect(effects!.whereType<RefreshTimelineEffect>(), hasLength(1));
+    });
+
+    test('an attachment change on any other card does not', () {
+      final (_, effects) = updater.update(
+        notPreview,
+        const AttachmentResolved(attachmentId: null),
+      );
+      expect(effects!.whereType<RefreshTimelineEffect>(), isEmpty);
+    });
+
+    test('link edits never refresh the Timeline', () {
+      final (_, effects) = updater.update(preview, const LinksChanged());
+      expect(effects!.whereType<RefreshTimelineEffect>(), isEmpty);
     });
   });
 

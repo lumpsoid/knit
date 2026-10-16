@@ -93,17 +93,25 @@ List<CollectionSummary> buildHomeTimeline(List<Snapshot> all) {
   return summaries;
 }
 
-CollectionSummary _summarize(Snapshot collection, List<Snapshot> liveCards) {
-  Snapshot? lastCard;
+/// The card a collection's home-timeline row previews (spec §8.6.3): the
+/// most-recently-added of [liveCards], ties broken by id (UUIDv7) for
+/// determinism. Null when there are none. Placement (`position`) plays no part,
+/// so a reorder never changes it.
+Snapshot? latestCard(Iterable<Snapshot> liveCards) {
+  Snapshot? latest;
   for (final card in liveCards) {
-    // Most-recently-added; ties broken by id (UUIDv7) for determinism.
-    if (lastCard == null ||
-        card.createdAt > lastCard.createdAt ||
-        (card.createdAt == lastCard.createdAt &&
-            card.id.compareTo(lastCard.id) > 0)) {
-      lastCard = card;
+    if (latest == null ||
+        card.createdAt > latest.createdAt ||
+        (card.createdAt == latest.createdAt &&
+            card.id.compareTo(latest.id) > 0)) {
+      latest = card;
     }
   }
+  return latest;
+}
+
+CollectionSummary _summarize(Snapshot collection, List<Snapshot> liveCards) {
+  final lastCard = latestCard(liveCards);
 
   // MAX(created_at) over live cards, else the collection's own (spec §8.6.3).
   final lastUpdated = liveCards.isEmpty

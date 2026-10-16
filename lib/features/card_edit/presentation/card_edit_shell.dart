@@ -11,6 +11,7 @@ import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/card_edit/domain/card_edit_links_read_repository.dart';
+import 'package:knit/features/card_edit/domain/card_edit_timeline_preview_read_repository.dart';
 import 'package:knit/features/card_edit/domain/card_edit_write_repository.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_effect.dart';
@@ -18,6 +19,7 @@ import 'package:knit/features/card_edit/presentation/card_edit_ui_effect.dart';
 import 'package:knit/features/card_links/domain/card_links_failure.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/timeline/domain/timeline_channel.dart';
 
 /// Imperative shell for the Card Edit page (fcis.md §6.6). Unwraps each
 /// repository [Result] at the seam (result.md §9.3): the updater never sees a
@@ -28,6 +30,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
   CardEditShell({
     required CardEditWriteRepository writeRepository,
     required CardEditLinksReadRepository linksReadRepository,
+    required CardEditTimelinePreviewReadRepository timelinePreviewRepository,
+    required TimelineChannelEmitter timelineChannel,
     required CardLinksController cardLinks,
     required AttachmentImageCache imageCache,
     required AttachmentWriteRepository attachmentWriteRepository,
@@ -37,6 +41,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     required Logger logger,
   }) : _write = writeRepository,
        _linksRead = linksReadRepository,
+       _timelinePreview = timelinePreviewRepository,
+       _timelineChannel = timelineChannel,
        _cardLinks = cardLinks,
        _images = imageCache,
        _attachmentWrite = attachmentWriteRepository,
@@ -47,6 +53,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
   final CardEditWriteRepository _write;
   final CardEditLinksReadRepository _linksRead;
+  final CardEditTimelinePreviewReadRepository _timelinePreview;
+  final TimelineChannelEmitter _timelineChannel;
   final CardLinksController _cardLinks;
   final AttachmentImageCache _images;
   final AttachmentWriteRepository _attachmentWrite;
@@ -76,6 +84,30 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
             dispatch(const SaveFailed());
           },
         );
+
+      // --- timeline -------------------------------------------------------
+
+      case LoadTimelinePreviewEffect(:final cardId, :final collectionId):
+        final result = await _timelinePreview.isTimelinePreview(
+          cardId: cardId,
+          collectionId: collectionId,
+        );
+        // On failure the state keeps its default (refresh after an edit).
+        result.onTap(
+          (isPreview) => dispatch(TimelinePreviewResolved(isPreview)),
+          (failure) {
+            _log.warning(
+              'Timeline preview check failed',
+              failure.error,
+              failure.stackTrace,
+            );
+          },
+        );
+
+      case RefreshTimelineEffect():
+        // The Timeline is mounted underneath; nudge it to re-read via its input
+        // channel (cross_feature.md §3).
+        _timelineChannel.emit(const RefreshChannelEvent());
 
       // --- links ----------------------------------------------------------
 

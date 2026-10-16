@@ -5,6 +5,7 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/card_edit/infra/sync_store_card_edit_links_read_repository.dart';
+import 'package:knit/features/card_edit/infra/sync_store_card_edit_timeline_preview_read_repository.dart';
 import 'package:knit/features/card_edit/infra/sync_store_card_edit_write_repository.dart';
 import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -241,5 +242,31 @@ void main() {
         expect(data.cards.single.kind, CardKind.text);
       },
     );
+  });
+
+  group('timeline preview', () {
+    test('only the most recently added live card is the preview', () async {
+      final preview = SyncStoreCardEditTimelinePreviewReadRepository(
+        graph: graph,
+      );
+      Future<bool> isPreview(String cardId, String colId) async =>
+          (await preview.isTimelinePreview(
+            cardId: cardId,
+            collectionId: colId,
+          )).getOrThrow();
+
+      final colId = (await timelineWrite.createCollection('Tea')).getOrThrow();
+      final older = await newCard(colId, 'older');
+      // A later millisecond, so created_at (not the id tie-break) decides.
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      final newer = await newCard(colId, 'newer');
+
+      expect(await isPreview(newer, colId), isTrue);
+      expect(await isPreview(older, colId), isFalse);
+
+      // Deleting the newest hands the preview back to the older card.
+      await store.delete(EntityType.card, newer);
+      expect(await isPreview(older, colId), isTrue);
+    });
   });
 }

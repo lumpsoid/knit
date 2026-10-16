@@ -22,6 +22,7 @@ class CardEditState {
     this.attachmentName,
     this.attachmentSize,
     this.attachmentBusy = false,
+    this.isTimelinePreview = true,
   });
 
   final CardEditStatus status;
@@ -47,6 +48,11 @@ class CardEditState {
   /// An attachment add/replace/remove is in flight — gates the controls.
   final bool attachmentBusy;
 
+  /// The card is its collection's home-timeline preview (§8.6.3), so a text or
+  /// attachment edit must refresh the Timeline. True until the read says
+  /// otherwise: an extra refresh is harmless, a missed one leaves a stale row.
+  final bool isTimelinePreview;
+
   bool get hasAttachment => attachmentId != null;
 
   static const Object _unset = Object();
@@ -62,6 +68,7 @@ class CardEditState {
     Object? attachmentName = _unset,
     Object? attachmentSize = _unset,
     bool? attachmentBusy,
+    bool? isTimelinePreview,
   }) => CardEditState(
     status: status ?? this.status,
     cardId: cardId ?? this.cardId,
@@ -81,5 +88,6 @@ class CardEditState {
         ? this.attachmentSize
         : attachmentSize as int?,
     attachmentBusy: attachmentBusy ?? this.attachmentBusy,
+    isTimelinePreview: isTimelinePreview ?? this.isTimelinePreview,
   );
 }
