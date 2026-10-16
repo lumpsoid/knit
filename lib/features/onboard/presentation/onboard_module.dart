@@ -2,6 +2,9 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
+import 'package:knit/features/backup/domain/backup_import_repository.dart';
+import 'package:knit/features/backup/domain/backup_source_port.dart';
+import 'package:knit/features/onboard/domain/onboard_identity_read_repository.dart';
 import 'package:knit/features/onboard/domain/onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
 import 'package:knit/features/onboard/presentation/onboard_controller.dart';
@@ -14,13 +17,22 @@ import 'package:knit/features/onboard/presentation/onboard_updater.dart';
 
 /// Composition root for Onboard (fcis.md §6.8).
 class OnboardModule {
-  OnboardModule({required OnboardRepository repository, Logger? logger}) {
+  OnboardModule({
+    required OnboardRepository repository,
+    required OnboardIdentityReadRepository identityReadRepository,
+    required BackupSourcePort backupSourcePort,
+    required BackupImportRepository backupImportRepository,
+    Logger? logger,
+  }) {
     final stateHolder = ValueListenableStateHolder<OnboardState>(
       const OnboardState(),
     );
     final effectEmitter = EffectEmitter<OnboardUiEffect>();
     final shell = OnboardShell(
       repository: repository,
+      identityReadRepository: identityReadRepository,
+      backupSourcePort: backupSourcePort,
+      backupImportRepository: backupImportRepository,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.onboard'),
     );

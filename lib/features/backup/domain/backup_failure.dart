@@ -42,3 +42,15 @@ class BackupSaveFailure extends BackupFailure {
 class BackupSourceFailure extends BackupFailure {
   const BackupSourceFailure(super.error, [super.stackTrace]);
 }
+
+/// The passphrase doesn't open the keypair sealed in the bundle (or the sealed
+/// key was tampered with — the two can't be told apart).
+class BackupWrongPassphraseFailure extends BackupFailure {
+  const BackupWrongPassphraseFailure(super.error, [super.stackTrace]);
+}
+
+/// The bundle has no keypair to restore (made before backups carried one), so
+/// it can't set up a device that has no identity yet.
+class BackupMissingIdentityFailure extends BackupFailure {
+  const BackupMissingIdentityFailure(super.error, [super.stackTrace]);
+}

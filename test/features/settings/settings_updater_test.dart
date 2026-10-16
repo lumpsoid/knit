@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/features/backup/domain/backup_models.dart';
 import 'package:knit/features/settings/domain/app_preferences.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
 import 'package:knit/features/settings/presentation/settings_effect.dart';
@@ -94,32 +95,72 @@ void main() {
     );
   });
 
-  test('DataActionRequested(placeholder) stays idle (instant coming-soon)', () {
-    final (next, effects) = updater.update(
-      const SettingsState(),
-      const DataActionRequested(DataAction.exportIdentity),
-    );
-    expect(next.busy, isFalse);
-    expect(
-      (effects!.single as RunDataActionEffect).action,
-      DataAction.exportIdentity,
-    );
-  });
-
   test(
     'ExportRequested sets busy and runs the export with its destination',
     () {
       final (next, effects) = updater.update(
         const SettingsState(),
-        const ExportRequested(BackupDestination.saveFile),
+        const ExportRequested(BackupDestination.saveFile, 'passphrase'),
       );
       expect(next.busy, isTrue);
-      expect(
-        (effects!.single as RunExportEffect).destination,
-        BackupDestination.saveFile,
-      );
+      final effect = effects!.single as RunExportEffect;
+      expect(effect.destination, BackupDestination.saveFile);
+      expect(effect.passphrase, 'passphrase');
     },
   );
+
+  group('replacing the device', () {
+    const bundle = BackupBundle(
+      author: 'aaaa',
+      createdAtMs: 0,
+      identity: null,
+      opLines: [],
+      blobs: {},
+    );
+
+    test('a held bundle runs the replace on confirm', () {
+      final (held, _) = updater.update(
+        const SettingsState(),
+        const RestoreAwaitingPassphrase(bundle),
+      );
+      expect(held.pendingRestore, same(bundle));
+
+      final (next, effects) = updater.update(
+        held,
+        const ReplaceDeviceConfirmed('pass'),
+      );
+      expect(next.busy, isTrue);
+      final effect = effects!.single as RunReplaceDeviceEffect;
+      expect(effect.bundle, same(bundle));
+      expect(effect.passphrase, 'pass');
+    });
+
+    test('confirm without a held bundle does nothing', () {
+      final (next, effects) = updater.update(
+        const SettingsState(),
+        const ReplaceDeviceConfirmed('pass'),
+      );
+      expect(next.busy, isFalse);
+      expect(effects, isNull);
+    });
+
+    test('cancel and settle drop the held bundle', () {
+      const held = SettingsState(pendingRestore: bundle);
+      for (final action in const [ReplaceDeviceCancelled(), RestoreSettled()]) {
+        final (next, _) = updater.update(held, action);
+        expect(next.pendingRestore, isNull);
+      }
+    });
+  });
+
+  test('ResetIdentityConfirmed sets busy and runs the reset', () {
+    final (next, effects) = updater.update(
+      const SettingsState(),
+      const ResetIdentityConfirmed(),
+    );
+    expect(next.busy, isTrue);
+    expect(effects!.single, isA<RunResetIdentityEffect>());
+  });
 
   test('DataActionFinished clears busy', () {
     final (next, effects) = updater.update(

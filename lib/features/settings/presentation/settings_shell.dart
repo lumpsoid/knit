@@ -1,13 +1,19 @@
+import 'dart:typed_data';
+
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:result_dart/result_dart.dart';
 import 'package:knit/features/backup/domain/backup_delivery_port.dart';
 import 'package:knit/features/backup/domain/backup_export_repository.dart';
+import 'package:knit/features/backup/domain/backup_failure.dart';
 import 'package:knit/features/backup/domain/backup_import_repository.dart';
 import 'package:knit/features/backup/domain/backup_models.dart';
 import 'package:knit/features/backup/domain/backup_save_port.dart';
 import 'package:knit/features/backup/domain/backup_source_port.dart';
+import 'package:knit/features/settings/domain/identity_reset_confirmation.dart';
+import 'package:knit/features/settings/domain/settings_identity_read_repository.dart';
+import 'package:knit/features/settings/domain/settings_identity_reset_repository.dart';
 import 'package:knit/features/settings/domain/settings_read_repository.dart';
 import 'package:knit/features/settings/domain/settings_wipe_repository.dart';
 import 'package:knit/features/settings/domain/settings_write_repository.dart';
@@ -20,16 +26,19 @@ import 'package:knit/features/settings/presentation/settings_ui_effect.dart';
 /// at the seam (result.md §9.3) into success/failure Actions / UiEffects; the
 /// updater never sees a Result.
 ///
-/// The data-management seam (§4 Data subpage): export builds the bundle and
-/// delivers it (share or save-to-file), import picks + restores it, and wipe
-/// deletes every collection/card/link on the device; all three end by
-/// dispatching [DataActionFinished] so the busy spinner clears. The
-/// identity export/reset actions are still placeholders.
+/// The data-management seam (§4 Data subpage): export builds the bundle (data +
+/// passphrase-sealed keypair) and delivers it (share or save-to-file); import
+/// picks a bundle and merges it, or — when it belongs to another identity —
+/// holds it until the user confirms replacing this device; wipe deletes the
+/// data; reset deletes the data and the keypair. Each ends by dispatching
+/// [DataActionFinished] so the busy spinner clears.
 class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
   SettingsShell({
     required SettingsReadRepository readRepository,
     required SettingsWriteRepository writeRepository,
     required SettingsWipeRepository wipeRepository,
+    required SettingsIdentityReadRepository identityReadRepository,
+    required SettingsIdentityResetRepository identityResetRepository,
     required BackupExportRepository backupExportRepository,
     required BackupImportRepository backupImportRepository,
     required BackupDeliveryPort backupDeliveryPort,
@@ -41,6 +50,8 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
   }) : _read = readRepository,
        _write = writeRepository,
        _wipe = wipeRepository,
+       _identityRead = identityReadRepository,
+       _identityReset = identityResetRepository,
        _export = backupExportRepository,
        _import = backupImportRepository,
        _delivery = backupDeliveryPort,
@@ -53,6 +64,8 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
   final SettingsReadRepository _read;
   final SettingsWriteRepository _write;
   final SettingsWipeRepository _wipe;
+  final SettingsIdentityReadRepository _identityRead;
+  final SettingsIdentityResetRepository _identityReset;
   final BackupExportRepository _export;
   final BackupImportRepository _import;
   final BackupDeliveryPort _delivery;
@@ -93,19 +106,23 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
           );
           dispatch(const PreferencesSaveFailed());
         });
-      case RunExportEffect(:final destination):
-        await _runExport(destination, dispatch);
+      case RunExportEffect(:final destination, :final passphrase):
+        await _runExport(destination, passphrase, dispatch);
+      case RunReplaceDeviceEffect(:final bundle, :final passphrase):
+        await _runReplaceDevice(bundle, passphrase, dispatch);
+      case RunResetIdentityEffect():
+        await _runResetIdentity(dispatch);
       case RunDataActionEffect(:final action):
         switch (action) {
           case DataAction.importData:
             await _runImport(dispatch);
           case DataAction.wipeData:
             await _runWipe(dispatch);
-          case DataAction.exportData:
-          case DataAction.exportIdentity:
           case DataAction.resetIdentity:
-            // Export is handled via RunExportEffect; the rest are placeholders.
-            _effectEmitter.push(SettingsComingSoonUiEffect(action));
+            await _askResetConfirmation(dispatch);
+          case DataAction.exportData:
+            // Export runs via RunExportEffect (it needs a passphrase first).
+            dispatch(const DataActionFinished());
         }
     }
   }
@@ -114,9 +131,10 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
   /// spinner via [DataActionFinished], whatever the outcome.
   Future<void> _runExport(
     BackupDestination destination,
+    String passphrase,
     void Function(SettingsAction) dispatch,
   ) async {
-    final exported = await _export.exportAll();
+    final exported = await _export.exportAll(passphrase);
     switch (exported) {
       case Ok(value: final archive):
         switch (destination) {
@@ -167,36 +185,123 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
     }
   }
 
-  /// Pick a bundle, then replay it through the store. A cancelled pick is silent.
+  /// Pick a bundle and plan its restore: this identity's own bundle (or an old
+  /// one without a keypair) merges at once; another identity's is held while
+  /// the user confirms replacing the device. A cancelled pick is silent.
   /// Always clears the spinner via [DataActionFinished].
   Future<void> _runImport(void Function(SettingsAction) dispatch) async {
     final picked = await _source.pickArchive();
     switch (picked) {
       case Ok(value: final bytes):
-        if (bytes != null) {
-          final restored = await _import.importArchive(bytes);
-          switch (restored) {
-            case Ok(value: final summary):
-              // A restore changed the graph — nudge the Timeline (mounted under
-              // Settings) to re-read the home feed (cross_feature.md §3).
-              _timelineChannel.emit(const RefreshChannelEvent());
-              _effectEmitter.push(SettingsBackupImportedUiEffect(summary));
-            case Failure(:final error):
-              _log.severe(
-                'Backup import failed',
-                error.error,
-                error.stackTrace,
-              );
-              _effectEmitter.push(
-                const SettingsBackupFailedUiEffect(DataAction.importData),
-              );
-          }
-        }
+        if (bytes != null) await _planRestore(bytes, dispatch);
       case Failure(:final error):
         _log.severe('Backup pick failed', error.error, error.stackTrace);
+        _importFailed();
+    }
+    dispatch(const DataActionFinished());
+  }
+
+  Future<void> _planRestore(
+    Uint8List bytes,
+    void Function(SettingsAction) dispatch,
+  ) async {
+    final planned = await _import.plan(bytes);
+    switch (planned) {
+      case Ok(value: RestorePlan(:final bundle, :final kind)):
+        switch (kind) {
+          case RestoreKind.merge:
+            await _runMerge(bundle);
+          case RestoreKind.replaceDevice:
+            dispatch(RestoreAwaitingPassphrase(bundle));
+            _effectEmitter.push(
+              SettingsConfirmReplaceUiEffect(createdAtMs: bundle.createdAtMs),
+            );
+          case RestoreKind.missingIdentity:
+            // Unreachable here — Settings only opens with an identity.
+            _log.warning('Restore planned without a device identity');
+            _importFailed();
+        }
+      case Failure(:final error):
+        _log.severe('Backup read failed', error.error, error.stackTrace);
+        _importFailed();
+    }
+  }
+
+  Future<void> _runMerge(BackupBundle bundle) async {
+    final restored = await _import.merge(bundle);
+    switch (restored) {
+      case Ok(value: final summary):
+        // A restore changed the graph — nudge the Timeline (mounted under
+        // Settings) to re-read the home feed (cross_feature.md §3).
+        _timelineChannel.emit(const RefreshChannelEvent());
+        _effectEmitter.push(SettingsBackupImportedUiEffect(summary));
+      case Failure(:final error):
+        _log.severe('Backup import failed', error.error, error.stackTrace);
+        _importFailed();
+    }
+  }
+
+  /// Erase this device and restore [bundle] onto it. A wrong passphrase keeps
+  /// the bundle held and asks again; anything else settles the restore.
+  Future<void> _runReplaceDevice(
+    BackupBundle bundle,
+    String passphrase,
+    void Function(SettingsAction) dispatch,
+  ) async {
+    final restored = await _import.replaceDevice(bundle, passphrase);
+    switch (restored) {
+      case Ok(value: final summary):
+        dispatch(const RestoreSettled());
+        _timelineChannel.emit(const RefreshChannelEvent());
+        _effectEmitter.push(SettingsDeviceReplacedUiEffect(summary));
+      case Failure(error: BackupWrongPassphraseFailure()):
         _effectEmitter.push(
-          const SettingsBackupFailedUiEffect(DataAction.importData),
+          SettingsConfirmReplaceUiEffect(
+            createdAtMs: bundle.createdAtMs,
+            wrongPassphrase: true,
+          ),
         );
+      case Failure(:final error):
+        _log.severe('Device replace failed', error.error, error.stackTrace);
+        dispatch(const RestoreSettled());
+        // The device may now be partly erased — refresh what's left.
+        _timelineChannel.emit(const RefreshChannelEvent());
+        _importFailed();
+    }
+    dispatch(const DataActionFinished());
+  }
+
+  void _importFailed() => _effectEmitter.push(
+    const SettingsBackupFailedUiEffect(DataAction.importData),
+  );
+
+  /// Read the nickname the user must type to confirm the reset.
+  Future<void> _askResetConfirmation(
+    void Function(SettingsAction) dispatch,
+  ) async {
+    final nickname = await _identityRead.nickname();
+    switch (nickname) {
+      case Ok(:final value):
+        _effectEmitter.push(
+          SettingsConfirmResetUiEffect(IdentityResetConfirmation(value)),
+        );
+      case Failure(:final error):
+        _log.severe('Identity read failed', error.error, error.stackTrace);
+        _effectEmitter.push(const SettingsResetFailedUiEffect());
+    }
+    dispatch(const DataActionFinished());
+  }
+
+  /// Erase the data and the keypair (the UI already confirmed it).
+  Future<void> _runResetIdentity(void Function(SettingsAction) dispatch) async {
+    final result = await _identityReset.reset();
+    _timelineChannel.emit(const RefreshChannelEvent());
+    switch (result) {
+      case Ok():
+        _effectEmitter.push(const SettingsIdentityResetUiEffect());
+      case Failure(:final error):
+        _log.severe('Reset identity failed', error.error, error.stackTrace);
+        _effectEmitter.push(const SettingsResetFailedUiEffect());
     }
     dispatch(const DataActionFinished());
   }

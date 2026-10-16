@@ -15,3 +15,8 @@ sealed class OnboardFailure {
 class IdentityCreationFailure extends OnboardFailure {
   const IdentityCreationFailure(super.error, [super.stackTrace]);
 }
+
+/// Reading the device identity back (after a restore) failed.
+class IdentityReadFailure extends OnboardFailure {
+  const IdentityReadFailure(super.error, [super.stackTrace]);
+}

@@ -24,3 +24,14 @@ class PreferencesSaveFailure extends SettingsFailure {
 class WipeDataFailure extends SettingsFailure {
   const WipeDataFailure(super.error, [super.stackTrace]);
 }
+
+/// Reading this device's identity (for the reset confirmation) failed.
+class IdentityReadFailure extends SettingsFailure {
+  const IdentityReadFailure(super.error, [super.stackTrace]);
+}
+
+/// Resetting the device (data + keypair) failed partway — the device may be
+/// left without some content, so the page must report it.
+class ResetIdentityFailure extends SettingsFailure {
+  const ResetIdentityFailure(super.error, [super.stackTrace]);
+}

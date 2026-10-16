@@ -119,7 +119,22 @@ so deep wandering doesn't lose you. Can later grow into a graph view (read-side 
 - **Sync / Relay** (subpage): relay ip/domain field + "Check connectivity" button; shows
   last-sync status. Settings live in a local `app_setting(key,value)` table — **not synced**.
 - **Profile / Identity** (subpage): set/change nickname anytime; view ID
-  (`nickname#fingerprint`); export/back up the keypair.
+  (`nickname#fingerprint`).
+- **Data** (subpage) — backup, restore and reset (**decided**). Data is signed by the
+  keypair, so the two travel together:
+  - **Export** writes one bundle: the signed `change_log`, the attachment blobs, and the
+    keypair. The secret is sealed under a passphrase the user picks at export time
+    (Argon2id → XChaCha20-Poly1305, the pubkey bound as AAD). There is no separate
+    "export identity".
+  - **Import** of this identity's own bundle (or a pre-keypair v1 bundle) merges by
+    replay. A bundle from **another identity replaces the device**: after a confirm and
+    the passphrase, the device is erased, adopts the bundle's keypair, and replays the
+    log. A wrong passphrase fails before anything is erased.
+  - **Onboarding** offers "Restore from backup" next to Generate (the same replace, on
+    an empty device).
+  - **Reset identity** erases the data *and* the keypair and returns to onboarding. The
+    user must type their nickname to confirm, or choose "Back up first".
+  - **Wipe data** still erases the content but keeps the keypair and profile.
 
 ### 4.6 Share flow (sheet)
 Publish a collection or card to a relay as read-only or shared. **(Designed in §10.)**
@@ -148,6 +163,9 @@ Opens "pick/create collection" (not an in-app screen).
 - A relay *may* later offer an optional friendly-handle registry — a relay feature, not the
   base model.
 - **Identity is backed up by backing up the keypair** — same ownership principle as the data.
+  The backup bundle carries the keypair, its secret sealed under a passphrase (§4.5). That
+  bundle is the one exception to "the private key never leaves the device"; it never leaves
+  in the clear.
 
 ---
 

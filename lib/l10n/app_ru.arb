@@ -52,6 +52,22 @@
   "onboardEnter": "Войти в Knit",
   "onboardCopyPublicKey": "Скопировать публичный ключ",
   "onboardPublicKeyCopied": "Публичный ключ скопирован",
+  "onboardRestore": "Восстановить из копии",
+  "onboardRestoreTitle": "Восстановление копии",
+  "onboardRestoreBody": "Введите пароль, который вы задали при экспорте этой копии {date}.",
+  "@onboardRestoreBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "onboardRestoreAction": "Восстановить",
+  "onboardRestoreWrongPassphrase": "Неверный пароль",
+  "onboardRestoringTitle": "Восстанавливаем копию…",
+  "onboardRestoringBody": "Открываем ключ и переносим карточки.",
+  "onboardRestoreUnreadable": "Этот файл не является резервной копией Knit.",
+  "onboardRestoreNoIdentity": "Эта копия создана до того, как копии стали включать ключ, поэтому личность из неё не восстановить. Создайте новую личность, затем импортируйте копию в настройках.",
+  "onboardRestoreFailed": "Не удалось восстановить копию. Попробуйте ещё раз.",
+  "onboardWelcomeBackTitle": "С возвращением",
 
   "timelineCollectionFab": "Коллекция",
   "timelineNewCollectionTitle": "Новая коллекция",
@@ -277,22 +293,14 @@
   "settingsAboutVersionLabel": "Версия",
   "settingsDataTransferSection": "Резервное копирование и перенос",
   "settingsExport": "Экспорт данных",
-  "settingsExportSubtitle": "Сохранить коллекции и карточки в файл",
+  "settingsExportSubtitle": "Сохраните коллекции, карточки и ключ в файл",
   "settingsImport": "Импорт данных",
   "settingsImportSubtitle": "Восстановить из ранее экспортированного файла",
-  "settingsExportIdentity": "Экспорт ключа",
-  "settingsExportIdentitySubtitle": "Сохраните приватный ключ, чтобы восстановить «себя»",
   "settingsDangerSection": "Опасная зона",
   "settingsWipeData": "Стереть данные",
   "settingsWipeDataSubtitle": "Удалить все коллекции и карточки на этом устройстве",
   "settingsResetIdentity": "Сбросить ключ",
-  "settingsResetIdentitySubtitle": "Удалить ключ этого устройства и начать заново",
-  "settingsComingSoon": "{feature} — скоро",
-  "@settingsComingSoon": {
-    "placeholders": {
-      "feature": { "type": "String" }
-    }
-  },
+  "settingsResetIdentitySubtitle": "Удалить все данные и ключ этого устройства и начать заново",
   "settingsExportChooseTitle": "Экспорт резервной копии",
   "settingsExportChooseShare": "Поделиться…",
   "settingsExportChooseShareSubtitle": "Отправить копию в другое приложение",
@@ -321,6 +329,43 @@
   "settingsWipeConfirmAction": "Стереть данные",
   "settingsWipeDone": "Все данные стёрты",
   "settingsWipeFailed": "Не удалось стереть данные",
+  "settingsExportPassphraseTitle": "Защитите ключ",
+  "settingsExportPassphraseMessage": "Резервная копия содержит ваш приватный ключ. Задайте пароль для его шифрования — он понадобится для восстановления, и восстановить забытый пароль нельзя.",
+  "settingsPassphraseLabel": "Пароль",
+  "settingsPassphraseConfirmLabel": "Повторите пароль",
+  "settingsPassphraseTooShort": "Не меньше {min} символов",
+  "@settingsPassphraseTooShort": {
+    "placeholders": {
+      "min": { "type": "int" }
+    }
+  },
+  "settingsPassphraseMismatch": "Пароли не совпадают",
+  "settingsExportPassphraseAction": "Продолжить",
+  "settingsReplaceTitle": "Заменить данные устройства?",
+  "settingsReplaceMessage": "Эта резервная копия от {date} принадлежит другой личности. Восстановление удалит всё на этом устройстве, включая ваш ключ, и сделает вас этой личностью. Введите пароль копии, чтобы продолжить.",
+  "@settingsReplaceMessage": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsReplaceWrongPassphrase": "Неверный пароль",
+  "settingsReplaceAction": "Стереть и восстановить",
+  "settingsDeviceReplaced": "Копия восстановлена — элементов: {applied}",
+  "@settingsDeviceReplaced": {
+    "placeholders": {
+      "applied": { "type": "int" }
+    }
+  },
+  "settingsResetConfirmTitle": "Сбросить ключ?",
+  "settingsResetConfirmMessage": "Все коллекции, карточки и связи на этом устройстве, а также ваш ключ будут удалены навсегда. Без резервной копии ничего из созданного не получится восстановить от вашего имени. Введите {word} для подтверждения.",
+  "@settingsResetConfirmMessage": {
+    "placeholders": {
+      "word": { "type": "String" }
+    }
+  },
+  "settingsResetConfirmAction": "Сбросить",
+  "settingsResetBackupFirst": "Сначала сохранить копию",
+  "settingsResetFailed": "Не удалось сбросить ключ",
 
   "syncAllSaved": "Все изменения сохранены",
   "syncUnavailable": "Статус синхронизации недоступен",

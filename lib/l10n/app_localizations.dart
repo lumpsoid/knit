@@ -350,6 +350,72 @@ abstract class AppLocalizations {
   /// **'Public key copied'**
   String get onboardPublicKeyCopied;
 
+  /// No description provided for @onboardRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from backup'**
+  String get onboardRestore;
+
+  /// No description provided for @onboardRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore your backup'**
+  String get onboardRestoreTitle;
+
+  /// No description provided for @onboardRestoreBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the passphrase you chose when you exported this backup on {date}.'**
+  String onboardRestoreBody(String date);
+
+  /// No description provided for @onboardRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get onboardRestoreAction;
+
+  /// No description provided for @onboardRestoreWrongPassphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong passphrase'**
+  String get onboardRestoreWrongPassphrase;
+
+  /// No description provided for @onboardRestoringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring your backup…'**
+  String get onboardRestoringTitle;
+
+  /// No description provided for @onboardRestoringBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlocking your key and replaying your cards.'**
+  String get onboardRestoringBody;
+
+  /// No description provided for @onboardRestoreUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'That file isn\'t a Knit backup.'**
+  String get onboardRestoreUnreadable;
+
+  /// No description provided for @onboardRestoreNoIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup was made before backups included the key, so it can\'t restore an identity. Create a new identity, then import it from Settings.'**
+  String get onboardRestoreNoIdentity;
+
+  /// No description provided for @onboardRestoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t restore the backup. Please try again.'**
+  String get onboardRestoreFailed;
+
+  /// No description provided for @onboardWelcomeBackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get onboardWelcomeBackTitle;
+
   /// No description provided for @timelineCollectionFab.
   ///
   /// In en, this message translates to:
@@ -1271,7 +1337,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsExportSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Save your collections and cards to a file'**
+  /// **'Save your collections, cards and key to a file'**
   String get settingsExportSubtitle;
 
   /// No description provided for @settingsImport.
@@ -1285,18 +1351,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore from a previously exported file'**
   String get settingsImportSubtitle;
-
-  /// No description provided for @settingsExportIdentity.
-  ///
-  /// In en, this message translates to:
-  /// **'Export identity'**
-  String get settingsExportIdentity;
-
-  /// No description provided for @settingsExportIdentitySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Back up your private key so you can restore \"you\"'**
-  String get settingsExportIdentitySubtitle;
 
   /// No description provided for @settingsDangerSection.
   ///
@@ -1325,14 +1379,8 @@ abstract class AppLocalizations {
   /// No description provided for @settingsResetIdentitySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Discard this device\'s key and start over'**
+  /// **'Delete all data and this device\'s key, then start over'**
   String get settingsResetIdentitySubtitle;
-
-  /// No description provided for @settingsComingSoon.
-  ///
-  /// In en, this message translates to:
-  /// **'{feature} — coming soon'**
-  String settingsComingSoon(String feature);
 
   /// No description provided for @settingsExportChooseTitle.
   ///
@@ -1429,6 +1477,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t wipe the data'**
   String get settingsWipeFailed;
+
+  /// No description provided for @settingsExportPassphraseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect your key'**
+  String get settingsExportPassphraseTitle;
+
+  /// No description provided for @settingsExportPassphraseMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The backup includes your private key. Choose a passphrase to encrypt it — you\'ll need it to restore the backup, and it can\'t be recovered if you forget it.'**
+  String get settingsExportPassphraseMessage;
+
+  /// No description provided for @settingsPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase'**
+  String get settingsPassphraseLabel;
+
+  /// No description provided for @settingsPassphraseConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat passphrase'**
+  String get settingsPassphraseConfirmLabel;
+
+  /// No description provided for @settingsPassphraseTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least {min} characters'**
+  String settingsPassphraseTooShort(int min);
+
+  /// No description provided for @settingsPassphraseMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The passphrases don\'t match'**
+  String get settingsPassphraseMismatch;
+
+  /// No description provided for @settingsExportPassphraseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get settingsExportPassphraseAction;
+
+  /// No description provided for @settingsReplaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace this device?'**
+  String get settingsReplaceTitle;
+
+  /// No description provided for @settingsReplaceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup from {date} belongs to another identity. Restoring it deletes everything on this device, including your key, and makes you that identity. Enter the backup\'s passphrase to continue.'**
+  String settingsReplaceMessage(String date);
+
+  /// No description provided for @settingsReplaceWrongPassphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong passphrase'**
+  String get settingsReplaceWrongPassphrase;
+
+  /// No description provided for @settingsReplaceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Erase and restore'**
+  String get settingsReplaceAction;
+
+  /// No description provided for @settingsDeviceReplaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored — {applied} items'**
+  String settingsDeviceReplaced(int applied);
+
+  /// No description provided for @settingsResetConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset identity?'**
+  String get settingsResetConfirmTitle;
+
+  /// No description provided for @settingsResetConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes every collection, card and link on this device, and your key. Without a backup, nothing you made can be restored as you. Type {word} to confirm.'**
+  String settingsResetConfirmMessage(String word);
+
+  /// No description provided for @settingsResetConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get settingsResetConfirmAction;
+
+  /// No description provided for @settingsResetBackupFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up first'**
+  String get settingsResetBackupFirst;
+
+  /// No description provided for @settingsResetFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reset the identity'**
+  String get settingsResetFailed;
 
   /// No description provided for @syncAllSaved.
   ///

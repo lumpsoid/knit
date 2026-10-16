@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/onboard/domain/identity_card.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
@@ -12,6 +13,8 @@ import 'package:knit/features/timeline/presentation/timeline_page.dart';
 
 /// The first-run identity ceremony (spec §5): welcome → nickname → explain →
 /// generate (with a visible "minting" moment) → reveal → into the timeline.
+/// The welcome also restores a backup: pick it → passphrase → restoring →
+/// the same reveal, as a "welcome back".
 class OnboardPage extends StatefulWidget {
   const OnboardPage({super.key});
 
@@ -25,6 +28,7 @@ class OnboardPage extends StatefulWidget {
 class _OnboardPageState extends State<OnboardPage> {
   OnboardController get _controller => OnboardScope.controller;
   final TextEditingController _nicknameField = TextEditingController();
+  final TextEditingController _passphraseField = TextEditingController();
 
   @override
   void initState() {
@@ -40,6 +44,7 @@ class _OnboardPageState extends State<OnboardPage> {
       ..dispatch(const DeactivateFeature())
       ..onDetach();
     _nicknameField.dispose();
+    _passphraseField.dispose();
     super.dispose();
   }
 
@@ -79,7 +84,9 @@ class _OnboardPageState extends State<OnboardPage> {
     switch (state.step) {
       case OnboardStep.welcome:
         return _WelcomeView(
+          restoreError: state.restoreError,
           onGetStarted: () => _controller.dispatch(const GetStartedTapped()),
+          onRestore: () => _controller.dispatch(const RestoreTapped()),
         );
       case OnboardStep.nickname:
         return _NicknameView(
@@ -98,10 +105,35 @@ class _OnboardPageState extends State<OnboardPage> {
           onBack: () => _controller.dispatch(const BackTapped()),
         );
       case OnboardStep.generating:
-        return const _GeneratingView();
+        final l10n = AppLocalizations.of(context);
+        return _GeneratingView(
+          title: l10n.onboardGeneratingTitle,
+          body: l10n.onboardGeneratingBody,
+        );
+      case OnboardStep.restorePassphrase:
+        return _RestorePassphraseView(
+          field: _passphraseField,
+          createdAtMs: state.restoreBundle?.createdAtMs ?? 0,
+          wrongPassphrase:
+              state.restoreError == OnboardRestoreError.wrongPassphrase,
+          onRestore: () => _controller.dispatch(
+            RestorePassphraseSubmitted(_passphraseField.text),
+          ),
+          onBack: () {
+            _passphraseField.clear();
+            _controller.dispatch(const BackTapped());
+          },
+        );
+      case OnboardStep.restoring:
+        final l10n = AppLocalizations.of(context);
+        return _GeneratingView(
+          title: l10n.onboardRestoringTitle,
+          body: l10n.onboardRestoringBody,
+        );
       case OnboardStep.reveal:
         return _RevealView(
           identity: state.identity!,
+          restored: state.restored,
           onEnter: () => _controller.dispatch(const EnterAppTapped()),
         );
     }
@@ -111,8 +143,14 @@ class _OnboardPageState extends State<OnboardPage> {
 // --- Steps -----------------------------------------------------------------
 
 class _WelcomeView extends StatelessWidget {
-  const _WelcomeView({required this.onGetStarted});
+  const _WelcomeView({
+    required this.restoreError,
+    required this.onGetStarted,
+    required this.onRestore,
+  });
+  final OnboardRestoreError? restoreError;
   final VoidCallback onGetStarted;
+  final VoidCallback onRestore;
 
   @override
   Widget build(BuildContext context) {
@@ -139,10 +177,100 @@ class _WelcomeView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const Spacer(),
+        if (_errorText(l10n) case final error?) ...[
+          Text(
+            error,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+        ],
         FilledButton(
           onPressed: onGetStarted,
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
           child: Text(l10n.onboardGetStarted),
+        ),
+        const SizedBox(height: 8),
+        TextButton(onPressed: onRestore, child: Text(l10n.onboardRestore)),
+      ],
+    );
+  }
+
+  String? _errorText(AppLocalizations l10n) => switch (restoreError) {
+    OnboardRestoreError.unreadable => l10n.onboardRestoreUnreadable,
+    OnboardRestoreError.noIdentity => l10n.onboardRestoreNoIdentity,
+    OnboardRestoreError.failed => l10n.onboardRestoreFailed,
+    OnboardRestoreError.wrongPassphrase || null => null,
+  };
+}
+
+class _RestorePassphraseView extends StatelessWidget {
+  const _RestorePassphraseView({
+    required this.field,
+    required this.createdAtMs,
+    required this.wrongPassphrase,
+    required this.onRestore,
+    required this.onBack,
+  });
+
+  final TextEditingController field;
+  final int createdAtMs;
+  final bool wrongPassphrase;
+  final VoidCallback onRestore;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final date = DateFormat.yMMMd(
+      Localizations.localeOf(context).toString(),
+    ).format(DateTime.fromMillisecondsSinceEpoch(createdAtMs));
+    return _Frame(
+      onBack: onBack,
+      children: [
+        const SizedBox(height: 24),
+        Icon(
+          Icons.settings_backup_restore,
+          size: 64,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          l10n.onboardRestoreTitle,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          l10n.onboardRestoreBody(date),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 28),
+        TextField(
+          controller: field,
+          autofocus: true,
+          obscureText: true,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            labelText: l10n.settingsPassphraseLabel,
+            errorText: wrongPassphrase
+                ? l10n.onboardRestoreWrongPassphrase
+                : null,
+            border: const OutlineInputBorder(),
+          ),
+          onSubmitted: (_) => onRestore(),
+        ),
+        const Spacer(),
+        FilledButton(
+          onPressed: onRestore,
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+          child: Text(l10n.onboardRestoreAction),
         ),
       ],
     );
@@ -282,7 +410,9 @@ class _ExplainView extends StatelessWidget {
 }
 
 class _GeneratingView extends StatefulWidget {
-  const _GeneratingView();
+  const _GeneratingView({required this.title, required this.body});
+  final String title;
+  final String body;
 
   @override
   State<_GeneratingView> createState() => _GeneratingViewState();
@@ -336,14 +466,14 @@ class _GeneratingViewState extends State<_GeneratingView>
         ),
         const SizedBox(height: 32),
         Text(
-          AppLocalizations.of(context).onboardGeneratingTitle,
+          widget.title,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          AppLocalizations.of(context).onboardGeneratingBody,
+          widget.body,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -356,8 +486,13 @@ class _GeneratingViewState extends State<_GeneratingView>
 }
 
 class _RevealView extends StatelessWidget {
-  const _RevealView({required this.identity, required this.onEnter});
+  const _RevealView({
+    required this.identity,
+    required this.restored,
+    required this.onEnter,
+  });
   final IdentityCard identity;
+  final bool restored;
   final VoidCallback onEnter;
 
   @override
@@ -369,7 +504,7 @@ class _RevealView extends StatelessWidget {
       children: [
         const SizedBox(height: 16),
         Text(
-          l10n.onboardRevealTitle,
+          restored ? l10n.onboardWelcomeBackTitle : l10n.onboardRevealTitle,
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),

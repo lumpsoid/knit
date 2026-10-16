@@ -166,6 +166,40 @@ class SyncStore {
   /// returns the existing key if one is already provisioned.
   Future<String> provisionIdentity() async => (await _identity()).pubkey;
 
+  /// The device keypair in the clear — for the backup bundle only, which seals
+  /// the secret under a user passphrase before it leaves the store (§5: identity
+  /// is backed up by backing up the keypair). Provisions one if [open] has not.
+  Future<Keypair> exportKeypair() async {
+    final identity = await _identity();
+    return Keypair(publicKeyHex: identity.pubkey, secretKey: identity.secret);
+  }
+
+  /// Adopt [keypair] as this device's identity, replacing any current one
+  /// (restore from a backup, §5). The secret is checked against the public key
+  /// first — a probe signed with it must verify under [Keypair.publicKeyHex] —
+  /// so a mismatched pair throws [ArgumentError] and leaves the device as it
+  /// was. Content is untouched: a caller restoring a whole device runs
+  /// [resetDevice] first.
+  Future<void> adoptIdentity(Keypair keypair) async {
+    final probe = utf8.encode('knit-identity-probe');
+    final sig = await signer.sign(keypair.secretKey, probe);
+    if (!await signer.verify(keypair.publicKeyHex, probe, sig)) {
+      throw ArgumentError('the secret key does not match the public key');
+    }
+    await localIdentity.clear();
+    await localIdentity.save(
+      LocalIdentity(
+        publicKeyHex: keypair.publicKeyHex,
+        secretKeyEnc: _secretBox.seal(keypair.secretKey),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+    _identityCache = (
+      pubkey: keypair.publicKeyHex,
+      secret: List<int>.unmodifiable(keypair.secretKey),
+    );
+  }
+
   // --- Apply remote (spec §8.5) ----------------------------------------------
 
   /// Apply a verified remote op and persist it atomically — spec §8.5.
@@ -498,6 +532,22 @@ class SyncStore {
         await projection.upsert(row, ctx: ctx);
       }
     });
+  }
+
+  /// Return the device to a fresh install: every entity, the signed log, the
+  /// quarantine **and the keypair** are gone, so [hasIdentity] reads `false`
+  /// and the next step is onboarding (Settings "Reset identity"). Data is
+  /// signed by the key, so the two go together. The device clock is kept so
+  /// the HLC never runs backwards. Attachment blobs are out-of-band, so the
+  /// caller removes them.
+  Future<void> resetDevice() async {
+    await _unitOfWork.run((ctx) async {
+      await projection.clear(ctx: ctx);
+      await changeLog.clear(ctx: ctx);
+      await quarantine.clear(ctx: ctx);
+      await localIdentity.clear(ctx: ctx);
+    });
+    _identityCache = null;
   }
 
   // --- Helpers ---------------------------------------------------------------

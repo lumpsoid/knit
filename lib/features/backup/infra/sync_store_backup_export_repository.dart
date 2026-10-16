@@ -6,6 +6,7 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/features/backup/domain/backup_export_repository.dart';
 import 'package:knit/features/backup/domain/backup_failure.dart';
 import 'package:knit/features/backup/domain/backup_models.dart';
+import 'package:knit/features/backup/domain/identity_key_cipher.dart';
 import 'package:knit/features/backup/infra/backup_archive_codec.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -16,22 +17,29 @@ import 'package:knit/sync/sync.dart';
 /// survives byte-for-byte (no re-canonicalization) — plus the content-addressed
 /// attachment **bytes** pulled from the blob store by `content_hash`. A missing
 /// blob is skipped, not fatal: the metadata op still ships, and import surfaces
-/// the gap.
+/// the gap. The keypair rides along, its secret sealed under the user's
+/// passphrase by the [IdentityKeyCipher] (§5), so the bundle restores *you* as
+/// well as your data.
 class SyncStoreBackupExportRepository implements BackupExportRepository {
   SyncStoreBackupExportRepository({
     required AppGraph graph,
+    required IdentityKeyCipher cipher,
     BackupArchiveCodec codec = const BackupArchiveCodec(),
     DateTime Function() now = DateTime.now,
   }) : _graph = graph,
+       _cipher = cipher,
        _codec = codec,
        _now = now;
 
   final AppGraph _graph;
+  final IdentityKeyCipher _cipher;
   final BackupArchiveCodec _codec;
   final DateTime Function() _now;
 
   @override
-  Future<Result<BackupArchive, BackupFailure>> exportAll() async {
+  Future<Result<BackupArchive, BackupFailure>> exportAll(
+    String passphrase,
+  ) async {
     try {
       final store = _graph.store;
 
@@ -49,7 +57,9 @@ class SyncStoreBackupExportRepository implements BackupExportRepository {
         if (bytes != null) blobs[hash] = bytes;
       }
 
-      final author = await store.authorPubkey();
+      final keypair = await store.exportKeypair();
+      final identity = await _cipher.seal(keypair, passphrase);
+      final author = keypair.publicKeyHex;
       final stampMs = _now().millisecondsSinceEpoch;
       final manifest = BackupManifest(
         createdAtMs: stampMs,
@@ -62,6 +72,7 @@ class SyncStoreBackupExportRepository implements BackupExportRepository {
         manifest: manifest,
         opLines: opLines,
         blobs: blobs,
+        identity: identity,
       );
       final shortAuthor = author.length >= 8 ? author.substring(0, 8) : author;
       return Ok(

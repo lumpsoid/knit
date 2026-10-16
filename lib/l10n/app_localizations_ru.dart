@@ -145,6 +145,44 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onboardPublicKeyCopied => 'Публичный ключ скопирован';
 
   @override
+  String get onboardRestore => 'Восстановить из копии';
+
+  @override
+  String get onboardRestoreTitle => 'Восстановление копии';
+
+  @override
+  String onboardRestoreBody(String date) {
+    return 'Введите пароль, который вы задали при экспорте этой копии $date.';
+  }
+
+  @override
+  String get onboardRestoreAction => 'Восстановить';
+
+  @override
+  String get onboardRestoreWrongPassphrase => 'Неверный пароль';
+
+  @override
+  String get onboardRestoringTitle => 'Восстанавливаем копию…';
+
+  @override
+  String get onboardRestoringBody => 'Открываем ключ и переносим карточки.';
+
+  @override
+  String get onboardRestoreUnreadable =>
+      'Этот файл не является резервной копией Knit.';
+
+  @override
+  String get onboardRestoreNoIdentity =>
+      'Эта копия создана до того, как копии стали включать ключ, поэтому личность из неё не восстановить. Создайте новую личность, затем импортируйте копию в настройках.';
+
+  @override
+  String get onboardRestoreFailed =>
+      'Не удалось восстановить копию. Попробуйте ещё раз.';
+
+  @override
+  String get onboardWelcomeBackTitle => 'С возвращением';
+
+  @override
   String get timelineCollectionFab => 'Коллекция';
 
   @override
@@ -691,7 +729,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsExport => 'Экспорт данных';
 
   @override
-  String get settingsExportSubtitle => 'Сохранить коллекции и карточки в файл';
+  String get settingsExportSubtitle =>
+      'Сохраните коллекции, карточки и ключ в файл';
 
   @override
   String get settingsImport => 'Импорт данных';
@@ -699,13 +738,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get settingsImportSubtitle =>
       'Восстановить из ранее экспортированного файла';
-
-  @override
-  String get settingsExportIdentity => 'Экспорт ключа';
-
-  @override
-  String get settingsExportIdentitySubtitle =>
-      'Сохраните приватный ключ, чтобы восстановить «себя»';
 
   @override
   String get settingsDangerSection => 'Опасная зона';
@@ -722,12 +754,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsResetIdentitySubtitle =>
-      'Удалить ключ этого устройства и начать заново';
-
-  @override
-  String settingsComingSoon(String feature) {
-    return '$feature — скоро';
-  }
+      'Удалить все данные и ключ этого устройства и начать заново';
 
   @override
   String get settingsExportChooseTitle => 'Экспорт резервной копии';
@@ -783,6 +810,66 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsWipeFailed => 'Не удалось стереть данные';
+
+  @override
+  String get settingsExportPassphraseTitle => 'Защитите ключ';
+
+  @override
+  String get settingsExportPassphraseMessage =>
+      'Резервная копия содержит ваш приватный ключ. Задайте пароль для его шифрования — он понадобится для восстановления, и восстановить забытый пароль нельзя.';
+
+  @override
+  String get settingsPassphraseLabel => 'Пароль';
+
+  @override
+  String get settingsPassphraseConfirmLabel => 'Повторите пароль';
+
+  @override
+  String settingsPassphraseTooShort(int min) {
+    return 'Не меньше $min символов';
+  }
+
+  @override
+  String get settingsPassphraseMismatch => 'Пароли не совпадают';
+
+  @override
+  String get settingsExportPassphraseAction => 'Продолжить';
+
+  @override
+  String get settingsReplaceTitle => 'Заменить данные устройства?';
+
+  @override
+  String settingsReplaceMessage(String date) {
+    return 'Эта резервная копия от $date принадлежит другой личности. Восстановление удалит всё на этом устройстве, включая ваш ключ, и сделает вас этой личностью. Введите пароль копии, чтобы продолжить.';
+  }
+
+  @override
+  String get settingsReplaceWrongPassphrase => 'Неверный пароль';
+
+  @override
+  String get settingsReplaceAction => 'Стереть и восстановить';
+
+  @override
+  String settingsDeviceReplaced(int applied) {
+    return 'Копия восстановлена — элементов: $applied';
+  }
+
+  @override
+  String get settingsResetConfirmTitle => 'Сбросить ключ?';
+
+  @override
+  String settingsResetConfirmMessage(String word) {
+    return 'Все коллекции, карточки и связи на этом устройстве, а также ваш ключ будут удалены навсегда. Без резервной копии ничего из созданного не получится восстановить от вашего имени. Введите $word для подтверждения.';
+  }
+
+  @override
+  String get settingsResetConfirmAction => 'Сбросить';
+
+  @override
+  String get settingsResetBackupFirst => 'Сначала сохранить копию';
+
+  @override
+  String get settingsResetFailed => 'Не удалось сбросить ключ';
 
   @override
   String get syncAllSaved => 'Все изменения сохранены';

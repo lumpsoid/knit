@@ -5,9 +5,11 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/composition.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
+import 'package:knit/features/backup/infra/argon2_identity_key_cipher.dart';
 import 'package:knit/features/backup/infra/in_memory_backup_ports.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_export_repository.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_import_repository.dart';
+import 'package:knit/features/onboard/infra/sync_store_onboard_identity_read_repository.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
@@ -19,6 +21,7 @@ import 'package:knit/core/attachments/infra/sync_store_attachment_write_reposito
 import 'package:knit/features/collection_details/infra/sync_store_collection_details_write_repository.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/settings/infra/shared_preferences_settings_repository.dart';
+import 'package:knit/features/settings/infra/sync_store_settings_identity_repository.dart';
 import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository.dart';
 import 'package:knit/features/settings/presentation/settings_module.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
@@ -46,6 +49,14 @@ void main() {
     OnboardScope.setFactory(
       () => OnboardModule(
         repository: SyncStoreOnboardRepository(graph: graph),
+        identityReadRepository: SyncStoreOnboardIdentityReadRepository(
+          graph: graph,
+        ),
+        backupSourcePort: StubBackupSourcePort(),
+        backupImportRepository: SyncStoreBackupImportRepository(
+          graph: graph,
+          cipher: Argon2IdentityKeyCipher(),
+        ),
       ).controller,
     );
     TimelineScope.setRouteArgsWriter(InMemoryCollectionRouteArgsStore());
@@ -83,8 +94,20 @@ void main() {
         readRepository: settingsRepository,
         writeRepository: settingsRepository,
         wipeRepository: SyncStoreSettingsWipeRepository(graph: graph),
-        backupExportRepository: SyncStoreBackupExportRepository(graph: graph),
-        backupImportRepository: SyncStoreBackupImportRepository(graph: graph),
+        identityReadRepository: SyncStoreSettingsIdentityReadRepository(
+          graph: graph,
+        ),
+        identityResetRepository: SyncStoreSettingsIdentityResetRepository(
+          graph: graph,
+        ),
+        backupExportRepository: SyncStoreBackupExportRepository(
+          graph: graph,
+          cipher: Argon2IdentityKeyCipher(),
+        ),
+        backupImportRepository: SyncStoreBackupImportRepository(
+          graph: graph,
+          cipher: Argon2IdentityKeyCipher(),
+        ),
         backupDeliveryPort: RecordingBackupDeliveryPort(),
         backupSavePort: RecordingBackupSavePort(),
         backupSourcePort: StubBackupSourcePort(),

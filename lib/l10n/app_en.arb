@@ -55,6 +55,22 @@
   "onboardEnter": "Enter Knit",
   "onboardCopyPublicKey": "Copy public key",
   "onboardPublicKeyCopied": "Public key copied",
+  "onboardRestore": "Restore from backup",
+  "onboardRestoreTitle": "Restore your backup",
+  "onboardRestoreBody": "Enter the passphrase you chose when you exported this backup on {date}.",
+  "@onboardRestoreBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "onboardRestoreAction": "Restore",
+  "onboardRestoreWrongPassphrase": "Wrong passphrase",
+  "onboardRestoringTitle": "Restoring your backup…",
+  "onboardRestoringBody": "Unlocking your key and replaying your cards.",
+  "onboardRestoreUnreadable": "That file isn't a Knit backup.",
+  "onboardRestoreNoIdentity": "This backup was made before backups included the key, so it can't restore an identity. Create a new identity, then import it from Settings.",
+  "onboardRestoreFailed": "We couldn't restore the backup. Please try again.",
+  "onboardWelcomeBackTitle": "Welcome back",
 
   "timelineCollectionFab": "Collection",
   "timelineNewCollectionTitle": "New collection",
@@ -280,22 +296,14 @@
   "settingsAboutVersionLabel": "Version",
   "settingsDataTransferSection": "Backup & transfer",
   "settingsExport": "Export data",
-  "settingsExportSubtitle": "Save your collections and cards to a file",
+  "settingsExportSubtitle": "Save your collections, cards and key to a file",
   "settingsImport": "Import data",
   "settingsImportSubtitle": "Restore from a previously exported file",
-  "settingsExportIdentity": "Export identity",
-  "settingsExportIdentitySubtitle": "Back up your private key so you can restore \"you\"",
   "settingsDangerSection": "Danger zone",
   "settingsWipeData": "Wipe data",
   "settingsWipeDataSubtitle": "Delete all collections and cards on this device",
   "settingsResetIdentity": "Reset identity",
-  "settingsResetIdentitySubtitle": "Discard this device's key and start over",
-  "settingsComingSoon": "{feature} — coming soon",
-  "@settingsComingSoon": {
-    "placeholders": {
-      "feature": { "type": "String" }
-    }
-  },
+  "settingsResetIdentitySubtitle": "Delete all data and this device's key, then start over",
   "settingsExportChooseTitle": "Export backup",
   "settingsExportChooseShare": "Share…",
   "settingsExportChooseShareSubtitle": "Send the backup to another app",
@@ -324,6 +332,43 @@
   "settingsWipeConfirmAction": "Wipe data",
   "settingsWipeDone": "All data wiped",
   "settingsWipeFailed": "Couldn't wipe the data",
+  "settingsExportPassphraseTitle": "Protect your key",
+  "settingsExportPassphraseMessage": "The backup includes your private key. Choose a passphrase to encrypt it — you'll need it to restore the backup, and it can't be recovered if you forget it.",
+  "settingsPassphraseLabel": "Passphrase",
+  "settingsPassphraseConfirmLabel": "Repeat passphrase",
+  "settingsPassphraseTooShort": "Use at least {min} characters",
+  "@settingsPassphraseTooShort": {
+    "placeholders": {
+      "min": { "type": "int" }
+    }
+  },
+  "settingsPassphraseMismatch": "The passphrases don't match",
+  "settingsExportPassphraseAction": "Continue",
+  "settingsReplaceTitle": "Replace this device?",
+  "settingsReplaceMessage": "This backup from {date} belongs to another identity. Restoring it deletes everything on this device, including your key, and makes you that identity. Enter the backup's passphrase to continue.",
+  "@settingsReplaceMessage": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsReplaceWrongPassphrase": "Wrong passphrase",
+  "settingsReplaceAction": "Erase and restore",
+  "settingsDeviceReplaced": "Backup restored — {applied} items",
+  "@settingsDeviceReplaced": {
+    "placeholders": {
+      "applied": { "type": "int" }
+    }
+  },
+  "settingsResetConfirmTitle": "Reset identity?",
+  "settingsResetConfirmMessage": "This permanently deletes every collection, card and link on this device, and your key. Without a backup, nothing you made can be restored as you. Type {word} to confirm.",
+  "@settingsResetConfirmMessage": {
+    "placeholders": {
+      "word": { "type": "String" }
+    }
+  },
+  "settingsResetConfirmAction": "Reset",
+  "settingsResetBackupFirst": "Back up first",
+  "settingsResetFailed": "Couldn't reset the identity",
 
   "syncAllSaved": "All changes saved",
   "syncUnavailable": "Sync status unavailable",

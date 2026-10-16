@@ -276,6 +276,17 @@ the `lib/sync/` core below.
   `release(owner)`, pages read `AttachmentImageCacheState` via their scope.
   Shown images are held; released ones stay idle up to a byte budget (LRU).
   Seed just-stored picks with `put` instead of re-reading them.
+- `backup` + `settings` Data page (§4.5/§5) — identity and data go together.
+  A bundle (`BackupArchiveCodec`, format v2) is the signed log, the blobs, and
+  `identity.json`: the keypair sealed under the user's passphrase by
+  `IdentityKeyCipher` (`Argon2IdentityKeyCipher`: Argon2id on an isolate, then
+  XChaCha20-Poly1305). `BackupImportRepository.plan` asks the pure
+  `RestorePolicy`: this identity's own bundle → `merge`, another identity's →
+  `replaceDevice` (erase, `SyncStore.adoptIdentity`, replay), and a v1 bundle on
+  a fresh device → `missingIdentity`. Settings "Reset identity" (the user types
+  their nickname to confirm) and replace both go through `DeviceEraser`
+  (`lib/app/`), which runs `SyncStore.resetDevice` and deletes the blobs.
+  Onboarding offers "Restore from backup" on its welcome step.
 - `card_links` is the shared owner of card links (§4.4): `CardLinksController`
   + `CardLinksState` + the one `LinkPickerSheet` (lazy two-level picker).
   Collection and Card Edit open the picker and add links through it; Card Edit

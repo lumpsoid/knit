@@ -145,6 +145,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardPublicKeyCopied => 'Public key copied';
 
   @override
+  String get onboardRestore => 'Restore from backup';
+
+  @override
+  String get onboardRestoreTitle => 'Restore your backup';
+
+  @override
+  String onboardRestoreBody(String date) {
+    return 'Enter the passphrase you chose when you exported this backup on $date.';
+  }
+
+  @override
+  String get onboardRestoreAction => 'Restore';
+
+  @override
+  String get onboardRestoreWrongPassphrase => 'Wrong passphrase';
+
+  @override
+  String get onboardRestoringTitle => 'Restoring your backup…';
+
+  @override
+  String get onboardRestoringBody =>
+      'Unlocking your key and replaying your cards.';
+
+  @override
+  String get onboardRestoreUnreadable => 'That file isn\'t a Knit backup.';
+
+  @override
+  String get onboardRestoreNoIdentity =>
+      'This backup was made before backups included the key, so it can\'t restore an identity. Create a new identity, then import it from Settings.';
+
+  @override
+  String get onboardRestoreFailed =>
+      'We couldn\'t restore the backup. Please try again.';
+
+  @override
+  String get onboardWelcomeBackTitle => 'Welcome back';
+
+  @override
   String get timelineCollectionFab => 'Collection';
 
   @override
@@ -678,7 +716,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsExportSubtitle =>
-      'Save your collections and cards to a file';
+      'Save your collections, cards and key to a file';
 
   @override
   String get settingsImport => 'Import data';
@@ -686,13 +724,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsImportSubtitle =>
       'Restore from a previously exported file';
-
-  @override
-  String get settingsExportIdentity => 'Export identity';
-
-  @override
-  String get settingsExportIdentitySubtitle =>
-      'Back up your private key so you can restore \"you\"';
 
   @override
   String get settingsDangerSection => 'Danger zone';
@@ -709,12 +740,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsResetIdentitySubtitle =>
-      'Discard this device\'s key and start over';
-
-  @override
-  String settingsComingSoon(String feature) {
-    return '$feature — coming soon';
-  }
+      'Delete all data and this device\'s key, then start over';
 
   @override
   String get settingsExportChooseTitle => 'Export backup';
@@ -770,6 +796,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsWipeFailed => 'Couldn\'t wipe the data';
+
+  @override
+  String get settingsExportPassphraseTitle => 'Protect your key';
+
+  @override
+  String get settingsExportPassphraseMessage =>
+      'The backup includes your private key. Choose a passphrase to encrypt it — you\'ll need it to restore the backup, and it can\'t be recovered if you forget it.';
+
+  @override
+  String get settingsPassphraseLabel => 'Passphrase';
+
+  @override
+  String get settingsPassphraseConfirmLabel => 'Repeat passphrase';
+
+  @override
+  String settingsPassphraseTooShort(int min) {
+    return 'Use at least $min characters';
+  }
+
+  @override
+  String get settingsPassphraseMismatch => 'The passphrases don\'t match';
+
+  @override
+  String get settingsExportPassphraseAction => 'Continue';
+
+  @override
+  String get settingsReplaceTitle => 'Replace this device?';
+
+  @override
+  String settingsReplaceMessage(String date) {
+    return 'This backup from $date belongs to another identity. Restoring it deletes everything on this device, including your key, and makes you that identity. Enter the backup\'s passphrase to continue.';
+  }
+
+  @override
+  String get settingsReplaceWrongPassphrase => 'Wrong passphrase';
+
+  @override
+  String get settingsReplaceAction => 'Erase and restore';
+
+  @override
+  String settingsDeviceReplaced(int applied) {
+    return 'Backup restored — $applied items';
+  }
+
+  @override
+  String get settingsResetConfirmTitle => 'Reset identity?';
+
+  @override
+  String settingsResetConfirmMessage(String word) {
+    return 'This permanently deletes every collection, card and link on this device, and your key. Without a backup, nothing you made can be restored as you. Type $word to confirm.';
+  }
+
+  @override
+  String get settingsResetConfirmAction => 'Reset';
+
+  @override
+  String get settingsResetBackupFirst => 'Back up first';
+
+  @override
+  String get settingsResetFailed => 'Couldn\'t reset the identity';
 
   @override
   String get syncAllSaved => 'All changes saved';

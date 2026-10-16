@@ -7,6 +7,8 @@ import 'package:knit/features/backup/domain/backup_export_repository.dart';
 import 'package:knit/features/backup/domain/backup_import_repository.dart';
 import 'package:knit/features/backup/domain/backup_save_port.dart';
 import 'package:knit/features/backup/domain/backup_source_port.dart';
+import 'package:knit/features/settings/domain/settings_identity_read_repository.dart';
+import 'package:knit/features/settings/domain/settings_identity_reset_repository.dart';
 import 'package:knit/features/settings/domain/settings_read_repository.dart';
 import 'package:knit/features/settings/domain/settings_wipe_repository.dart';
 import 'package:knit/features/settings/domain/settings_write_repository.dart';
@@ -26,6 +28,8 @@ class SettingsModule {
     required SettingsReadRepository readRepository,
     required SettingsWriteRepository writeRepository,
     required SettingsWipeRepository wipeRepository,
+    required SettingsIdentityReadRepository identityReadRepository,
+    required SettingsIdentityResetRepository identityResetRepository,
     required BackupExportRepository backupExportRepository,
     required BackupImportRepository backupImportRepository,
     required BackupDeliveryPort backupDeliveryPort,
@@ -42,6 +46,8 @@ class SettingsModule {
       readRepository: readRepository,
       writeRepository: writeRepository,
       wipeRepository: wipeRepository,
+      identityReadRepository: identityReadRepository,
+      identityResetRepository: identityResetRepository,
       backupExportRepository: backupExportRepository,
       backupImportRepository: backupImportRepository,
       backupDeliveryPort: backupDeliveryPort,

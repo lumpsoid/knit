@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/backup/domain/backup_models.dart';
+import 'package:knit/features/onboard/presentation/onboard_page.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
 import 'package:knit/features/settings/presentation/settings_controller.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
 import 'package:knit/features/settings/presentation/settings_state.dart';
 import 'package:knit/features/settings/presentation/settings_ui_effect.dart';
+import 'package:knit/features/settings/presentation/widgets/backup_passphrase_dialog.dart';
+import 'package:knit/features/settings/presentation/widgets/replace_device_dialog.dart';
+import 'package:knit/features/settings/presentation/widgets/reset_identity_dialog.dart';
 
-/// The Data subpage (§4 settings): backup/transfer (export, import, export
-/// identity) and a danger zone (wipe data, reset identity). Every action flows
-/// through the shared [SettingsScope] loop as a [DataActionRequested] (export
-/// and wipe go through their own paths first — a destination sheet, a confirm
-/// dialog). The identity export/reset actions are still answered with a "coming
-/// soon" UiEffect this page shows as a snackbar.
+/// The Data subpage (§4 settings): backup/transfer (export, import) and a
+/// danger zone (wipe data, reset identity). A backup carries the data and the
+/// keypair sealed under a passphrase, so export first asks for one, then where
+/// the bundle goes. Importing another identity's bundle asks to replace this
+/// device; resetting asks the user to type their nickname (or back up first)
+/// and then leaves for onboarding. Every action flows through the shared
+/// [SettingsScope] loop; the dialogs open on its UiEffects.
 class SettingsDataPage extends StatefulWidget {
   const SettingsDataPage({super.key});
 
@@ -42,9 +47,6 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context);
     final text = switch (effect) {
-      SettingsComingSoonUiEffect(:final action) => l10n.settingsComingSoon(
-        _label(l10n, action),
-      ),
       SettingsBackupExportedUiEffect(:final destination) =>
         destination == BackupDestination.saveFile
             ? l10n.settingsBackupSaved
@@ -59,8 +61,33 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
             : l10n.settingsBackupExportFailed,
       SettingsDataWipedUiEffect() => l10n.settingsWipeDone,
       SettingsWipeFailedUiEffect() => l10n.settingsWipeFailed,
+      SettingsDeviceReplacedUiEffect(:final summary) =>
+        l10n.settingsDeviceReplaced(summary.opsApplied),
+      SettingsResetFailedUiEffect() => l10n.settingsResetFailed,
+      SettingsConfirmReplaceUiEffect() ||
+      SettingsConfirmResetUiEffect() ||
+      SettingsIdentityResetUiEffect() => null,
     };
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    if (text != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+      return;
+    }
+    switch (effect) {
+      case SettingsConfirmReplaceUiEffect(
+        :final createdAtMs,
+        :final wrongPassphrase,
+      ):
+        _askReplace(createdAtMs, wrongPassphrase);
+      case SettingsConfirmResetUiEffect(:final confirmation):
+        _confirmReset(confirmation.word, confirmation.accepts);
+      case SettingsIdentityResetUiEffect():
+        // No identity is left — start over from the onboarding ceremony.
+        Navigator.of(
+          context,
+        ).pushAndRemoveUntil(OnboardPage.route(), (_) => false);
+      default:
+        break;
+    }
   }
 
   /// The restore summary line — the counts, with a trailing warning fragment
@@ -106,19 +133,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
           leading: const Icon(Icons.upload_file_outlined),
           title: Text(l10n.settingsExport),
           subtitle: Text(l10n.settingsExportSubtitle),
-          onTap: _chooseExportDestination,
+          onTap: _startExport,
         ),
         ListTile(
           leading: const Icon(Icons.download_outlined),
           title: Text(l10n.settingsImport),
           subtitle: Text(l10n.settingsImportSubtitle),
           onTap: () => _request(DataAction.importData),
-        ),
-        ListTile(
-          leading: const Icon(Icons.key_outlined),
-          title: Text(l10n.settingsExportIdentity),
-          subtitle: Text(l10n.settingsExportIdentitySubtitle),
-          onTap: () => _request(DataAction.exportIdentity),
         ),
         const Divider(height: 1),
         _SectionHeader(
@@ -179,9 +200,12 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
     }
   }
 
-  /// Ask where the export should go (share sheet or a saved file), then kick off
-  /// the build+deliver. Dismissing the sheet does nothing.
-  Future<void> _chooseExportDestination() async {
+  /// Ask for the passphrase that seals the key, then where the export should go
+  /// (share sheet or a saved file), then kick off the build+deliver.
+  /// Dismissing either step does nothing.
+  Future<void> _startExport() async {
+    final passphrase = await BackupPassphraseDialog.show(context);
+    if (passphrase == null || !mounted) return;
     final l10n = AppLocalizations.of(context);
     final destination = await showModalBottomSheet<BackupDestination>(
       context: context,
@@ -218,17 +242,47 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
       ),
     );
     if (destination != null && mounted) {
-      _controller.dispatch(ExportRequested(destination));
+      _controller.dispatch(ExportRequested(destination, passphrase));
     }
   }
 
-  String _label(AppLocalizations l10n, DataAction action) => switch (action) {
-    DataAction.exportData => l10n.settingsExport,
-    DataAction.importData => l10n.settingsImport,
-    DataAction.exportIdentity => l10n.settingsExportIdentity,
-    DataAction.wipeData => l10n.settingsWipeData,
-    DataAction.resetIdentity => l10n.settingsResetIdentity,
-  };
+  /// The picked backup belongs to another identity: confirm erasing this device
+  /// and take the backup's passphrase.
+  Future<void> _askReplace(int createdAtMs, bool wrongPassphrase) async {
+    final passphrase = await ReplaceDeviceDialog.show(
+      context,
+      createdAtMs: createdAtMs,
+      wrongPassphrase: wrongPassphrase,
+    );
+    if (!mounted) return;
+    _controller.dispatch(
+      passphrase == null
+          ? const ReplaceDeviceCancelled()
+          : ReplaceDeviceConfirmed(passphrase),
+    );
+  }
+
+  /// Resetting erases the data and the key, so the user types [word] to
+  /// confirm — or backs up first, which starts the export instead.
+  Future<void> _confirmReset(
+    String word,
+    bool Function(String typed) accepts,
+  ) async {
+    final choice = await ResetIdentityDialog.show(
+      context,
+      word: word,
+      accepts: accepts,
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case ResetIdentityChoice.backUpFirst:
+        await _startExport();
+      case ResetIdentityChoice.reset:
+        _controller.dispatch(const ResetIdentityConfirmed());
+      case null:
+        break;
+    }
+  }
 }
 
 /// A blocking, semi-transparent scrim with a spinner shown while a backup is

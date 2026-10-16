@@ -1,17 +1,10 @@
 import 'package:knit/features/backup/domain/backup_models.dart';
+import 'package:knit/features/settings/domain/identity_reset_confirmation.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
 
 /// One-shot UI effects the shell pushes for the Settings views (fcis.md §6.4).
 sealed class SettingsUiEffect {
   const SettingsUiEffect();
-}
-
-/// Announce that a data-management action isn't implemented yet — the Data page
-/// maps the [DataAction] to a localized label and shows a "coming soon" snackbar
-/// without the shell touching `BuildContext` or l10n.
-class SettingsComingSoonUiEffect extends SettingsUiEffect {
-  const SettingsComingSoonUiEffect(this.action);
-  final DataAction action;
 }
 
 /// The backup bundle was built and delivered to [destination] (shared, or saved
@@ -45,4 +38,38 @@ class SettingsDataWipedUiEffect extends SettingsUiEffect {
 /// to a localized message; the real cause was already logged by the shell.
 class SettingsWipeFailedUiEffect extends SettingsUiEffect {
   const SettingsWipeFailedUiEffect();
+}
+
+/// A picked bundle belongs to another identity — ask the user to confirm
+/// replacing this device and to enter the bundle's passphrase. [createdAtMs]
+/// dates the bundle; [wrongPassphrase] is set when re-asking after a miss.
+class SettingsConfirmReplaceUiEffect extends SettingsUiEffect {
+  const SettingsConfirmReplaceUiEffect({
+    required this.createdAtMs,
+    this.wrongPassphrase = false,
+  });
+  final int createdAtMs;
+  final bool wrongPassphrase;
+}
+
+/// This device was replaced by a bundle from another identity.
+class SettingsDeviceReplacedUiEffect extends SettingsUiEffect {
+  const SettingsDeviceReplacedUiEffect(this.summary);
+  final ImportSummary summary;
+}
+
+/// Ask the user to confirm "Reset identity" by typing [confirmation]'s word.
+class SettingsConfirmResetUiEffect extends SettingsUiEffect {
+  const SettingsConfirmResetUiEffect(this.confirmation);
+  final IdentityResetConfirmation confirmation;
+}
+
+/// The data and keypair are gone — the page leaves for onboarding.
+class SettingsIdentityResetUiEffect extends SettingsUiEffect {
+  const SettingsIdentityResetUiEffect();
+}
+
+/// Resetting the identity (or reading it for the confirmation) failed.
+class SettingsResetFailedUiEffect extends SettingsUiEffect {
+  const SettingsResetFailedUiEffect();
 }

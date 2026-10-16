@@ -38,15 +38,30 @@ class SettingsUpdater
         return (state.copyWith(preferences: preferences), null);
       case PreferencesSaveFailed():
         return (state, null);
-      case ExportRequested(:final destination):
+      case ExportRequested(:final destination, :final passphrase):
         // A long build+deliver — show the spinner until DataActionFinished.
-        return (state.copyWith(busy: true), [RunExportEffect(destination)]);
+        return (
+          state.copyWith(busy: true),
+          [RunExportEffect(destination, passphrase)],
+        );
       case DataActionRequested(:final action):
-        // Import and wipe touch the store and run async; the remaining
-        // placeholders resolve instantly.
-        final busy =
-            action == DataAction.importData || action == DataAction.wipeData;
-        return (state.copyWith(busy: busy), [RunDataActionEffect(action)]);
+        // Every data action touches the store; the spinner holds until the
+        // shell reports DataActionFinished.
+        return (state.copyWith(busy: true), [RunDataActionEffect(action)]);
+      case RestoreAwaitingPassphrase(:final bundle):
+        return (state.copyWith(pendingRestore: bundle), null);
+      case ReplaceDeviceConfirmed(:final passphrase):
+        final bundle = state.pendingRestore;
+        if (bundle == null) return (state, null);
+        return (
+          state.copyWith(busy: true),
+          [RunReplaceDeviceEffect(bundle, passphrase)],
+        );
+      case ReplaceDeviceCancelled():
+      case RestoreSettled():
+        return (state.copyWith(clearPendingRestore: true), null);
+      case ResetIdentityConfirmed():
+        return (state.copyWith(busy: true), const [RunResetIdentityEffect()]);
       case DataActionFinished():
         return (state.copyWith(busy: false), null);
     }

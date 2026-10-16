@@ -10,6 +10,7 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/composition.dart';
 import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
+import 'package:knit/features/backup/infra/argon2_identity_key_cipher.dart';
 import 'package:knit/features/backup/infra/file_picker_backup_save_port.dart';
 import 'package:knit/features/backup/infra/file_picker_backup_source_port.dart';
 import 'package:knit/features/backup/infra/share_plus_backup_delivery_port.dart';
@@ -49,6 +50,7 @@ import 'package:knit/features/connections/infra/sync_store_connections_read_repo
 import 'package:knit/features/connections/presentation/connections_controller.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_scope.dart';
+import 'package:knit/features/onboard/infra/sync_store_onboard_identity_read_repository.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
@@ -64,6 +66,7 @@ import 'package:knit/features/share_capture/presentation/incoming_share_controll
 import 'package:knit/features/share_capture/presentation/share_capture_controller.dart';
 import 'package:knit/features/share_capture/presentation/share_capture_scope.dart';
 import 'package:knit/features/settings/infra/shared_preferences_settings_repository.dart';
+import 'package:knit/features/settings/infra/sync_store_settings_identity_repository.dart';
 import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
 import 'package:knit/features/settings/presentation/settings_module.dart';
@@ -123,9 +126,24 @@ void bootstrap(AppConfig config) {
   // Downstream features (fcis.md §6.8 wiring): the Scope factories capture the
   // graph and read its store lazily — only ever after init completes, which the
   // destination resolver guarantees.
+  // A backup bundle carries the keypair sealed under a passphrase (§5): one
+  // cipher for the export (Settings) and both restores (Settings, onboarding).
+  final identityCipher = Argon2IdentityKeyCipher();
+  final backupImportRepository = SyncStoreBackupImportRepository(
+    graph: graph,
+    cipher: identityCipher,
+  );
+
   OnboardScope.setFactory(
     () => OnboardModule(
       repository: SyncStoreOnboardRepository(graph: graph),
+      identityReadRepository: SyncStoreOnboardIdentityReadRepository(
+        graph: graph,
+      ),
+      // "Restore from backup" on the welcome step: pick a bundle, unseal its
+      // keypair with the passphrase, replay it.
+      backupSourcePort: const FilePickerBackupSourcePort(),
+      backupImportRepository: backupImportRepository,
     ).controller,
   );
 
@@ -164,10 +182,21 @@ void bootstrap(AppConfig config) {
       // The Data subpage wipe (§4 danger zone): truncate the store + blobs,
       // keeping the device identity.
       wipeRepository: SyncStoreSettingsWipeRepository(graph: graph),
-      // The Data subpage export/import (§4): bundle the signed log + blobs to a
-      // .zip and share it; pick a .zip and replay it back through the store.
-      backupExportRepository: SyncStoreBackupExportRepository(graph: graph),
-      backupImportRepository: SyncStoreBackupImportRepository(graph: graph),
+      // Reset identity: erase the data *and* the keypair, then onboarding.
+      identityReadRepository: SyncStoreSettingsIdentityReadRepository(
+        graph: graph,
+      ),
+      identityResetRepository: SyncStoreSettingsIdentityResetRepository(
+        graph: graph,
+      ),
+      // The Data subpage export/import (§4): bundle the signed log + blobs +
+      // sealed keypair to a .zip and share it; pick a .zip and merge it, or
+      // replace this device when it belongs to another identity.
+      backupExportRepository: SyncStoreBackupExportRepository(
+        graph: graph,
+        cipher: identityCipher,
+      ),
+      backupImportRepository: backupImportRepository,
       backupDeliveryPort: const SharePlusBackupDeliveryPort(),
       backupSavePort: const FilePickerBackupSavePort(),
       backupSourcePort: const FilePickerBackupSourcePort(),
