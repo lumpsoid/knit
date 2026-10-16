@@ -96,6 +96,9 @@ class CollectionState {
   /// Whether multi-select mode is active.
   bool get selecting => selectedCardIds.isNotEmpty;
 
+  /// Whether "select all" would add anything: some loaded card is unselected.
+  bool get canSelectAll => selectedCardIds.length < cards.length;
+
   /// Whether an audio recording is actively being captured (not merely staged).
   bool get isRecordingAudio => recordingPhase != null;
 

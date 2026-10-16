@@ -9,10 +9,16 @@ import 'package:knit/l10n/app_localizations.dart';
 /// preview, so the open/close transition flies between the two.
 Object imageHeroTag(String cardId) => 'card-image-$cardId';
 
+/// A card's chat bubble in the feed: a note, a link, an image, an audio clip,
+/// or a file, with its caption where it has one.
 class CardBubble extends StatelessWidget {
   const CardBubble({
     super.key,
-    required this.card,
+    required this.cardId,
+    required this.kind,
+    required this.text,
+    required this.fileName,
+    required this.fileSize,
     required this.imageBytes,
     required this.onTap,
     this.onImageTap,
@@ -21,7 +27,15 @@ class CardBubble extends StatelessWidget {
     this.playback,
     this.onToggleAudio,
   });
-  final FeedCard card;
+  final String cardId;
+  final CardKind kind;
+
+  /// The card's text: a note's body, a link's URL, or a media card's caption.
+  final String? text;
+
+  /// An audio or file card's attachment name and a file card's size.
+  final String? fileName;
+  final int? fileSize;
 
   /// Decoded bytes for an image card; null while loading or missing.
   final Uint8List? imageBytes;
@@ -74,7 +88,7 @@ class CardBubble extends StatelessWidget {
   }
 
   Widget _content(ThemeData theme, AppLocalizations l10n) {
-    switch (card.kind) {
+    switch (kind) {
       case CardKind.link:
         final link = Row(
           mainAxisSize: MainAxisSize.min,
@@ -83,8 +97,8 @@ class CardBubble extends StatelessWidget {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                card.text?.trim().isNotEmpty == true
-                    ? card.text!.trim()
+                text?.trim().isNotEmpty == true
+                    ? text!.trim()
                     : l10n.collectionCardLink,
                 style: TextStyle(
                   color: theme.colorScheme.primary,
@@ -101,7 +115,7 @@ class CardBubble extends StatelessWidget {
         if (onLinkTap == null) return link;
         return GestureDetector(onTap: onLinkTap, child: link);
       case CardKind.image:
-        final caption = card.text?.trim();
+        final caption = text?.trim();
         Widget image = ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: AttachmentImage(
@@ -121,7 +135,7 @@ class CardBubble extends StatelessWidget {
         if (onImageTap != null) {
           image = GestureDetector(
             onTap: onImageTap,
-            child: Hero(tag: imageHeroTag(card.id), child: image),
+            child: Hero(tag: imageHeroTag(cardId), child: image),
           );
         }
         if (caption == null || caption.isEmpty) return image;
@@ -138,10 +152,10 @@ class CardBubble extends StatelessWidget {
           ],
         );
       case CardKind.audio:
-        final audioCaption = card.text?.trim();
+        final audioCaption = text?.trim();
         final chip = AudioCardChip(
-          cardId: card.id,
-          name: card.fileName?.trim(),
+          cardId: cardId,
+          name: fileName?.trim(),
           playback: playback,
           onToggle: onToggleAudio,
         );
@@ -159,8 +173,12 @@ class CardBubble extends StatelessWidget {
           ],
         );
       case CardKind.file:
-        final fileCaption = card.text?.trim();
-        final chip = FileCardChip(card: card, onTap: onFileTap);
+        final fileCaption = text?.trim();
+        final chip = FileCardChip(
+          name: fileName,
+          size: fileSize,
+          onTap: onFileTap,
+        );
         if (fileCaption == null || fileCaption.isEmpty) return chip;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,9 +195,7 @@ class CardBubble extends StatelessWidget {
       case CardKind.text:
       case CardKind.unknown:
         return Text(
-          card.text?.trim().isNotEmpty == true
-              ? card.text!.trim()
-              : l10n.labelEmptyNote,
+          text?.trim().isNotEmpty == true ? text!.trim() : l10n.labelEmptyNote,
         );
     }
   }
@@ -301,17 +317,26 @@ class AudioCardChip extends StatelessWidget {
 /// null [onTap] (e.g. a missing attachment) leaves it inert so the bubble's own
 /// tap (the actions sheet) still fires.
 class FileCardChip extends StatelessWidget {
-  const FileCardChip({super.key, required this.card, required this.onTap});
+  const FileCardChip({
+    super.key,
+    required this.name,
+    required this.size,
+    required this.onTap,
+  });
 
-  final FeedCard card;
+  /// The attachment's file name; null or blank shows the generic label.
+  final String? name;
+
+  /// The attachment's size in bytes; null hides it.
+  final int? size;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final name = card.fileName?.trim();
-    final size = card.fileSize;
+    final name = this.name?.trim();
+    final size = this.size;
     final chip = ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 240),
       child: Row(

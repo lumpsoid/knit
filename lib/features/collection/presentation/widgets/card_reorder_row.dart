@@ -4,14 +4,20 @@ import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
+/// A card's row in reorder mode: a thumbnail or drag handle, a one-line label,
+/// and the drag grip.
 class CardReorderRow extends StatelessWidget {
   const CardReorderRow({
-    required this.card,
+    required this.kind,
+    required this.text,
+    required this.fileName,
     required this.index,
     required this.imageBytes,
     super.key,
   });
-  final FeedCard card;
+  final CardKind kind;
+  final String? text;
+  final String? fileName;
   final int index;
 
   /// Decoded bytes for an image card; null while loading or missing.
@@ -20,31 +26,28 @@ class CardReorderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final label = switch (card.kind) {
+    final label = switch (kind) {
       CardKind.link =>
-        card.text?.isNotEmpty == true ? card.text! : l10n.collectionCardLink,
+        text?.isNotEmpty == true ? text! : l10n.collectionCardLink,
       CardKind.image =>
-        card.text?.isNotEmpty == true
-            ? card.text!
-            : l10n.collectionReorderPhoto,
+        text?.isNotEmpty == true ? text! : l10n.collectionReorderPhoto,
       CardKind.audio =>
-        card.text?.trim().isNotEmpty == true
-            ? card.text!.trim()
-            : (card.fileName?.trim().isNotEmpty == true
-                  ? card.fileName!.trim()
+        text?.trim().isNotEmpty == true
+            ? text!.trim()
+            : (fileName?.trim().isNotEmpty == true
+                  ? fileName!.trim()
                   : l10n.collectionCardAudio),
       CardKind.file =>
-        card.fileName?.trim().isNotEmpty == true
-            ? card.fileName!.trim()
-            : (card.text?.trim().isNotEmpty == true
-                  ? card.text!.trim()
+        fileName?.trim().isNotEmpty == true
+            ? fileName!.trim()
+            : (text?.trim().isNotEmpty == true
+                  ? text!.trim()
                   : l10n.collectionCardFile),
       CardKind.text || CardKind.unknown =>
-        card.text?.trim().isNotEmpty == true ? card.text! : l10n.labelEmptyNote,
+        text?.trim().isNotEmpty == true ? text! : l10n.labelEmptyNote,
     };
     return ListTile(
-      key: ValueKey('tile-${card.id}'),
-      leading: card.kind == CardKind.image
+      leading: kind == CardKind.image
           ? ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: AttachmentImage(

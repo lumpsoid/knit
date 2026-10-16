@@ -121,9 +121,12 @@ Drive the live flow (create → cards → reorder → link card→collection + a
    send guard, which the page and the updater each had, is now one rule:
    `CollectionState.canSendComposer`. The page still keeps the two composer
    reveal flags (`_showPhotoSources`, `_showAudioBar`) for step 3.
-2. **A data-passing pass over the Collection widgets.** Each widget takes only
-   the data it uses through its constructor (widgets.md §2). Passing the whole
-   `CollectionState` (or another aggregate) into a widget is not allowed.
+2. ~~**A data-passing pass over the Collection widgets.**~~ **Done.**
+   `CardBubble`, `FileCardChip` and `CardReorderRow` take the card fields they
+   render instead of a `FeedCard`. The title card and the selection app bar
+   take the fields they use. A feed row gets the selection passed in instead
+   of reading the state holder. "Select all" availability is
+   `CollectionState.canSelectAll`.
 3. **Only then split `CollectionState`.** The composer and recording state is
    the clearest part to move into its own notifier. Do not start this before
    steps 1 and 2.

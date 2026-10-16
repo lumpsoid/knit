@@ -433,7 +433,11 @@ class _CollectionPageState extends State<CollectionPage> {
           },
           child: Scaffold(
             appBar: state.selecting
-                ? _selectionAppBar(l10n, state)
+                ? _selectionAppBar(
+                    l10n,
+                    selectedCount: state.selectedCardIds.length,
+                    canSelectAll: state.canSelectAll,
+                  )
                 : AppBar(
                     title: Text(l10n.collectionAppBarTitle),
                     actions: [
@@ -510,28 +514,31 @@ class _CollectionPageState extends State<CollectionPage> {
 
   /// The app bar while cards are selected: a "✕" to leave, the count, and the
   /// bulk actions (select all, move).
-  AppBar _selectionAppBar(AppLocalizations l10n, CollectionState state) =>
-      AppBar(
-        leading: IconButton(
-          tooltip: l10n.collectionClearSelectionTooltip,
-          icon: const Icon(Icons.close),
-          onPressed: () => _controller.dispatch(const SelectionCleared()),
+  AppBar _selectionAppBar(
+    AppLocalizations l10n, {
+    required int selectedCount,
+    required bool canSelectAll,
+  }) => AppBar(
+    leading: IconButton(
+      tooltip: l10n.collectionClearSelectionTooltip,
+      icon: const Icon(Icons.close),
+      onPressed: () => _controller.dispatch(const SelectionCleared()),
+    ),
+    title: Text(l10n.collectionSelectedCount(selectedCount)),
+    actions: [
+      if (canSelectAll)
+        IconButton(
+          tooltip: l10n.collectionSelectAllTooltip,
+          icon: const Icon(Icons.select_all),
+          onPressed: () => _controller.dispatch(const AllCardsSelected()),
         ),
-        title: Text(l10n.collectionSelectedCount(state.selectedCardIds.length)),
-        actions: [
-          if (state.selectedCardIds.length < state.cards.length)
-            IconButton(
-              tooltip: l10n.collectionSelectAllTooltip,
-              icon: const Icon(Icons.select_all),
-              onPressed: () => _controller.dispatch(const AllCardsSelected()),
-            ),
-          IconButton(
-            tooltip: l10n.collectionMoveTooltip,
-            icon: const Icon(Icons.drive_file_move_outline),
-            onPressed: _openMovePicker,
-          ),
-        ],
-      );
+      IconButton(
+        tooltip: l10n.collectionMoveTooltip,
+        icon: const Icon(Icons.drive_file_move_outline),
+        onPressed: _openMovePicker,
+      ),
+    ],
+  );
 
   Widget _body(CollectionState state) {
     switch (state.status) {
@@ -558,11 +565,16 @@ class _CollectionPageState extends State<CollectionPage> {
     loadingOlder: state.loadingOlder,
     reordering: state.reordering,
     focusCardId: _focusCardId,
-    header: _titleCard(state),
-    cardBuilder: _cardRow,
+    header: _titleCard(
+      collectionId: state.collectionId,
+      connectionCount: state.connectionCount,
+    ),
+    cardBuilder: (card) => _cardRow(card, selection: state.selectedCardIds),
     reorderRowBuilder: (card, index) => CardReorderRow(
       key: ValueKey(card.id),
-      card: card,
+      kind: card.kind,
+      text: card.text,
+      fileName: card.fileName,
       index: index,
       imageBytes: _bytesFor(card),
     ),
@@ -575,12 +587,15 @@ class _CollectionPageState extends State<CollectionPage> {
   /// The title card heading the feed: the collection's header from the shared
   /// collection details (it rebuilds when they change), plus this screen's
   /// connection count and decoded cover.
-  Widget _titleCard(CollectionState state) {
+  Widget _titleCard({
+    required String collectionId,
+    required int connectionCount,
+  }) {
     final details = CollectionScope.collectionDetails;
     return ListenableBuilder(
       listenable: Listenable.merge([details, CollectionScope.images]),
       builder: (context, _) {
-        final header = details.of(state.collectionId);
+        final header = details.of(collectionId);
         final title = header?.title ?? '';
         final coverId = header?.coverAttachmentId;
         final coverBytes = coverId == null
@@ -591,15 +606,15 @@ class _CollectionPageState extends State<CollectionPage> {
           description: header?.description,
           hasCover: coverId != null,
           coverBytes: coverBytes,
-          coverHeroTag: coverHeroTag(state.collectionId),
-          connectionCount: state.connectionCount,
-          onTap: () => _openCollectionEdit(state.collectionId),
+          coverHeroTag: coverHeroTag(collectionId),
+          connectionCount: connectionCount,
+          onTap: () => _openCollectionEdit(collectionId),
           onCoverTap: coverBytes == null
               ? null
-              : () => _openCoverPreview(state.collectionId, coverBytes),
+              : () => _openCoverPreview(collectionId, coverBytes),
           onConnectionsTap: () => _openConnections(
             kind: ConnectedEntityKind.collection,
-            id: state.collectionId,
+            id: collectionId,
             title: title,
           ),
         );
@@ -608,11 +623,17 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   /// One feed row for [card]: its bubble, plus a connections badge when linked.
-  Widget _cardRow(FeedCard card) {
+  /// A non-empty [selection] (the selected card ids) puts the row in
+  /// multi-select mode.
+  Widget _cardRow(FeedCard card, {required Set<String> selection}) {
     final bytes = _bytesFor(card);
     final audioId = card.kind == CardKind.audio ? card.attachmentId : null;
     final bubble = CardBubble(
-      card: card,
+      cardId: card.id,
+      kind: card.kind,
+      text: card.text,
+      fileName: card.fileName,
+      fileSize: card.fileSize,
       imageBytes: bytes,
       onTap: () => _openCardActions(card),
       onImageTap: bytes == null ? null : () => _openImagePreview(card),
@@ -663,7 +684,6 @@ class _CollectionPageState extends State<CollectionPage> {
           );
     // A long-press anywhere on the row starts (or extends) multi-select.
     void toggle() => _controller.dispatch(CardSelectionToggled(card.id));
-    final selection = _controller.stateHolder.value.selectedCardIds;
     if (selection.isNotEmpty) {
       // While selecting, a tap anywhere on the row toggles it: the inner tap
       // targets (bubble, image, link, badge) are switched off.
