@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fcis_core/fcis_core.dart';
 import 'package:intl/intl.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
@@ -17,13 +19,17 @@ class CollectionUpdater
     implements Updater<CollectionState, CollectionAction, CollectionEffect> {
   const CollectionUpdater();
 
+  /// Cards per feed page (§8.7): the first load reads the newest page, and
+  /// each scroll toward the top reads one more.
+  static const int feedPageSize = 50;
+
   @override
   (CollectionState, List<CollectionEffect>?) update(
     CollectionState state,
     CollectionAction action,
   ) {
     switch (action) {
-      case ViewAttached(:final collectionId):
+      case ViewAttached(:final collectionId, :final focusCardId):
         return (
           state.copyWith(
             collectionId: collectionId,
@@ -31,12 +37,24 @@ class CollectionUpdater
             // A fresh entry into a collection starts with no pending preview.
             clearPendingImage: true,
           ),
-          [LoadCollectionEffect(collectionId)],
+          [
+            LoadCollectionEffect(
+              collectionId,
+              focusCardId == null
+                  ? const FeedWindow.latest(feedPageSize)
+                  : FeedWindow.through(focusCardId, feedPageSize),
+            ),
+          ],
         );
 
       case ReloadRequested():
         if (state.collectionId.isEmpty) return (state, null);
-        return (state, [LoadCollectionEffect(state.collectionId)]);
+        // Resync the window already loaded (everything from its oldest card
+        // up), so a write or refresh never drops pages the user scrolled to.
+        final window = state.cards.isEmpty
+            ? const FeedWindow.latest(feedPageSize)
+            : FeedWindow.from(FeedCursor.of(state.cards.first));
+        return (state, [LoadCollectionEffect(state.collectionId, window)]);
 
       case CollectionLoaded(:final data):
         // Preserve the decoded-bytes cache across reloads (ids are immutable),
@@ -56,8 +74,15 @@ class CollectionUpdater
             description: data.description,
             coverAttachmentId: data.coverAttachmentId,
             cards: data.cards,
+            olderBoundary: data.olderBoundary,
             connectionCount: data.connectionCount,
-            imageBytes: state.imageBytes,
+            // Keep only bytes the window still shows — a long scroll-back
+            // must not pin every photo it ever decoded once the window resets.
+            imageBytes: _retainImageBytes(
+              state.imageBytes,
+              data.cards,
+              data.coverAttachmentId,
+            ),
             // Link-finder caches are deliberately dropped on reload: a write may
             // have changed the targets, so the finder re-reads fresh on reopen.
             // Stay in reorder mode only while it remains reorderable (2+ cards),
@@ -84,6 +109,47 @@ class CollectionUpdater
 
       case LoadFailed():
         return (state.copyWith(status: CollectionStatus.failed), null);
+
+      case OlderCardsRequested():
+        if (!state.hasOlder || state.loadingOlder || state.cards.isEmpty) {
+          return (state, null);
+        }
+        return (
+          state.copyWith(loadingOlder: true),
+          [
+            LoadOlderCardsEffect(
+              collectionId: state.collectionId,
+              before: FeedCursor.of(state.cards.first),
+              limit: feedPageSize,
+            ),
+          ],
+        );
+
+      case OlderCardsLoaded(:final before, :final page):
+        // Stale: the window's top moved (a resync landed first) — drop it; the
+        // next scroll asks again from the current top.
+        if (state.cards.isEmpty || FeedCursor.of(state.cards.first) != before) {
+          return (state.copyWith(loadingOlder: false), null);
+        }
+        final toLoad = _uncachedImageAttachments(
+          page.cards,
+          null,
+          state.imageBytes,
+        );
+        return (
+          state.copyWith(
+            cards: [...page.cards, ...state.cards],
+            olderBoundary: page.olderBoundary,
+            clearOlderBoundary: page.olderBoundary == null,
+            loadingOlder: false,
+          ),
+          toLoad.isEmpty
+              ? null
+              : [for (final id in toLoad) LoadImageBytesEffect(id)],
+        );
+
+      case OlderCardsLoadFailed():
+        return (state.copyWith(loadingOlder: false), null);
 
       case ComposerSubmitted(:final text):
         final body = text.trim();
@@ -424,6 +490,23 @@ class CollectionUpdater
     return ids.toList(growable: false);
   }
 
+  /// The cached image bytes still referenced by [cards] or the cover.
+  static Map<String, Uint8List> _retainImageBytes(
+    Map<String, Uint8List> cache,
+    List<FeedCard> cards,
+    String? coverAttachmentId,
+  ) {
+    final live = {
+      ?coverAttachmentId,
+      for (final card in cards)
+        if (card.kind == CardKind.image) ?card.attachmentId,
+    };
+    return {
+      for (final MapEntry(:key, :value) in cache.entries)
+        if (live.contains(key)) key: value,
+    };
+  }
+
   /// Append key: after the last card, or the first key for an empty feed.
   static String _appendPosition(List<FeedCard> cards) => cards.isEmpty
       ? FractionalIndex.first()
@@ -443,7 +526,11 @@ class CollectionUpdater
     final moved = cards.removeAt(oldIndex);
     cards.insert(newIndex, moved);
 
-    final before = newIndex > 0 ? cards[newIndex - 1].position : null;
+    // At the window's top, the lower neighbour is the newest *unloaded* card —
+    // never null while older cards exist, or the move would jump past them.
+    final before = newIndex > 0
+        ? cards[newIndex - 1].position
+        : state.olderBoundary?.position;
     final after = newIndex < cards.length - 1
         ? cards[newIndex + 1].position
         : null;

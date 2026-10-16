@@ -199,4 +199,21 @@ void main() {
     expect(find.text('card ${cardCount - 1}'), findsOneWidget);
     expect(find.text('card 2'), findsNothing);
   });
+
+  testWidgets('scrolling up pages older cards in, down to the oldest', (
+    tester,
+  ) async {
+    await seed(tester);
+    routeArgs.open(routeArgs.collectionId);
+    await pumpPage(tester);
+    // The first page is only the newest cards: the oldest isn't built at all.
+    expect(find.text('card 0', skipOffstage: false), findsNothing);
+
+    for (var i = 0; i < 30 && find.text('card 0').evaluate().isEmpty; i++) {
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 600));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('card 0'), findsOneWidget);
+  });
 }

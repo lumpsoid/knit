@@ -175,7 +175,8 @@ the `lib/sync/` core below.
   `DeviceClockStorage` (`load`/`save`/`clear` an `Hlc`); both impls.
 - `projection/` — the materialized entity tables (§6.3/§6.4). `EnvelopeColumns`
   + the five entity schemas + `ProjectionTables`; `ProjectionStorage`
-  (`get`/`upsert`/`readAll`/`feed`/`backlinks`/`clear`); `ProjectionRowMapper`
+  (`get`/`getMany`/`upsert`/`readAll`/`feed`/`feedPage` (newest-first keyset
+  page)/`backlinks`/`linkCounts` (batched)/`clear`); `ProjectionRowMapper`
   (`Snapshot` ↔ typed row); both impls.
 - `sync_store.dart` — `SyncStore`: the persistent orchestrator tying all three
   storages to the merge-core through a `UnitOfWork`. `applyRemote` (dedup → skew

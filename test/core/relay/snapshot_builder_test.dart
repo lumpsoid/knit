@@ -163,11 +163,19 @@ class _FakeCollectionRead implements CollectionReadRepository {
 
   @override
   Future<Result<CollectionData, CollectionFailure>> loadCollection(
-    String id,
-  ) async {
+    String id, {
+    FeedWindow window = const FeedWindow.all(),
+  }) async {
     if (failure != null) return Failure(failure!);
     return Ok(data!);
   }
+
+  @override
+  Future<Result<FeedPage, CollectionFailure>> loadOlderCards(
+    String collectionId, {
+    required FeedCursor before,
+    required int limit,
+  }) => throw UnimplementedError();
 
   @override
   Future<Result<List<LinkOption>, CollectionFailure>> loadLinkCollections() =>

@@ -109,6 +109,28 @@ class SyncStore {
   Future<List<Snapshot>> feed(String collectionId) =>
       projection.feed(collectionId);
 
+  /// A newest-first keyset page of a collection's live cards (§8.7) — see
+  /// [ProjectionStorage.feedPage].
+  Future<List<Snapshot>> feedPage(
+    String collectionId, {
+    FeedKey? before,
+    FeedKey? atOrAfter,
+    int? limit,
+  }) => projection.feedPage(
+    collectionId,
+    before: before,
+    atOrAfter: atOrAfter,
+    limit: limit,
+  );
+
+  /// The rows of [type] for [ids], batched (tombstones included).
+  Future<List<Snapshot>> getMany(EntityType type, Iterable<String> ids) =>
+      projection.getMany(type, ids);
+
+  /// Live link count (links-out + backlinks) per id in [entityIds], batched.
+  Future<Map<String, int>> linkCounts(Iterable<String> entityIds) =>
+      projection.linkCounts(entityIds);
+
   Future<List<Snapshot>> backlinks(String targetId) =>
       projection.backlinks(targetId);
 

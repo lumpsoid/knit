@@ -82,6 +82,89 @@ void main() {
         },
       );
 
+      group('feedPage (newest first, keyset)', () {
+        setUp(() async {
+          // Feed order: c1 a1 · c2 a2 · c3a/c3b tie on a3 · c4 a4.
+          for (final (id, pos) in [
+            ('c1', 'a1'),
+            ('c2', 'a2'),
+            ('c3b', 'a3'),
+            ('c3a', 'a3'),
+            ('c4', 'a4'),
+          ]) {
+            await store.upsert(card(id: id, position: pos, hlcMs: 1));
+          }
+          await store.upsert(
+            card(id: 'gone', position: 'a5', hlcMs: 1, deleted: true),
+          );
+          await store.upsert(
+            card(id: 'other', collectionId: 'col-2', position: 'a9', hlcMs: 1),
+          );
+        });
+
+        Future<List<String>> ids({
+          FeedKey? before,
+          FeedKey? atOrAfter,
+          int? limit,
+        }) async => (await store.feedPage(
+          'col-1',
+          before: before,
+          atOrAfter: atOrAfter,
+          limit: limit,
+        )).map((s) => s.id).toList();
+
+        test('unbounded is the reversed feed, tombstones excluded', () async {
+          expect(await ids(), ['c4', 'c3b', 'c3a', 'c2', 'c1']);
+        });
+
+        test('limit takes the newest cards', () async {
+          expect(await ids(limit: 2), ['c4', 'c3b']);
+        });
+
+        test('before is strictly older, honouring the id tie-break', () async {
+          expect(await ids(before: (position: 'a3', id: 'c3b'), limit: 2), [
+            'c3a',
+            'c2',
+          ]);
+        });
+
+        test('atOrAfter is inclusive of the anchor', () async {
+          expect(await ids(atOrAfter: (position: 'a3', id: 'c3a')), [
+            'c4',
+            'c3b',
+            'c3a',
+          ]);
+        });
+      });
+
+      test('getMany returns only the requested rows', () async {
+        await store.upsert(card(id: 'x', hlcMs: 1));
+        await store.upsert(card(id: 'y', hlcMs: 1, deleted: true));
+        await store.upsert(card(id: 'z', hlcMs: 1));
+        final got = await store.getMany(EntityType.card, ['x', 'y', 'nope']);
+        expect(got.map((s) => s.id).toSet(), {'x', 'y'});
+      });
+
+      test('linkCounts = linksOut + backlinks per id, live only', () async {
+        await store.upsert(
+          link(id: 'l1', sourceId: 'card-1', targetId: 'col-1', hlcMs: 1),
+        );
+        await store.upsert(
+          link(id: 'l2', sourceId: 'card-2', targetId: 'card-1', hlcMs: 1),
+        );
+        await store.upsert(
+          link(
+            id: 'l3',
+            sourceId: 'card-1',
+            targetId: 'col-2',
+            hlcMs: 1,
+            deleted: true,
+          ),
+        );
+        final counts = await store.linkCounts(['card-1', 'card-2', 'card-9']);
+        expect(counts, {'card-1': 2, 'card-2': 1});
+      });
+
       test('backlinks: live links to a target only (spec §8.6.2)', () async {
         await store.upsert(link(id: 'l1', targetId: 'col-1', hlcMs: 1));
         await store.upsert(

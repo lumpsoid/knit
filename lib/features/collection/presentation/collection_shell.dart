@@ -73,8 +73,8 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required void Function(CollectionAction) dispatch,
   }) async {
     switch (effect) {
-      case LoadCollectionEffect(:final collectionId):
-        final result = await _read.loadCollection(collectionId);
+      case LoadCollectionEffect(:final collectionId, :final window):
+        final result = await _read.loadCollection(collectionId, window: window);
         result.onTap((data) => dispatch(CollectionLoaded(data)), (failure) {
           _log.severe(
             'Collection load failed',
@@ -82,6 +82,27 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
             failure.stackTrace,
           );
           dispatch(const LoadFailed());
+        });
+
+      case LoadOlderCardsEffect(
+        :final collectionId,
+        :final before,
+        :final limit,
+      ):
+        final result = await _read.loadOlderCards(
+          collectionId,
+          before: before,
+          limit: limit,
+        );
+        result.onTap((page) => dispatch(OlderCardsLoaded(before, page)), (
+          failure,
+        ) {
+          _log.severe(
+            'Older cards load failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const OlderCardsLoadFailed());
         });
 
       case LoadImageBytesEffect(:final attachmentId):

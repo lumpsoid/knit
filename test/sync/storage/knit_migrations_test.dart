@@ -26,13 +26,13 @@ void main() {
     return rows.map((r) => r['name'] as String).toSet();
   }
 
-  test('fresh install applies the whole chain to v3 without error', () async {
+  test('fresh install applies the whole chain to v4 without error', () async {
     final db = await openDb();
     final migrator = migratorFor(db);
 
     await migrator.migrate();
 
-    expect(await migrator.currentVersion(), 3);
+    expect(await migrator.currentVersion(), 4);
     expect(
       await columnsOf(db, AttachmentSchema.table),
       contains(AttachmentSchema.colName),
@@ -67,7 +67,7 @@ void main() {
     await migrator.migrateTo(1); // a device created by the first build
     await migrator.migrate(); // ... later upgrades
 
-    expect(await migrator.currentVersion(), 3);
+    expect(await migrator.currentVersion(), 4);
     expect(
       await columnsOf(db, AttachmentSchema.table),
       contains(AttachmentSchema.colName),
@@ -78,13 +78,26 @@ void main() {
     );
   });
 
+  test('v4 creates the feed + link read-path indexes', () async {
+    final db = await openDb();
+    await migratorFor(db).migrate();
+
+    final rows = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'index'",
+    );
+    expect(
+      rows.map((r) => r['name']),
+      containsAll(['idx_card_feed', 'idx_link_source', 'idx_link_target']),
+    );
+  });
+
   test('migrate is a no-op once the chain is applied', () async {
     final db = await openDb();
     final migrator = migratorFor(db);
 
     await migrator.migrate();
     expect(await migrator.migrate(), isEmpty);
-    expect(await migrator.currentVersion(), 3);
+    expect(await migrator.currentVersion(), 4);
   });
 
   test('migrated schema converges to the live *Schema constants', () async {

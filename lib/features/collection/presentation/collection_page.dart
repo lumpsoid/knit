@@ -84,10 +84,42 @@ class _CollectionPageState extends State<CollectionPage> {
     _pendingFocusId = CollectionScope.routeArgs.focusCardId;
     _controller = CollectionScope.create()
       ..onAttach(_onUiEffect)
-      ..dispatch(ViewAttached(CollectionScope.routeArgs.collectionId));
+      ..dispatch(
+        ViewAttached(
+          CollectionScope.routeArgs.collectionId,
+          focusCardId: _pendingFocusId,
+        ),
+      );
     _controller.stateHolder
       ..addListener(_syncFeedList)
-      ..addListener(_maybeRevealFocus);
+      ..addListener(_maybeRevealFocus)
+      ..addListener(_scheduleLoadOlderCheck);
+    _feedScroll.addListener(_maybeLoadOlder);
+  }
+
+  /// Page in older cards once the feed is scrolled within
+  /// [_kLoadOlderExtent] of its loaded top (§8.7). The reversed scroll view's
+  /// `extentAfter` is the distance left above the viewport. The updater
+  /// dedupes, so repeated scroll ticks are harmless.
+  void _maybeLoadOlder() {
+    final state = _controller.stateHolder.value;
+    if (!state.hasOlder || state.loadingOlder || !_feedScroll.hasClients) {
+      return;
+    }
+    if (_feedScroll.position.extentAfter < _kLoadOlderExtent) {
+      _controller.dispatch(const OlderCardsRequested());
+    }
+  }
+
+  /// After a load lands, check again once it's laid out: a page that doesn't
+  /// fill the screen, or a fling that already reached the top, needs the next
+  /// page without waiting for another scroll event.
+  void _scheduleLoadOlderCheck() {
+    final state = _controller.stateHolder.value;
+    if (!state.hasOlder || state.loadingOlder) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _maybeLoadOlder();
+    });
   }
 
   /// On the first loaded feed, mark the requested card (if it still exists) and
@@ -167,10 +199,18 @@ class _CollectionPageState extends State<CollectionPage> {
       current.removeAt(i);
     }
     final currentIds = {for (final c in current) c.id};
+    // Cards ahead of the first one already shown are an older page scrolled
+    // in at the top — they appear instantly; only genuinely new cards animate.
+    final firstKept = current.isEmpty
+        ? 0
+        : next.indexWhere((c) => currentIds.contains(c.id));
     for (var j = 0; j < next.length; j++) {
       if (currentIds.contains(next[j].id)) continue;
       current.insert(j, next[j]);
-      list.insertItem(current.length - 1 - j, duration: _kFeedAnimation);
+      list.insertItem(
+        current.length - 1 - j,
+        duration: j < firstKept ? Duration.zero : _kFeedAnimation,
+      );
     }
     _feedListCards = next;
   }
@@ -186,6 +226,7 @@ class _CollectionPageState extends State<CollectionPage> {
     _controller
       ..stateHolder.removeListener(_syncFeedList)
       ..stateHolder.removeListener(_maybeRevealFocus)
+      ..stateHolder.removeListener(_scheduleLoadOlderCheck)
       ..dispatch(const DeactivateFeature())
       ..dispose();
     _feedScroll.dispose();
@@ -661,7 +702,14 @@ class _CollectionPageState extends State<CollectionPage> {
             },
           ),
           if (state.isEmpty) const SliverToBoxAdapter(child: _EmptyHint()),
-          SliverToBoxAdapter(child: titleCard),
+          // The title card heads the *whole* feed, so it only appears once the
+          // window reaches the oldest card; until then a loader marks the top.
+          if (state.hasOlder)
+            SliverToBoxAdapter(
+              child: _OlderCardsLoader(loading: state.loadingOlder),
+            )
+          else
+            SliverToBoxAdapter(child: titleCard),
           const SliverPadding(padding: EdgeInsets.only(top: 8)),
         ],
       ),
@@ -746,6 +794,31 @@ enum _CardAction { edit, delete, link, connections, share, reorder }
 
 /// How long a card takes to animate into (or out of) the feed.
 const Duration _kFeedAnimation = Duration(milliseconds: 280);
+
+/// How close (in pixels) to the loaded top of the feed the scroll must get
+/// before the next older page is requested — about a screen of lead time, so
+/// paging stays ahead of a normal scroll.
+const double _kLoadOlderExtent = 800;
+
+/// The top of a partially loaded feed: a spinner while an older page is in
+/// flight, otherwise an empty slot of the same height. A sliver box child is
+/// built even far off screen, so an always-on spinner would tick forever.
+class _OlderCardsLoader extends StatelessWidget {
+  const _OlderCardsLoader({required this.loading});
+
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 16),
+    child: Center(
+      child: SizedBox.square(
+        dimension: 24,
+        child: loading ? const CircularProgressIndicator(strokeWidth: 2) : null,
+      ),
+    ),
+  );
+}
 
 /// How long a revealed (focused) card stays highlighted before it fades.
 const Duration _kFocusHighlight = Duration(milliseconds: 1600);

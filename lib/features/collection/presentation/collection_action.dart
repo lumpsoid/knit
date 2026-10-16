@@ -14,9 +14,12 @@ sealed class CollectionAction {
 }
 
 /// View attached for [collectionId] (read from the route-args carrier, §2).
+/// [focusCardId] is a card the entry must reveal (e.g. a search hit), so the
+/// first load reaches back far enough to include it.
 class ViewAttached extends CollectionAction {
-  const ViewAttached(this.collectionId);
+  const ViewAttached(this.collectionId, {this.focusCardId});
   final String collectionId;
+  final String? focusCardId;
 }
 
 /// Re-read the feed silently (pull-to-refresh and post-write resync).
@@ -31,6 +34,26 @@ class CollectionLoaded extends CollectionAction {
 
 class LoadFailed extends CollectionAction {
   const LoadFailed();
+}
+
+/// The feed scrolled near its loaded top — page in older cards (§8.7). A
+/// no-op while a page is in flight or nothing older exists.
+class OlderCardsRequested extends CollectionAction {
+  const OlderCardsRequested();
+}
+
+/// Delivery of [OlderCardsRequested]: [page] holds the cards older than
+/// [before] (the window's oldest card when requested). Dropped as stale if the
+/// window moved meanwhile (e.g. a resync landed first).
+class OlderCardsLoaded extends CollectionAction {
+  const OlderCardsLoaded(this.before, this.page);
+  final FeedCursor before;
+  final FeedPage page;
+}
+
+/// Delivery of [OlderCardsRequested] on failure: the next scroll retries.
+class OlderCardsLoadFailed extends CollectionAction {
+  const OlderCardsLoadFailed();
 }
 
 /// An image card's decoded bytes finished loading. [bytes] is null when the

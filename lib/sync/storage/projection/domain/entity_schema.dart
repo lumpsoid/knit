@@ -159,5 +159,19 @@ abstract class ProjectionTables {
     ProfileSchema.createTable,
   ];
 
+  /// Read-path indexes over the projection (§8.6/§8.7): the card feed's
+  /// keyset order and the two link directions. Without them every feed page
+  /// and per-card link count is a full table scan. Pure caches — safe to
+  /// create on an existing DB (`IF NOT EXISTS`) and dropped with the tables.
+  static const List<String> indexStatements = [
+    'CREATE INDEX IF NOT EXISTS idx_card_feed ON ${CardSchema.table} '
+        '(${CardSchema.colCollectionId}, ${EnvelopeColumns.colDeleted}, '
+        '${CardSchema.colPosition}, ${EnvelopeColumns.colId})',
+    'CREATE INDEX IF NOT EXISTS idx_link_source ON ${LinkSchema.table} '
+        '(${LinkSchema.colSourceId})',
+    'CREATE INDEX IF NOT EXISTS idx_link_target ON ${LinkSchema.table} '
+        '(${LinkSchema.colTargetId})',
+  ];
+
   static const List<EntityType> all = EntityType.values;
 }

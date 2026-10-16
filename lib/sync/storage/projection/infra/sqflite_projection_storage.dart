@@ -18,7 +18,10 @@ class SqfliteProjectionStorage implements ProjectionStorage {
   @override
   Future<void> ensureSchema({StorageContext? ctx}) async {
     final db = _exec(ctx);
-    for (final ddl in ProjectionTables.createStatements) {
+    for (final ddl in [
+      ...ProjectionTables.createStatements,
+      ...ProjectionTables.indexStatements,
+    ]) {
       await db.execute(ddl);
     }
   }
@@ -74,6 +77,103 @@ class SqfliteProjectionStorage implements ProjectionStorage {
     return rows
         .map((r) => ProjectionRowMapper.fromRow(EntityType.card, r))
         .toList();
+  }
+
+  @override
+  Future<List<Snapshot>> feedPage(
+    String collectionId, {
+    FeedKey? before,
+    FeedKey? atOrAfter,
+    int? limit,
+    StorageContext? ctx,
+  }) async {
+    const pos = CardSchema.colPosition;
+    const id = EnvelopeColumns.colId;
+    final where = [
+      '${CardSchema.colCollectionId} = ?',
+      '${EnvelopeColumns.colDeleted} = 0',
+      // Expanded keyset compare (no row-value syntax: older Android SQLite).
+      if (before != null) '($pos < ? OR ($pos = ? AND $id < ?))',
+      if (atOrAfter != null) '($pos > ? OR ($pos = ? AND $id >= ?))',
+    ];
+    final rows = await _exec(ctx).query(
+      CardSchema.table,
+      where: where.join(' AND '),
+      whereArgs: [
+        collectionId,
+        if (before != null) ...[before.position, before.position, before.id],
+        if (atOrAfter != null) ...[
+          atOrAfter.position,
+          atOrAfter.position,
+          atOrAfter.id,
+        ],
+      ],
+      orderBy: '$pos DESC, $id DESC',
+      limit: limit,
+    );
+    return rows
+        .map((r) => ProjectionRowMapper.fromRow(EntityType.card, r))
+        .toList();
+  }
+
+  @override
+  Future<List<Snapshot>> getMany(
+    EntityType type,
+    Iterable<String> ids, {
+    StorageContext? ctx,
+  }) async {
+    final db = _exec(ctx);
+    final out = <Snapshot>[];
+    for (final chunk in _chunks(ids.toSet().toList(), _maxInArgs)) {
+      final rows = await db.query(
+        ProjectionTables.of(type),
+        where: '${EnvelopeColumns.colId} IN (${_marks(chunk.length)})',
+        whereArgs: chunk,
+      );
+      out.addAll(rows.map((r) => ProjectionRowMapper.fromRow(type, r)));
+    }
+    return out;
+  }
+
+  @override
+  Future<Map<String, int>> linkCounts(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  }) async {
+    final db = _exec(ctx);
+    final counts = <String, int>{};
+    // Each chunk binds its ids twice (source side + target side).
+    for (final chunk in _chunks(entityIds.toSet().toList(), _maxInArgs ~/ 2)) {
+      final marks = _marks(chunk.length);
+      final rows = await db.rawQuery(
+        'SELECT eid, COUNT(*) AS n FROM ('
+        'SELECT ${LinkSchema.colSourceId} AS eid FROM ${LinkSchema.table} '
+        'WHERE ${EnvelopeColumns.colDeleted} = 0 '
+        'AND ${LinkSchema.colSourceId} IN ($marks) '
+        'UNION ALL '
+        'SELECT ${LinkSchema.colTargetId} AS eid FROM ${LinkSchema.table} '
+        'WHERE ${EnvelopeColumns.colDeleted} = 0 '
+        'AND ${LinkSchema.colTargetId} IN ($marks)'
+        ') GROUP BY eid',
+        [...chunk, ...chunk],
+      );
+      for (final r in rows) {
+        counts[r['eid']! as String] = r['n']! as int;
+      }
+    }
+    return counts;
+  }
+
+  /// Bound-parameter budget per `IN (…)` query — under SQLite's historic
+  /// 999-variable limit, which older Android builds still enforce.
+  static const int _maxInArgs = 800;
+
+  static String _marks(int n) => List.filled(n, '?').join(', ');
+
+  static Iterable<List<T>> _chunks<T>(List<T> items, int size) sync* {
+    for (var i = 0; i < items.length; i += size) {
+      yield items.sublist(i, i + size > items.length ? items.length : i + size);
+    }
   }
 
   @override

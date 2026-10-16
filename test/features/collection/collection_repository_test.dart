@@ -277,4 +277,102 @@ void main() {
       );
     },
   );
+
+  group('paged feed (§8.7)', () {
+    late String colId;
+    late List<String> texts;
+
+    setUp(() async {
+      colId = await createCollection('Big');
+      texts = [for (var i = 0; i < 7; i++) 'c$i'];
+      var position = FractionalIndex.first();
+      for (final t in texts) {
+        await write.addCard(
+          collectionId: colId,
+          kind: CardKind.text,
+          position: position,
+          text: t,
+        );
+        position = FractionalIndex.keyAfter(position);
+      }
+    });
+
+    Future<CollectionData> loadWindow(FeedWindow window) async =>
+        (await read.loadCollection(colId, window: window)).getOrThrow();
+
+    test('latest loads the newest page in feed order + a boundary', () async {
+      final data = await loadWindow(const FeedWindow.latest(3));
+      expect(data.cards.map((c) => c.text), ['c4', 'c5', 'c6']);
+      expect(data.olderBoundary, isNotNull);
+    });
+
+    test('a page covering the whole feed has no boundary', () async {
+      final data = await loadWindow(const FeedWindow.latest(7));
+      expect(data.cards, hasLength(7));
+      expect(data.olderBoundary, isNull);
+    });
+
+    test('loadOlderCards walks back to the head of the feed', () async {
+      final first = await loadWindow(const FeedWindow.latest(3));
+      final page1 = (await read.loadOlderCards(
+        colId,
+        before: FeedCursor.of(first.cards.first),
+        limit: 3,
+      )).getOrThrow();
+      expect(page1.cards.map((c) => c.text), ['c1', 'c2', 'c3']);
+      final all = await loadWindow(const FeedWindow.all());
+      expect(page1.olderBoundary, FeedCursor.of(all.cards[0]));
+
+      final page2 = (await read.loadOlderCards(
+        colId,
+        before: FeedCursor.of(page1.cards.first),
+        limit: 3,
+      )).getOrThrow();
+      expect(page2.cards.map((c) => c.text), ['c0']);
+      expect(page2.olderBoundary, isNull);
+    });
+
+    test('from(cursor) resyncs the window from its oldest card up', () async {
+      final first = await loadWindow(const FeedWindow.latest(3));
+      final data = await loadWindow(
+        FeedWindow.from(FeedCursor.of(first.cards[1])),
+      );
+      expect(data.cards.map((c) => c.text), ['c5', 'c6']);
+      expect(data.olderBoundary, FeedCursor.of(first.cards[0]));
+    });
+
+    test('through(card) reaches back to include an old card', () async {
+      final all = await loadWindow(const FeedWindow.all());
+      final data = await loadWindow(FeedWindow.through(all.cards[1].id, 3));
+      expect(data.cards.map((c) => c.text), texts.sublist(1));
+      expect(data.olderBoundary, FeedCursor.of(all.cards[0]));
+    });
+
+    test('through(unknown card) falls back to the latest page', () async {
+      final data = await loadWindow(const FeedWindow.through('nope', 3));
+      expect(data.cards.map((c) => c.text), ['c4', 'c5', 'c6']);
+    });
+
+    test(
+      'batched link counts match per-card links in both directions',
+      () async {
+        final all = await loadWindow(const FeedWindow.all());
+        final a = all.cards[5].id;
+        final b = all.cards[6].id;
+        await write.linkCardToTarget(
+          cardId: a,
+          targetKind: ConnectedEntityKind.card,
+          targetId: b,
+        );
+        await write.linkCardToTarget(
+          cardId: b,
+          targetKind: ConnectedEntityKind.collection,
+          targetId: colId,
+        );
+        final data = await loadWindow(const FeedWindow.latest(2));
+        expect(data.cards.map((c) => c.connectionCount), [1, 2]);
+        expect(data.connectionCount, 1);
+      },
+    );
+  });
 }

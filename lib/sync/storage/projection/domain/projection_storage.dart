@@ -1,6 +1,10 @@
 import 'package:knit/core/storage/domain/storage_context.dart';
 import 'package:knit/sync/snapshot.dart';
 
+/// A card's §8.7 feed sort key — `position`, then `id` breaking ties. Used as a
+/// keyset cursor by [ProjectionStorage.feedPage].
+typedef FeedKey = ({String position, String id});
+
 /// The materialized entity projection (spec §6.4/§6.8), abstracted over the
 /// backend. Merge writes the winning [Snapshot] via [upsert]; the UI reads it
 /// back. Production uses sqflite tables; dev/tests use the in-memory impl.
@@ -26,6 +30,36 @@ abstract class ProjectionStorage {
   /// Live cards in a collection, in feed order — spec §8.7
   /// (`position ASC, id ASC`, `deleted=0`).
   Future<List<Snapshot>> feed(String collectionId, {StorageContext? ctx});
+
+  /// A keyset page of live cards in a collection, **newest first** (reverse
+  /// §8.7 order: `position DESC, id DESC`) — so a chat-style feed can load its
+  /// tail without reading the whole collection. [before] keeps only cards
+  /// strictly older than that key; [atOrAfter] only cards at or newer than it;
+  /// [limit] caps the row count (null ⇒ unbounded).
+  Future<List<Snapshot>> feedPage(
+    String collectionId, {
+    FeedKey? before,
+    FeedKey? atOrAfter,
+    int? limit,
+    StorageContext? ctx,
+  });
+
+  /// The rows of [type] whose id is in [ids] (tombstones included), in no
+  /// particular order; missing ids are simply absent. One batched read instead
+  /// of a [get] per id.
+  Future<List<Snapshot>> getMany(
+    EntityType type,
+    Iterable<String> ids, {
+    StorageContext? ctx,
+  });
+
+  /// For each of [entityIds], how many live links it takes part in — links-out
+  /// plus backlinks, i.e. `linksOut(id).length + backlinks(id).length` — in one
+  /// batched read. Ids with no live link are absent (read as zero).
+  Future<Map<String, int>> linkCounts(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  });
 
   /// Live links pointing at [targetId] — the backlink query (spec §8.6.2).
   /// Endpoint liveness (the broken-link chip, §8.6.1) is resolved by the caller.

@@ -66,6 +66,26 @@ List<Migration> knitMigrations() => [
       'DROP COLUMN ${CollectionSchema.colDescription}',
     ),
   ),
+  // v4: read-path indexes for large collections — the paged card feed and
+  // the batched per-card link counts (§8.6/§8.7). Indexes only; no data change.
+  Migration(
+    version: 4,
+    description: 'add card feed + link source/target indexes',
+    up: (db) async {
+      for (final ddl in ProjectionTables.indexStatements) {
+        await db.execute(ddl);
+      }
+    },
+    down: (db) async {
+      for (final name in const [
+        'idx_card_feed',
+        'idx_link_source',
+        'idx_link_target',
+      ]) {
+        await db.execute('DROP INDEX IF EXISTS $name');
+      }
+    },
+  ),
 ];
 
 /// The frozen v1 schema — literal DDL, the shape the first build shipped.

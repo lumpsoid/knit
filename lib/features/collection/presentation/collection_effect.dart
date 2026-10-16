@@ -12,10 +12,24 @@ sealed class CollectionEffect {
   const CollectionEffect();
 }
 
-/// Read the header + ordered feed + link candidates (§8.7) for [collectionId].
+/// Read the header + the [window] of the ordered feed (§8.7) for
+/// [collectionId].
 class LoadCollectionEffect extends CollectionEffect {
-  const LoadCollectionEffect(this.collectionId);
+  const LoadCollectionEffect(this.collectionId, this.window);
   final String collectionId;
+  final FeedWindow window;
+}
+
+/// Read up to [limit] cards of [collectionId] older than [before] (§8.7).
+class LoadOlderCardsEffect extends CollectionEffect {
+  const LoadOlderCardsEffect({
+    required this.collectionId,
+    required this.before,
+    required this.limit,
+  });
+  final String collectionId;
+  final FeedCursor before;
+  final int limit;
 }
 
 /// Load the decoded bytes for an image card's [attachmentId] (§7.4.3) so the

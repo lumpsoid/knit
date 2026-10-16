@@ -6,7 +6,20 @@ import 'package:result_dart/result_dart.dart';
 /// header + ordered feed (§8.7); the link-finder targets load lazily, per level,
 /// so opening a collection never reads every other collection's cards.
 abstract interface class CollectionReadRepository {
-  Future<Result<CollectionData, CollectionFailure>> loadCollection(String id);
+  /// The header + the [window] of the feed (default: every card). The screen
+  /// passes a bounded window so a very large collection opens in one page.
+  Future<Result<CollectionData, CollectionFailure>> loadCollection(
+    String id, {
+    FeedWindow window = const FeedWindow.all(),
+  });
+
+  /// Up to [limit] cards strictly older than [before] — the next page as the
+  /// user scrolls up the feed.
+  Future<Result<FeedPage, CollectionFailure>> loadOlderCards(
+    String collectionId, {
+    required FeedCursor before,
+    required int limit,
+  });
 
   /// Live collections offered as link targets (§4.4) — the finder's first
   /// level. The current collection is included so the user can drill into it to

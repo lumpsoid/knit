@@ -24,6 +24,8 @@ class CollectionState {
     this.description,
     this.coverAttachmentId,
     this.cards = const [],
+    this.olderBoundary,
+    this.loadingOlder = false,
     this.connectionCount = 0,
     this.imageBytes = const {},
     this.linkCollections,
@@ -43,7 +45,17 @@ class CollectionState {
   /// card; null/empty when unset.
   final String? description;
   final String? coverAttachmentId;
+
+  /// The loaded window of the feed, oldest → newest. A large collection is
+  /// held as its newest end only; older cards page in on scroll (§8.7).
   final List<FeedCard> cards;
+
+  /// Key of the newest *unloaded* card older than [cards]; null once [cards]
+  /// reaches the head of the feed. Bounds a reorder to the top of the window.
+  final FeedCursor? olderBoundary;
+
+  /// Whether an older page is in flight (dedupes scroll-triggered requests).
+  final bool loadingOlder;
 
   /// How many links the collection itself takes part in (§4.4) — shown as a
   /// badge on the title card. Zero ⇒ no badge.
@@ -94,7 +106,10 @@ class CollectionState {
   /// Whether an audio recording is actively being captured (not merely staged).
   bool get isRecordingAudio => recordingPhase != null;
 
-  bool get isEmpty => cards.isEmpty;
+  bool get isEmpty => cards.isEmpty && !hasOlder;
+
+  /// Whether older cards exist beyond the loaded window.
+  bool get hasOlder => olderBoundary != null;
 
   bool get canReorder => cards.length > 1;
 
@@ -105,6 +120,9 @@ class CollectionState {
     String? description,
     String? coverAttachmentId,
     List<FeedCard>? cards,
+    FeedCursor? olderBoundary,
+    bool clearOlderBoundary = false,
+    bool? loadingOlder,
     int? connectionCount,
     Map<String, Uint8List>? imageBytes,
     List<LinkOption>? linkCollections,
@@ -125,6 +143,10 @@ class CollectionState {
     description: description ?? this.description,
     coverAttachmentId: coverAttachmentId ?? this.coverAttachmentId,
     cards: cards ?? this.cards,
+    olderBoundary: clearOlderBoundary
+        ? null
+        : (olderBoundary ?? this.olderBoundary),
+    loadingOlder: loadingOlder ?? this.loadingOlder,
     connectionCount: connectionCount ?? this.connectionCount,
     imageBytes: imageBytes ?? this.imageBytes,
     linkCollections: linkCollections ?? this.linkCollections,

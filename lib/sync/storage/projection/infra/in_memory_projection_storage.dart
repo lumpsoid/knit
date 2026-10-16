@@ -45,6 +45,60 @@ class InMemoryProjectionStorage implements ProjectionStorage {
   }
 
   @override
+  Future<List<Snapshot>> feedPage(
+    String collectionId, {
+    FeedKey? before,
+    FeedKey? atOrAfter,
+    int? limit,
+    StorageContext? ctx,
+  }) async {
+    int cmp(Snapshot s, FeedKey k) {
+      final p = s.position!.compareTo(k.position);
+      return p != 0 ? p : s.id.compareTo(k.id);
+    }
+
+    final page = (await feed(collectionId)).reversed.where(
+      (s) =>
+          (before == null || cmp(s, before) < 0) &&
+          (atOrAfter == null || cmp(s, atOrAfter) >= 0),
+    );
+    return (limit == null ? page : page.take(limit)).toList();
+  }
+
+  @override
+  Future<List<Snapshot>> getMany(
+    EntityType type,
+    Iterable<String> ids, {
+    StorageContext? ctx,
+  }) async {
+    final table = _tables[type]!;
+    return [
+      for (final id in ids.toSet()) ?table[id],
+    ];
+  }
+
+  @override
+  Future<Map<String, int>> linkCounts(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  }) async {
+    final wanted = entityIds.toSet();
+    final counts = <String, int>{};
+    void bump(Object? id) {
+      if (id is String && wanted.contains(id)) {
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+    }
+
+    for (final link in _tables[EntityType.link]!.values) {
+      if (link.deleted) continue;
+      bump(link.content['source_id']);
+      bump(link.content['target_id']);
+    }
+    return counts;
+  }
+
+  @override
   Future<List<Snapshot>> backlinks(
     String targetId, {
     StorageContext? ctx,

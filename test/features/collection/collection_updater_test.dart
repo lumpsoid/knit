@@ -48,7 +48,132 @@ void main() {
     );
     expect(next.status, CollectionStatus.loading);
     expect(next.collectionId, 'col-1');
-    expect((effects!.single as LoadCollectionEffect).collectionId, 'col-1');
+    final effect = effects!.single as LoadCollectionEffect;
+    expect(effect.collectionId, 'col-1');
+    expect(
+      (effect.window as LatestFeedWindow).limit,
+      CollectionUpdater.feedPageSize,
+    );
+  });
+
+  group('feed paging (§8.7)', () {
+    const boundary = FeedCursor('a0', 'c0');
+    CollectionState partial(List<FeedCard> cards) =>
+        ready(cards).copyWith(olderBoundary: boundary);
+
+    test('ViewAttached with a focus card reaches back through it', () {
+      final (_, effects) = updater.update(
+        const CollectionState(),
+        const ViewAttached('col-1', focusCardId: 'hit'),
+      );
+      final window =
+          (effects!.single as LoadCollectionEffect).window as ThroughFeedWindow;
+      expect(window.cardId, 'hit');
+    });
+
+    test('ReloadRequested resyncs from the oldest loaded card', () {
+      final (_, effects) = updater.update(
+        partial([card('c1', 'a1'), card('c2', 'a2')]),
+        const ReloadRequested(),
+      );
+      final window =
+          (effects!.single as LoadCollectionEffect).window as FromFeedWindow;
+      expect(window.cursor, const FeedCursor('a1', 'c1'));
+    });
+
+    test('OlderCardsRequested pages from the window top, once', () {
+      final (loading, effects) = updater.update(
+        partial([card('c1', 'a1'), card('c2', 'a2')]),
+        const OlderCardsRequested(),
+      );
+      expect(loading.loadingOlder, isTrue);
+      final effect = effects!.single as LoadOlderCardsEffect;
+      expect(effect.before, const FeedCursor('a1', 'c1'));
+      expect(effect.limit, CollectionUpdater.feedPageSize);
+
+      final (_, again) = updater.update(loading, const OlderCardsRequested());
+      expect(again, isNull);
+    });
+
+    test('OlderCardsRequested is a no-op once the head is loaded', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a1')]),
+        const OlderCardsRequested(),
+      );
+      expect(effects, isNull);
+    });
+
+    test('OlderCardsLoaded prepends the page and moves the boundary', () {
+      final state = partial([card('c1', 'a1')]).copyWith(loadingOlder: true);
+      final (next, effects) = updater.update(
+        state,
+        OlderCardsLoaded(
+          const FeedCursor('a1', 'c1'),
+          FeedPage(cards: [card('c0', 'a0', kind: CardKind.image)]),
+        ),
+      );
+      expect(next.cards.map((c) => c.id), ['c0', 'c1']);
+      expect(next.hasOlder, isFalse);
+      expect(next.loadingOlder, isFalse);
+      // The image card in the new page has no attachment id → nothing to load.
+      expect(effects, isNull);
+    });
+
+    test('a stale OlderCardsLoaded is dropped', () {
+      final state = partial([card('c2', 'a2')]).copyWith(loadingOlder: true);
+      final (next, _) = updater.update(
+        state,
+        OlderCardsLoaded(
+          const FeedCursor('a1', 'c1'),
+          FeedPage(cards: [card('c0', 'a0')]),
+        ),
+      );
+      expect(next.cards.map((c) => c.id), ['c2']);
+      expect(next.loadingOlder, isFalse);
+      expect(next.hasOlder, isTrue);
+    });
+
+    test('a move to the window top stays above unloaded cards', () {
+      final state = partial([
+        card('c1', 'a1'),
+        card('c2', 'a2'),
+      ]).copyWith(reordering: true);
+      final (_, effects) = updater.update(state, const CardMoved(1, 0));
+      final position = (effects!.single as ReorderCardEffect).position;
+      expect(position.compareTo(boundary.position), greaterThan(0));
+      expect(position.compareTo('a1'), lessThan(0));
+    });
+
+    test('isEmpty is false while older cards remain unloaded', () {
+      expect(partial(const []).isEmpty, isFalse);
+    });
+
+    test('CollectionLoaded drops cached bytes the window no longer shows', () {
+      final bytes = Uint8List.fromList([1]);
+      final state = ready(
+        const [],
+      ).copyWith(imageBytes: {'keep': bytes, 'gone': bytes});
+      final (next, _) = updater.update(
+        state,
+        CollectionLoaded(
+          CollectionData(
+            collectionId: 'col',
+            title: 'Notes',
+            description: null,
+            coverAttachmentId: null,
+            cards: [
+              FeedCard(
+                id: 'c1',
+                kind: CardKind.image,
+                position: 'a1',
+                attachmentId: 'keep',
+              ),
+            ],
+          ),
+        ),
+      );
+      expect(next.imageBytes.keys, ['keep']);
+    });
   });
 
   test('ReloadRequested is a no-op before a collection is set', () {

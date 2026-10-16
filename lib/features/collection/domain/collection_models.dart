@@ -3,6 +3,7 @@
 /// presentation layer and shared widgets never reach into the merge core.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// A card's `kind` (spec §6.4). `text` is the everyday quick-capture; `link` is
@@ -133,6 +134,7 @@ class CollectionData {
     required this.description,
     required this.coverAttachmentId,
     required this.cards,
+    this.olderBoundary,
     this.connectionCount = 0,
   });
 
@@ -142,10 +144,93 @@ class CollectionData {
   /// The collection's optional free-text blurb (spec §3.1); null/empty when unset.
   final String? description;
   final String? coverAttachmentId;
+
+  /// The loaded window of the feed, oldest → newest — the whole feed for
+  /// [FeedWindow.all], otherwise its newest end.
   final List<FeedCard> cards;
+
+  /// The key of the newest card older than [cards]; null when [cards] reaches
+  /// the head of the feed (see [FeedPage.olderBoundary]).
+  final FeedCursor? olderBoundary;
 
   /// How many links (§4.4) the collection *itself* takes part in — links-out
   /// plus backlinks (things linked to it), counted once each like a card's
   /// [FeedCard.connectionCount]. Surfaced on the title card; zero ⇒ no badge.
   final int connectionCount;
+}
+
+/// A card's feed sort key (§8.7) — [position], then [id] breaking ties. The
+/// keyset cursor the paged feed reads from (primitives only, widgets.md §1).
+@immutable
+class FeedCursor {
+  const FeedCursor(this.position, this.id);
+
+  /// The cursor of a loaded [card].
+  FeedCursor.of(FeedCard card) : this(card.position, card.id);
+
+  final String position;
+  final String id;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FeedCursor && other.position == position && other.id == id;
+
+  @override
+  int get hashCode => Object.hash(position, id);
+}
+
+/// Which slice of a collection's feed to read (§8.7). A large collection is
+/// never read whole by the screen: it holds a contiguous **newest-end** window
+/// (so append keys and the chat-style bottom stay exact) and pages older cards
+/// in as the user scrolls up.
+sealed class FeedWindow {
+  const FeedWindow();
+
+  /// Every live card — for consumers that need the whole collection (relay).
+  const factory FeedWindow.all() = AllFeedWindow;
+
+  /// The newest [limit] cards — a fresh entry into the collection.
+  const factory FeedWindow.latest(int limit) = LatestFeedWindow;
+
+  /// Every card at or newer than [cursor] — a resync that keeps the window the
+  /// user has already scrolled through.
+  const factory FeedWindow.from(FeedCursor cursor) = FromFeedWindow;
+
+  /// The newest cards down to (and including) card [cardId], and at least
+  /// [minLimit] of them — an entry that must reveal an older card (search hit).
+  /// Falls back to [FeedWindow.latest] when the card isn't live here.
+  const factory FeedWindow.through(String cardId, int minLimit) =
+      ThroughFeedWindow;
+}
+
+class AllFeedWindow extends FeedWindow {
+  const AllFeedWindow();
+}
+
+class LatestFeedWindow extends FeedWindow {
+  const LatestFeedWindow(this.limit);
+  final int limit;
+}
+
+class FromFeedWindow extends FeedWindow {
+  const FromFeedWindow(this.cursor);
+  final FeedCursor cursor;
+}
+
+class ThroughFeedWindow extends FeedWindow {
+  const ThroughFeedWindow(this.cardId, this.minLimit);
+  final String cardId;
+  final int minLimit;
+}
+
+/// A run of cards in feed order (oldest → newest) plus the key of the card
+/// just *before* it. [olderBoundary] is null when nothing older exists (the
+/// window reaches the head of the feed); otherwise it both says "more to load"
+/// and gives a reorder to the top of the window a lower bound, so a moved card
+/// never jumps past unloaded ones (§8.7).
+class FeedPage {
+  const FeedPage({required this.cards, this.olderBoundary});
+
+  final List<FeedCard> cards;
+  final FeedCursor? olderBoundary;
 }
