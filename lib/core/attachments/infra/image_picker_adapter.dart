@@ -1,10 +1,16 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 
-/// [ImagePickerPort] over `package:image_picker`. Reads the picked file's bytes
-/// into memory and derives a mime type from its extension (the picker does not
-/// surface one). The bytes are handed on to the hashing + blob-store path.
+/// [ImagePickerPort] that keeps gallery photos byte-for-byte original. A gallery
+/// pick goes through `package:file_picker` (no compression), which hands back
+/// the original file — `package:image_picker` always decodes and re-encodes on
+/// iOS (HEIC → JPEG, HDR/depth/Live Photo data dropped), shrinking the photo.
+/// The camera stays on `package:image_picker`: a fresh shot has no original
+/// file to preserve. Either way the bytes are read into memory and a mime type
+/// is derived from the extension (neither picker surfaces one), then handed on
+/// to the hashing + blob-store path.
 class ImagePickerAdapter implements ImagePickerPort {
   ImagePickerAdapter({ImagePicker? picker}) : _picker = picker ?? ImagePicker();
 
@@ -18,22 +24,30 @@ class ImagePickerAdapter implements ImagePickerPort {
     'webp': 'image/webp',
     'bmp': 'image/bmp',
     'heic': 'image/heic',
+    'heif': 'image/heif',
   };
 
   @override
   Future<PickedImage?> pickImage({
     ImagePickerSource source = ImagePickerSource.gallery,
-  }) async {
-    final file = await _picker.pickImage(source: _sourceOf(source));
+  }) => switch (source) {
+    ImagePickerSource.gallery => _pickFromGallery(),
+    ImagePickerSource.camera => _pickFromCamera(),
+  };
+
+  Future<PickedImage?> _pickFromGallery() async {
+    final file = await FilePicker.pickFile(type: FileType.image);
     if (file == null) return null;
     final bytes = await file.readAsBytes();
     return PickedImage(bytes: bytes, mime: _mimeOf(file.name));
   }
 
-  static ImageSource _sourceOf(ImagePickerSource source) => switch (source) {
-    ImagePickerSource.gallery => ImageSource.gallery,
-    ImagePickerSource.camera => ImageSource.camera,
-  };
+  Future<PickedImage?> _pickFromCamera() async {
+    final file = await _picker.pickImage(source: ImageSource.camera);
+    if (file == null) return null;
+    final bytes = await file.readAsBytes();
+    return PickedImage(bytes: bytes, mime: _mimeOf(file.name));
+  }
 
   static String _mimeOf(String name) {
     final dot = name.lastIndexOf('.');
