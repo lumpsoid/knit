@@ -392,6 +392,7 @@
     }
   },
   "collectionSelectAllTooltip": "Выбрать все",
+  "collectionUnselectAll": "Снять выбор",
   "collectionClearSelectionTooltip": "Отменить выбор",
   "collectionMoveTooltip": "Переместить в коллекцию",
   "collectionMoveSheetTitle": "Переместить в…",

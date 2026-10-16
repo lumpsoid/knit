@@ -421,6 +421,8 @@ class _CollectionPageState extends State<CollectionPage> {
                     canSelectAll: state.canSelectAll,
                     onSelectAll: () =>
                         _controller.dispatch(const AllCardsSelected()),
+                    onUnselectAll: () =>
+                        _controller.dispatch(const SelectionCleared()),
                     onMove: _openMovePicker,
                   )
                 else if (!state.reordering)

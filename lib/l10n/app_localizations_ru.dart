@@ -931,6 +931,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionSelectAllTooltip => 'Выбрать все';
 
   @override
+  String get collectionUnselectAll => 'Снять выбор';
+
+  @override
   String get collectionClearSelectionTooltip => 'Отменить выбор';
 
   @override

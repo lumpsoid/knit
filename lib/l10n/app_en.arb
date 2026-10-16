@@ -405,6 +405,7 @@
     }
   },
   "collectionSelectAllTooltip": "Select all",
+  "collectionUnselectAll": "Unselect all",
   "collectionClearSelectionTooltip": "Cancel selection",
   "collectionMoveTooltip": "Move to collection",
   "collectionMoveSheetTitle": "Move to…",

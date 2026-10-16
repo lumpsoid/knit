@@ -9,12 +9,15 @@ class SelectionActionBar extends StatelessWidget {
     super.key,
     required this.canSelectAll,
     required this.onSelectAll,
+    required this.onUnselectAll,
     required this.onMove,
   });
 
-  /// Whether some cards are still unselected ("Select all" would do something).
+  /// Whether some cards are still unselected; once all are, the button flips
+  /// to "Unselect all".
   final bool canSelectAll;
   final VoidCallback onSelectAll;
+  final VoidCallback onUnselectAll;
   final VoidCallback onMove;
 
   @override
@@ -30,11 +33,17 @@ class SelectionActionBar extends StatelessWidget {
           height: kMinInteractiveDimension,
           child: Row(
             children: [
-              TextButton.icon(
-                icon: const Icon(Icons.select_all),
-                label: Text(l10n.collectionSelectAllTooltip),
-                onPressed: canSelectAll ? onSelectAll : null,
-              ),
+              canSelectAll
+                  ? TextButton.icon(
+                      icon: const Icon(Icons.select_all),
+                      label: Text(l10n.collectionSelectAllTooltip),
+                      onPressed: onSelectAll,
+                    )
+                  : TextButton.icon(
+                      icon: const Icon(Icons.deselect),
+                      label: Text(l10n.collectionUnselectAll),
+                      onPressed: onUnselectAll,
+                    ),
               const Spacer(),
               FilledButton.tonalIcon(
                 icon: const Icon(Icons.drive_file_move_outline),

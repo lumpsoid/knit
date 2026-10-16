@@ -1664,6 +1664,12 @@ abstract class AppLocalizations {
   /// **'Select all'**
   String get collectionSelectAllTooltip;
 
+  /// No description provided for @collectionUnselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Unselect all'**
+  String get collectionUnselectAll;
+
   /// No description provided for @collectionClearSelectionTooltip.
   ///
   /// In en, this message translates to:

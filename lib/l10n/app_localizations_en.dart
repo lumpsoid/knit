@@ -914,6 +914,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionSelectAllTooltip => 'Select all';
 
   @override
+  String get collectionUnselectAll => 'Unselect all';
+
+  @override
   String get collectionClearSelectionTooltip => 'Cancel selection';
 
   @override
