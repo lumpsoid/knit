@@ -1,4 +1,3 @@
-import 'package:knit/features/card_edit/domain/card_edit_models.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
@@ -10,7 +9,7 @@ sealed class CardEditAction {
 
 /// View attached for [cardId], seeded with the text + attachment metadata from
 /// the route-args carrier (cross_feature.md §2). Kicks off loading the card's
-/// links and the picker target tree, and shows an image attachment.
+/// links, and shows an image attachment.
 class ViewAttached extends CardEditAction {
   const ViewAttached({
     required this.cardId,
@@ -55,12 +54,6 @@ class LinksLoaded extends CardEditAction {
 /// Loading the links failed — drop the spinner (the page shows an empty list).
 class LinksLoadFailed extends CardEditAction {
   const LinksLoadFailed();
-}
-
-/// The picker target tree finished loading.
-class TargetsLoaded extends CardEditAction {
-  const TargetsLoaded(this.targets);
-  final List<CardLinkCollectionTargets> targets;
 }
 
 /// Add a link from this card to the chosen target (collection or card).

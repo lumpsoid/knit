@@ -12,6 +12,9 @@ abstract interface class CardEditRouteArgs {
   /// The card to edit. Empty before any origin has written one.
   String get cardId;
 
+  /// The card's collection — the link picker never offers it as a target.
+  String get collectionId;
+
   /// The card's current body text, used to seed the editor field.
   String get initialText;
 
@@ -34,6 +37,7 @@ abstract interface class CardEditRouteArgs {
 abstract interface class CardEditRouteArgsWriter {
   void open({
     required String cardId,
+    required String collectionId,
     required String initialText,
     String? initialAttachmentId,
     CardKind? initialAttachmentKind,
@@ -50,6 +54,7 @@ abstract interface class CardEditRouteArgsStore
 /// it synchronously on entry, so no persistence is needed.
 class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   String _cardId = '';
+  String _collectionId = '';
   String _initialText = '';
   String? _initialAttachmentId;
   CardKind? _initialAttachmentKind;
@@ -58,6 +63,9 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
 
   @override
   String get cardId => _cardId;
+
+  @override
+  String get collectionId => _collectionId;
 
   @override
   String get initialText => _initialText;
@@ -77,6 +85,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   @override
   void open({
     required String cardId,
+    required String collectionId,
     required String initialText,
     String? initialAttachmentId,
     CardKind? initialAttachmentKind,
@@ -84,6 +93,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     int? initialFileSize,
   }) {
     _cardId = cardId;
+    _collectionId = collectionId;
     _initialText = initialText;
     _initialAttachmentId = initialAttachmentId;
     _initialAttachmentKind = initialAttachmentKind;

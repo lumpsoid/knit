@@ -10,14 +10,13 @@ import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
-import 'package:knit/features/card_edit/domain/card_edit_failure.dart';
 import 'package:knit/features/card_edit/domain/card_edit_links_read_repository.dart';
-import 'package:knit/features/card_edit/domain/card_edit_links_write_repository.dart';
-import 'package:knit/features/card_edit/domain/card_edit_targets_read_repository.dart';
 import 'package:knit/features/card_edit/domain/card_edit_write_repository.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_effect.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_ui_effect.dart';
+import 'package:knit/features/card_links/domain/card_links_failure.dart';
+import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 
 /// Imperative shell for the Card Edit page (fcis.md §6.6). Unwraps each
@@ -29,8 +28,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
   CardEditShell({
     required CardEditWriteRepository writeRepository,
     required CardEditLinksReadRepository linksReadRepository,
-    required CardEditLinksWriteRepository linksWriteRepository,
-    required CardEditTargetsReadRepository targetsReadRepository,
+    required CardLinksController cardLinks,
     required AttachmentImageCache imageCache,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
@@ -39,8 +37,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     required Logger logger,
   }) : _write = writeRepository,
        _linksRead = linksReadRepository,
-       _linksWrite = linksWriteRepository,
-       _targetsRead = targetsReadRepository,
+       _cardLinks = cardLinks,
        _images = imageCache,
        _attachmentWrite = attachmentWriteRepository,
        _picker = imagePicker,
@@ -50,8 +47,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
   final CardEditWriteRepository _write;
   final CardEditLinksReadRepository _linksRead;
-  final CardEditLinksWriteRepository _linksWrite;
-  final CardEditTargetsReadRepository _targetsRead;
+  final CardLinksController _cardLinks;
   final AttachmentImageCache _images;
   final AttachmentWriteRepository _attachmentWrite;
   final ImagePickerPort _picker;
@@ -94,19 +90,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
           dispatch(const LinksLoadFailed());
         });
 
-      case LoadTargetsEffect(:final cardId):
-        final result = await _targetsRead.loadTargets(excludeCardId: cardId);
-        result.onTap(
-          (targets) => dispatch(TargetsLoaded(targets)),
-          (failure) => _log.severe(
-            'Card link targets load failed',
-            failure.error,
-            failure.stackTrace,
-          ),
-        );
-
       case AddLinkEffect(:final cardId, :final targetKind, :final targetId):
-        final result = await _linksWrite.addLink(
+        final result = await _cardLinks.link(
           sourceCardId: cardId,
           targetKind: targetKind,
           targetId: targetId,
@@ -114,7 +99,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         _afterLinkWrite(result, 'add link', dispatch);
 
       case RemoveLinkEffect(:final linkId):
-        final result = await _linksWrite.removeLink(linkId);
+        final result = await _cardLinks.unlink(linkId);
         _afterLinkWrite(result, 'remove link', dispatch);
 
       // --- attachment -----------------------------------------------------
@@ -154,7 +139,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
   /// Resync the link list whether the write succeeded or failed (a failure also
   /// surfaces a message); the reload clears the in-flight spinner either way.
   void _afterLinkWrite(
-    Result<String, CardEditFailure> result,
+    Result<String, CardLinksFailure> result,
     String label,
     void Function(CardEditAction) dispatch,
   ) {

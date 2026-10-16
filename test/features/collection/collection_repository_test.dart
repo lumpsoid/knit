@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
+import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
@@ -18,6 +19,7 @@ void main() {
   late SyncStoreTimelineWriteRepository timelineWrite;
   late SyncStoreCollectionReadRepository read;
   late SyncStoreCollectionWriteRepository write;
+  late SyncStoreCardLinksWriteRepository linkWrite;
 
   setUp(() async {
     graph = AppGraph();
@@ -28,6 +30,7 @@ void main() {
     timelineWrite = SyncStoreTimelineWriteRepository(graph: graph, ids: ids);
     read = SyncStoreCollectionReadRepository(graph: graph);
     write = SyncStoreCollectionWriteRepository(graph: graph, ids: ids);
+    linkWrite = SyncStoreCardLinksWriteRepository(graph: graph, ids: ids);
   });
 
   Future<String> createCollection(String title) async =>
@@ -83,37 +86,6 @@ void main() {
     expect(data.cards.map((c) => c.text), ['second', 'first']);
   });
 
-  test('finder offers live collections, then a collection\'s cards', () async {
-    final colId = await createCollection('Espresso');
-    final otherId = await createCollection('Recipes');
-    await write.addCard(
-      collectionId: colId,
-      kind: CardKind.text,
-      position: 'a0',
-      text: 'see recipes',
-    );
-    final otherCardId = (await write.addCard(
-      collectionId: otherId,
-      kind: CardKind.text,
-      position: 'a0',
-      text: 'pour-over',
-    )).getOrThrow();
-
-    // First level: every live collection (including the source's own).
-    final collections = (await read.loadLinkCollections()).getOrThrow();
-    expect(collections.map((o) => o.id).toSet(), {colId, otherId});
-    expect(
-      collections.every((o) => o.kind == ConnectedEntityKind.collection),
-      isTrue,
-    );
-
-    // Drilled level: that collection's cards (the page drops the source card).
-    final cards = (await read.loadCollectionCards(otherId)).getOrThrow();
-    expect(cards.map((o) => o.id), [otherCardId]);
-    expect(cards.single.kind, ConnectedEntityKind.card);
-    expect(cards.single.label, 'pour-over');
-  });
-
   test(
     'link a card to a collection; deleting the target breaks the link',
     () async {
@@ -126,8 +98,8 @@ void main() {
         text: 'see recipes',
       )).getOrThrow();
 
-      await write.linkCardToTarget(
-        cardId: cardId,
+      await linkWrite.addLink(
+        sourceCardId: cardId,
         targetKind: ConnectedEntityKind.collection,
         targetId: otherId,
       );
@@ -161,8 +133,8 @@ void main() {
       text: 'target',
     )).getOrThrow();
 
-    await write.linkCardToTarget(
-      cardId: src,
+    await linkWrite.addLink(
+      sourceCardId: src,
       targetKind: ConnectedEntityKind.card,
       targetId: dst,
     );
@@ -197,8 +169,8 @@ void main() {
 
       // Link source → target. Both ends show the link once: the source via its
       // link-out, the target via its backlink. Neither is double-counted.
-      await write.linkCardToTarget(
-        cardId: src,
+      await linkWrite.addLink(
+        sourceCardId: src,
         targetKind: ConnectedEntityKind.card,
         targetId: dst,
       );
@@ -226,8 +198,8 @@ void main() {
       expect((await load(colId)).connectionCount, 0);
       expect((await load(otherId)).connectionCount, 0);
 
-      await write.linkCardToTarget(
-        cardId: cardId,
+      await linkWrite.addLink(
+        sourceCardId: cardId,
         targetKind: ConnectedEntityKind.collection,
         targetId: otherId,
       );
@@ -359,13 +331,13 @@ void main() {
         final all = await loadWindow(const FeedWindow.all());
         final a = all.cards[5].id;
         final b = all.cards[6].id;
-        await write.linkCardToTarget(
-          cardId: a,
+        await linkWrite.addLink(
+          sourceCardId: a,
           targetKind: ConnectedEntityKind.card,
           targetId: b,
         );
-        await write.linkCardToTarget(
-          cardId: b,
+        await linkWrite.addLink(
+          sourceCardId: b,
           targetKind: ConnectedEntityKind.collection,
           targetId: colId,
         );

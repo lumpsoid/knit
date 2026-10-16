@@ -43,7 +43,6 @@ class CardEditUpdater
           ),
           [
             LoadLinksEffect(cardId),
-            LoadTargetsEffect(cardId),
             ShowImageEffect(isImage ? initialAttachmentId : null),
           ],
         );
@@ -69,9 +68,6 @@ class CardEditUpdater
 
       case LinksLoadFailed():
         return (state.copyWith(linksLoading: false), null);
-
-      case TargetsLoaded(:final targets):
-        return (state.copyWith(targets: targets), null);
 
       case AddLinkRequested(:final targetKind, :final targetId):
         return (

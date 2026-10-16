@@ -7,8 +7,6 @@ import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/card_edit/domain/card_edit_links_read_repository.dart';
-import 'package:knit/features/card_edit/domain/card_edit_links_write_repository.dart';
-import 'package:knit/features/card_edit/domain/card_edit_targets_read_repository.dart';
 import 'package:knit/features/card_edit/domain/card_edit_write_repository.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_controller.dart';
@@ -18,17 +16,18 @@ import 'package:knit/features/card_edit/presentation/card_edit_shell.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_state.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_ui_effect.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_updater.dart';
+import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 
 /// Composition root for the Card Edit page (fcis.md §6.8): wires
 /// stateHolder → effectEmitter → shell → loop → controller. The shell gets the
-/// card-edit write/links/targets ports plus the shared attachments foundation
-/// ports (read/write + picker) for the image section.
+/// card-edit write + links-read ports, the shared card links (link writes), the
+/// shared image cache, and the attachments write port + pickers for the
+/// attachment section.
 class CardEditModule {
   CardEditModule({
     required CardEditWriteRepository writeRepository,
     required CardEditLinksReadRepository linksReadRepository,
-    required CardEditLinksWriteRepository linksWriteRepository,
-    required CardEditTargetsReadRepository targetsReadRepository,
+    required CardLinksController cardLinks,
     required AttachmentImageCache imageCache,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
@@ -42,8 +41,7 @@ class CardEditModule {
     final shell = CardEditShell(
       writeRepository: writeRepository,
       linksReadRepository: linksReadRepository,
-      linksWriteRepository: linksWriteRepository,
-      targetsReadRepository: targetsReadRepository,
+      cardLinks: cardLinks,
       imageCache: imageCache,
       attachmentWriteRepository: attachmentWriteRepository,
       imagePicker: imagePicker,

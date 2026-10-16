@@ -19,6 +19,9 @@ import 'package:knit/features/collection/presentation/collection_controller.dart
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
+import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
+import 'package:knit/features/card_links/infra/sync_store_link_targets_read_repository.dart';
+import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection_details/infra/sync_store_collection_details_write_repository.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
@@ -164,6 +167,13 @@ void main() {
         shareRepository: _UnusedShare(),
         linkLauncher: _UnusedLinkLauncher(),
         collectionDetails: details,
+        cardLinks: CardLinksController(
+          readRepository: SyncStoreLinkTargetsReadRepository(graph: graph),
+          writeRepository: SyncStoreCardLinksWriteRepository(
+            graph: graph,
+            ids: ids,
+          ),
+        ),
         timelineChannel: _NoopTimelineChannel(),
       ),
     );

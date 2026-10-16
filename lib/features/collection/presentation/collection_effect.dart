@@ -192,17 +192,8 @@ class ReorderCardEffect extends CollectionEffect {
   final String position;
 }
 
-/// Load the finder's first level — the device's live collections (§4.4).
-class LoadLinkCollectionsEffect extends CollectionEffect {
-  const LoadLinkCollectionsEffect();
-}
-
-/// Load [collectionId]'s cards for the finder's drilled level (§4.4).
-class LoadCollectionCardsEffect extends CollectionEffect {
-  const LoadCollectionCardsEffect(this.collectionId);
-  final String collectionId;
-}
-
+/// Link [cardId] to a collection or another card (§4.4), through the shared
+/// card links.
 class LinkEffect extends CollectionEffect {
   const LinkEffect({
     required this.cardId,

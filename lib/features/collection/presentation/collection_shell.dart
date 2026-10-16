@@ -17,6 +17,7 @@ import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
+import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection_details/domain/collection_details.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
@@ -43,6 +44,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required CardShareRepository shareRepository,
     required LinkLauncher linkLauncher,
     required CollectionDetailsController collectionDetails,
+    required CardLinksController cardLinks,
     required EffectEmitter<CollectionUiEffect> effectEmitter,
     required TimelineChannelEmitter timelineChannel,
     required Logger logger,
@@ -57,6 +59,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
        _share = shareRepository,
        _links = linkLauncher,
        _details = collectionDetails,
+       _cardLinks = cardLinks,
        _effectEmitter = effectEmitter,
        _timelineChannel = timelineChannel,
        _log = logger;
@@ -72,6 +75,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final CardShareRepository _share;
   final LinkLauncher _links;
   final CollectionDetailsController _details;
+  final CardLinksController _cardLinks;
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
   final TimelineChannelEmitter _timelineChannel;
   final Logger _log;
@@ -234,40 +238,17 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           dispatch,
         );
 
-      case LoadLinkCollectionsEffect():
-        final result = await _read.loadLinkCollections();
-        result.onTap((options) => dispatch(LinkCollectionsLoaded(options)), (
-          failure,
-        ) {
-          _log.severe(
-            'Link collections load failed',
-            failure.error,
-            failure.stackTrace,
-          );
-          dispatch(const LinkCollectionsLoaded([]));
-        });
-
-      case LoadCollectionCardsEffect(:final collectionId):
-        final result = await _read.loadCollectionCards(collectionId);
-        result.onTap(
-          (options) => dispatch(LinkCardsLoaded(collectionId, options)),
-          (failure) {
-            _log.severe(
-              'Link cards load failed',
-              failure.error,
-              failure.stackTrace,
-            );
-            dispatch(LinkCardsLoaded(collectionId, const []));
-          },
-        );
-
       case LinkEffect(:final cardId, :final targetKind, :final targetId):
         await _runWrite(
-          () => _write.linkCardToTarget(
-            cardId: cardId,
-            targetKind: targetKind,
-            targetId: targetId,
-          ),
+          () async =>
+              (await _cardLinks.link(
+                sourceCardId: cardId,
+                targetKind: targetKind,
+                targetId: targetId,
+              )).fold(
+                Ok.new,
+                (f) => Failure(CollectionWriteFailure(f.error, f.stackTrace)),
+              ),
           'create link',
           dispatch,
         );

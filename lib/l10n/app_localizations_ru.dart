@@ -544,9 +544,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cardEditBrokenLinkSubtitle => 'Связанный элемент был удалён';
 
   @override
-  String get cardEditLinkToWhichCollection => 'С какой коллекцией связать?';
-
-  @override
   String get cardEditSaveFailed => 'Не удалось сохранить. Попробуйте ещё раз.';
 
   @override

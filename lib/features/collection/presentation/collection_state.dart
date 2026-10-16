@@ -13,7 +13,7 @@ enum AudioRecordingPhase { recording, paused }
 
 /// State for the Collection screen (§4.2). [reordering] is the *mode* of this
 /// screen (drag-to-reorder), not a separate screen — exactly as the spec frames
-/// it. Sheets/dialogs (compose, add-block, actions, finder, edit) are transient
+/// it. Sheets/dialogs (compose, add-block, actions, link picker, edit) are transient
 /// View concerns that dispatch intents; they are not modelled here. The header
 /// (title, description, cover) is the shared collection details, not a copy here.
 @immutable
@@ -25,8 +25,6 @@ class CollectionState {
     this.olderBoundary,
     this.loadingOlder = false,
     this.connectionCount = 0,
-    this.linkCollections,
-    this.linkCardsByCollection = const {},
     this.reordering = false,
     this.pendingImage,
     this.recordingPhase,
@@ -51,16 +49,6 @@ class CollectionState {
   /// How many links the collection itself takes part in (§4.4) — shown as a
   /// badge on the title card. Zero ⇒ no badge.
   final int connectionCount;
-
-  /// Link-finder first level: live collections to link to (§4.4). Null until the
-  /// finder is first opened; loaded lazily so opening a collection never reads
-  /// every other collection's cards.
-  final List<LinkOption>? linkCollections;
-
-  /// Link-finder drilled level: a collection's cards, keyed by collection id.
-  /// Filled on drill and reused within the session; the source card is excluded
-  /// at render (the cache is source-card-independent). Cleared on feed reload.
-  final Map<String, List<LinkOption>> linkCardsByCollection;
 
   /// Whether drag-to-reorder mode is active (§4.2).
   final bool reordering;
@@ -106,8 +94,6 @@ class CollectionState {
     bool clearOlderBoundary = false,
     bool? loadingOlder,
     int? connectionCount,
-    List<LinkOption>? linkCollections,
-    Map<String, List<LinkOption>>? linkCardsByCollection,
     bool? reordering,
     PickedImage? pendingImage,
     bool clearPendingImage = false,
@@ -126,8 +112,6 @@ class CollectionState {
         : (olderBoundary ?? this.olderBoundary),
     loadingOlder: loadingOlder ?? this.loadingOlder,
     connectionCount: connectionCount ?? this.connectionCount,
-    linkCollections: linkCollections ?? this.linkCollections,
-    linkCardsByCollection: linkCardsByCollection ?? this.linkCardsByCollection,
     reordering: reordering ?? this.reordering,
     // Nullable fields: the matching `clear…` flag drops them (the `?? this`
     // idiom can't express "set to null").

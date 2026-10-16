@@ -4,7 +4,6 @@
 library;
 
 import 'package:flutter/foundation.dart';
-import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// A card's `kind` (spec §6.4). `text` is the everyday quick-capture; `link` is
 /// the "+"-block standalone link card; `image`/`audio`/`file` arrive with
@@ -112,21 +111,7 @@ class FeedCard {
   );
 }
 
-/// One selectable target in the link finder — a collection or a card (§4.4).
-/// [kind] chooses the wire `target_type`; [label] is its display title/preview.
-/// The finder loads collections first, then a collection's [LinkOption] cards on
-/// drill, so a card can link to *any* card or collection — not just a collection.
-class LinkOption {
-  const LinkOption({required this.kind, required this.id, required this.label});
-
-  final ConnectedEntityKind kind;
-  final String id;
-  final String label;
-}
-
-/// The Collection screen payload — header + ordered feed. The link-finder
-/// targets are loaded lazily (per level) when the finder opens, so they are not
-/// part of this read.
+/// The Collection screen payload — header + ordered feed.
 class CollectionData {
   const CollectionData({
     required this.collectionId,

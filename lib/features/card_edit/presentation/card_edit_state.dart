@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:knit/features/card_edit/domain/card_edit_models.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
@@ -18,7 +17,6 @@ class CardEditState {
     this.initialText = '',
     this.links = const [],
     this.linksLoading = false,
-    this.targets = const [],
     this.attachmentId,
     this.attachmentKind,
     this.attachmentName,
@@ -33,9 +31,6 @@ class CardEditState {
   /// The card's outgoing links (subtask 3). Reuses the §4.4 view-models.
   final List<ConnectionItem> links;
   final bool linksLoading;
-
-  /// The link-picker target tree (every collection + its cards), loaded up front.
-  final List<CardLinkCollectionTargets> targets;
 
   /// The card's current attachment id (§7.4.3); null when it has none.
   final String? attachmentId;
@@ -62,7 +57,6 @@ class CardEditState {
     String? initialText,
     List<ConnectionItem>? links,
     bool? linksLoading,
-    List<CardLinkCollectionTargets>? targets,
     Object? attachmentId = _unset,
     Object? attachmentKind = _unset,
     Object? attachmentName = _unset,
@@ -74,7 +68,6 @@ class CardEditState {
     initialText: initialText ?? this.initialText,
     links: links ?? this.links,
     linksLoading: linksLoading ?? this.linksLoading,
-    targets: targets ?? this.targets,
     attachmentId: attachmentId == _unset
         ? this.attachmentId
         : attachmentId as String?,

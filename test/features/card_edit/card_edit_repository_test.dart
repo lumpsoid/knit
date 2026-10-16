@@ -5,9 +5,8 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/card_edit/infra/sync_store_card_edit_links_read_repository.dart';
-import 'package:knit/features/card_edit/infra/sync_store_card_edit_links_write_repository.dart';
-import 'package:knit/features/card_edit/infra/sync_store_card_edit_targets_read_repository.dart';
 import 'package:knit/features/card_edit/infra/sync_store_card_edit_write_repository.dart';
+import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
@@ -27,8 +26,7 @@ void main() {
   late SyncStoreCollectionWriteRepository collectionWrite;
   late SyncStoreCardEditWriteRepository cardEditWrite;
   late SyncStoreCardEditLinksReadRepository linksRead;
-  late SyncStoreCardEditLinksWriteRepository linksWrite;
-  late SyncStoreCardEditTargetsReadRepository targetsRead;
+  late SyncStoreCardLinksWriteRepository linksWrite;
   const ids = UuidIdGenerator();
 
   setUp(() async {
@@ -45,8 +43,7 @@ void main() {
     );
     cardEditWrite = SyncStoreCardEditWriteRepository(graph: graph);
     linksRead = SyncStoreCardEditLinksReadRepository(graph: graph);
-    linksWrite = SyncStoreCardEditLinksWriteRepository(graph: graph, ids: ids);
-    targetsRead = SyncStoreCardEditTargetsReadRepository(graph: graph);
+    linksWrite = SyncStoreCardLinksWriteRepository(graph: graph, ids: ids);
   });
 
   Future<String> newCard(String colId, String text) async =>
@@ -149,33 +146,6 @@ void main() {
       final data = (await read.loadCollection(colA)).getOrThrow();
       expect(data.cards.single.id, source);
     });
-  });
-
-  group('targets', () {
-    test(
-      'loadTargets lists collections + their cards, excluding self',
-      () async {
-        final colA = (await timelineWrite.createCollection('A')).getOrThrow();
-        final colB = (await timelineWrite.createCollection('B')).getOrThrow();
-        final self = await newCard(colA, 'self');
-        final sibling = await newCard(colA, 'sibling');
-        final inB = await newCard(colB, 'in B');
-
-        final tree = (await targetsRead.loadTargets(
-          excludeCardId: self,
-        )).getOrThrow();
-        expect(tree, hasLength(2));
-
-        final a = tree.firstWhere((t) => t.collection.id == colA);
-        final aCardIds = a.cards.map((c) => c.id).toList();
-        expect(aCardIds, contains(sibling));
-        expect(aCardIds, isNot(contains(self))); // no self-link
-
-        final b = tree.firstWhere((t) => t.collection.id == colB);
-        expect(b.cards.single.id, inB);
-        expect(b.collection.kind, ConnectedEntityKind.collection);
-      },
-    );
   });
 
   group('attachment', () {

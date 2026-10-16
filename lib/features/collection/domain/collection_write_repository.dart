@@ -1,6 +1,5 @@
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
-import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// Narrow write port for the Collection screen (business_logic.md §5). Every op
@@ -28,13 +27,4 @@ abstract interface class CollectionWriteRepository {
     String cardId,
     String position,
   );
-
-  /// Create a neutral link from this card to [targetId] — a collection or
-  /// another card, per [targetKind] (§4.4/§7.4.5). Its own synced record,
-  /// merging independently of the card.
-  Future<Result<String, CollectionFailure>> linkCardToTarget({
-    required String cardId,
-    required ConnectedEntityKind targetKind,
-    required String targetId,
-  });
 }

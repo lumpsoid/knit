@@ -75,6 +75,7 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
   Future<void> _openCard(MediaItem item) async {
     CollectionMediaScope.cardEditRouteArgsWriter.open(
       cardId: item.cardId,
+      collectionId: CollectionMediaScope.routeArgs.collectionId,
       initialText: item.text ?? '',
       initialAttachmentId: item.attachmentId,
       initialAttachmentKind: item.attachmentId == null

@@ -179,33 +179,6 @@ class LinkCardOpened extends CollectionAction {
   final String cardId;
 }
 
-/// Actions sheet → "Make a link" opened the finder (§4.4). Loads the first
-/// level (collections); a no-op if they are already loaded is fine — it just
-/// refreshes them.
-class LinkFinderOpened extends CollectionAction {
-  const LinkFinderOpened();
-}
-
-/// Finder drilled into [collectionId] to browse its cards. Triggers a lazy
-/// card load on cache miss; a cache hit is a pure no-op.
-class LinkCollectionOpened extends CollectionAction {
-  const LinkCollectionOpened(this.collectionId);
-  final String collectionId;
-}
-
-/// The finder's first level finished loading (delivery of [LinkFinderOpened]).
-class LinkCollectionsLoaded extends CollectionAction {
-  const LinkCollectionsLoaded(this.collections);
-  final List<LinkOption> collections;
-}
-
-/// A collection's cards finished loading (delivery of [LinkCollectionOpened]).
-class LinkCardsLoaded extends CollectionAction {
-  const LinkCardsLoaded(this.collectionId, this.cards);
-  final String collectionId;
-  final List<LinkOption> cards;
-}
-
 /// Finder → link this card to a collection or another card (§4.4).
 class LinkRequested extends CollectionAction {
   const LinkRequested({

@@ -531,9 +531,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cardEditBrokenLinkSubtitle => 'The linked item was deleted';
 
   @override
-  String get cardEditLinkToWhichCollection => 'Link to which collection?';
-
-  @override
   String get cardEditSaveFailed => 'That didn\'t save. Please try again.';
 
   @override

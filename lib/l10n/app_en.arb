@@ -221,7 +221,6 @@
   "cardEditAddLink": "Add link",
   "cardEditBrokenLink": "Broken link",
   "cardEditBrokenLinkSubtitle": "The linked item was deleted",
-  "cardEditLinkToWhichCollection": "Link to which collection?",
   "cardEditSaveFailed": "That didn't save. Please try again.",
 
   "connectionsTitle": "Connections",

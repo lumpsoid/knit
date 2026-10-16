@@ -21,18 +21,6 @@ abstract interface class CollectionReadRepository {
     required int limit,
   });
 
-  /// Live collections offered as link targets (§4.4) — the finder's first
-  /// level. The current collection is included so the user can drill into it to
-  /// link to a sibling card; the page hides its direct "link to collection".
-  Future<Result<List<LinkOption>, CollectionFailure>> loadLinkCollections();
-
-  /// The live cards of [collectionId] as link targets — the finder's drilled
-  /// level. Returns *all* cards (keyed cache is source-card-independent); the
-  /// page drops the source card at render so a card can't link to itself.
-  Future<Result<List<LinkOption>, CollectionFailure>> loadCollectionCards(
-    String collectionId,
-  );
-
   /// True when any **live** card still references [attachmentId] via its
   /// `content['attachment_id']`. The shell consults this before reclaiming a
   /// deleted card's attachment so a legacy shared record (one record reused by

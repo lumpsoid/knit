@@ -18,12 +18,13 @@ import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_page.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
 import 'package:knit/features/card_edit/infra/sync_store_card_edit_links_read_repository.dart';
-import 'package:knit/features/card_edit/infra/sync_store_card_edit_links_write_repository.dart';
-import 'package:knit/features/card_edit/infra/sync_store_card_edit_targets_read_repository.dart';
 import 'package:knit/features/card_edit/infra/sync_store_card_edit_write_repository.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_module.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_scope.dart';
+import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
+import 'package:knit/features/card_links/infra/sync_store_link_targets_read_repository.dart';
+import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection/infra/share_plus_card_share_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
@@ -42,7 +43,6 @@ import 'package:knit/features/collection_media/presentation/collection_media_mod
 import 'package:knit/features/collection_media/presentation/collection_media_route_args.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_scope.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_read_repository.dart';
-import 'package:knit/features/connections/infra/sync_store_connections_write_repository.dart';
 import 'package:knit/features/connections/presentation/connections_controller.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_scope.dart';
@@ -240,6 +240,16 @@ void bootstrap(AppConfig config) {
   CollectionScope.setCollectionDetails(collectionDetails.state);
   CollectionEditScope.setCollectionDetails(collectionDetails.state);
 
+  // The shared card links (§4.4): one app-wide controller owning the link
+  // picker the Collection screen and Card Edit open, and every link write —
+  // including the Connections view clearing a broken link.
+  final cardLinks = CardLinksController(
+    readRepository: SyncStoreLinkTargetsReadRepository(graph: graph),
+    writeRepository: SyncStoreCardLinksWriteRepository(graph: graph, ids: ids),
+  );
+  CollectionScope.setCardLinks(cardLinks);
+  CardEditScope.setCardLinks(cardLinks);
+
   // Pinned collections (§4.1): a device-local view preference, persisted in
   // shared_preferences like Settings — never synced or signed.
   const timelinePins = SharedPreferencesTimelinePinRepository();
@@ -273,6 +283,7 @@ void bootstrap(AppConfig config) {
       shareRepository: const SharePlusCardShareRepository(),
       linkLauncher: const UrlLauncherLinkLauncher(),
       collectionDetails: collectionDetails,
+      cardLinks: cardLinks,
       timelineChannel: timelineChannel,
     ),
   );
@@ -290,20 +301,14 @@ void bootstrap(AppConfig config) {
   ConnectionsScope.setFactory(
     () => ConnectionsController(
       readRepository: SyncStoreConnectionsReadRepository(graph: graph),
-      writeRepository: SyncStoreConnectionsWriteRepository(graph: graph),
+      cardLinks: cardLinks,
     ),
   );
   CardEditScope.setFactory(
     () => CardEditModule(
       writeRepository: SyncStoreCardEditWriteRepository(graph: graph),
       linksReadRepository: SyncStoreCardEditLinksReadRepository(graph: graph),
-      linksWriteRepository: SyncStoreCardEditLinksWriteRepository(
-        graph: graph,
-        ids: ids,
-      ),
-      targetsReadRepository: SyncStoreCardEditTargetsReadRepository(
-        graph: graph,
-      ),
+      cardLinks: cardLinks,
       imageCache: imageCache,
       attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
         graph: graph,

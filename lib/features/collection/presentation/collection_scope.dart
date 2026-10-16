@@ -1,5 +1,6 @@
 import 'package:knit/core/attachments/presentation/attachment_image_cache_state.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
+import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
@@ -14,8 +15,8 @@ import 'package:knit/features/connections/presentation/connections_route_args.da
 /// page reads its target collection from, and the write sides of the
 /// Connections carrier (§4.4) and the Card Edit carrier (§4.3) the page hands
 /// off to. The carriers, the audio player, the shared collection details (the
-/// header the title card shows) and the shared image cache are app-wide
-/// singletons.
+/// header the title card shows), the shared image cache and the shared card
+/// links (the link picker) are app-wide singletons.
 abstract final class CollectionScope {
   static CollectionController Function()? _factory;
   static AudioPlaybackController? _playbackController;
@@ -25,6 +26,7 @@ abstract final class CollectionScope {
   static CollectionEditRouteArgsWriter? _collectionEditWriter;
   static CollectionDetailsState? _collectionDetails;
   static AttachmentImageCacheState? _images;
+  static CardLinksController? _cardLinks;
 
   static void setFactory(CollectionController Function() factory) =>
       _factory = factory;
@@ -34,6 +36,7 @@ abstract final class CollectionScope {
   static void setCollectionDetails(CollectionDetailsState details) =>
       _collectionDetails = details;
   static void setImages(AttachmentImageCacheState images) => _images = images;
+  static void setCardLinks(CardLinksController links) => _cardLinks = links;
   static void setConnectionsRouteArgsWriter(
     ConnectionsRouteArgsWriter writer,
   ) => _connectionsWriter = writer;
@@ -93,6 +96,18 @@ abstract final class CollectionScope {
       );
     }
     return images;
+  }
+
+  /// The shared card links — the page opens the link picker over them.
+  static CardLinksController get cardLinks {
+    final links = _cardLinks;
+    if (links == null) {
+      throw StateError(
+        'CollectionScope.cardLinks is not initialized.\n'
+        'Call CollectionScope.setCardLinks() during composition.',
+      );
+    }
+    return links;
   }
 
   static CollectionRouteArgs get routeArgs {

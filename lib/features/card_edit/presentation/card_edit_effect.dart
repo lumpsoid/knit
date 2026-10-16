@@ -20,13 +20,6 @@ class LoadLinksEffect extends CardEditEffect {
   final String cardId;
 }
 
-/// Load the link-picker target tree (collections + their cards), excluding
-/// [cardId].
-class LoadTargetsEffect extends CardEditEffect {
-  const LoadTargetsEffect(this.cardId);
-  final String cardId;
-}
-
 /// Create a link from [cardId] to the chosen target.
 class AddLinkEffect extends CardEditEffect {
   const AddLinkEffect({

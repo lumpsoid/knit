@@ -992,12 +992,6 @@ abstract class AppLocalizations {
   /// **'The linked item was deleted'**
   String get cardEditBrokenLinkSubtitle;
 
-  /// No description provided for @cardEditLinkToWhichCollection.
-  ///
-  /// In en, this message translates to:
-  /// **'Link to which collection?'**
-  String get cardEditLinkToWhichCollection;
-
   /// No description provided for @cardEditSaveFailed.
   ///
   /// In en, this message translates to:

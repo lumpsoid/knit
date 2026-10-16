@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
+import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_read_repository.dart';
-import 'package:knit/features/connections/infra/sync_store_connections_write_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -19,7 +19,7 @@ void main() {
   late SyncStoreTimelineWriteRepository timelineWrite;
   late SyncStoreCollectionWriteRepository collectionWrite;
   late SyncStoreConnectionsReadRepository read;
-  late SyncStoreConnectionsWriteRepository write;
+  late SyncStoreCardLinksWriteRepository links;
 
   setUp(() async {
     graph = AppGraph();
@@ -33,7 +33,7 @@ void main() {
       ids: ids,
     );
     read = SyncStoreConnectionsReadRepository(graph: graph);
-    write = SyncStoreConnectionsWriteRepository(graph: graph);
+    links = SyncStoreCardLinksWriteRepository(graph: graph, ids: ids);
   });
 
   Future<String> createCollection(String title) async =>
@@ -54,8 +54,8 @@ void main() {
       position: 'a0',
       text: 'see recipes',
     )).getOrThrow();
-    await collectionWrite.linkCardToTarget(
-      cardId: card,
+    await links.addLink(
+      sourceCardId: card,
       targetKind: ConnectedEntityKind.collection,
       targetId: b,
     );
@@ -129,7 +129,7 @@ void main() {
     final g = await linkedGraph();
     await collectionWrite.deleteCard(g.card);
 
-    (await write.clearLink(g.link)).getOrThrow();
+    (await links.removeLink(g.link)).getOrThrow();
 
     final data = await connections(ConnectedEntityKind.collection, g.b);
     expect(data.isEmpty, isTrue, reason: 'the link is gone');

@@ -250,6 +250,11 @@ the `lib/sync/` core below.
   `release(owner)`, pages read `AttachmentImageCacheState` via their scope.
   Shown images are held; released ones stay idle up to a byte budget (LRU).
   Seed just-stored picks with `put` instead of re-reading them.
+- `card_links` is the shared owner of card links (§4.4): `CardLinksController`
+  + `CardLinksState` + the one `LinkPickerSheet` (lazy two-level picker).
+  Collection and Card Edit open the picker and add links through it; Card Edit
+  and Connections remove links through it. The `LinkSource` rule (no self-link,
+  no link to the card's own collection) lives in its domain.
 
 ### `packages/` — extracted local packages (path deps)
 - `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod

@@ -2,13 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
-import 'package:knit/features/card_edit/domain/card_edit_models.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_controller.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_scope.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_state.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_ui_effect.dart';
+import 'package:knit/features/card_links/domain/card_links_models.dart';
+import 'package:knit/features/card_links/presentation/link_picker_sheet.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// The Card Edit page (§4.3) — a dedicated page for editing a card's content:
@@ -78,11 +79,11 @@ class _CardEditPageState extends State<CardEditPage> {
   void _save() => _controller.dispatch(SaveRequested(_field.text));
 
   Future<void> _addLink() async {
-    final targets = _controller.stateHolder.value.targets;
-    final option = await showModalBottomSheet<CardLinkOption>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _LinkPickerSheet(targets: targets),
+    final args = CardEditScope.routeArgs;
+    final option = await LinkPickerSheet.show(
+      context,
+      links: CardEditScope.cardLinks,
+      source: LinkSource(cardId: args.cardId, collectionId: args.collectionId),
     );
     if (option == null || !mounted) return;
     _controller.dispatch(
@@ -486,122 +487,3 @@ class _LinkRow extends StatelessWidget {
 /// into one to pick a card — or link to the collection itself. The whole tree is
 /// already in state, so the drill is local (a [StatefulBuilder]); selecting an
 /// option pops it back to the page, which dispatches the add.
-class _LinkPickerSheet extends StatelessWidget {
-  const _LinkPickerSheet({required this.targets});
-
-  final List<CardLinkCollectionTargets> targets;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.7,
-        ),
-        child: _DrilldownBody(targets: targets),
-      ),
-    );
-  }
-}
-
-class _DrilldownBody extends StatefulWidget {
-  const _DrilldownBody({required this.targets});
-  final List<CardLinkCollectionTargets> targets;
-
-  @override
-  State<_DrilldownBody> createState() => _DrilldownBodyState();
-}
-
-class _DrilldownBodyState extends State<_DrilldownBody> {
-  CardLinkCollectionTargets? _drilled;
-
-  @override
-  Widget build(BuildContext context) {
-    final drilled = _drilled;
-    if (drilled == null) return _collectionsList();
-    return _cardsList(drilled);
-  }
-
-  Widget _collectionsList() {
-    final l10n = AppLocalizations.of(context);
-    if (widget.targets.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(l10n.collectionNothingToLink),
-      );
-    }
-    return ListView(
-      shrinkWrap: true,
-      children: [
-        _SheetHeader(l10n.cardEditLinkToWhichCollection),
-        for (final t in widget.targets)
-          ListTile(
-            leading: const Icon(Icons.workspaces_outline),
-            title: Text(
-              t.collection.label.trim().isEmpty
-                  ? l10n.labelUntitled
-                  : t.collection.label.trim(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: t.cards.isEmpty ? null : const Icon(Icons.chevron_right),
-            onTap: () => setState(() => _drilled = t),
-          ),
-      ],
-    );
-  }
-
-  Widget _cardsList(CardLinkCollectionTargets t) {
-    final l10n = AppLocalizations.of(context);
-    final label = t.collection.label.trim().isEmpty
-        ? l10n.labelUntitled
-        : t.collection.label.trim();
-    return ListView(
-      shrinkWrap: true,
-      children: [
-        ListTile(
-          leading: const Icon(Icons.arrow_back),
-          title: Text(l10n.collectionBackToCollections),
-          onTap: () => setState(() => _drilled = null),
-        ),
-        const Divider(height: 1),
-        // The collection itself is a valid target (card→collection).
-        ListTile(
-          leading: const Icon(Icons.workspaces_outline),
-          title: Text(
-            l10n.collectionLinkToCollection(label),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          onTap: () => Navigator.of(context).pop(t.collection),
-        ),
-        if (t.cards.isNotEmpty) _SheetHeader(l10n.collectionOrACardInIt),
-        for (final card in t.cards)
-          ListTile(
-            leading: const Icon(Icons.sticky_note_2_outlined),
-            title: Text(
-              card.label.trim().isEmpty
-                  ? l10n.labelEmptyNote
-                  : card.label.trim(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            onTap: () => Navigator.of(context).pop(card),
-          ),
-      ],
-    );
-  }
-}
-
-class _SheetHeader extends StatelessWidget {
-  const _SheetHeader(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(label, style: Theme.of(context).textTheme.titleSmall),
-    );
-  }
-}

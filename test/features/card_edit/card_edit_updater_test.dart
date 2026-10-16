@@ -19,7 +19,7 @@ void main() {
   );
 
   group('attach', () {
-    test('seeds id/text, loads links + targets, no attachment when none', () {
+    test('seeds id/text, loads links, no attachment when none', () {
       final (next, effects) = updater.update(
         const CardEditState(),
         const ViewAttached(
@@ -34,9 +34,8 @@ void main() {
       expect(next.linksLoading, isTrue);
       expect(next.attachmentId, isNull);
       expect(next.attachmentBusy, isFalse);
-      expect(effects, hasLength(3));
+      expect(effects, hasLength(2));
       expect(effects!.whereType<LoadLinksEffect>().single.cardId, 'c1');
-      expect(effects.whereType<LoadTargetsEffect>().single.cardId, 'c1');
       expect(effects.whereType<ShowImageEffect>().single.attachmentId, isNull);
     });
 

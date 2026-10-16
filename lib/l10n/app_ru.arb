@@ -218,7 +218,6 @@
   "cardEditAddLink": "Добавить связь",
   "cardEditBrokenLink": "Битая связь",
   "cardEditBrokenLinkSubtitle": "Связанный элемент был удалён",
-  "cardEditLinkToWhichCollection": "С какой коллекцией связать?",
   "cardEditSaveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
 
   "connectionsTitle": "Связи",

@@ -178,15 +178,6 @@ class _FakeCollectionRead implements CollectionReadRepository {
   }) => throw UnimplementedError();
 
   @override
-  Future<Result<List<LinkOption>, CollectionFailure>> loadLinkCollections() =>
-      throw UnimplementedError();
-
-  @override
-  Future<Result<List<LinkOption>, CollectionFailure>> loadCollectionCards(
-    String collectionId,
-  ) => throw UnimplementedError();
-
-  @override
   Future<Result<bool, CollectionFailure>> isAttachmentReferenced(
     String attachmentId,
   ) => throw UnimplementedError();
