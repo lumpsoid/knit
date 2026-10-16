@@ -107,6 +107,18 @@ Drive the live flow (create → cards → reorder → link card→collection + a
       sqflite (`write_rebuild_test`); **must hold through the real app lifecycle**
       — requires running on the prod sqflite graph (left, item 2).
 
+## Planned refactors (in this order)
+
+1. **Split `collection_page.dart` into widget files.** It is about 2,400 lines
+   and keeps some state of its own through `setState`. That logic has not been
+   audited yet; audit it as part of the split.
+2. **A data-passing pass over the Collection widgets.** Each widget takes only
+   the data it uses through its constructor (widgets.md §2). Passing the whole
+   `CollectionState` (or another aggregate) into a widget is not allowed.
+3. **Only then split `CollectionState`.** The composer and recording state is
+   the clearest part to move into its own notifier. Do not start this before
+   steps 1 and 2.
+
 ## After this
 
 - **Relay push/pull** (§7.5/§9.2): the `origin='remote'` apply path + verify +
