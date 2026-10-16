@@ -187,7 +187,7 @@ class _CollectionPageState extends State<CollectionPage> {
       if (nextIds.contains(card.id)) continue;
       // The removed builder can't read the state (the card is gone from it), so
       // it draws the card captured here — inert while it animates out.
-      final imageBytes = _bytesFor(_controller.stateHolder.value, card);
+      final imageBytes = _bytesFor(card);
       list.removeItem(
         current.length - 1 - i,
         (context, animation) => _CardEntrance(
@@ -403,7 +403,7 @@ class _CollectionPageState extends State<CollectionPage> {
     var initialIndex = 0;
     for (final c in state.cards) {
       if (c.kind != CardKind.image) continue;
-      final bytes = _bytesFor(state, c);
+      final bytes = _bytesFor(c);
       if (bytes == null) continue;
       if (c.id == card.id) initialIndex = images.length;
       images.add(
@@ -521,9 +521,15 @@ class _CollectionPageState extends State<CollectionPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return ValueListenableBuilder<CollectionState>(
-      valueListenable: _controller.stateHolder,
-      builder: (context, state, _) {
+    // The feed also follows the shared image cache, so thumbnails appear as
+    // their bytes land.
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        _controller.stateHolder,
+        CollectionScope.images,
+      ]),
+      builder: (context, _) {
+        final state = _controller.stateHolder.value;
         return Scaffold(
           appBar: AppBar(
             title: Text(l10n.collectionAppBarTitle),
@@ -632,7 +638,7 @@ class _CollectionPageState extends State<CollectionPage> {
             key: ValueKey(card.id),
             card: card,
             index: i,
-            imageBytes: _bytesFor(state, card),
+            imageBytes: _bytesFor(card),
           );
         },
       );
@@ -665,7 +671,7 @@ class _CollectionPageState extends State<CollectionPage> {
                 key is ValueKey<String> ? listIndexById[key.value] : null,
             itemBuilder: (context, i, animation) {
               final card = state.cards[cardCount - 1 - i];
-              final row = _cardRow(card, _bytesFor(state, card));
+              final row = _cardRow(card, _bytesFor(card));
               return _CardEntrance(
                 key: ValueKey(card.id),
                 animation: animation,
@@ -700,12 +706,14 @@ class _CollectionPageState extends State<CollectionPage> {
   Widget _titleCard(CollectionState state) {
     final details = CollectionScope.collectionDetails;
     return ListenableBuilder(
-      listenable: details,
+      listenable: Listenable.merge([details, CollectionScope.images]),
       builder: (context, _) {
         final header = details.of(state.collectionId);
         final title = header?.title ?? '';
         final coverId = header?.coverAttachmentId;
-        final coverBytes = coverId == null ? null : state.imageBytes[coverId];
+        final coverBytes = coverId == null
+            ? null
+            : CollectionScope.images.of(coverId);
         return _CollectionTitleCard(
           title: title,
           description: header?.description,
@@ -791,9 +799,9 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   /// The cached decoded bytes for a card's image, if any (null ⇒ placeholder).
-  static Uint8List? _bytesFor(CollectionState state, FeedCard card) {
+  static Uint8List? _bytesFor(FeedCard card) {
     final id = card.attachmentId;
-    return id == null ? null : state.imageBytes[id];
+    return id == null ? null : CollectionScope.images.of(id);
   }
 }
 

@@ -1,3 +1,4 @@
+import 'package:knit/core/attachments/presentation/attachment_image_cache_state.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_state.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_controller.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
@@ -14,6 +15,7 @@ abstract final class CollectionEditScope {
   static CollectionEditRouteArgs? _routeArgs;
   static CollectionMediaRouteArgsWriter? _mediaWriter;
   static CollectionDetailsState? _collectionDetails;
+  static AttachmentImageCacheState? _images;
 
   static void setFactory(CollectionEditController Function() factory) =>
       _factory = factory;
@@ -22,7 +24,20 @@ abstract final class CollectionEditScope {
       _mediaWriter = writer;
   static void setCollectionDetails(CollectionDetailsState details) =>
       _collectionDetails = details;
+  static void setImages(AttachmentImageCacheState images) => _images = images;
   static void reset() => _controller = null;
+
+  /// The shared decoded images (read-only here): the cover + media previews.
+  static AttachmentImageCacheState get images {
+    final images = _images;
+    if (images == null) {
+      throw StateError(
+        'CollectionEditScope.images is not initialized.\n'
+        'Call CollectionEditScope.setImages() during composition.',
+      );
+    }
+    return images;
+  }
 
   static CollectionEditController get controller {
     if (_controller != null) return _controller!;

@@ -21,7 +21,6 @@ class CardEditState {
     this.targets = const [],
     this.attachmentId,
     this.attachmentKind,
-    this.imageBytes,
     this.attachmentName,
     this.attachmentSize,
     this.attachmentBusy = false,
@@ -45,10 +44,6 @@ class CardEditState {
   /// representation the section renders. Null when the card has no attachment.
   final CardKind? attachmentKind;
 
-  /// Decoded bytes of an *image* attachment, for [AttachmentImage]; null for
-  /// audio/file attachments (they render as chips) and while loading/absent.
-  final Uint8List? imageBytes;
-
   /// For a file attachment, its original name and byte size (§7.4.8), shown on
   /// the file chip. Null for image/audio attachments.
   final String? attachmentName;
@@ -70,7 +65,6 @@ class CardEditState {
     List<CardLinkCollectionTargets>? targets,
     Object? attachmentId = _unset,
     Object? attachmentKind = _unset,
-    Object? imageBytes = _unset,
     Object? attachmentName = _unset,
     Object? attachmentSize = _unset,
     bool? attachmentBusy,
@@ -87,9 +81,6 @@ class CardEditState {
     attachmentKind: attachmentKind == _unset
         ? this.attachmentKind
         : attachmentKind as CardKind?,
-    imageBytes: imageBytes == _unset
-        ? this.imageBytes
-        : imageBytes as Uint8List?,
     attachmentName: attachmentName == _unset
         ? this.attachmentName
         : attachmentName as String?,

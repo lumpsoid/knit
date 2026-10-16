@@ -4,10 +4,10 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:result_dart/result_dart.dart';
-import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/file_picker_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/card_edit/domain/card_edit_failure.dart';
@@ -31,7 +31,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     required CardEditLinksReadRepository linksReadRepository,
     required CardEditLinksWriteRepository linksWriteRepository,
     required CardEditTargetsReadRepository targetsReadRepository,
-    required AttachmentReadRepository attachmentReadRepository,
+    required AttachmentImageCache imageCache,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
     required FilePickerPort filePicker,
@@ -41,7 +41,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
        _linksRead = linksReadRepository,
        _linksWrite = linksWriteRepository,
        _targetsRead = targetsReadRepository,
-       _attachmentRead = attachmentReadRepository,
+       _images = imageCache,
        _attachmentWrite = attachmentWriteRepository,
        _picker = imagePicker,
        _filePicker = filePicker,
@@ -52,7 +52,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
   final CardEditLinksReadRepository _linksRead;
   final CardEditLinksWriteRepository _linksWrite;
   final CardEditTargetsReadRepository _targetsRead;
-  final AttachmentReadRepository _attachmentRead;
+  final AttachmentImageCache _images;
   final AttachmentWriteRepository _attachmentWrite;
   final ImagePickerPort _picker;
   final FilePickerPort _filePicker;
@@ -119,22 +119,11 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
       // --- attachment -----------------------------------------------------
 
-      case LoadImageEffect(:final attachmentId):
-        final result = await _attachmentRead.bytesOf(attachmentId);
-        if (result.isFailure) {
-          // Leave the card pointing at it; the section shows a broken-image
-          // placeholder (the kind was already seeded as image).
-          _log.warning('Card image bytes missing for $attachmentId');
-          dispatch(const AttachmentEditEnded());
-        } else {
-          dispatch(
-            AttachmentResolved(
-              attachmentId: attachmentId,
-              kind: CardKind.image,
-              bytes: result.getOrThrow().bytes,
-            ),
-          );
-        }
+      case ShowImageEffect(:final attachmentId):
+        await _images.show(this, [?attachmentId]);
+
+      case ReleaseImageEffect():
+        _images.release(this);
 
       case PickImageEffect(:final cardId, :final previousAttachmentId):
         await _pickImageAndAttach(cardId, previousAttachmentId, dispatch);
@@ -281,11 +270,13 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     if (previousAttachmentId != null && previousAttachmentId != attachmentId) {
       await _gcAttachment(previousAttachmentId);
     }
+    // An image's bytes are in hand: seed the shared cache so no page re-reads
+    // them.
+    if (bytes != null) _images.put(attachmentId, bytes);
     dispatch(
       AttachmentResolved(
         attachmentId: attachmentId,
         kind: kind,
-        bytes: bytes,
         name: name,
         size: size,
       ),

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:knit/features/card_edit/domain/card_edit_models.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -12,7 +10,7 @@ sealed class CardEditAction {
 
 /// View attached for [cardId], seeded with the text + attachment metadata from
 /// the route-args carrier (cross_feature.md §2). Kicks off loading the card's
-/// links, the picker target tree, and — for an image attachment — its bytes.
+/// links and the picker target tree, and shows an image attachment.
 class ViewAttached extends CardEditAction {
   const ViewAttached({
     required this.cardId,
@@ -102,21 +100,19 @@ class RemoveAttachmentRequested extends CardEditAction {
   const RemoveAttachmentRequested();
 }
 
-/// The card's attachment settled to [attachmentId] (null = removed), carrying
-/// the resolved [kind] and — for the rendered representation — image [bytes] or
-/// a file's [name]/[size]. Used both for the initial image load and after a
-/// pick/remove, so the section never needs a follow-up reload.
+/// The card's attachment settled to [attachmentId] (null = removed) after a
+/// pick/remove, carrying the resolved [kind] and a file's [name]/[size] for its
+/// chip (an image's bytes are in the shared image cache), so the section never
+/// needs a follow-up reload.
 class AttachmentResolved extends CardEditAction {
   const AttachmentResolved({
     this.attachmentId,
     this.kind,
-    this.bytes,
     this.name,
     this.size,
   });
   final String? attachmentId;
   final CardKind? kind;
-  final Uint8List? bytes;
   final String? name;
   final int? size;
 }

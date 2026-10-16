@@ -1,10 +1,10 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
-import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/file_picker_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/card_edit/domain/card_edit_links_read_repository.dart';
 import 'package:knit/features/card_edit/domain/card_edit_links_write_repository.dart';
@@ -29,7 +29,7 @@ class CardEditModule {
     required CardEditLinksReadRepository linksReadRepository,
     required CardEditLinksWriteRepository linksWriteRepository,
     required CardEditTargetsReadRepository targetsReadRepository,
-    required AttachmentReadRepository attachmentReadRepository,
+    required AttachmentImageCache imageCache,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
     required FilePickerPort filePicker,
@@ -44,7 +44,7 @@ class CardEditModule {
       linksReadRepository: linksReadRepository,
       linksWriteRepository: linksWriteRepository,
       targetsReadRepository: targetsReadRepository,
-      attachmentReadRepository: attachmentReadRepository,
+      imageCache: imageCache,
       attachmentWriteRepository: attachmentWriteRepository,
       imagePicker: imagePicker,
       filePicker: filePicker,

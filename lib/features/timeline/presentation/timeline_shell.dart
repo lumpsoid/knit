@@ -1,7 +1,7 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
-import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/features/collection_details/domain/collection_details.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
@@ -21,7 +21,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
     required TimelineWriteRepository writeRepository,
     required TimelinePinReadRepository pinReadRepository,
     required TimelinePinWriteRepository pinWriteRepository,
-    required AttachmentReadRepository attachmentReadRepository,
+    required AttachmentImageCache imageCache,
     required CollectionDetailsController collectionDetails,
     required EffectEmitter<TimelineUiEffect> effectEmitter,
     required Logger logger,
@@ -29,7 +29,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
        _write = writeRepository,
        _pinRead = pinReadRepository,
        _pinWrite = pinWriteRepository,
-       _attachmentRead = attachmentReadRepository,
+       _images = imageCache,
        _details = collectionDetails,
        _effectEmitter = effectEmitter,
        _log = logger;
@@ -38,7 +38,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
   final TimelineWriteRepository _write;
   final TimelinePinReadRepository _pinRead;
   final TimelinePinWriteRepository _pinWrite;
-  final AttachmentReadRepository _attachmentRead;
+  final AttachmentImageCache _images;
   final CollectionDetailsController _details;
   final EffectEmitter<TimelineUiEffect> _effectEmitter;
   final Logger _log;
@@ -95,14 +95,11 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
           dispatch(const CollectionCreateFailed());
         });
 
-      case LoadCoverBytesEffect(:final attachmentId):
-        final result = await _attachmentRead.bytesOf(attachmentId);
-        if (result.isFailure) {
-          _log.warning('Collection cover bytes missing for $attachmentId');
-          dispatch(CoverBytesLoaded(attachmentId, null));
-        } else {
-          dispatch(CoverBytesLoaded(attachmentId, result.getOrThrow().bytes));
-        }
+      case ShowCoversEffect(:final attachmentIds):
+        await _images.show(this, attachmentIds);
+
+      case ReleaseCoversEffect():
+        _images.release(this);
 
       case OpenCollectionEffect(:final collectionId):
         _effectEmitter.push(TimelineOpenCollectionUiEffect(collectionId));

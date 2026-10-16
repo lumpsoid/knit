@@ -10,6 +10,7 @@ import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -35,6 +36,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required CollectionWriteRepository writeRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
+    required AttachmentImageCache imageCache,
     required ImagePickerPort imagePicker,
     required AudioRecorderPort audioRecorder,
     required FilePickerPort filePicker,
@@ -48,6 +50,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
        _write = writeRepository,
        _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
+       _images = imageCache,
        _picker = imagePicker,
        _recorder = audioRecorder,
        _filePicker = filePicker,
@@ -62,6 +65,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final CollectionWriteRepository _write;
   final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
+  final AttachmentImageCache _images;
   final ImagePickerPort _picker;
   final AudioRecorderPort _recorder;
   final FilePickerPort _filePicker;
@@ -71,6 +75,11 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final EffectEmitter<CollectionUiEffect> _effectEmitter;
   final TimelineChannelEmitter _timelineChannel;
   final Logger _log;
+
+  /// This page's owner tokens in the shared image cache: the feed window's
+  /// images and the title card's cover are shown independently.
+  final Object _feedImages = Object();
+  final Object _coverImage = Object();
 
   @override
   Future<void> run(
@@ -124,14 +133,16 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           dispatch(const OlderCardsLoadFailed());
         });
 
-      case LoadImageBytesEffect(:final attachmentId):
-        final result = await _attachmentRead.bytesOf(attachmentId);
-        if (result.isFailure) {
-          _log.warning('Card image bytes missing for $attachmentId');
-          dispatch(ImageBytesLoaded(attachmentId, null));
-        } else {
-          dispatch(ImageBytesLoaded(attachmentId, result.getOrThrow().bytes));
-        }
+      case ShowFeedImagesEffect(:final attachmentIds):
+        await _images.show(_feedImages, attachmentIds);
+
+      case ShowCoverEffect(:final attachmentId):
+        await _images.show(_coverImage, [?attachmentId]);
+
+      case ReleaseImagesEffect():
+        _images
+          ..release(_feedImages)
+          ..release(_coverImage);
 
       case AddCardEffect(
         :final collectionId,
@@ -283,6 +294,9 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       dispatch(const ReloadRequested());
       return;
     }
+    // The bytes are in hand: seed the shared cache so the new card renders
+    // without reading them back.
+    _images.put(created.getOrThrow(), image.bytes);
 
     await _runWrite(
       () => _write.addCard(

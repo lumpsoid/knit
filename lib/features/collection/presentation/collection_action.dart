@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
@@ -54,14 +52,6 @@ class OlderCardsLoaded extends CollectionAction {
 /// Delivery of [OlderCardsRequested] on failure: the next scroll retries.
 class OlderCardsLoadFailed extends CollectionAction {
   const OlderCardsLoadFailed();
-}
-
-/// An image card's decoded bytes finished loading. [bytes] is null when the
-/// attachment is missing/unreadable — the placeholder stays and nothing caches.
-class ImageBytesLoaded extends CollectionAction {
-  const ImageBytesLoaded(this.attachmentId, this.bytes);
-  final String attachmentId;
-  final Uint8List? bytes;
 }
 
 /// Bottom composer submitted a quick text card (§4.2).

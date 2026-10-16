@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_effect.dart';
@@ -36,10 +34,10 @@ void main() {
     );
     expect(next.status, TimelineStatus.ready);
     expect(next.collections, list);
-    expect(effects, isNull);
+    expect((effects!.single as ShowCoversEffect).attachmentIds, isEmpty);
   });
 
-  test('CollectionsLoaded loads uncached covers, deduped', () {
+  test('CollectionsLoaded shows the covers through the image cache', () {
     final list = [
       summary('a', cover: 'cov-1'),
       summary('b'),
@@ -51,48 +49,19 @@ void main() {
       CollectionsLoaded(list),
     );
     expect(next.status, TimelineStatus.ready);
-    final ids = effects!
-        .cast<LoadCoverBytesEffect>()
-        .map((e) => e.attachmentId)
-        .toList();
-    expect(ids, ['cov-1', 'cov-2']);
+    expect((effects!.single as ShowCoversEffect).attachmentIds.toSet(), {
+      'cov-1',
+      'cov-2',
+    });
   });
 
-  test(
-    'CollectionsLoaded skips covers already cached, preserving the cache',
-    () {
-      final cached = Uint8List.fromList([1, 2, 3]);
-      final (next, effects) = updater.update(
-        TimelineState(coverBytes: {'cov-1': cached}),
-        CollectionsLoaded([summary('a', cover: 'cov-1')]),
-      );
-      expect(effects, isNull);
-      expect(next.coverBytes['cov-1'], same(cached));
-    },
-  );
-
-  test('CoverBytesLoaded caches bytes on success', () {
-    final bytes = Uint8List.fromList([9, 9]);
-    final (next, effects) = updater.update(
+  test('DeactivateFeature releases the covers', () {
+    final (_, effects) = updater.update(
       const TimelineState(status: TimelineStatus.ready),
-      CoverBytesLoaded('cov-1', bytes),
+      const DeactivateFeature(),
     );
-    expect(effects, isNull);
-    expect(next.coverBytes['cov-1'], same(bytes));
+    expect(effects!.single, isA<ReleaseCoversEffect>());
   });
-
-  test(
-    'CoverBytesLoaded with null leaves state untouched (placeholder stays)',
-    () {
-      final ready = const TimelineState(status: TimelineStatus.ready);
-      final (next, effects) = updater.update(
-        ready,
-        const CoverBytesLoaded('cov-1', null),
-      );
-      expect(next, same(ready));
-      expect(effects, isNull);
-    },
-  );
 
   test('failure marks the feed failed and keeps no effects', () {
     final (next, effects) = updater.update(

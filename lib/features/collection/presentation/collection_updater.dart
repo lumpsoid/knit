@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:fcis_core/fcis_core.dart';
 import 'package:intl/intl.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
@@ -57,15 +55,10 @@ class CollectionUpdater
         return (state, [LoadCollectionEffect(state.collectionId, window)]);
 
       case CollectionLoaded(:final data):
-        // Preserve the decoded-bytes cache across reloads (ids are immutable),
-        // and load any image card whose bytes we don't already hold. Reorder is
-        // a screen *mode* the user ends explicitly (Done), so carry it across the
-        // post-write re-sync — a single move must not drop out of reorder mode.
-        final toLoad = _uncachedImageAttachments(
-          data.cards,
-          data.coverAttachmentId,
-          state.imageBytes,
-        );
+        // Show the window's images + the cover through the shared image cache
+        // (it loads only what it doesn't hold). Reorder is a screen *mode* the
+        // user ends explicitly (Done), so carry it across the post-write
+        // re-sync — a single move must not drop out of reorder mode.
         return (
           CollectionState(
             status: CollectionStatus.ready,
@@ -73,13 +66,6 @@ class CollectionUpdater
             cards: data.cards,
             olderBoundary: data.olderBoundary,
             connectionCount: data.connectionCount,
-            // Keep only bytes the window still shows — a long scroll-back
-            // must not pin every photo it ever decoded once the window resets.
-            imageBytes: _retainImageBytes(
-              state.imageBytes,
-              data.cards,
-              data.coverAttachmentId,
-            ),
             // Link-finder caches are deliberately dropped on reload: a write may
             // have changed the targets, so the finder re-reads fresh on reopen.
             // Stay in reorder mode only while it remains reorderable (2+ cards),
@@ -94,19 +80,10 @@ class CollectionUpdater
             pendingAudio: state.pendingAudio,
             pendingFile: state.pendingFile,
           ),
-          toLoad.isEmpty
-              ? null
-              : [for (final id in toLoad) LoadImageBytesEffect(id)],
-        );
-
-      case ImageBytesLoaded(:final attachmentId, :final bytes):
-        // Cache only on success; a miss leaves the placeholder in place.
-        if (bytes == null) return (state, null);
-        return (
-          state.copyWith(
-            imageBytes: {...state.imageBytes, attachmentId: bytes},
-          ),
-          null,
+          [
+            ShowFeedImagesEffect(_imageAttachments(data.cards)),
+            ShowCoverEffect(data.coverAttachmentId),
+          ],
         );
 
       case LoadFailed():
@@ -133,21 +110,15 @@ class CollectionUpdater
         if (state.cards.isEmpty || FeedCursor.of(state.cards.first) != before) {
           return (state.copyWith(loadingOlder: false), null);
         }
-        final toLoad = _uncachedImageAttachments(
-          page.cards,
-          null,
-          state.imageBytes,
-        );
+        final cards = [...page.cards, ...state.cards];
         return (
           state.copyWith(
-            cards: [...page.cards, ...state.cards],
+            cards: cards,
             olderBoundary: page.olderBoundary,
             clearOlderBoundary: page.olderBoundary == null,
             loadingOlder: false,
           ),
-          toLoad.isEmpty
-              ? null
-              : [for (final id in toLoad) LoadImageBytesEffect(id)],
+          [ShowFeedImagesEffect(_imageAttachments(cards))],
         );
 
       case OlderCardsLoadFailed():
@@ -400,7 +371,10 @@ class CollectionUpdater
             clearPendingAudio: true,
             clearPendingFile: true,
           ),
-          state.isRecordingAudio ? const [CancelAudioRecordingEffect()] : null,
+          [
+            const ReleaseImagesEffect(),
+            if (state.isRecordingAudio) const CancelAudioRecordingEffect(),
+          ],
         );
     }
   }
@@ -463,42 +437,11 @@ class CollectionUpdater
     return '${DateFormat('yyyy-MM-dd').format(at)}-knit';
   }
 
-  /// Distinct `attachment_id`s whose bytes aren't cached yet: every image card's
-  /// attachment, plus the collection's cover image (§7.4.1) for the title card.
-  static List<String> _uncachedImageAttachments(
-    List<FeedCard> cards,
-    String? coverAttachmentId,
-    Map<String, Object?> cache,
-  ) {
-    final ids = <String>{};
-    if (coverAttachmentId != null && !cache.containsKey(coverAttachmentId)) {
-      ids.add(coverAttachmentId);
-    }
-    for (final card in cards) {
-      final id = card.attachmentId;
-      if (card.kind == CardKind.image && id != null && !cache.containsKey(id)) {
-        ids.add(id);
-      }
-    }
-    return ids.toList(growable: false);
-  }
-
-  /// The cached image bytes still referenced by [cards] or the cover.
-  static Map<String, Uint8List> _retainImageBytes(
-    Map<String, Uint8List> cache,
-    List<FeedCard> cards,
-    String? coverAttachmentId,
-  ) {
-    final live = {
-      ?coverAttachmentId,
-      for (final card in cards)
-        if (card.kind == CardKind.image) ?card.attachmentId,
-    };
-    return {
-      for (final MapEntry(:key, :value) in cache.entries)
-        if (live.contains(key)) key: value,
-    };
-  }
+  /// The `attachment_id`s of the image cards in [cards] — what the feed shows.
+  static List<String> _imageAttachments(List<FeedCard> cards) => [
+    for (final card in cards)
+      if (card.kind == CardKind.image) ?card.attachmentId,
+  ];
 
   /// Append key: after the last card, or the first key for an empty feed.
   static String _appendPosition(List<FeedCard> cards) => cards.isEmpty

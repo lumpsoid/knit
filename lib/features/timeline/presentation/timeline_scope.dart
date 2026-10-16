@@ -1,3 +1,4 @@
+import 'package:knit/core/attachments/presentation/attachment_image_cache_state.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_state.dart';
 import 'package:knit/features/search/presentation/search_controller.dart';
@@ -14,6 +15,7 @@ abstract class TimelineScope {
   static CollectionRouteArgsWriter? _routeArgsWriter;
   static SearchController Function()? _searchFactory;
   static CollectionDetailsState? _collectionDetails;
+  static AttachmentImageCacheState? _images;
 
   static void setController(TimelineController c) => _controller = c;
   static void setFactory(TimelineController Function() factory) =>
@@ -24,7 +26,20 @@ abstract class TimelineScope {
       _searchFactory = factory;
   static void setCollectionDetails(CollectionDetailsState details) =>
       _collectionDetails = details;
+  static void setImages(AttachmentImageCacheState images) => _images = images;
   static void reset() => _controller = null;
+
+  /// The shared decoded images (read-only here): the rows' covers.
+  static AttachmentImageCacheState get images {
+    final images = _images;
+    if (images == null) {
+      throw StateError(
+        'TimelineScope.images is not initialized.\n'
+        'Call TimelineScope.setImages() during composition.',
+      );
+    }
+    return images;
+  }
 
   /// The shared collection headers (read-only here): a row's title and cover.
   static CollectionDetailsState get collectionDetails {

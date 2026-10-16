@@ -114,8 +114,8 @@ void main() {
       expect(next.cards.map((c) => c.id), ['c0', 'c1']);
       expect(next.hasOlder, isFalse);
       expect(next.loadingOlder, isFalse);
-      // The image card in the new page has no attachment id → nothing to load.
-      expect(effects, isNull);
+      // The image card in the new page has no attachment id → nothing to show.
+      expect((effects!.single as ShowFeedImagesEffect).attachmentIds, isEmpty);
     });
 
     test('a stale OlderCardsLoaded is dropped', () {
@@ -146,33 +146,6 @@ void main() {
     test('isEmpty is false while older cards remain unloaded', () {
       expect(partial(const []).isEmpty, isFalse);
     });
-
-    test('CollectionLoaded drops cached bytes the window no longer shows', () {
-      final bytes = Uint8List.fromList([1]);
-      final state = ready(
-        const [],
-      ).copyWith(imageBytes: {'keep': bytes, 'gone': bytes});
-      final (next, _) = updater.update(
-        state,
-        CollectionLoaded(
-          CollectionData(
-            collectionId: 'col',
-            title: 'Notes',
-            description: null,
-            coverAttachmentId: null,
-            cards: [
-              FeedCard(
-                id: 'c1',
-                kind: CardKind.image,
-                position: 'a1',
-                attachmentId: 'keep',
-              ),
-            ],
-          ),
-        ),
-      );
-      expect(next.imageBytes.keys, ['keep']);
-    });
   });
 
   test('ReloadRequested is a no-op before a collection is set', () {
@@ -197,17 +170,18 @@ void main() {
     );
     expect(next.status, CollectionStatus.ready);
     expect(next.cards.single.id, 'c1');
-    expect(effects, isNull);
+    expect(effects!.whereType<ShowFeedImagesEffect>(), hasLength(1));
   });
 
   group('image thumbnails', () {
-    CollectionData dataWith(List<FeedCard> cards) => CollectionData(
-      collectionId: 'col',
-      title: 'Notes',
-      description: null,
-      coverAttachmentId: null,
-      cards: cards,
-    );
+    CollectionData dataWith(List<FeedCard> cards, {String? cover}) =>
+        CollectionData(
+          collectionId: 'col',
+          title: 'Notes',
+          description: null,
+          coverAttachmentId: cover,
+          cards: cards,
+        );
 
     FeedCard imageCard(String id, String position, String? attachmentId) =>
         FeedCard(
@@ -217,67 +191,60 @@ void main() {
           attachmentId: attachmentId,
         );
 
-    test('CollectionLoaded loads bytes for each uncached image card', () {
+    test('CollectionLoaded shows the window\'s image cards + the cover', () {
       final data = dataWith([
         card('c1', 'a0'),
         imageCard('c2', 'a1', 'att-1'),
         imageCard('c3', 'a2', 'att-2'),
-      ]);
+      ], cover: 'cov');
       final (_, effects) = updater.update(
         const CollectionState(),
         CollectionLoaded(data),
       );
-      final ids = effects!
-          .whereType<LoadImageBytesEffect>()
-          .map((e) => e.attachmentId)
-          .toList();
-      expect(ids, ['att-1', 'att-2']);
+      expect(effects!.whereType<ShowFeedImagesEffect>().single.attachmentIds, [
+        'att-1',
+        'att-2',
+      ]);
+      expect(effects.whereType<ShowCoverEffect>().single.attachmentId, 'cov');
     });
 
-    test('an image card without an attachment id loads nothing', () {
+    test('an image card without an attachment id shows nothing', () {
       final data = dataWith([imageCard('c1', 'a0', null)]);
       final (_, effects) = updater.update(
         const CollectionState(),
         CollectionLoaded(data),
       );
-      expect(effects, isNull);
+      expect(
+        effects!.whereType<ShowFeedImagesEffect>().single.attachmentIds,
+        isEmpty,
+      );
+      expect(effects.whereType<ShowCoverEffect>().single.attachmentId, isNull);
     });
 
-    test('already-cached bytes are not reloaded, and the cache survives', () {
-      final bytes = Uint8List.fromList([1, 2, 3]);
-      final state = const CollectionState().copyWith(
-        imageBytes: {'att-1': bytes},
+    test('OlderCardsLoaded shows the whole widened window', () {
+      final state = ready([imageCard('c2', 'a2', 'att-2')]).copyWith(
+        olderBoundary: const FeedCursor('a1', 'c1'),
+        loadingOlder: true,
       );
-      final data = dataWith([
-        imageCard('c1', 'a0', 'att-1'),
-        imageCard('c2', 'a1', 'att-2'),
+      final (_, effects) = updater.update(
+        state,
+        OlderCardsLoaded(
+          FeedCursor.of(state.cards.first),
+          FeedPage(cards: [imageCard('c1', 'a1', 'att-1')]),
+        ),
+      );
+      expect((effects!.single as ShowFeedImagesEffect).attachmentIds, [
+        'att-1',
+        'att-2',
       ]);
-      final (next, effects) = updater.update(state, CollectionLoaded(data));
-      final ids = effects!
-          .whereType<LoadImageBytesEffect>()
-          .map((e) => e.attachmentId)
-          .toList();
-      expect(ids, ['att-2'], reason: 'att-1 already cached');
-      expect(next.imageBytes['att-1'], same(bytes), reason: 'cache preserved');
     });
 
-    test('ImageBytesLoaded caches the decoded bytes', () {
-      final bytes = Uint8List.fromList([9, 9]);
-      final (next, effects) = updater.update(
+    test('DeactivateFeature releases the page\'s images', () {
+      final (_, effects) = updater.update(
         ready(const []),
-        ImageBytesLoaded('att-1', bytes),
+        const DeactivateFeature(),
       );
-      expect(next.imageBytes['att-1'], same(bytes));
-      expect(effects, isNull);
-    });
-
-    test('a missing image (null bytes) is not cached', () {
-      final (next, effects) = updater.update(
-        ready(const []),
-        const ImageBytesLoaded('att-1', null),
-      );
-      expect(next.imageBytes.containsKey('att-1'), isFalse);
-      expect(effects, isNull);
+      expect(effects!.single, isA<ReleaseImagesEffect>());
     });
   });
 
@@ -546,7 +513,7 @@ void main() {
       ).copyWith(recordingPhase: AudioRecordingPhase.recording);
       final (next, effects) = updater.update(state, const DeactivateFeature());
       expect(next.recordingPhase, isNull);
-      expect(effects!.single, isA<CancelAudioRecordingEffect>());
+      expect(effects!.whereType<CancelAudioRecordingEffect>(), hasLength(1));
     });
 
     test('leaving the page with no recording emits no cancel', () {
@@ -555,7 +522,7 @@ void main() {
         const DeactivateFeature(),
       );
       expect(next.recordingPhase, isNull);
-      expect(effects, isNull);
+      expect(effects!.whereType<CancelAudioRecordingEffect>(), isEmpty);
     });
   });
 
@@ -1003,7 +970,7 @@ void main() {
       ).copyWith(recordingPhase: AudioRecordingPhase.paused);
       final (next, effects) = updater.update(state, CollectionLoaded(data));
       expect(next.recordingPhase, AudioRecordingPhase.paused);
-      expect(effects, isNull);
+      expect(effects!.whereType<CancelAudioRecordingEffect>(), isEmpty);
     });
 
     test('staged image, audio and file all survive', () {

@@ -1,3 +1,4 @@
+import 'package:knit/core/attachments/presentation/attachment_image_cache_state.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
 import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_controller.dart';
@@ -14,6 +15,7 @@ abstract final class CollectionMediaScope {
   static CollectionMediaRouteArgs? _routeArgs;
   static CardEditRouteArgsWriter? _cardEditWriter;
   static AudioPlaybackController? _playbackController;
+  static AttachmentImageCacheState? _images;
 
   static void setFactory(CollectionMediaController Function() factory) =>
       _factory = factory;
@@ -22,7 +24,20 @@ abstract final class CollectionMediaScope {
       _cardEditWriter = writer;
   static void setPlaybackController(AudioPlaybackController controller) =>
       _playbackController = controller;
+  static void setImages(AttachmentImageCacheState images) => _images = images;
   static void reset() => _controller = null;
+
+  /// The shared decoded images (read-only here): the photo thumbnails.
+  static AttachmentImageCacheState get images {
+    final images = _images;
+    if (images == null) {
+      throw StateError(
+        'CollectionMediaScope.images is not initialized.\n'
+        'Call CollectionMediaScope.setImages() during composition.',
+      );
+    }
+    return images;
+  }
 
   static CollectionMediaController get controller {
     if (_controller != null) return _controller!;

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_effect.dart';
@@ -36,12 +34,13 @@ void main() {
       expect(next.linksLoading, isTrue);
       expect(next.attachmentId, isNull);
       expect(next.attachmentBusy, isFalse);
-      expect(effects, hasLength(2));
+      expect(effects, hasLength(3));
       expect(effects!.whereType<LoadLinksEffect>().single.cardId, 'c1');
       expect(effects.whereType<LoadTargetsEffect>().single.cardId, 'c1');
+      expect(effects.whereType<ShowImageEffect>().single.attachmentId, isNull);
     });
 
-    test('loads the bytes for an image attachment', () {
+    test('shows an image attachment through the image cache', () {
       final (next, effects) = updater.update(
         const CardEditState(),
         const ViewAttached(
@@ -53,9 +52,9 @@ void main() {
       );
       expect(next.attachmentId, 'att-1');
       expect(next.attachmentKind, CardKind.image);
-      expect(next.attachmentBusy, isTrue);
+      expect(next.attachmentBusy, isFalse);
       expect(
-        effects!.whereType<LoadImageEffect>().single.attachmentId,
+        effects!.whereType<ShowImageEffect>().single.attachmentId,
         'att-1',
       );
     });
@@ -76,8 +75,8 @@ void main() {
       expect(next.attachmentKind, CardKind.file);
       expect(next.attachmentName, 'report.pdf');
       expect(next.attachmentSize, 2048);
-      expect(next.attachmentBusy, isFalse); // no bytes to fetch
-      expect(effects!.whereType<LoadImageEffect>(), isEmpty);
+      expect(next.attachmentBusy, isFalse); // no image to show
+      expect(effects!.whereType<ShowImageEffect>().single.attachmentId, isNull);
     });
   });
 
@@ -196,27 +195,21 @@ void main() {
       },
     );
 
-    test('AttachmentResolved with an image fills bytes and clears busy', () {
+    test('AttachmentResolved with an image shows it and clears busy', () {
       const state = CardEditState(cardId: 'c1', attachmentBusy: true);
-      final bytes = Uint8List.fromList([9]);
       final (next, effects) = updater.update(
         state,
-        AttachmentResolved(
-          attachmentId: 'new',
-          kind: CardKind.image,
-          bytes: bytes,
-        ),
+        const AttachmentResolved(attachmentId: 'new', kind: CardKind.image),
       );
       expect(next.attachmentId, 'new');
       expect(next.attachmentKind, CardKind.image);
-      expect(next.imageBytes, bytes);
       expect(next.attachmentBusy, isFalse);
-      expect(effects, isNull);
+      expect((effects!.single as ShowImageEffect).attachmentId, 'new');
     });
 
-    test('AttachmentResolved with a file fills name/size, no bytes', () {
+    test('AttachmentResolved with a file fills name/size, no image', () {
       const state = CardEditState(cardId: 'c1', attachmentBusy: true);
-      final (next, _) = updater.update(
+      final (next, effects) = updater.update(
         state,
         const AttachmentResolved(
           attachmentId: 'new',
@@ -228,16 +221,15 @@ void main() {
       expect(next.attachmentKind, CardKind.file);
       expect(next.attachmentName, 'a.zip');
       expect(next.attachmentSize, 10);
-      expect(next.imageBytes, isNull);
       expect(next.attachmentBusy, isFalse);
+      expect((effects!.single as ShowImageEffect).attachmentId, isNull);
     });
 
     test('AttachmentResolved to null removes the attachment', () {
-      final state = CardEditState(
+      const state = CardEditState(
         cardId: 'c1',
         attachmentId: 'old',
         attachmentKind: CardKind.image,
-        imageBytes: Uint8List.fromList([1]),
         attachmentBusy: true,
       );
       final (next, effects) = updater.update(
@@ -246,9 +238,8 @@ void main() {
       );
       expect(next.attachmentId, isNull);
       expect(next.attachmentKind, isNull);
-      expect(next.imageBytes, isNull);
       expect(next.attachmentBusy, isFalse);
-      expect(effects, isNull);
+      expect((effects!.single as ShowImageEffect).attachmentId, isNull);
     });
 
     test('AttachmentEditEnded just drops the busy flag', () {
@@ -260,5 +251,13 @@ void main() {
       expect(next.attachmentBusy, isFalse);
       expect(effects, isNull);
     });
+  });
+
+  test('DeactivateFeature releases the shown image', () {
+    final (_, effects) = updater.update(
+      const CardEditState(cardId: 'c1'),
+      const DeactivateFeature(),
+    );
+    expect(effects!.single, isA<ReleaseImageEffect>());
   });
 }

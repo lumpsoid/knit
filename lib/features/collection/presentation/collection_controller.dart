@@ -7,6 +7,7 @@ import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/audio_recorder_port.dart';
 import 'package:knit/core/attachments/domain/file_picker_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
@@ -36,6 +37,7 @@ class CollectionController {
     required CollectionWriteRepository writeRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
+    required AttachmentImageCache imageCache,
     required ImagePickerPort imagePicker,
     required AudioRecorderPort audioRecorder,
     required FilePickerPort filePicker,
@@ -54,6 +56,7 @@ class CollectionController {
       writeRepository: writeRepository,
       attachmentReadRepository: attachmentReadRepository,
       attachmentWriteRepository: attachmentWriteRepository,
+      imageCache: imageCache,
       imagePicker: imagePicker,
       audioRecorder: audioRecorder,
       filePicker: filePicker,

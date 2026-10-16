@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:knit/features/collection_media/domain/collection_media_models.dart';
 
 /// Intents + async-result deliveries for the Collection Media page (fcis.md
@@ -27,14 +25,6 @@ class MediaLoaded extends CollectionMediaAction {
 
 class MediaLoadFailed extends CollectionMediaAction {
   const MediaLoadFailed();
-}
-
-/// A photo's bytes resolved ([bytes] null ⇒ the blob is missing on this device,
-/// e.g. not yet synced — the tile shows a placeholder).
-class PhotoBytesLoaded extends CollectionMediaAction {
-  const PhotoBytesLoaded({required this.attachmentId, this.bytes});
-  final String attachmentId;
-  final Uint8List? bytes;
 }
 
 /// A file item tapped — hand it to the system share sheet ("Open with…").

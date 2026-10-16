@@ -133,6 +133,10 @@ void main() {
       ),
     );
     CollectionScope.setCollectionDetails(details.state);
+    final images = AttachmentImageCache(
+      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+    );
+    CollectionScope.setImages(images.state);
     CollectionScope.setPlaybackController(
       AudioPlaybackController(
         player: _SilentPlayer(),
@@ -153,6 +157,7 @@ void main() {
           graph: graph,
           ids: ids,
         ),
+        imageCache: images,
         imagePicker: _UnusedImagePicker(),
         audioRecorder: _UnusedAudioRecorder(),
         filePicker: _UnusedFilePicker(),

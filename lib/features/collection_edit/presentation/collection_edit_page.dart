@@ -97,9 +97,15 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return ListenableBuilder(
-      listenable: Listenable.merge([_controller.stateHolder, _details]),
+      listenable: Listenable.merge([
+        _controller.stateHolder,
+        _details,
+        CollectionEditScope.images,
+      ]),
       builder: (context, _) {
         final state = _controller.stateHolder.value;
+        final images = CollectionEditScope.images;
+        final coverId = _details.of(_collectionId)?.coverAttachmentId;
         final saving = state.status == CollectionEditStatus.saving;
         return Scaffold(
           appBar: AppBar(
@@ -123,8 +129,8 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
             padding: const EdgeInsets.all(16),
             children: [
               _CoverSection(
-                hasCover: _details.of(_collectionId)?.hasCover ?? false,
-                coverBytes: state.coverBytes,
+                hasCover: coverId != null,
+                coverBytes: coverId == null ? null : images.of(coverId),
                 busy: state.coverBusy,
                 onPick: () => _controller.dispatch(const PickCoverRequested()),
                 onRemove: () =>
@@ -160,7 +166,11 @@ class _CollectionEditPageState extends State<CollectionEditPage> {
                 const SizedBox(height: 16),
                 _MediaSummaryRow(
                   counts: counts,
-                  previews: state.mediaPreviews,
+                  // A photo whose blob is missing on this device is skipped.
+                  previews: [
+                    for (final id in state.mediaPreviewIds)
+                      if (!images.isMissing(id)) images.of(id),
+                  ],
                   onTap: counts.isEmpty ? null : _openMedia,
                 ),
               ],
@@ -257,7 +267,9 @@ class _MediaSummaryRow extends StatelessWidget {
   static const double _thumbSize = 56;
 
   final MediaCounts counts;
-  final List<Uint8List> previews;
+
+  /// The thumbnails' bytes, newest first; null while one is still loading.
+  final List<Uint8List?> previews;
   final VoidCallback? onTap;
 
   @override

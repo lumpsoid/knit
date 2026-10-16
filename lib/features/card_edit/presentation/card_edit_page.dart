@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
@@ -92,9 +93,13 @@ class _CardEditPageState extends State<CardEditPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return ValueListenableBuilder<CardEditState>(
-      valueListenable: _controller.stateHolder,
-      builder: (context, state, _) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        _controller.stateHolder,
+        CardEditScope.images,
+      ]),
+      builder: (context, _) {
+        final state = _controller.stateHolder.value;
         final saving = state.status == CardEditStatus.saving;
         return Scaffold(
           appBar: AppBar(
@@ -119,6 +124,9 @@ class _CardEditPageState extends State<CardEditPage> {
             children: [
               _AttachmentSection(
                 state: state,
+                imageBytes: state.attachmentKind == CardKind.image
+                    ? CardEditScope.images.of(state.attachmentId!)
+                    : null,
                 onPickImage: () =>
                     _controller.dispatch(const PickImageRequested()),
                 onPickFile: () =>
@@ -163,12 +171,17 @@ class _CardEditPageState extends State<CardEditPage> {
 class _AttachmentSection extends StatelessWidget {
   const _AttachmentSection({
     required this.state,
+    required this.imageBytes,
     required this.onPickImage,
     required this.onPickFile,
     required this.onRemove,
   });
 
   final CardEditState state;
+
+  /// The image attachment's decoded bytes from the shared cache; null for
+  /// audio/file attachments and while loading.
+  final Uint8List? imageBytes;
   final VoidCallback onPickImage;
   final VoidCallback onPickFile;
   final VoidCallback onRemove;
@@ -206,7 +219,7 @@ class _AttachmentSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _AttachmentPreview(state: state),
+        _AttachmentPreview(state: state, imageBytes: imageBytes),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -240,9 +253,10 @@ class _AttachmentSection extends StatelessWidget {
 /// chip, or a file chip (name + size). An unknown/unloadable kind degrades to a
 /// generic attachment chip so the card is still editable.
 class _AttachmentPreview extends StatelessWidget {
-  const _AttachmentPreview({required this.state});
+  const _AttachmentPreview({required this.state, required this.imageBytes});
 
   final CardEditState state;
+  final Uint8List? imageBytes;
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +265,7 @@ class _AttachmentPreview extends StatelessWidget {
         return ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: AttachmentImage(
-            bytes: state.imageBytes,
+            bytes: imageBytes,
             height: 220,
             fit: BoxFit.cover,
           ),

@@ -47,12 +47,17 @@ class RemoveLinkEffect extends CardEditEffect {
 
 // --- attachment (subtask 4) ------------------------------------------------
 
-/// Load the decoded bytes for an *image* [attachmentId] to render the current
-/// attachment. Audio/file attachments render from their metadata, so they don't
-/// load bytes here.
-class LoadImageEffect extends CardEditEffect {
-  const LoadImageEffect(this.attachmentId);
-  final String attachmentId;
+/// The section shows the *image* [attachmentId] (null = no image): hand it to
+/// the shared image cache, which loads it if it isn't held yet. Audio/file
+/// attachments render from their metadata, so they show no image.
+class ShowImageEffect extends CardEditEffect {
+  const ShowImageEffect(this.attachmentId);
+  final String? attachmentId;
+}
+
+/// The page left: let the shared image cache drop its image.
+class ReleaseImageEffect extends CardEditEffect {
+  const ReleaseImageEffect();
 }
 
 /// Pick a photo (gallery/camera), store it, point [cardId] at the new image

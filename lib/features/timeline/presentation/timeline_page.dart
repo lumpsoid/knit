@@ -169,6 +169,7 @@ class _TimelinePageState extends State<TimelinePage> {
         listenable: Listenable.merge([
           _controller.stateHolder,
           TimelineScope.collectionDetails,
+          TimelineScope.images,
         ]),
         builder: (context, _) {
           final state = _controller.stateHolder.value;
@@ -236,7 +237,7 @@ class _TimelinePageState extends State<TimelinePage> {
         key: ValueKey(summary.collectionId),
         summary: summary,
         title: header?.title ?? summary.title,
-        coverBytes: coverId == null ? null : state.coverBytes[coverId],
+        coverBytes: coverId == null ? null : TimelineScope.images.of(coverId),
         onTap: () =>
             _controller.dispatch(CollectionTapped(summary.collectionId)),
         onLongPress: () => _openCollectionActions(summary, isPinned: isPinned),

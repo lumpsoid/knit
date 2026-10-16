@@ -1,11 +1,11 @@
-import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
-import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/collection_media/domain/collection_media_read_repository.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
@@ -23,7 +23,7 @@ class CollectionEditShell
     extends Shell<CollectionEditEffect, CollectionEditAction> {
   CollectionEditShell({
     required CollectionDetailsController collectionDetails,
-    required AttachmentReadRepository attachmentReadRepository,
+    required AttachmentImageCache imageCache,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
     required CollectionMediaReadRepository mediaReadRepository,
@@ -31,14 +31,14 @@ class CollectionEditShell
     required Logger logger,
   }) : _details = collectionDetails,
        _mediaRead = mediaReadRepository,
-       _attachmentRead = attachmentReadRepository,
+       _images = imageCache,
        _attachmentWrite = attachmentWriteRepository,
        _picker = imagePicker,
        _effectEmitter = effectEmitter,
        _log = logger;
 
   final CollectionDetailsController _details;
-  final AttachmentReadRepository _attachmentRead;
+  final AttachmentImageCache _images;
   final AttachmentWriteRepository _attachmentWrite;
   final ImagePickerPort _picker;
   final CollectionMediaReadRepository _mediaRead;
@@ -47,6 +47,10 @@ class CollectionEditShell
 
   /// How many of the newest photos the summary row previews.
   static const int _previewCount = 4;
+
+  /// This page's owner tokens in the shared image cache.
+  final Object _coverImage = Object();
+  final Object _previewImages = Object();
 
   @override
   Future<void> run(
@@ -84,16 +88,13 @@ class CollectionEditShell
           },
         );
 
-      case LoadCoverEffect(:final attachmentId):
-        final result = await _attachmentRead.bytesOf(attachmentId);
-        if (result.isFailure) {
-          // Leave the header pointing at it; the section shows a broken-image
-          // placeholder.
-          _log.warning('Collection cover bytes missing for $attachmentId');
-          dispatch(const CoverEditEnded());
-        } else {
-          dispatch(CoverResolved(bytes: result.getOrThrow().bytes));
-        }
+      case ShowCoverEffect(:final attachmentId):
+        await _images.show(_coverImage, [?attachmentId]);
+
+      case ReleaseImagesEffect():
+        _images
+          ..release(_coverImage)
+          ..release(_previewImages);
 
       case LoadMediaSummaryEffect(:final collectionId):
         await _loadMediaSummary(collectionId, dispatch);
@@ -103,14 +104,20 @@ class CollectionEditShell
 
       case RemoveCoverEffect(:final collectionId):
         final result = await _details.removeCover(collectionId);
-        result.onTap((_) => dispatch(const CoverResolved()), (failure) {
-          _log.severe(
-            'Remove collection cover failed',
-            failure.error,
-            failure.stackTrace,
-          );
-          _failCover(dispatch);
-        });
+        result.onTap(
+          (_) {
+            _images.release(_coverImage);
+            dispatch(const CoverEditEnded());
+          },
+          (failure) {
+            _log.severe(
+              'Remove collection cover failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            _failCover(dispatch);
+          },
+        );
     }
   }
 
@@ -135,6 +142,8 @@ class CollectionEditShell
     }
 
     final attachmentId = created.getOrThrow();
+    // The bytes are in hand: seed the shared cache so no page re-reads them.
+    _images.put(attachmentId, picked.bytes);
     final attached = await _details.setCover(
       collectionId: collectionId,
       attachmentId: attachmentId,
@@ -150,7 +159,8 @@ class CollectionEditShell
       return;
     }
 
-    dispatch(CoverResolved(bytes: picked.bytes));
+    unawaited(_images.show(_coverImage, [attachmentId]));
+    dispatch(const CoverEditEnded());
   }
 
   /// Read the media overview, then the bytes of its newest photos for the
@@ -171,12 +181,12 @@ class CollectionEditShell
       return;
     }
     final media = result.getOrThrow();
-    final previews = <Uint8List>[];
-    for (final photo in media.recentPhotos(_previewCount)) {
-      final bytes = await _attachmentRead.bytesOf(photo.attachmentId!);
-      if (bytes.isSuccess) previews.add(bytes.getOrThrow().bytes);
-    }
-    dispatch(MediaSummaryLoaded(counts: media.counts, previews: previews));
+    final previewIds = [
+      for (final photo in media.recentPhotos(_previewCount))
+        photo.attachmentId!,
+    ];
+    dispatch(MediaSummaryLoaded(counts: media.counts, previewIds: previewIds));
+    await _images.show(_previewImages, previewIds);
   }
 
   /// Surface a write failure and clear the in-flight flag, leaving the

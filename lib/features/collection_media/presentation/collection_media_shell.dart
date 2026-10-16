@@ -2,6 +2,7 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
 import 'package:knit/features/collection_media/domain/collection_media_read_repository.dart';
@@ -17,12 +18,14 @@ class CollectionMediaShell
   CollectionMediaShell({
     required CollectionMediaReadRepository readRepository,
     required AttachmentReadRepository attachmentReadRepository,
+    required AttachmentImageCache imageCache,
     required CardShareRepository shareRepository,
     required LinkLauncher linkLauncher,
     required EffectEmitter<CollectionMediaUiEffect> effectEmitter,
     required Logger logger,
   }) : _read = readRepository,
        _attachmentRead = attachmentReadRepository,
+       _images = imageCache,
        _share = shareRepository,
        _links = linkLauncher,
        _effectEmitter = effectEmitter,
@@ -33,6 +36,7 @@ class CollectionMediaShell
 
   final CollectionMediaReadRepository _read;
   final AttachmentReadRepository _attachmentRead;
+  final AttachmentImageCache _images;
   final CardShareRepository _share;
   final LinkLauncher _links;
   final EffectEmitter<CollectionMediaUiEffect> _effectEmitter;
@@ -55,23 +59,11 @@ class CollectionMediaShell
           dispatch(const MediaLoadFailed());
         });
 
-      case LoadPhotoBytesEffect(:final attachmentIds):
-        // One at a time, each landing as it resolves, so the grid fills in
-        // progressively rather than waiting on the slowest blob.
-        for (final id in attachmentIds) {
-          final result = await _attachmentRead.bytesOf(id);
-          if (result.isFailure) {
-            _log.warning('Media photo bytes missing for $id');
-            dispatch(PhotoBytesLoaded(attachmentId: id));
-          } else {
-            dispatch(
-              PhotoBytesLoaded(
-                attachmentId: id,
-                bytes: result.getOrThrow().bytes,
-              ),
-            );
-          }
-        }
+      case ShowPhotosEffect(:final attachmentIds):
+        await _images.show(this, attachmentIds);
+
+      case ReleasePhotosEffect():
+        _images.release(this);
 
       case ShareFileEffect(
         :final attachmentId,

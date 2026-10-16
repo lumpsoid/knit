@@ -16,11 +16,16 @@ class SaveDetailsEffect extends CollectionEditEffect {
   final String? description;
 }
 
-/// Load the decoded bytes for the cover [attachmentId] to render the current
-/// cover image.
-class LoadCoverEffect extends CollectionEditEffect {
-  const LoadCoverEffect(this.attachmentId);
-  final String attachmentId;
+/// The cover section shows [attachmentId] (null = no cover): hand it to the
+/// shared image cache, which loads it if it isn't held yet.
+class ShowCoverEffect extends CollectionEditEffect {
+  const ShowCoverEffect(this.attachmentId);
+  final String? attachmentId;
+}
+
+/// The page left: let the shared image cache drop its cover + previews.
+class ReleaseImagesEffect extends CollectionEditEffect {
+  const ReleaseImagesEffect();
 }
 
 /// Load [collectionId]'s media summary (counts + newest photo thumbnails).

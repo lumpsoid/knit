@@ -7,3 +7,5 @@ library;
 export 'domain/domain.dart';
 export 'infra/infra.dart';
 export 'presentation/attachment_image.dart';
+export 'presentation/attachment_image_cache.dart';
+export 'presentation/attachment_image_cache_state.dart';

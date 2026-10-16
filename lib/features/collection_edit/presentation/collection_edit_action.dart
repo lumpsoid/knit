@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:knit/features/collection_media/domain/collection_media_models.dart';
 
 /// Intents + async-result deliveries for the Collection Edit page (fcis.md §6.4).
@@ -49,17 +47,9 @@ class RemoveCoverRequested extends CollectionEditAction {
   const RemoveCoverRequested();
 }
 
-/// The cover settled, carrying its decoded [bytes] for the preview (null =
-/// removed). Used both for the initial load and after a pick/remove, so the
-/// section never needs a follow-up reload. The cover id itself lives in the
-/// shared collection details.
-class CoverResolved extends CollectionEditAction {
-  const CoverResolved({this.bytes});
-  final Uint8List? bytes;
-}
-
-/// A cover edit ended without changing anything (cancelled pick or failure) —
-/// drop the busy flag, leave the current cover in place.
+/// A cover pick/remove settled — applied, cancelled or failed. Drops the busy
+/// flag; the cover itself is the shared collection details' (and its bytes the
+/// shared image cache's), so the section re-renders from those.
 class CoverEditEnded extends CollectionEditAction {
   const CoverEditEnded();
 }
@@ -72,13 +62,12 @@ class MediaSummaryReloadRequested extends CollectionEditAction {
   const MediaSummaryReloadRequested();
 }
 
-/// The media summary resolved: per-kind [counts] plus the decoded bytes of the
-/// newest photos for the thumbnail strip ([previews], newest first; photos whose
-/// blob is missing on this device are skipped).
+/// The media summary resolved: per-kind [counts] plus the attachment ids of the
+/// newest photos for the thumbnail strip ([previewIds], newest first).
 class MediaSummaryLoaded extends CollectionEditAction {
-  const MediaSummaryLoaded({required this.counts, required this.previews});
+  const MediaSummaryLoaded({required this.counts, required this.previewIds});
   final MediaCounts counts;
-  final List<Uint8List> previews;
+  final List<String> previewIds;
 }
 
 class DeactivateFeature extends CollectionEditAction {

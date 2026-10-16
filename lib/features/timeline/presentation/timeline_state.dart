@@ -9,7 +9,6 @@ class TimelineState {
   const TimelineState({
     this.status = TimelineStatus.loading,
     this.collections = const [],
-    this.coverBytes = const {},
     this.pinnedIds = const {},
   });
 
@@ -20,7 +19,6 @@ class TimelineState {
   /// Content-addressed, so an id's bytes are immutable — cached here to avoid
   /// reloading on every feed refresh. Absent ⇒ loading or missing, which
   /// renders the lettered-avatar placeholder fallback.
-  final Map<String, Uint8List> coverBytes;
 
   /// Ids of the collections pinned on this device (device-local, never synced).
   /// May hold stale ids of deleted collections — [sections] ignores them.
@@ -37,12 +35,10 @@ class TimelineState {
   TimelineState copyWith({
     TimelineStatus? status,
     List<CollectionSummary>? collections,
-    Map<String, Uint8List>? coverBytes,
     Set<String>? pinnedIds,
   }) => TimelineState(
     status: status ?? this.status,
     collections: collections ?? this.collections,
-    coverBytes: coverBytes ?? this.coverBytes,
     pinnedIds: pinnedIds ?? this.pinnedIds,
   );
 }

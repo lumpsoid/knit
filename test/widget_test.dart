@@ -12,6 +12,7 @@ import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
 import 'package:knit/core/attachments/infra/sync_store_attachment_read_repository.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/core/attachments/infra/sync_store_attachment_write_repository.dart';
@@ -65,8 +66,10 @@ void main() {
         ),
         pinReadRepository: const SharedPreferencesTimelinePinRepository(),
         pinWriteRepository: const SharedPreferencesTimelinePinRepository(),
-        attachmentReadRepository: SyncStoreAttachmentReadRepository(
-          graph: graph,
+        imageCache: AttachmentImageCache(
+          attachmentReadRepository: SyncStoreAttachmentReadRepository(
+            graph: graph,
+          ),
         ),
         collectionDetails: collectionDetails,
         channelReader: TimelineChannelNotifier(),

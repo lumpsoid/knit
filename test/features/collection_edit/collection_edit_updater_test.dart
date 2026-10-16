@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/features/collection_media/domain/collection_media_models.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_action.dart';
@@ -11,7 +9,7 @@ void main() {
   const updater = CollectionEditUpdater();
 
   group('attach', () {
-    test('loads only the media summary without a cover', () {
+    test('loads the media summary and shows no cover without one', () {
       final (next, effects) = updater.update(
         const CollectionEditState(),
         const ViewAttached(collectionId: 'col-1'),
@@ -19,16 +17,17 @@ void main() {
       expect(next.status, CollectionEditStatus.editing);
       expect(next.collectionId, 'col-1');
       expect(next.coverBusy, isFalse);
-      expect((effects!.single as LoadMediaSummaryEffect).collectionId, 'col-1');
+      expect((effects!.first as ShowCoverEffect).attachmentId, isNull);
+      expect((effects.last as LoadMediaSummaryEffect).collectionId, 'col-1');
     });
 
-    test('loads the cover bytes when a cover is set', () {
+    test('shows the cover through the image cache when one is set', () {
       final (next, effects) = updater.update(
         const CollectionEditState(),
         const ViewAttached(collectionId: 'col-1', coverAttachmentId: 'att-1'),
       );
-      expect(next.coverBusy, isTrue);
-      expect((effects!.first as LoadCoverEffect).attachmentId, 'att-1');
+      expect(next.coverBusy, isFalse);
+      expect((effects!.first as ShowCoverEffect).attachmentId, 'att-1');
       expect(effects.last, isA<LoadMediaSummaryEffect>());
     });
 
@@ -37,14 +36,14 @@ void main() {
         CollectionEditState(
           collectionId: 'col-0',
           mediaCounts: const MediaCounts(photos: 3),
-          mediaPreviews: [Uint8List(1)],
-          coverBytes: Uint8List(1),
+          mediaPreviewIds: const ['p1'],
+          coverBusy: true,
         ),
         const ViewAttached(collectionId: 'col-1'),
       );
-      expect(next.coverBytes, isNull);
+      expect(next.coverBusy, isFalse);
       expect(next.mediaCounts, isNull);
-      expect(next.mediaPreviews, isEmpty);
+      expect(next.mediaPreviewIds, isEmpty);
     });
   });
 
@@ -58,18 +57,17 @@ void main() {
       expect((effects!.single as LoadMediaSummaryEffect).collectionId, 'col-1');
     });
 
-    test('loaded stores the counts and previews', () {
-      final preview = Uint8List.fromList([1, 2, 3]);
+    test('loaded stores the counts and preview ids', () {
       final (next, effects) = updater.update(
         const CollectionEditState(collectionId: 'col-1'),
-        MediaSummaryLoaded(
-          counts: const MediaCounts(photos: 2, links: 1),
-          previews: [preview],
+        const MediaSummaryLoaded(
+          counts: MediaCounts(photos: 2, links: 1),
+          previewIds: ['p1'],
         ),
       );
       expect(next.mediaCounts!.photos, 2);
       expect(next.mediaCounts!.total, 3);
-      expect(next.mediaPreviews.single, same(preview));
+      expect(next.mediaPreviewIds, ['p1']);
       expect(effects, isNull);
     });
   });
@@ -133,33 +131,21 @@ void main() {
       expect((effects!.single as RemoveCoverEffect).collectionId, 'col-1');
     });
 
-    test('CoverResolved sets the new bytes and clears busy', () {
-      final bytes = Uint8List.fromList([1, 2, 3]);
+    test('CoverEditEnded clears busy', () {
       final (next, effects) = updater.update(
         const CollectionEditState(coverBusy: true),
-        CoverResolved(bytes: bytes),
+        const CoverEditEnded(),
       );
-      expect(next.coverBytes, bytes);
       expect(next.coverBusy, isFalse);
       expect(effects, isNull);
     });
 
-    test('CoverResolved without bytes clears the preview (a removal)', () {
-      final (next, _) = updater.update(
-        CollectionEditState(coverBusy: true, coverBytes: Uint8List(1)),
-        const CoverResolved(),
+    test('DeactivateFeature releases the page\'s images', () {
+      final (_, effects) = updater.update(
+        const CollectionEditState(collectionId: 'col-1'),
+        const DeactivateFeature(),
       );
-      expect(next.coverBytes, isNull);
-      expect(next.coverBusy, isFalse);
-    });
-
-    test('CoverEditEnded just clears busy, leaving the cover unchanged', () {
-      final (next, _) = updater.update(
-        CollectionEditState(coverBusy: true, coverBytes: Uint8List(1)),
-        const CoverEditEnded(),
-      );
-      expect(next.coverBusy, isFalse);
-      expect(next.coverBytes, isNotNull);
+      expect(effects!.single, isA<ReleaseImagesEffect>());
     });
   });
 }

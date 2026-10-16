@@ -1,9 +1,9 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
-import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/collection_media/domain/collection_media_read_repository.dart';
@@ -18,13 +18,13 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_updat
 
 /// Composition root for the Collection Edit page (fcis.md §6.8): wires
 /// stateHolder → effectEmitter → shell → loop → controller. The shell gets the
-/// shared collection details (every header write) plus the attachments ports
-/// (read/write + picker) for the cover-image section, and the media read port
-/// for the Media summary row.
+/// shared collection details (every header write), the shared image cache, the
+/// attachment write port + picker for the cover-image section, and the media
+/// read port for the Media summary row.
 class CollectionEditModule {
   CollectionEditModule({
     required CollectionDetailsController collectionDetails,
-    required AttachmentReadRepository attachmentReadRepository,
+    required AttachmentImageCache imageCache,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
     required CollectionMediaReadRepository mediaReadRepository,
@@ -36,7 +36,7 @@ class CollectionEditModule {
     final effectEmitter = EffectEmitter<CollectionEditUiEffect>();
     final shell = CollectionEditShell(
       collectionDetails: collectionDetails,
-      attachmentReadRepository: attachmentReadRepository,
+      imageCache: imageCache,
       attachmentWriteRepository: attachmentWriteRepository,
       imagePicker: imagePicker,
       mediaReadRepository: mediaReadRepository,

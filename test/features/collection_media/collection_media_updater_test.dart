@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection_media/domain/collection_media_models.dart';
@@ -45,40 +43,28 @@ void main() {
     media: media,
   );
 
-  test('attach resets to loading but keeps the thumbnail cache', () {
-    final bytes = Uint8List(1);
+  test('attach resets to loading for the new collection', () {
     final (next, effects) = updater.update(
-      ready().copyWith(photoBytes: {'att-p1': bytes}),
+      ready(),
       const ViewAttached(collectionId: 'col-2'),
     );
     expect(next.status, CollectionMediaStatus.loading);
     expect(next.collectionId, 'col-2');
     expect(next.media.isEmpty, isTrue);
-    expect(next.photoBytes['att-p1'], same(bytes));
     expect((effects!.single as LoadMediaEffect).collectionId, 'col-2');
   });
 
-  test('loaded media fetches bytes only for uncached photos', () {
+  test('loaded media shows every photo through the image cache', () {
     final (next, effects) = updater.update(
-      CollectionMediaState(
-        collectionId: 'col-1',
-        photoBytes: {'att-p1': Uint8List(1)},
-      ),
+      CollectionMediaState(collectionId: 'col-1'),
       MediaLoaded(media),
     );
     expect(next.status, CollectionMediaStatus.ready);
     expect(next.media, same(media));
-    expect((effects!.single as LoadPhotoBytesEffect).attachmentIds, ['att-p2']);
-  });
-
-  test('loaded media with every photo cached emits nothing', () {
-    final (_, effects) = updater.update(
-      CollectionMediaState(
-        photoBytes: {'att-p1': Uint8List(1), 'att-p2': Uint8List(1)},
-      ),
-      MediaLoaded(media),
-    );
-    expect(effects, isNull);
+    expect((effects!.single as ShowPhotosEffect).attachmentIds.toSet(), {
+      'att-p1',
+      'att-p2',
+    });
   });
 
   test('a failed load shows the failure; retry goes back to loading', () {
@@ -96,20 +82,9 @@ void main() {
     expect(effects!.single, isA<LoadMediaEffect>());
   });
 
-  test('photo bytes cache on success and mark missing on absence', () {
-    final bytes = Uint8List(2);
-    final (loaded, _) = updater.update(
-      ready(),
-      PhotoBytesLoaded(attachmentId: 'att-p1', bytes: bytes),
-    );
-    expect(loaded.photoBytes['att-p1'], same(bytes));
-
-    final (missing, _) = updater.update(
-      loaded,
-      const PhotoBytesLoaded(attachmentId: 'att-p2'),
-    );
-    expect(missing.missingPhotos, {'att-p2'});
-    expect(missing.photoBytes.containsKey('att-p2'), isFalse);
+  test('DeactivateFeature releases the page\'s photos', () {
+    final (_, effects) = updater.update(ready(), const DeactivateFeature());
+    expect(effects!.single, isA<ReleasePhotosEffect>());
   });
 
   test('a file tap shares its attachment under its name with the caption', () {

@@ -245,6 +245,11 @@ the `lib/sync/` core below.
   Collection Edit read it via their scopes; their shells `remember` what they
   read from the projection and route every header write through it (cover
   writes also GC the replaced attachment).
+- Decoded attachment images go through one shared `AttachmentImageCache`
+  (`lib/core/attachments/presentation/`): shells `show(owner, ids)` /
+  `release(owner)`, pages read `AttachmentImageCacheState` via their scope.
+  Shown images are held; released ones stay idle up to a byte budget (LRU).
+  Seed just-stored picks with `put` instead of re-reading them.
 
 ### `packages/` — extracted local packages (path deps)
 - `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod

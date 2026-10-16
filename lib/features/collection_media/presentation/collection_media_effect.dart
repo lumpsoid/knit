@@ -9,10 +9,16 @@ class LoadMediaEffect extends CollectionMediaEffect {
   final String collectionId;
 }
 
-/// Resolve the bytes of each photo in [attachmentIds] for its grid tile.
-class LoadPhotoBytesEffect extends CollectionMediaEffect {
-  const LoadPhotoBytesEffect(this.attachmentIds);
+/// The grid shows the photos [attachmentIds]: hand them to the shared image
+/// cache, which loads any it doesn't hold yet.
+class ShowPhotosEffect extends CollectionMediaEffect {
+  const ShowPhotosEffect(this.attachmentIds);
   final List<String> attachmentIds;
+}
+
+/// The page left: let the shared image cache drop its photos.
+class ReleasePhotosEffect extends CollectionMediaEffect {
+  const ReleasePhotosEffect();
 }
 
 /// Share the file [attachmentId] through the system sheet under [fileName]

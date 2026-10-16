@@ -27,12 +27,9 @@ class CollectionEditUpdater
         // The controller outlives one page visit: start from a fresh state so
         // the previous collection's cover/media never flash on this one.
         return (
-          CollectionEditState(
-            collectionId: collectionId,
-            coverBusy: coverAttachmentId != null,
-          ),
+          CollectionEditState(collectionId: collectionId),
           [
-            if (coverAttachmentId != null) LoadCoverEffect(coverAttachmentId),
+            ShowCoverEffect(coverAttachmentId),
             LoadMediaSummaryEffect(collectionId),
           ],
         );
@@ -70,23 +67,20 @@ class CollectionEditUpdater
           [RemoveCoverEffect(state.collectionId)],
         );
 
-      case CoverResolved(:final bytes):
-        return (state.copyWith(coverBytes: bytes, coverBusy: false), null);
-
       case CoverEditEnded():
         return (state.copyWith(coverBusy: false), null);
 
       case MediaSummaryReloadRequested():
         return (state, [LoadMediaSummaryEffect(state.collectionId)]);
 
-      case MediaSummaryLoaded(:final counts, :final previews):
+      case MediaSummaryLoaded(:final counts, :final previewIds):
         return (
-          state.copyWith(mediaCounts: counts, mediaPreviews: previews),
+          state.copyWith(mediaCounts: counts, mediaPreviewIds: previewIds),
           null,
         );
 
       case DeactivateFeature():
-        return (state, null);
+        return (state, const [ReleaseImagesEffect()]);
     }
   }
 }

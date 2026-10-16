@@ -93,7 +93,7 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
     final images = <GalleryImage>[];
     var initialIndex = 0;
     for (final photo in state.media.ofKind(MediaKind.photo)) {
-      final bytes = state.photoBytes[photo.attachmentId];
+      final bytes = CollectionMediaScope.images.of(photo.attachmentId!);
       if (bytes == null) continue;
       if (photo.cardId == item.cardId) initialIndex = images.length;
       images.add(
@@ -125,21 +125,14 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
             ],
           ),
         ),
-        body: ValueListenableBuilder<CollectionMediaState>(
-          valueListenable: _controller.stateHolder,
-          builder: (context, state, _) => switch (state.status) {
-            CollectionMediaStatus.loading => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            CollectionMediaStatus.failed => _LoadFailed(
-              onRetry: () => _controller.dispatch(const ReloadRequested()),
-            ),
-            CollectionMediaStatus.ready => TabBarView(
-              children: [
-                for (final kind in MediaKind.values) _tab(state, kind),
-              ],
-            ),
-          },
+        // The grid also follows the shared image cache, so thumbnails appear as
+        // their bytes land.
+        body: ListenableBuilder(
+          listenable: Listenable.merge([
+            _controller.stateHolder,
+            CollectionMediaScope.images,
+          ]),
+          builder: (context, _) => _body(_controller.stateHolder.value),
         ),
         bottomNavigationBar: ValueListenableBuilder<PlaybackSnapshot>(
           valueListenable: _playback.snapshot,
@@ -160,6 +153,18 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
       ),
     );
   }
+
+  Widget _body(CollectionMediaState state) => switch (state.status) {
+    CollectionMediaStatus.loading => const Center(
+      child: CircularProgressIndicator(),
+    ),
+    CollectionMediaStatus.failed => _LoadFailed(
+      onRetry: () => _controller.dispatch(const ReloadRequested()),
+    ),
+    CollectionMediaStatus.ready => TabBarView(
+      children: [for (final kind in MediaKind.values) _tab(state, kind)],
+    ),
+  };
 
   Widget _tab(CollectionMediaState state, MediaKind kind) {
     final items = state.media.ofKind(kind);
@@ -199,11 +204,13 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
           itemCount: photos.length,
           itemBuilder: (context, i) {
             final photo = photos[i];
-            final bytes = state.photoBytes[photo.attachmentId];
+            final bytes = CollectionMediaScope.images.of(photo.attachmentId!);
             return _PhotoTile(
               heroTag: _photoHeroTag(photo.cardId),
               bytes: bytes,
-              missing: state.missingPhotos.contains(photo.attachmentId),
+              missing: CollectionMediaScope.images.isMissing(
+                photo.attachmentId!,
+              ),
               onTap: bytes == null ? null : () => _openGallery(state, photo),
               onLongPress: () => _openCard(photo),
             );

@@ -32,11 +32,22 @@ class LoadOlderCardsEffect extends CollectionEffect {
   final int limit;
 }
 
-/// Load the decoded bytes for an image card's [attachmentId] (§7.4.3) so the
-/// feed can render the thumbnail. One per uncached image card.
-class LoadImageBytesEffect extends CollectionEffect {
-  const LoadImageBytesEffect(this.attachmentId);
-  final String attachmentId;
+/// The loaded window shows the image cards' [attachmentIds] (§7.4.3): hand
+/// them to the shared image cache, which loads any it doesn't hold yet.
+class ShowFeedImagesEffect extends CollectionEffect {
+  const ShowFeedImagesEffect(this.attachmentIds);
+  final List<String> attachmentIds;
+}
+
+/// The title card shows the cover [attachmentId] (§7.4.1; null = no cover).
+class ShowCoverEffect extends CollectionEffect {
+  const ShowCoverEffect(this.attachmentId);
+  final String? attachmentId;
+}
+
+/// The page left: let the shared image cache drop this page's images.
+class ReleaseImagesEffect extends CollectionEffect {
+  const ReleaseImagesEffect();
 }
 
 /// Append a card of [kind] at [position] (§8.4). [text] is the body or URL.

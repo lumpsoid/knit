@@ -26,8 +26,8 @@ class CardEditUpdater
         :final initialFileName,
         :final initialFileSize,
       ):
-        // An image attachment needs its bytes fetched to render the thumbnail;
-        // audio/file render straight from the metadata the carrier passed.
+        // An image attachment shows through the shared image cache; audio/file
+        // render straight from the metadata the carrier passed.
         final isImage = initialAttachmentKind == CardKind.image;
         return (
           state.copyWith(
@@ -39,13 +39,12 @@ class CardEditUpdater
             attachmentKind: initialAttachmentKind,
             attachmentName: initialFileName,
             attachmentSize: initialFileSize,
-            attachmentBusy: initialAttachmentId != null && isImage,
+            attachmentBusy: false,
           ),
           [
             LoadLinksEffect(cardId),
             LoadTargetsEffect(cardId),
-            if (initialAttachmentId != null && isImage)
-              LoadImageEffect(initialAttachmentId),
+            ShowImageEffect(isImage ? initialAttachmentId : null),
           ],
         );
 
@@ -133,7 +132,6 @@ class CardEditUpdater
       case AttachmentResolved(
         :final attachmentId,
         :final kind,
-        :final bytes,
         :final name,
         :final size,
       ):
@@ -141,19 +139,18 @@ class CardEditUpdater
           state.copyWith(
             attachmentId: attachmentId,
             attachmentKind: kind,
-            imageBytes: bytes,
             attachmentName: name,
             attachmentSize: size,
             attachmentBusy: false,
           ),
-          null,
+          [ShowImageEffect(kind == CardKind.image ? attachmentId : null)],
         );
 
       case AttachmentEditEnded():
         return (state.copyWith(attachmentBusy: false), null);
 
       case DeactivateFeature():
-        return (state, null);
+        return (state, const [ReleaseImageEffect()]);
     }
   }
 }

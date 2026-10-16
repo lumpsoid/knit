@@ -215,6 +215,17 @@ void bootstrap(AppConfig config) {
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
 
+  // The shared decoded-image cache: one bounded copy of each attachment image
+  // for every page that renders one (covers, card thumbnails, media grid).
+  final imageCache = AttachmentImageCache(
+    attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+  );
+  TimelineScope.setImages(imageCache.state);
+  CollectionScope.setImages(imageCache.state);
+  CollectionEditScope.setImages(imageCache.state);
+  CollectionMediaScope.setImages(imageCache.state);
+  CardEditScope.setImages(imageCache.state);
+
   // The shared collection headers (title, description, cover — §3.1): one
   // app-wide controller the Timeline, the Collection screen and the Collection
   // Edit page all read, and every header edit goes through.
@@ -238,7 +249,7 @@ void bootstrap(AppConfig config) {
       writeRepository: SyncStoreTimelineWriteRepository(graph: graph, ids: ids),
       pinReadRepository: timelinePins,
       pinWriteRepository: timelinePins,
-      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      imageCache: imageCache,
       collectionDetails: collectionDetails,
       channelReader: timelineChannel,
     ).controller,
@@ -255,6 +266,7 @@ void bootstrap(AppConfig config) {
         graph: graph,
         ids: ids,
       ),
+      imageCache: imageCache,
       imagePicker: ImagePickerAdapter(),
       audioRecorder: RecordAudioRecorder(),
       filePicker: const FilePickerAdapter(),
@@ -292,7 +304,7 @@ void bootstrap(AppConfig config) {
       targetsReadRepository: SyncStoreCardEditTargetsReadRepository(
         graph: graph,
       ),
-      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      imageCache: imageCache,
       attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
         graph: graph,
         ids: ids,
@@ -304,7 +316,7 @@ void bootstrap(AppConfig config) {
   CollectionEditScope.setFactory(
     () => CollectionEditModule(
       collectionDetails: collectionDetails,
-      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      imageCache: imageCache,
       attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
         graph: graph,
         ids: ids,
@@ -317,6 +329,7 @@ void bootstrap(AppConfig config) {
     () => CollectionMediaModule(
       readRepository: SyncStoreCollectionMediaReadRepository(graph: graph),
       attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
+      imageCache: imageCache,
       shareRepository: const SharePlusCardShareRepository(),
       linkLauncher: const UrlLauncherLinkLauncher(),
     ).controller,

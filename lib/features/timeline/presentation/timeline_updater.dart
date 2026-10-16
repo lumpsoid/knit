@@ -22,28 +22,15 @@ class TimelineUpdater
           const [LoadTimelineEffect()],
         );
       case CollectionsLoaded(:final collections, :final pinnedIds):
-        // Preserve the decoded-cover cache across refreshes (ids are immutable),
-        // and load any cover whose bytes we don't already hold.
-        final toLoad = _uncachedCovers(collections, state.coverBytes);
+        // The covers load through the shared image cache (it skips the ones
+        // it already holds).
         return (
           TimelineState(
             status: TimelineStatus.ready,
             collections: collections,
-            coverBytes: state.coverBytes,
             pinnedIds: pinnedIds ?? state.pinnedIds,
           ),
-          toLoad.isEmpty
-              ? null
-              : [for (final id in toLoad) LoadCoverBytesEffect(id)],
-        );
-      case CoverBytesLoaded(:final attachmentId, :final bytes):
-        // Cache only on success; a miss leaves the placeholder in place.
-        if (bytes == null) return (state, null);
-        return (
-          state.copyWith(
-            coverBytes: {...state.coverBytes, attachmentId: bytes},
-          ),
-          null,
+          [ShowCoversEffect(_covers(collections))],
         );
       case TimelineLoadFailed():
         return (state.copyWith(status: TimelineStatus.failed), null);
@@ -83,20 +70,12 @@ class TimelineUpdater
         // The shell surfaces a message; nothing changes in state.
         return (state, null);
       case DeactivateFeature():
-        return (state, null);
+        return (state, const [ReleaseCoversEffect()]);
     }
   }
 
-  /// Distinct cover `attachment_id`s whose bytes aren't cached yet (§7.4.1).
-  static List<String> _uncachedCovers(
-    List<CollectionSummary> collections,
-    Map<String, Object?> cache,
-  ) {
-    final ids = <String>{};
-    for (final c in collections) {
-      final id = c.coverAttachmentId;
-      if (id != null && !cache.containsKey(id)) ids.add(id);
-    }
-    return ids.toList(growable: false);
-  }
+  /// The cover `attachment_id`s the feed shows (§7.4.1).
+  static List<String> _covers(List<CollectionSummary> collections) => [
+    for (final c in collections) ?c.coverAttachmentId,
+  ];
 }

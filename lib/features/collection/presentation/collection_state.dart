@@ -25,7 +25,6 @@ class CollectionState {
     this.olderBoundary,
     this.loadingOlder = false,
     this.connectionCount = 0,
-    this.imageBytes = const {},
     this.linkCollections,
     this.linkCardsByCollection = const {},
     this.reordering = false,
@@ -52,12 +51,6 @@ class CollectionState {
   /// How many links the collection itself takes part in (§4.4) — shown as a
   /// badge on the title card. Zero ⇒ no badge.
   final int connectionCount;
-
-  /// Decoded bytes of image cards, keyed by `attachment_id`. Content-addressed,
-  /// so an id's bytes are immutable — cached here to avoid reloading on every
-  /// rebuild (and preserved across feed reloads). Absent ⇒ loading or missing,
-  /// which renders the placeholder fallback.
-  final Map<String, Uint8List> imageBytes;
 
   /// Link-finder first level: live collections to link to (§4.4). Null until the
   /// finder is first opened; loaded lazily so opening a collection never reads
@@ -113,7 +106,6 @@ class CollectionState {
     bool clearOlderBoundary = false,
     bool? loadingOlder,
     int? connectionCount,
-    Map<String, Uint8List>? imageBytes,
     List<LinkOption>? linkCollections,
     Map<String, List<LinkOption>>? linkCardsByCollection,
     bool? reordering,
@@ -134,7 +126,6 @@ class CollectionState {
         : (olderBoundary ?? this.olderBoundary),
     loadingOlder: loadingOlder ?? this.loadingOlder,
     connectionCount: connectionCount ?? this.connectionCount,
-    imageBytes: imageBytes ?? this.imageBytes,
     linkCollections: linkCollections ?? this.linkCollections,
     linkCardsByCollection: linkCardsByCollection ?? this.linkCardsByCollection,
     reordering: reordering ?? this.reordering,

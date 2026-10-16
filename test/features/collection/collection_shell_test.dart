@@ -98,6 +98,11 @@ void main() {
       writeRepository: write,
       attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
       attachmentWriteRepository: attachmentWrite,
+      imageCache: AttachmentImageCache(
+        attachmentReadRepository: SyncStoreAttachmentReadRepository(
+          graph: graph,
+        ),
+      ),
       imagePicker: _UnusedImagePicker(),
       audioRecorder: _UnusedAudioRecorder(),
       filePicker: _UnusedFilePicker(),

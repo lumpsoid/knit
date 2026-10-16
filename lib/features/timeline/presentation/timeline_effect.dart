@@ -9,11 +9,17 @@ class LoadTimelineEffect extends TimelineEffect {
   const LoadTimelineEffect();
 }
 
-/// Resolve a collection's cover attachment to its renderable bytes (§7.4.1),
-/// so a row can show its cover instead of the lettered-avatar placeholder.
-class LoadCoverBytesEffect extends TimelineEffect {
-  const LoadCoverBytesEffect(this.attachmentId);
-  final String attachmentId;
+/// The feed shows these collection covers (§7.4.1): hand them to the shared
+/// image cache, which loads any it doesn't hold yet, so a row can show its
+/// cover instead of the lettered-avatar placeholder.
+class ShowCoversEffect extends TimelineEffect {
+  const ShowCoversEffect(this.attachmentIds);
+  final List<String> attachmentIds;
+}
+
+/// The Timeline left: let the shared image cache drop its covers.
+class ReleaseCoversEffect extends TimelineEffect {
+  const ReleaseCoversEffect();
 }
 
 /// Persist a new collection (§4.1), then open it on success.
