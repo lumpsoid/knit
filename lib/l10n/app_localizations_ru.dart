@@ -790,4 +790,35 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get searchOpen => 'Поиск';
+
+  @override
+  String get searchHint => 'Поиск по коллекциям и карточкам';
+
+  @override
+  String get searchIdle => 'Введите запрос и нажмите «Поиск»';
+
+  @override
+  String get searchFailed => 'Не удалось выполнить поиск';
+
+  @override
+  String searchNoResults(String query) {
+    return 'По запросу «$query» ничего не найдено';
+  }
+
+  @override
+  String get searchFilterAll => 'Все';
+
+  @override
+  String get searchFilterCollections => 'Коллекции';
+
+  @override
+  String get searchFilterCards => 'Карточки';
+
+  @override
+  String searchInCollection(String title) {
+    return 'в «$title»';
+  }
 }

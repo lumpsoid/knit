@@ -328,5 +328,25 @@
     "placeholders": {
       "count": { "type": "int" }
     }
+  },
+
+  "searchOpen": "Search",
+  "searchHint": "Search collections and cards",
+  "searchIdle": "Type a query and press search",
+  "searchFailed": "Couldn't run the search",
+  "searchNoResults": "Nothing found for “{query}”",
+  "@searchNoResults": {
+    "placeholders": {
+      "query": { "type": "String" }
+    }
+  },
+  "searchFilterAll": "All",
+  "searchFilterCollections": "Collections",
+  "searchFilterCards": "Cards",
+  "searchInCollection": "in {title}",
+  "@searchInCollection": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
   }
 }

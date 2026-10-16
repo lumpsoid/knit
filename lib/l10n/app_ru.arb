@@ -325,5 +325,15 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+
+  "searchOpen": "Поиск",
+  "searchHint": "Поиск по коллекциям и карточкам",
+  "searchIdle": "Введите запрос и нажмите «Поиск»",
+  "searchFailed": "Не удалось выполнить поиск",
+  "searchNoResults": "По запросу «{query}» ничего не найдено",
+  "searchFilterAll": "Все",
+  "searchFilterCollections": "Коллекции",
+  "searchFilterCards": "Карточки",
+  "searchInCollection": "в «{title}»"
 }

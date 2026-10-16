@@ -9,11 +9,17 @@ library;
 abstract interface class CollectionRouteArgs {
   /// The collection to open. Empty before any origin has written one.
   String get collectionId;
+
+  /// A card to scroll to and briefly highlight on entry (e.g. a search hit), or
+  /// null to open the feed at its normal position (newest card at the bottom).
+  String? get focusCardId;
 }
 
 /// Write side — what an origin screen (Timeline) sets before navigating.
 abstract interface class CollectionRouteArgsWriter {
-  void open(String collectionId);
+  /// Target [collectionId]; [focusCardId] optionally names a card in it to
+  /// reveal. Each call replaces the previous target, focus included.
+  void open(String collectionId, {String? focusCardId});
 }
 
 /// The store implements both halves.
@@ -24,10 +30,17 @@ abstract interface class CollectionRouteArgsStore
 /// reads it synchronously on entry, so no persistence is needed.
 class InMemoryCollectionRouteArgsStore implements CollectionRouteArgsStore {
   String _collectionId = '';
+  String? _focusCardId;
 
   @override
   String get collectionId => _collectionId;
 
   @override
-  void open(String collectionId) => _collectionId = collectionId;
+  String? get focusCardId => _focusCardId;
+
+  @override
+  void open(String collectionId, {String? focusCardId}) {
+    _collectionId = collectionId;
+    _focusCardId = focusCardId;
+  }
 }

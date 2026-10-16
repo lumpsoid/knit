@@ -775,4 +775,35 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get searchOpen => 'Search';
+
+  @override
+  String get searchHint => 'Search collections and cards';
+
+  @override
+  String get searchIdle => 'Type a query and press search';
+
+  @override
+  String get searchFailed => 'Couldn\'t run the search';
+
+  @override
+  String searchNoResults(String query) {
+    return 'Nothing found for “$query”';
+  }
+
+  @override
+  String get searchFilterAll => 'All';
+
+  @override
+  String get searchFilterCollections => 'Collections';
+
+  @override
+  String get searchFilterCards => 'Cards';
+
+  @override
+  String searchInCollection(String title) {
+    return 'in $title';
+  }
 }
