@@ -156,6 +156,8 @@
   "collectionAudioPermissionDenied": "Microphone access is needed to record audio.",
   "collectionActionEdit": "Edit",
   "collectionActionMakeLink": "Make a link",
+  "collectionActionCopy": "Copy",
+  "collectionCopied": "Copied to clipboard",
   "collectionActionShare": "Share",
   "collectionActionDelete": "Delete",
   "collectionCardLink": "Link",

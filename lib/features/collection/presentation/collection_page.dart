@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
@@ -172,9 +173,10 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   Future<void> _openCardActions(FeedCard card) async {
+    final copyText = card.text?.trim() ?? '';
     final action = await showModalBottomSheet<CardAction>(
       context: context,
-      builder: (_) => const CardActionsSheet(),
+      builder: (_) => CardActionsSheet(canCopy: copyText.isNotEmpty),
     );
     if (action == null || !mounted) return;
     switch (action) {
@@ -184,6 +186,14 @@ class _CollectionPageState extends State<CollectionPage> {
         _controller.dispatch(CardDeleteRequested(card.id));
       case CardAction.link:
         await _openLinkFinder(card);
+      case CardAction.copy:
+        await Clipboard.setData(ClipboardData(text: copyText));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).collectionCopied),
+          ),
+        );
       case CardAction.share:
         _controller.dispatch(CardShareRequested(card.id));
     }

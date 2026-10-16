@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-enum CardAction { edit, delete, link, share }
+enum CardAction { edit, delete, link, copy, share }
 
 class CardActionsSheet extends StatelessWidget {
-  const CardActionsSheet({super.key});
+  const CardActionsSheet({super.key, required this.canCopy});
+
+  /// Whether the card has text to copy; hides the Copy entry otherwise.
+  final bool canCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +26,12 @@ class CardActionsSheet extends StatelessWidget {
             title: Text(l10n.collectionActionMakeLink),
             onTap: () => Navigator.of(context).pop(CardAction.link),
           ),
+          if (canCopy)
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: Text(l10n.collectionActionCopy),
+              onTap: () => Navigator.of(context).pop(CardAction.copy),
+            ),
           ListTile(
             leading: const Icon(Icons.ios_share),
             title: Text(l10n.collectionActionShare),

@@ -153,6 +153,8 @@
   "collectionAudioPermissionDenied": "Для записи аудио нужен доступ к микрофону.",
   "collectionActionEdit": "Изменить",
   "collectionActionMakeLink": "Создать связь",
+  "collectionActionCopy": "Копировать",
+  "collectionCopied": "Скопировано в буфер обмена",
   "collectionActionShare": "Поделиться",
   "collectionActionDelete": "Удалить",
   "collectionCardLink": "Ссылка",

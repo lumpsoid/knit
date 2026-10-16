@@ -740,6 +740,18 @@ abstract class AppLocalizations {
   /// **'Make a link'**
   String get collectionActionMakeLink;
 
+  /// No description provided for @collectionActionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get collectionActionCopy;
+
+  /// No description provided for @collectionCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get collectionCopied;
+
   /// No description provided for @collectionActionShare.
   ///
   /// In en, this message translates to:

@@ -379,6 +379,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionActionMakeLink => 'Создать связь';
 
   @override
+  String get collectionActionCopy => 'Копировать';
+
+  @override
+  String get collectionCopied => 'Скопировано в буфер обмена';
+
+  @override
   String get collectionActionShare => 'Поделиться';
 
   @override

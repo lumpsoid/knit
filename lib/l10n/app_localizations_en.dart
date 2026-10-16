@@ -375,6 +375,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionActionMakeLink => 'Make a link';
 
   @override
+  String get collectionActionCopy => 'Copy';
+
+  @override
+  String get collectionCopied => 'Copied to clipboard';
+
+  @override
   String get collectionActionShare => 'Share';
 
   @override
