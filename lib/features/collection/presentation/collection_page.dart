@@ -29,6 +29,7 @@ import 'package:knit/features/collection/presentation/widgets/collection_feed.da
 import 'package:knit/features/collection/presentation/widgets/collection_title_card.dart';
 import 'package:knit/features/collection/presentation/widgets/move_target_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/selectable_card_row.dart';
+import 'package:knit/features/collection/presentation/widgets/selection_action_bar.dart';
 import 'package:knit/features/collection/presentation/widgets/text_prompt_dialog.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_page.dart';
@@ -373,7 +374,6 @@ class _CollectionPageState extends State<CollectionPage> {
                 ? _selectionAppBar(
                     l10n,
                     selectedCount: state.selectedCardIds.length,
-                    canSelectAll: state.canSelectAll,
                   )
                 : AppBar(
                     title: Text(l10n.collectionAppBarTitle),
@@ -414,7 +414,17 @@ class _CollectionPageState extends State<CollectionPage> {
                     );
                   },
                 ),
-                if (!state.reordering && !state.selecting) _composerPanel(),
+                // Selection swaps the composer for its actions at the same
+                // height, so the feed doesn't jump.
+                if (state.selecting)
+                  SelectionActionBar(
+                    canSelectAll: state.canSelectAll,
+                    onSelectAll: () =>
+                        _controller.dispatch(const AllCardsSelected()),
+                    onMove: _openMovePicker,
+                  )
+                else if (!state.reordering)
+                  _composerPanel(),
               ],
             ),
           ),
@@ -459,12 +469,11 @@ class _CollectionPageState extends State<CollectionPage> {
     );
   }
 
-  /// The app bar while cards are selected: a "✕" to leave, the count, and the
-  /// bulk actions (select all, move).
+  /// The app bar while cards are selected: a "✕" to leave and the count. The
+  /// bulk actions live in the bottom [SelectionActionBar].
   AppBar _selectionAppBar(
     AppLocalizations l10n, {
     required int selectedCount,
-    required bool canSelectAll,
   }) => AppBar(
     leading: IconButton(
       tooltip: l10n.collectionClearSelectionTooltip,
@@ -472,19 +481,6 @@ class _CollectionPageState extends State<CollectionPage> {
       onPressed: () => _controller.dispatch(const SelectionCleared()),
     ),
     title: Text(l10n.collectionSelectedCount(selectedCount)),
-    actions: [
-      if (canSelectAll)
-        IconButton(
-          tooltip: l10n.collectionSelectAllTooltip,
-          icon: const Icon(Icons.select_all),
-          onPressed: () => _controller.dispatch(const AllCardsSelected()),
-        ),
-      IconButton(
-        tooltip: l10n.collectionMoveTooltip,
-        icon: const Icon(Icons.drive_file_move_outline),
-        onPressed: _openMovePicker,
-      ),
-    ],
   );
 
   Widget _body(CollectionState state) {
