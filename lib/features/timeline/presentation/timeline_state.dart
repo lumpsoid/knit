@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:knit/features/timeline/domain/timeline_sections.dart';
 import 'package:knit/sync/sync.dart';
 
 enum TimelineStatus { loading, ready, failed }
@@ -9,6 +10,7 @@ class TimelineState {
     this.status = TimelineStatus.loading,
     this.collections = const [],
     this.coverBytes = const {},
+    this.pinnedIds = const {},
   });
 
   final TimelineStatus status;
@@ -20,15 +22,27 @@ class TimelineState {
   /// renders the lettered-avatar placeholder fallback.
   final Map<String, Uint8List> coverBytes;
 
+  /// Ids of the collections pinned on this device (device-local, never synced).
+  /// May hold stale ids of deleted collections — [sections] ignores them.
+  final Set<String> pinnedIds;
+
   bool get isEmpty => collections.isEmpty;
+
+  /// The feed split into the Pinned section and the rest (§4.1).
+  TimelineSections get sections =>
+      TimelineSections.split(collections, pinnedIds);
+
+  bool isPinned(String collectionId) => pinnedIds.contains(collectionId);
 
   TimelineState copyWith({
     TimelineStatus? status,
     List<CollectionSummary>? collections,
     Map<String, Uint8List>? coverBytes,
+    Set<String>? pinnedIds,
   }) => TimelineState(
     status: status ?? this.status,
     collections: collections ?? this.collections,
     coverBytes: coverBytes ?? this.coverBytes,
+    pinnedIds: pinnedIds ?? this.pinnedIds,
   );
 }

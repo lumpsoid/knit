@@ -51,6 +51,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionClose => 'Close';
 
   @override
+  String get actionPin => 'Pin';
+
+  @override
+  String get actionUnpin => 'Unpin';
+
+  @override
   String get labelUntitled => 'Untitled';
 
   @override
@@ -183,6 +189,15 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get timelinePinnedSection => 'Pinned';
+
+  @override
+  String get timelineRecentSection => 'Recent';
+
+  @override
+  String get timelinePinFailed => 'Couldn\'t update the pin. Please try again.';
 
   @override
   String get timelineNoCardsYet => 'No cards yet';

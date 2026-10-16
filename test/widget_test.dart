@@ -18,6 +18,7 @@ import 'package:knit/features/settings/infra/shared_preferences_settings_reposit
 import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository.dart';
 import 'package:knit/features/settings/presentation/settings_module.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
+import 'package:knit/features/timeline/infra/shared_preferences_timeline_pin_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/features/timeline/infra/timeline_channel_notifier.dart';
@@ -51,6 +52,8 @@ void main() {
           graph: graph,
           ids: const UuidIdGenerator(),
         ),
+        pinReadRepository: const SharedPreferencesTimelinePinRepository(),
+        pinWriteRepository: const SharedPreferencesTimelinePinRepository(),
         attachmentReadRepository: SyncStoreAttachmentReadRepository(
           graph: graph,
         ),

@@ -19,6 +19,8 @@
   "actionContinue": "Continue",
   "actionOpen": "Open",
   "actionClose": "Close",
+  "actionPin": "Pin",
+  "actionUnpin": "Unpin",
 
   "labelUntitled": "Untitled",
   "labelEmptyNote": "Empty note",
@@ -75,6 +77,9 @@
       "count": { "type": "int" }
     }
   },
+  "timelinePinnedSection": "Pinned",
+  "timelineRecentSection": "Recent",
+  "timelinePinFailed": "Couldn't update the pin. Please try again.",
   "timelineNoCardsYet": "No cards yet",
   "timelinePreviewPhoto": "📷 Photo",
   "timelinePreviewAudio": "🎙 Audio",

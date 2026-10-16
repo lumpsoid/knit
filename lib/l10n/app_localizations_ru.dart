@@ -51,6 +51,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionClose => 'Закрыть';
 
   @override
+  String get actionPin => 'Закрепить';
+
+  @override
+  String get actionUnpin => 'Открепить';
+
+  @override
   String get labelUntitled => 'Без названия';
 
   @override
@@ -185,6 +191,16 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get timelinePinnedSection => 'Закреплённые';
+
+  @override
+  String get timelineRecentSection => 'Недавние';
+
+  @override
+  String get timelinePinFailed =>
+      'Не удалось изменить закрепление. Попробуйте ещё раз.';
 
   @override
   String get timelineNoCardsYet => 'Пока нет карточек';

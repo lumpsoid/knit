@@ -64,6 +64,7 @@ import 'package:knit/features/settings/presentation/settings_state.dart';
 import 'package:knit/features/sync_status/infra/sync_store_sync_status_read_repository.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_module.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
+import 'package:knit/features/timeline/infra/shared_preferences_timeline_pin_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/features/timeline/infra/timeline_channel_notifier.dart';
@@ -213,10 +214,15 @@ void bootstrap(AppConfig config) {
   // Id minting behind the IdGenerator port (spec §6.1).
   const ids = UuidIdGenerator();
 
+  // Pinned collections (§4.1): a device-local view preference, persisted in
+  // shared_preferences like Settings — never synced or signed.
+  const timelinePins = SharedPreferencesTimelinePinRepository();
   TimelineScope.setFactory(
     () => TimelineModule(
       readRepository: SyncStoreTimelineRepository(graph: graph),
       writeRepository: SyncStoreTimelineWriteRepository(graph: graph, ids: ids),
+      pinReadRepository: timelinePins,
+      pinWriteRepository: timelinePins,
       attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
       channelReader: timelineChannel,
     ).controller,

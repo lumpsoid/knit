@@ -4,6 +4,7 @@ import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
+import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_write_repository.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
@@ -21,6 +22,8 @@ class TimelineModule {
   TimelineModule({
     required TimelineReadRepository readRepository,
     required TimelineWriteRepository writeRepository,
+    required TimelinePinReadRepository pinReadRepository,
+    required TimelinePinWriteRepository pinWriteRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required TimelineChannelReader channelReader,
     Logger? logger,
@@ -32,6 +35,8 @@ class TimelineModule {
     final shell = TimelineShell(
       readRepository: readRepository,
       writeRepository: writeRepository,
+      pinReadRepository: pinReadRepository,
+      pinWriteRepository: pinWriteRepository,
       attachmentReadRepository: attachmentReadRepository,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.timeline'),

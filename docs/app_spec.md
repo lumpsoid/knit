@@ -78,7 +78,12 @@ The data model enforces this: `collection` has `title` + optional `description` 
 - **Inline collection creation:** a button becomes a title/theme input line; on submit it
   opens the new Collection Screen with the card composer ready. ("Title/theme" is one input
   — there is **no** separate theme field.)
-- **Search icon** → full-screen search-as-you-type overlay; optional pin/favorite.
+- **Search icon** → full-screen search-as-you-type overlay.
+- **Pinned collections:** long-press a row → actions sheet → **Pin / Unpin**. Pinned
+  collections sit in a **"Pinned"** section above a **"Recent"** section; both keep the
+  recency order, with no cap on pins. Headers appear only once something is pinned. Pins are a
+  **device-local view preference**: not synced, not signed, not part of the §6.4 schema.
+  Deleting a collection drops its pin.
 
 ### 4.2 Collection Screen (a collection's card feed)
 - Chat-style feed of **cards**, **chronological ascending by default** (step 1 → 2 → 3,

@@ -16,6 +16,8 @@
   "actionContinue": "Продолжить",
   "actionOpen": "Открыть",
   "actionClose": "Закрыть",
+  "actionPin": "Закрепить",
+  "actionUnpin": "Открепить",
 
   "labelUntitled": "Без названия",
   "labelEmptyNote": "Пустая заметка",
@@ -72,6 +74,9 @@
       "count": { "type": "int" }
     }
   },
+  "timelinePinnedSection": "Закреплённые",
+  "timelineRecentSection": "Недавние",
+  "timelinePinFailed": "Не удалось изменить закрепление. Попробуйте ещё раз.",
   "timelineNoCardsYet": "Пока нет карточек",
   "timelinePreviewPhoto": "📷 Фото",
   "timelinePreviewAudio": "🎙 Аудио",

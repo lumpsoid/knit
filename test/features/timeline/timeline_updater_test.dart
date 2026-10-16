@@ -139,4 +139,83 @@ void main() {
     expect(next, same(ready));
     expect(effects, isNull);
   });
+
+  test('CollectionsLoaded carries the pinned ids into state', () {
+    final (next, _) = updater.update(
+      const TimelineState(),
+      CollectionsLoaded([summary('a'), summary('b')], pinnedIds: const {'b'}),
+    );
+    expect(next.pinnedIds, {'b'});
+    expect(next.sections.pinned.single.collectionId, 'b');
+    expect(next.sections.others.single.collectionId, 'a');
+  });
+
+  test('CollectionsLoaded with null pins keeps the known pins', () {
+    final (next, _) = updater.update(
+      const TimelineState(pinnedIds: {'a'}),
+      CollectionsLoaded([summary('a')]),
+    );
+    expect(next.pinnedIds, {'a'});
+  });
+
+  test('PinToggled emits a SetPinnedEffect for a real change', () {
+    final ready = TimelineState(
+      status: TimelineStatus.ready,
+      collections: [summary('a')],
+    );
+    final (next, effects) = updater.update(
+      ready,
+      const PinToggled('a', pinned: true),
+    );
+    expect(next, same(ready));
+    final effect = effects!.single as SetPinnedEffect;
+    expect(effect.collectionId, 'a');
+    expect(effect.pinned, isTrue);
+  });
+
+  test('PinToggled to the current state is a no-op', () {
+    final pinned = TimelineState(
+      status: TimelineStatus.ready,
+      collections: [summary('a')],
+      pinnedIds: const {'a'},
+    );
+    final (next, effects) = updater.update(
+      pinned,
+      const PinToggled('a', pinned: true),
+    );
+    expect(next, same(pinned));
+    expect(effects, isNull);
+  });
+
+  test('PinsChanged replaces the pinned set', () {
+    final (next, effects) = updater.update(
+      const TimelineState(pinnedIds: {'a'}),
+      const PinsChanged({'b'}),
+    );
+    expect(next.pinnedIds, {'b'});
+    expect(effects, isNull);
+  });
+
+  test('PinUpdateFailed keeps state and emits no effects', () {
+    const ready = TimelineState(pinnedIds: {'a'});
+    final (next, effects) = updater.update(ready, const PinUpdateFailed());
+    expect(next, same(ready));
+    expect(effects, isNull);
+  });
+
+  test('CollectionDeleted on a pinned collection also unpins it', () {
+    final (_, effects) = updater.update(
+      TimelineState(
+        status: TimelineStatus.ready,
+        collections: [summary('a')],
+        pinnedIds: const {'a'},
+      ),
+      const CollectionDeleted('a'),
+    );
+    expect(effects, hasLength(2));
+    expect(effects!.first, isA<LoadTimelineEffect>());
+    final unpin = effects.last as SetPinnedEffect;
+    expect(unpin.collectionId, 'a');
+    expect(unpin.pinned, isFalse);
+  });
 }

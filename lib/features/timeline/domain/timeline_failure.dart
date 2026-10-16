@@ -20,3 +20,8 @@ class TimelineLoadFailure extends TimelineFailure {
 class TimelineWriteFailure extends TimelineFailure {
   const TimelineWriteFailure(super.error, [super.stackTrace]);
 }
+
+/// Reading or writing the device-local pinned-collection set failed.
+class TimelinePinFailure extends TimelineFailure {
+  const TimelinePinFailure(super.error, [super.stackTrace]);
+}

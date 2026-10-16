@@ -14,9 +14,13 @@ class RefreshRequested extends TimelineAction {
   const RefreshRequested();
 }
 
+/// The home feed loaded, together with this device's pinned ids so the Pinned
+/// section renders in the same frame as the list. [pinnedIds] is null when the
+/// pin store couldn't be read — the previously known pins are kept.
 class CollectionsLoaded extends TimelineAction {
-  const CollectionsLoaded(this.collections);
+  const CollectionsLoaded(this.collections, {this.pinnedIds});
   final List<CollectionSummary> collections;
+  final Set<String>? pinnedIds;
 }
 
 class TimelineLoadFailed extends TimelineAction {
@@ -68,6 +72,25 @@ class CollectionDeleted extends TimelineAction {
 
 class CollectionDeleteFailed extends TimelineAction {
   const CollectionDeleteFailed();
+}
+
+/// Long-press → Pin / Unpin on a collection row (§4.1, device-local).
+class PinToggled extends TimelineAction {
+  const PinToggled(this.collectionId, {required this.pinned});
+  final String collectionId;
+
+  /// The desired state: true pins, false unpins.
+  final bool pinned;
+}
+
+/// The pinned set was persisted; [pinnedIds] is the full set after the write.
+class PinsChanged extends TimelineAction {
+  const PinsChanged(this.pinnedIds);
+  final Set<String> pinnedIds;
+}
+
+class PinUpdateFailed extends TimelineAction {
+  const PinUpdateFailed();
 }
 
 class DeactivateFeature extends TimelineAction {

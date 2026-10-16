@@ -21,7 +21,7 @@ class TimelineUpdater
           state.copyWith(status: TimelineStatus.loading),
           const [LoadTimelineEffect()],
         );
-      case CollectionsLoaded(:final collections):
+      case CollectionsLoaded(:final collections, :final pinnedIds):
         // Preserve the decoded-cover cache across refreshes (ids are immutable),
         // and load any cover whose bytes we don't already hold.
         final toLoad = _uncachedCovers(collections, state.coverBytes);
@@ -30,6 +30,7 @@ class TimelineUpdater
             status: TimelineStatus.ready,
             collections: collections,
             coverBytes: state.coverBytes,
+            pinnedIds: pinnedIds ?? state.pinnedIds,
           ),
           toLoad.isEmpty
               ? null
@@ -59,13 +60,26 @@ class TimelineUpdater
         return (state, null);
       case DeleteCollectionRequested(:final collectionId):
         return (state, [DeleteCollectionEffect(collectionId)]);
-      case CollectionDeleted():
-        // Re-read the home feed so the deleted row drops out.
+      case CollectionDeleted(:final collectionId):
+        // Re-read the home feed so the deleted row drops out, and drop its pin
+        // so the device-local pin set doesn't accumulate dead ids.
         return (
           state.copyWith(status: TimelineStatus.loading),
-          const [LoadTimelineEffect()],
+          [
+            const LoadTimelineEffect(),
+            if (state.isPinned(collectionId))
+              SetPinnedEffect(collectionId, pinned: false),
+          ],
         );
       case CollectionDeleteFailed():
+        // The shell surfaces a message; nothing changes in state.
+        return (state, null);
+      case PinToggled(:final collectionId, :final pinned):
+        if (state.isPinned(collectionId) == pinned) return (state, null);
+        return (state, [SetPinnedEffect(collectionId, pinned: pinned)]);
+      case PinsChanged(:final pinnedIds):
+        return (state.copyWith(pinnedIds: pinnedIds), null);
+      case PinUpdateFailed():
         // The shell surfaces a message; nothing changes in state.
         return (state, null);
       case DeactivateFeature():

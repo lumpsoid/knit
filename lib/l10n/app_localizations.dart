@@ -182,6 +182,18 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get actionClose;
 
+  /// No description provided for @actionPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get actionPin;
+
+  /// No description provided for @actionUnpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get actionUnpin;
+
   /// No description provided for @labelUntitled.
   ///
   /// In en, this message translates to:
@@ -403,6 +415,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 card} other{{count} cards}}'**
   String timelineCardCount(int count);
+
+  /// No description provided for @timelinePinnedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get timelinePinnedSection;
+
+  /// No description provided for @timelineRecentSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get timelineRecentSection;
+
+  /// No description provided for @timelinePinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the pin. Please try again.'**
+  String get timelinePinFailed;
 
   /// No description provided for @timelineNoCardsYet.
   ///

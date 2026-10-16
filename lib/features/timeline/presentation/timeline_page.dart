@@ -17,6 +17,7 @@ import 'package:knit/sync/sync.dart';
 
 /// The Home / collections timeline (§4.1) — newest-updated first, not
 /// reorderable. Rows show title · last-card preview · count · last-updated.
+/// Collections pinned on this device sit in a "Pinned" section above the rest.
 class TimelinePage extends StatefulWidget {
   const TimelinePage({super.key});
 
@@ -58,6 +59,7 @@ class _TimelinePageState extends State<TimelinePage> {
         final text = switch (message) {
           TimelineMessage.createFailed => l10n.timelineCreateFailed,
           TimelineMessage.deleteFailed => l10n.timelineDeleteFailed,
+          TimelineMessage.pinFailed => l10n.timelinePinFailed,
         };
         ScaffoldMessenger.of(
           context,
@@ -65,15 +67,26 @@ class _TimelinePageState extends State<TimelinePage> {
     }
   }
 
-  /// Long-press a row → actions sheet (§4.1). Today the only action is Delete,
-  /// guarded by a confirmation dialog since it's destructive.
-  Future<void> _openCollectionActions(CollectionSummary summary) async {
+  /// Long-press a row → actions sheet (§4.1): Pin / Unpin, and Delete (guarded
+  /// by a confirmation dialog since it's destructive).
+  Future<void> _openCollectionActions(
+    CollectionSummary summary, {
+    required bool isPinned,
+  }) async {
     final action = await showModalBottomSheet<_CollectionAction>(
       context: context,
-      builder: (_) => const _CollectionActionsSheet(),
+      builder: (_) => _CollectionActionsSheet(isPinned: isPinned),
     );
     if (action == null || !mounted) return;
     switch (action) {
+      case _CollectionAction.pin:
+      case _CollectionAction.unpin:
+        _controller.dispatch(
+          PinToggled(
+            summary.collectionId,
+            pinned: action == _CollectionAction.pin,
+          ),
+        );
       case _CollectionAction.delete:
         await _confirmDelete(summary);
     }
@@ -171,25 +184,49 @@ class _TimelinePageState extends State<TimelinePage> {
   }
 
   Widget _list(TimelineState state) {
+    final l10n = AppLocalizations.of(context);
+    final sections = state.sections;
+    // Section headers only appear once something is pinned; with no pins the
+    // feed is the plain recency list.
+    final rows = <Widget>[
+      if (sections.hasPinned) ...[
+        _SectionHeader(
+          label: l10n.timelinePinnedSection,
+          icon: Icons.push_pin_outlined,
+        ),
+        ..._tiles(state, sections.pinned, isPinned: true),
+        if (sections.others.isNotEmpty)
+          _SectionHeader(label: l10n.timelineRecentSection),
+      ],
+      ..._tiles(state, sections.others, isPinned: false),
+    ];
     return RefreshIndicator(
       onRefresh: () async => _controller.dispatch(const RefreshRequested()),
-      child: ListView.separated(
+      child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: state.collections.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, i) {
-          final summary = state.collections[i];
-          final coverId = summary.coverAttachmentId;
-          return _CollectionTile(
-            summary: summary,
-            coverBytes: coverId == null ? null : state.coverBytes[coverId],
-            onTap: () =>
-                _controller.dispatch(CollectionTapped(summary.collectionId)),
-            onLongPress: () => _openCollectionActions(summary),
-          );
-        },
+        children: rows,
       ),
     );
+  }
+
+  Iterable<Widget> _tiles(
+    TimelineState state,
+    List<CollectionSummary> collections, {
+    required bool isPinned,
+  }) sync* {
+    for (var i = 0; i < collections.length; i++) {
+      final summary = collections[i];
+      final coverId = summary.coverAttachmentId;
+      if (i > 0) yield const Divider(height: 1);
+      yield _CollectionTile(
+        key: ValueKey(summary.collectionId),
+        summary: summary,
+        coverBytes: coverId == null ? null : state.coverBytes[coverId],
+        onTap: () =>
+            _controller.dispatch(CollectionTapped(summary.collectionId)),
+        onLongPress: () => _openCollectionActions(summary, isPinned: isPinned),
+      );
+    }
   }
 }
 
@@ -238,8 +275,36 @@ class _NewCollectionDialogState extends State<_NewCollectionDialog> {
   }
 }
 
+/// A timeline section label ("Pinned" / "Recent").
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label, this.icon});
+  final String label;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.labelLarge?.copyWith(
+      color: theme.colorScheme.primary,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: style?.color),
+            const SizedBox(width: 6),
+          ],
+          Text(label, style: style),
+        ],
+      ),
+    );
+  }
+}
+
 class _CollectionTile extends StatelessWidget {
   const _CollectionTile({
+    super.key,
     required this.summary,
     required this.coverBytes,
     required this.onTap,
@@ -341,11 +406,14 @@ class _CollectionTile extends StatelessWidget {
   }
 }
 
-enum _CollectionAction { delete }
+enum _CollectionAction { pin, unpin, delete }
 
 /// Long-press actions sheet for a collection row (§4.1).
 class _CollectionActionsSheet extends StatelessWidget {
-  const _CollectionActionsSheet();
+  const _CollectionActionsSheet({required this.isPinned});
+
+  /// Whether the row is pinned — offers Unpin instead of Pin.
+  final bool isPinned;
 
   @override
   Widget build(BuildContext context) {
@@ -354,6 +422,13 @@ class _CollectionActionsSheet extends StatelessWidget {
     return SafeArea(
       child: Wrap(
         children: [
+          ListTile(
+            leading: Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+            title: Text(isPinned ? l10n.actionUnpin : l10n.actionPin),
+            onTap: () => Navigator.of(
+              context,
+            ).pop(isPinned ? _CollectionAction.unpin : _CollectionAction.pin),
+          ),
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
             title: Text(

@@ -3,7 +3,8 @@ sealed class TimelineEffect {
   const TimelineEffect();
 }
 
-/// Read the home timeline (§8.6.3) from the projection.
+/// Read the home timeline (§8.6.3) from the projection, plus this device's
+/// pinned collection ids.
 class LoadTimelineEffect extends TimelineEffect {
   const LoadTimelineEffect();
 }
@@ -31,4 +32,11 @@ class OpenCollectionEffect extends TimelineEffect {
 class DeleteCollectionEffect extends TimelineEffect {
   const DeleteCollectionEffect(this.collectionId);
   final String collectionId;
+}
+
+/// Pin or unpin a collection in the device-local pin store (§4.1).
+class SetPinnedEffect extends TimelineEffect {
+  const SetPinnedEffect(this.collectionId, {required this.pinned});
+  final String collectionId;
+  final bool pinned;
 }
