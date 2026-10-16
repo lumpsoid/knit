@@ -437,18 +437,19 @@ class CollectionUpdater
     int oldIndex,
     int newIndex,
   ) {
-    final target = newIndex > oldIndex ? newIndex - 1 : newIndex;
-    if (target == oldIndex) return (state, null);
+    if (newIndex == oldIndex) return (state, null);
 
     final cards = [...state.cards];
     final moved = cards.removeAt(oldIndex);
-    cards.insert(target, moved);
+    cards.insert(newIndex, moved);
 
-    final before = target > 0 ? cards[target - 1].position : null;
-    final after = target < cards.length - 1 ? cards[target + 1].position : null;
+    final before = newIndex > 0 ? cards[newIndex - 1].position : null;
+    final after = newIndex < cards.length - 1
+        ? cards[newIndex + 1].position
+        : null;
     final position = FractionalIndex.between(before, after);
 
-    cards[target] = moved.copyWith(position: position);
+    cards[newIndex] = moved.copyWith(position: position);
     return (
       state.copyWith(cards: cards),
       [ReorderCardEffect(moved.id, position)],

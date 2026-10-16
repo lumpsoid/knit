@@ -214,7 +214,8 @@ class EndReorder extends CollectionAction {
   const EndReorder();
 }
 
-/// A drag in reorder mode moved a card (ReorderableListView indices).
+/// A drag in reorder mode moved a card. Indices follow `onReorderItem`:
+/// [newIndex] is the card's final slot, already adjusted for the removal.
 class CardMoved extends CollectionAction {
   const CardMoved(this.oldIndex, this.newIndex);
   final int oldIndex;

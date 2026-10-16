@@ -800,8 +800,8 @@ void main() {
         card('c2', 'a1'),
         card('c3', 'a2'),
       ]);
-      // ReorderableListView reports newIndex as the pre-removal slot.
-      final (next, effects) = updater.update(state, const CardMoved(0, 3));
+      // onReorderItem reports newIndex as the final, post-removal slot.
+      final (next, effects) = updater.update(state, const CardMoved(0, 2));
       final effect = effects!.single as ReorderCardEffect;
       expect(effect.cardId, 'c1');
       // Order is now c2, c3, c1 — and stays sorted by position.

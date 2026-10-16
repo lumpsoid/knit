@@ -605,7 +605,7 @@ class _CollectionPageState extends State<CollectionPage> {
         header: titleCard,
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: state.cards.length,
-        onReorder: (oldIndex, newIndex) =>
+        onReorderItem: (oldIndex, newIndex) =>
             _controller.dispatch(CardMoved(oldIndex, newIndex)),
         itemBuilder: (context, i) {
           final card = state.cards[i];
