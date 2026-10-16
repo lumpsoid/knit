@@ -834,4 +834,43 @@ class AppLocalizationsRu extends AppLocalizations {
   String searchInCollection(String title) {
     return 'в «$title»';
   }
+
+  @override
+  String collectionSelectedCount(int count) {
+    return 'Выбрано: $count';
+  }
+
+  @override
+  String get collectionSelectAllTooltip => 'Выбрать все';
+
+  @override
+  String get collectionClearSelectionTooltip => 'Отменить выбор';
+
+  @override
+  String get collectionMoveTooltip => 'Переместить в коллекцию';
+
+  @override
+  String get collectionMoveSheetTitle => 'Переместить в…';
+
+  @override
+  String get collectionMoveNoTargets => 'Других коллекций пока нет.';
+
+  @override
+  String get collectionMoveTargetsError => 'Не удалось загрузить коллекции.';
+
+  @override
+  String collectionCardsMoved(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count карточки перемещены в «$title»',
+      many: '$count карточек перемещено в «$title»',
+      few: '$count карточки перемещены в «$title»',
+      one: '1 карточка перемещена в «$title»',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get collectionCardsMovedOpen => 'Открыть';
 }

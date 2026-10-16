@@ -204,3 +204,23 @@ class LinkEffect extends CollectionEffect {
   final ConnectedEntityKind targetKind;
   final String targetId;
 }
+
+/// Load every live collection for the move picker.
+class LoadMoveTargetsEffect extends CollectionEffect {
+  const LoadMoveTargetsEffect();
+}
+
+/// Read [target]'s last card position, so the moved cards can append after it
+/// (delivered as [MoveTargetTailLoaded]).
+class LoadMoveTargetTailEffect extends CollectionEffect {
+  const LoadMoveTargetTailEffect(this.target);
+  final MoveTarget target;
+}
+
+/// Move cards into [target] in one transaction: [positions] maps each card id
+/// to its new position there, already in feed order (§8.7).
+class MoveCardsEffect extends CollectionEffect {
+  const MoveCardsEffect({required this.target, required this.positions});
+  final MoveTarget target;
+  final Map<String, String> positions;
+}

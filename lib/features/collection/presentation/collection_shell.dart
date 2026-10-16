@@ -11,6 +11,7 @@ import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
+import 'package:knit/features/collection/domain/card_move_read_repository.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -35,6 +36,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   CollectionShell({
     required CollectionReadRepository readRepository,
     required CollectionWriteRepository writeRepository,
+    required CardMoveReadRepository moveReadRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required AttachmentImageCache imageCache,
@@ -50,6 +52,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required Logger logger,
   }) : _read = readRepository,
        _write = writeRepository,
+       _moveRead = moveReadRepository,
        _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
        _images = imageCache,
@@ -66,6 +69,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
 
   final CollectionReadRepository _read;
   final CollectionWriteRepository _write;
+  final CardMoveReadRepository _moveRead;
   final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
   final AttachmentImageCache _images;
@@ -251,6 +255,49 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
               ),
           'create link',
           dispatch,
+        );
+
+      case LoadMoveTargetsEffect():
+        final result = await _moveRead.loadMoveTargets();
+        result.onTap((targets) => dispatch(MoveTargetsLoaded(targets)), (
+          failure,
+        ) {
+          _log.severe(
+            'Move targets load failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const MoveTargetsLoadFailed());
+        });
+
+      case LoadMoveTargetTailEffect(:final target):
+        final result = await _moveRead.lastCardPosition(target.collectionId);
+        result.onTap(
+          (position) => dispatch(MoveTargetTailLoaded(target, position)),
+          (failure) {
+            _log.severe(
+              'Move target read failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            _effectEmitter.push(
+              const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
+            );
+          },
+        );
+
+      case MoveCardsEffect(:final target, :final positions):
+        await _runWrite(
+          () => _write.moveCards(target.collectionId, positions),
+          'move cards',
+          dispatch,
+          onSuccess: () async => _effectEmitter.push(
+            CollectionCardsMovedUiEffect(
+              count: positions.length,
+              targetCollectionId: target.collectionId,
+              targetTitle: target.title,
+            ),
+          ),
         );
     }
   }

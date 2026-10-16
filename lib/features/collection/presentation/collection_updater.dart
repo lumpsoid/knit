@@ -77,6 +77,11 @@ class CollectionUpdater
             recordingPhase: state.recordingPhase,
             pendingAudio: state.pendingAudio,
             pendingFile: state.pendingFile,
+            // Keep the selection across a resync, minus any card that left
+            // the feed (deleted or moved elsewhere meanwhile).
+            selectedCardIds: _keepLoaded(state.selectedCardIds, data.cards),
+            moveTargetsStatus: state.moveTargetsStatus,
+            moveTargets: state.moveTargets,
           ),
           [
             ShowFeedImagesEffect(_imageAttachments(data.cards)),
@@ -326,7 +331,11 @@ class CollectionUpdater
         );
 
       case StartReorder():
-        return (state.copyWith(reordering: true), null);
+        // The two modes are exclusive: reordering drops the selection.
+        return (
+          state.copyWith(reordering: true, selectedCardIds: const {}),
+          null,
+        );
 
       case EndReorder():
         return (state.copyWith(reordering: false), null);
@@ -334,11 +343,69 @@ class CollectionUpdater
       case CardMoved(:final oldIndex, :final newIndex):
         return _moveCard(state, oldIndex, newIndex);
 
+      case CardSelectionToggled(:final cardId):
+        if (state.reordering || _cardById(state.cards, cardId) == null) {
+          return (state, null);
+        }
+        final selected = {...state.selectedCardIds};
+        if (!selected.remove(cardId)) selected.add(cardId);
+        return (state.copyWith(selectedCardIds: selected), null);
+
+      case AllCardsSelected():
+        if (!state.selecting) return (state, null);
+        return (
+          state.copyWith(selectedCardIds: {for (final c in state.cards) c.id}),
+          null,
+        );
+
+      case SelectionCleared():
+        return (state.copyWith(selectedCardIds: const {}), null);
+
+      case MoveTargetsRequested():
+        if (!state.selecting) return (state, null);
+        return (
+          state.copyWith(moveTargetsStatus: MoveTargetsStatus.loading),
+          const [LoadMoveTargetsEffect()],
+        );
+
+      case MoveTargetsLoaded(:final targets):
+        // Moving into the collection the cards are already in is no move.
+        return (
+          state.copyWith(
+            moveTargetsStatus: MoveTargetsStatus.ready,
+            moveTargets: [
+              for (final t in targets)
+                if (t.collectionId != state.collectionId) t,
+            ],
+          ),
+          null,
+        );
+
+      case MoveTargetsLoadFailed():
+        return (
+          state.copyWith(moveTargetsStatus: MoveTargetsStatus.failed),
+          null,
+        );
+
+      case MoveTargetChosen(:final target):
+        final idle = state.copyWith(
+          moveTargetsStatus: MoveTargetsStatus.idle,
+          moveTargets: const [],
+        );
+        if (!state.selecting || target.collectionId == state.collectionId) {
+          return (idle, null);
+        }
+        return (idle, [LoadMoveTargetTailEffect(target)]);
+
+      case MoveTargetTailLoaded(:final target, :final lastPosition):
+        return _moveSelection(state, target, lastPosition);
+
       case DeactivateFeature():
         // Leaving the page must release the recorder if it's still capturing.
         return (
           state.copyWith(
             reordering: false,
+            selectedCardIds: const {},
             clearPendingImage: true,
             clearRecordingPhase: true,
             clearPendingAudio: true,
@@ -415,6 +482,51 @@ class CollectionUpdater
     for (final card in cards)
       if (card.kind == CardKind.image) ?card.attachmentId,
   ];
+
+  /// The ids in [selected] that are still among [cards].
+  static Set<String> _keepLoaded(Set<String> selected, List<FeedCard> cards) {
+    if (selected.isEmpty) return selected;
+    return {
+      for (final c in cards)
+        if (selected.contains(c.id)) c.id,
+    };
+  }
+
+  /// Move the selection into [target]: append the selected cards after the
+  /// target's [lastPosition] in their feed order (so they keep their relative
+  /// order), drop them from this feed optimistically, and leave selection mode.
+  (CollectionState, List<CollectionEffect>?) _moveSelection(
+    CollectionState state,
+    MoveTarget target,
+    String? lastPosition,
+  ) {
+    final moving = [
+      for (final c in state.cards)
+        if (state.selectedCardIds.contains(c.id)) c,
+    ];
+    if (moving.isEmpty) {
+      return (state.copyWith(selectedCardIds: const {}), null);
+    }
+    final positions = <String, String>{};
+    var previous = lastPosition;
+    for (final card in moving) {
+      final position = previous == null
+          ? FractionalIndex.first()
+          : FractionalIndex.keyAfter(previous);
+      positions[card.id] = position;
+      previous = position;
+    }
+    return (
+      state.copyWith(
+        cards: [
+          for (final c in state.cards)
+            if (!positions.containsKey(c.id)) c,
+        ],
+        selectedCardIds: const {},
+      ),
+      [MoveCardsEffect(target: target, positions: positions)],
+    );
+  }
 
   /// Append key: after the last card, or the first key for an empty feed.
   static String _appendPosition(List<FeedCard> cards) => cards.isEmpty

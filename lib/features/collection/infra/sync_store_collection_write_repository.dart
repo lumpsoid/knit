@@ -56,6 +56,15 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
     return cardId;
   });
 
+  @override
+  Future<Result<String, CollectionFailure>> moveCards(
+    String collectionId,
+    Map<String, String> positions,
+  ) => _write(() async {
+    await _graph.store.moveCards(collectionId, positions);
+    return collectionId;
+  });
+
   Future<Result<String, CollectionFailure>> _write(
     Future<String> Function() op,
   ) async {

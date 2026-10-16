@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:knit/core/storage/domain/storage_context.dart';
 import 'package:knit/core/storage/domain/unit_of_work.dart';
 import 'package:knit/sync/engine.dart';
 import 'package:knit/sync/hlc.dart';
@@ -339,9 +340,50 @@ class SyncStore {
     );
   }
 
-  /// The shared one-transaction local write (spec §6.8 steps 1–3): read prior,
-  /// mint exactly one device stamp (§8.2), build → canonical (§7.1) → sign
-  /// (§6.8) → `op_id` (§7.3), then upsert projection + append op + save clock.
+  /// Move cards into [collectionId] (§8.4) — each card in [positions] (card id
+  /// → its new position in the target) is one signed op that rewrites
+  /// `collection_id` *and* lands a fresh placement, so both clocks take the
+  /// same new stamp (like a create). All the ops commit in **one** transaction:
+  /// either every card moves or none does. Returns the ops in [positions] order.
+  Future<List<PersistedOp>> moveCards(
+    String collectionId,
+    Map<String, String> positions, {
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    return _unitOfWork.run((ctx) async {
+      final ops = <PersistedOp>[];
+      for (final MapEntry(key: cardId, value: position) in positions.entries) {
+        ops.add(
+          await _writeOne(
+            ctx: ctx,
+            identity: identity,
+            now: now,
+            type: EntityType.card,
+            id: cardId,
+            build: (stamp, prior, author) {
+              final base = _require(prior, 'move', EntityType.card, cardId);
+              return base.copyWith(
+                author: author,
+                hlc: stamp, // collection_id is content (§8.4)
+                deleted: false,
+                sig: '',
+                placement: stamp, // a fresh slot in the target feed
+                position: position,
+                content: {...base.content, 'collection_id': collectionId},
+              );
+            },
+          ),
+        );
+      }
+      await deviceClock.save(_clock.now, ctx: ctx);
+      return ops;
+    });
+  }
+
+  /// The shared one-transaction local write (spec §6.8 steps 1–3): one
+  /// [_writeOne] plus the device-clock save, committed together.
   Future<PersistedOp> _writeLocal({
     required EntityType type,
     required String id,
@@ -351,23 +393,45 @@ class SyncStore {
     final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
     final identity = await _identity();
     return _unitOfWork.run((ctx) async {
-      final prior = await projection.get(type, id, ctx: ctx);
-      final stamp = _clock.localTick(now); // exactly one tick per write (§8.2)
-      final unsigned = build(stamp, prior, identity.pubkey);
-      final payload = CanonicalSerializer.string(unsigned);
-      final sig = await signer.sign(identity.secret, utf8.encode(payload));
-      final snap = unsigned.copyWith(sig: sig);
-      final op = PersistedOp.fromSnapshot(
-        snap,
-        opId: OpId.build(entityId: id, hlc: snap.hlc, sig: sig),
-        payload: payload,
-        origin: SyncOrigin.local, // acked defaults to false (§6.8 step 2)
+      final op = await _writeOne(
+        ctx: ctx,
+        identity: identity,
+        now: now,
+        type: type,
+        id: id,
+        build: build,
       );
-      await projection.upsert(snap, ctx: ctx);
-      await changeLog.append(op, ctx: ctx);
       await deviceClock.save(_clock.now, ctx: ctx);
       return op;
     });
+  }
+
+  /// One local write inside an open transaction: read prior, mint exactly one
+  /// device stamp (§8.2), build → canonical (§7.1) → sign (§6.8) → `op_id`
+  /// (§7.3), then upsert projection + append op. The caller saves the clock.
+  Future<PersistedOp> _writeOne({
+    required StorageContext ctx,
+    required ({String pubkey, List<int> secret}) identity,
+    required int now,
+    required EntityType type,
+    required String id,
+    required Snapshot Function(Hlc stamp, Snapshot? prior, String author) build,
+  }) async {
+    final prior = await projection.get(type, id, ctx: ctx);
+    final stamp = _clock.localTick(now); // exactly one tick per write (§8.2)
+    final unsigned = build(stamp, prior, identity.pubkey);
+    final payload = CanonicalSerializer.string(unsigned);
+    final sig = await signer.sign(identity.secret, utf8.encode(payload));
+    final snap = unsigned.copyWith(sig: sig);
+    final op = PersistedOp.fromSnapshot(
+      snap,
+      opId: OpId.build(entityId: id, hlc: snap.hlc, sig: sig),
+      payload: payload,
+      origin: SyncOrigin.local, // acked defaults to false (§6.8 step 2)
+    );
+    await projection.upsert(snap, ctx: ctx);
+    await changeLog.append(op, ctx: ctx);
+    return op;
   }
 
   // --- Rebuild (spec §8.9) ---------------------------------------------------

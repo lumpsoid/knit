@@ -12,6 +12,7 @@ import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
+import 'package:knit/features/collection/infra/sync_store_card_move_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
@@ -97,9 +98,10 @@ void main() {
   const cardCount = 60;
   late List<String> cardIds;
   late InMemoryCollectionRouteArgsStore routeArgs;
+  late AppGraph graph;
 
   Future<void> seed(WidgetTester tester) async {
-    final graph = AppGraph();
+    graph = AppGraph();
     const ids = UuidIdGenerator();
     await tester.runAsync(() async {
       final store = SyncStore.inMemory();
@@ -128,6 +130,7 @@ void main() {
     });
 
     CollectionScope.setRouteArgs(routeArgs);
+    CollectionScope.setCollectionRouteArgsWriter(routeArgs);
     final details = CollectionDetailsController(
       writeRepository: SyncStoreCollectionDetailsWriteRepository(graph: graph),
       attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
@@ -153,6 +156,7 @@ void main() {
           graph: graph,
           ids: ids,
         ),
+        moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
         attachmentReadRepository: SyncStoreAttachmentReadRepository(
           graph: graph,
         ),
@@ -177,6 +181,15 @@ void main() {
         timelineChannel: _NoopTimelineChannel(),
       ),
     );
+  }
+
+  /// Let in-memory reads/writes resolve and the UI settle.
+  Future<void> settle(WidgetTester tester) async {
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pumpAndSettle();
   }
 
   Future<void> pumpPage(WidgetTester tester) async {
@@ -241,5 +254,60 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(find.text('card 0'), findsOneWidget);
+  });
+
+  testWidgets('long-press selects cards and moves them to another collection', (
+    tester,
+  ) async {
+    await seed(tester);
+    routeArgs.open(routeArgs.collectionId);
+    final targetId = (await tester.runAsync(
+      () => SyncStoreTimelineWriteRepository(
+        graph: graph,
+        ids: const UuidIdGenerator(),
+      ).createCollection('Target'),
+    ))!.getOrThrow();
+    await pumpPage(tester);
+
+    final newest = 'card ${cardCount - 1}';
+    final second = 'card ${cardCount - 2}';
+    await tester.longPress(find.text(newest));
+    await tester.pumpAndSettle();
+    expect(find.text('1 selected'), findsOneWidget);
+    // While selecting, a tap toggles instead of opening the actions sheet.
+    await tester.tap(find.text(second));
+    await tester.pumpAndSettle();
+    expect(find.text('2 selected'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Move to collection'));
+    await settle(tester);
+    // The picker lists other collections only — not this one.
+    expect(find.text('Long'), findsNothing);
+    await tester.tap(find.text('Target'));
+    await settle(tester);
+
+    expect(find.text(newest), findsNothing);
+    expect(find.text(second), findsNothing);
+    expect(find.text('Moved 2 cards to “Target”'), findsOneWidget);
+    final moved = await tester.runAsync(() => graph.store.feed(targetId));
+    expect(moved!.map((s) => s.content['text']), [
+      second,
+      newest,
+    ], reason: 'feed order is kept');
+  });
+
+  testWidgets('system back leaves selection mode first', (tester) async {
+    await seed(tester);
+    routeArgs.open(routeArgs.collectionId);
+    await pumpPage(tester);
+
+    await tester.longPress(find.text('card ${cardCount - 1}'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 selected'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('1 selected'), findsNothing);
+    expect(find.byType(CollectionPage), findsOneWidget);
   });
 }

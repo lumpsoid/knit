@@ -1501,6 +1501,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'in {title}'**
   String searchInCollection(String title);
+
+  /// No description provided for @collectionSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String collectionSelectedCount(int count);
+
+  /// No description provided for @collectionSelectAllTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get collectionSelectAllTooltip;
+
+  /// No description provided for @collectionClearSelectionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selection'**
+  String get collectionClearSelectionTooltip;
+
+  /// No description provided for @collectionMoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to collection'**
+  String get collectionMoveTooltip;
+
+  /// No description provided for @collectionMoveSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to…'**
+  String get collectionMoveSheetTitle;
+
+  /// No description provided for @collectionMoveNoTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'No other collections yet.'**
+  String get collectionMoveNoTargets;
+
+  /// No description provided for @collectionMoveTargetsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load collections.'**
+  String get collectionMoveTargetsError;
+
+  /// No description provided for @collectionCardsMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Moved 1 card to “{title}”} other{Moved {count} cards to “{title}”}}'**
+  String collectionCardsMoved(int count, String title);
+
+  /// No description provided for @collectionCardsMovedOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get collectionCardsMovedOpen;
 }
 
 class _AppLocalizationsDelegate

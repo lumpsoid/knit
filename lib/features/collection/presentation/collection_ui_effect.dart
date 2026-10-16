@@ -14,3 +14,16 @@ class CollectionShowMessageUiEffect extends CollectionUiEffect {
   const CollectionShowMessageUiEffect(this.message);
   final CollectionMessage message;
 }
+
+/// Cards were moved into another collection: a snackbar naming [count] and
+/// [targetTitle], offering to open [targetCollectionId].
+class CollectionCardsMovedUiEffect extends CollectionUiEffect {
+  const CollectionCardsMovedUiEffect({
+    required this.count,
+    required this.targetCollectionId,
+    required this.targetTitle,
+  });
+  final int count;
+  final String targetCollectionId;
+  final String targetTitle;
+}

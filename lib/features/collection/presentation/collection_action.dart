@@ -208,6 +208,53 @@ class CardMoved extends CollectionAction {
   final int newIndex;
 }
 
+/// Long-press a card (enters multi-select) or tap one while selecting: flip
+/// whether [cardId] is selected. Deselecting the last card leaves the mode.
+class CardSelectionToggled extends CollectionAction {
+  const CardSelectionToggled(this.cardId);
+  final String cardId;
+}
+
+/// Select every loaded card.
+class AllCardsSelected extends CollectionAction {
+  const AllCardsSelected();
+}
+
+/// Leave multi-select mode (the app-bar "✕" or system back).
+class SelectionCleared extends CollectionAction {
+  const SelectionCleared();
+}
+
+/// The selection's "Move" opened the target picker: load its collections.
+class MoveTargetsRequested extends CollectionAction {
+  const MoveTargetsRequested();
+}
+
+/// Delivery of [MoveTargetsRequested]: every live collection.
+class MoveTargetsLoaded extends CollectionAction {
+  const MoveTargetsLoaded(this.targets);
+  final List<MoveTarget> targets;
+}
+
+/// Delivery of [MoveTargetsRequested] on failure.
+class MoveTargetsLoadFailed extends CollectionAction {
+  const MoveTargetsLoadFailed();
+}
+
+/// The picker chose [target]: move the selected cards there.
+class MoveTargetChosen extends CollectionAction {
+  const MoveTargetChosen(this.target);
+  final MoveTarget target;
+}
+
+/// Delivery of [MoveTargetChosen]'s read: [lastPosition] is the target's
+/// newest card position (null when it is empty), so the moved cards append.
+class MoveTargetTailLoaded extends CollectionAction {
+  const MoveTargetTailLoaded(this.target, this.lastPosition);
+  final MoveTarget target;
+  final String? lastPosition;
+}
+
 class DeactivateFeature extends CollectionAction {
   const DeactivateFeature();
 }

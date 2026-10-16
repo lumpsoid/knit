@@ -352,5 +352,25 @@
     "placeholders": {
       "title": { "type": "String" }
     }
-  }
+  },
+  "collectionSelectedCount": "{count} selected",
+  "@collectionSelectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionSelectAllTooltip": "Select all",
+  "collectionClearSelectionTooltip": "Cancel selection",
+  "collectionMoveTooltip": "Move to collection",
+  "collectionMoveSheetTitle": "Move to…",
+  "collectionMoveNoTargets": "No other collections yet.",
+  "collectionMoveTargetsError": "Couldn't load collections.",
+  "collectionCardsMoved": "{count, plural, =1{Moved 1 card to “{title}”} other{Moved {count} cards to “{title}”}}",
+  "@collectionCardsMoved": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "title": { "type": "String" }
+    }
+  },
+  "collectionCardsMovedOpen": "Open"
 }

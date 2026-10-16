@@ -41,6 +41,10 @@ so gate 5 can be checked through the live app.
    (`lib/core/ordering/`), and ids are minted with `newUuidV7`
    (`lib/core/ids/`). The actions-sheet **Edit** now opens the dedicated Card
    Edit page (item 8) rather than the old inline text prompt.
+   **Multi-select + move:** long-press a card to select, tap to toggle,
+   select-all; "Move to collection" picks another collection and appends the
+   cards there (feed order kept) in one `SyncStore.moveCards` transaction,
+   then a snackbar offers to open the target.
 7. **Connections view** (§4.4) — `lib/features/connections/`. An entity's
    **links-out + linked-from** (backlinks, §8.6.2), each live one tappable to
    jump (pushing an in-state **breadcrumb back-stack**, a crumb tap / hardware

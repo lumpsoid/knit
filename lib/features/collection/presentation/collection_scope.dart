@@ -14,13 +14,14 @@ import 'package:knit/features/connections/presentation/connections_route_args.da
 /// state), the read side of the route-args carrier (cross_feature.md §2) the
 /// page reads its target collection from, and the write sides of the
 /// Connections carrier (§4.4) and the Card Edit carrier (§4.3) the page hands
-/// off to. The carriers, the audio player, the shared collection details (the
+/// off to, plus its own carrier's write side (to open a move's target). The carriers, the audio player, the shared collection details (the
 /// header the title card shows), the shared image cache and the shared card
 /// links (the link picker) are app-wide singletons.
 abstract final class CollectionScope {
   static CollectionController Function()? _factory;
   static AudioPlaybackController? _playbackController;
   static CollectionRouteArgs? _routeArgs;
+  static CollectionRouteArgsWriter? _collectionWriter;
   static ConnectionsRouteArgsWriter? _connectionsWriter;
   static CardEditRouteArgsWriter? _cardEditWriter;
   static CollectionEditRouteArgsWriter? _collectionEditWriter;
@@ -33,6 +34,8 @@ abstract final class CollectionScope {
   static void setPlaybackController(AudioPlaybackController controller) =>
       _playbackController = controller;
   static void setRouteArgs(CollectionRouteArgs args) => _routeArgs = args;
+  static void setCollectionRouteArgsWriter(CollectionRouteArgsWriter writer) =>
+      _collectionWriter = writer;
   static void setCollectionDetails(CollectionDetailsState details) =>
       _collectionDetails = details;
   static void setImages(AttachmentImageCacheState images) => _images = images;
@@ -119,6 +122,20 @@ abstract final class CollectionScope {
       );
     }
     return args;
+  }
+
+  /// The write side of this page's own carrier — used to open the collection
+  /// the selected cards were just moved into.
+  static CollectionRouteArgsWriter get collectionRouteArgsWriter {
+    final writer = _collectionWriter;
+    if (writer == null) {
+      throw StateError(
+        'CollectionScope.collectionRouteArgsWriter is not initialized.\n'
+        'Call CollectionScope.setCollectionRouteArgsWriter() during '
+        'composition.',
+      );
+    }
+    return writer;
   }
 
   static ConnectionsRouteArgsWriter get connectionsRouteArgsWriter {

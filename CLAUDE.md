@@ -22,7 +22,8 @@ Generate → generating → reveal `nickname#fingerprint`, writing the signed
 `profile` record), the **Timeline** (§4.1 home over `homeTimeline()`, with
 inline collection create + open), the **Collection** screen (§4.2 —
 chat-style feed, composer, "+"-block link card, per-card actions sheet, reorder
-mode, header rename), the **Connections** view (§4.4 — an entity's
+mode, long-press multi-select + move to another collection, header rename),
+the **Connections** view (§4.4 — an entity's
 links-out + backlinks over `linksOut`/`backlinks`, a breadcrumb back-stack, and
 the §8.6.1 broken-link chip with clear), the **Card Edit** page (§4.3 — text +
 image + per-card links incl. card→card), and the app-wide **sync indicator**
@@ -234,6 +235,12 @@ the `lib/sync/` core below.
   `SyncStatusScope` controller reading `pendingCount()`. Only the Timeline app
   bar embeds it today, and it reads the count when it mounts — writes do not
   refresh it. It carries no UiEffect/EffectEmitter (no one-shot effects).
+- `collection` multi-select (§4.2): `CollectionState.selectedCardIds` (a
+  non-empty set *is* selection mode). Move loads targets through the narrow
+  `CardMoveReadRepository`, reads the target's tail, and the updater appends
+  the cards after it (feed order) → one `SyncStore.moveCards` transaction
+  (content + placement on one stamp, §8.4). `CollectionCardsMovedUiEffect`
+  shows the snackbar whose "Open" writes the Collection carrier.
 - `search` (§3.2/§4.1) is the first **lightweight** feature (controller +
   `SearchState` ChangeNotifier + page). The Timeline app bar opens it; it
   runs on submit. `SearchReadRepository` flattens live collections and cards into

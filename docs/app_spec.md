@@ -97,6 +97,13 @@ The data model enforces this: `collection` has `title` + optional `description` 
 - **Tap a card → actions sheet:** delete · edit · link · add image · start reorder.
 - **Reorder mode** — drag-to-reorder, a *state of this screen*, not a separate screen.
   **Reorder applies only to cards within this collection**; there is no reordering on Home.
+- **Multi-select mode** — long-press a card to select it; while selecting, a tap toggles a
+  card, the app bar shows the count with *select all* and **Move to collection**. Move opens a
+  picker of the other live collections (most recently updated first); the selected cards are
+  appended to the target's end, keeping their relative feed order, in **one transaction** (all
+  or none). The source feed drops them, and a snackbar offers to open the target. Back (or
+  "✕") leaves the mode; it is exclusive with reorder mode. A moved card keeps its id, so its
+  links and backlinks follow it (§8.4 "Move card").
 - **The collection header is a distinct top-most card** in the feed (visually set apart from
   chat cards): cover image (if set), title, and optional description. **Tap it → the
   collection-edit page** to edit title, description, and add/replace/remove the cover image.
@@ -685,6 +692,7 @@ The device clock advances on **every** local event; only the *target stamp* diff
 | Edit card text/image/kind | new stamp | **unchanged** |
 | Delete card (`deleted=1`) | new stamp | **unchanged** |
 | Reorder card | **unchanged** | new stamp |
+| Move card to another collection | new stamp (`collection_id`) | new stamp (target position) |
 | Any non-card entity write | new stamp | n/a |
 
 **Reorder must leave `hlc_*` frozen.** If a reorder bumped the content HLC, a drag on device
@@ -692,6 +700,12 @@ B (carrying B's stale text snapshot) would out-rank and erase a concurrent edit 
 the exact clobber the two-clock split prevents. The frozen `hlc_*` is why a reorder reuses the
 prior content HLC, which is why the sig-keyed `op_id` (§7.3 case 2) is required for the
 reorder to survive as a distinct op.
+
+**Move rewrites content and placement on one stamp.** `collection_id` is content, so a move
+is a content write; the card also needs a fresh slot in the target feed, so the same stamp
+lands on `position_*` (like a create). A concurrent content edit made on another device with
+the old `collection_id` can win the content LWW and pull the card back to its source
+collection — the usual whole-snapshot LWW trade-off, never a lost card.
 
 ### 8.5 The apply procedure (one op = one transaction)
 Each op's projection write, `change_log` insert, device-clock advance, and cursor bump commit

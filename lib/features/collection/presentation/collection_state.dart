@@ -11,6 +11,10 @@ enum CollectionStatus { loading, ready, failed }
 /// is idle/hidden or a recorded clip is already staged in [CollectionState.pendingAudio].
 enum AudioRecordingPhase { recording, paused }
 
+/// Where the move picker's list of target collections stands. [idle] until the
+/// user asks to move the selection; the picker shows a spinner while [loading].
+enum MoveTargetsStatus { idle, loading, ready, failed }
+
 /// State for the Collection screen (§4.2). [reordering] is the *mode* of this
 /// screen (drag-to-reorder), not a separate screen — exactly as the spec frames
 /// it. Sheets/dialogs (compose, add-block, actions, link picker, edit) are transient
@@ -30,6 +34,9 @@ class CollectionState {
     this.recordingPhase,
     this.pendingAudio,
     this.pendingFile,
+    this.selectedCardIds = const {},
+    this.moveTargetsStatus = MoveTargetsStatus.idle,
+    this.moveTargets = const [],
   });
 
   final CollectionStatus status;
@@ -76,6 +83,19 @@ class CollectionState {
   /// is written until the composer is sent.
   final PickedFile? pendingFile;
 
+  /// The cards picked in multi-select mode (§4.2), by id. Selection mode *is*
+  /// a non-empty set: deselecting the last card leaves it, so an empty
+  /// selection mode can't exist.
+  final Set<String> selectedCardIds;
+
+  /// The move picker's targets: every other live collection, most recently
+  /// updated first. Meaningful once [moveTargetsStatus] is ready.
+  final MoveTargetsStatus moveTargetsStatus;
+  final List<MoveTarget> moveTargets;
+
+  /// Whether multi-select mode is active.
+  bool get selecting => selectedCardIds.isNotEmpty;
+
   /// Whether an audio recording is actively being captured (not merely staged).
   bool get isRecordingAudio => recordingPhase != null;
 
@@ -103,6 +123,9 @@ class CollectionState {
     bool clearPendingAudio = false,
     PickedFile? pendingFile,
     bool clearPendingFile = false,
+    Set<String>? selectedCardIds,
+    MoveTargetsStatus? moveTargetsStatus,
+    List<MoveTarget>? moveTargets,
   }) => CollectionState(
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
@@ -125,5 +148,8 @@ class CollectionState {
         ? null
         : (pendingAudio ?? this.pendingAudio),
     pendingFile: clearPendingFile ? null : (pendingFile ?? this.pendingFile),
+    selectedCardIds: selectedCardIds ?? this.selectedCardIds,
+    moveTargetsStatus: moveTargetsStatus ?? this.moveTargetsStatus,
+    moveTargets: moveTargets ?? this.moveTargets,
   );
 }

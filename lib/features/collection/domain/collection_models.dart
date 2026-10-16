@@ -219,3 +219,22 @@ class FeedPage {
   final List<FeedCard> cards;
   final FeedCursor? olderBoundary;
 }
+
+/// A collection the selected cards can be moved into — one row of the move
+/// picker. Primitives only (widgets.md §1).
+@immutable
+class MoveTarget {
+  const MoveTarget({required this.collectionId, required this.title});
+
+  final String collectionId;
+  final String title;
+
+  @override
+  bool operator ==(Object other) =>
+      other is MoveTarget &&
+      other.collectionId == collectionId &&
+      other.title == title;
+
+  @override
+  int get hashCode => Object.hash(collectionId, title);
+}

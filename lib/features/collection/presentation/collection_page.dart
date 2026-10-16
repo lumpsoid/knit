@@ -250,7 +250,31 @@ class _CollectionPageState extends State<CollectionPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(text)));
+      case CollectionCardsMovedUiEffect(
+        :final count,
+        :final targetCollectionId,
+        :final targetTitle,
+      ):
+        final l10n = AppLocalizations.of(context);
+        // The snackbar outlives the page if the user leaves first; only a
+        // still-mounted page opens the target (in its place on the stack).
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.collectionCardsMoved(count, targetTitle)),
+            action: SnackBarAction(
+              label: l10n.collectionCardsMovedOpen,
+              onPressed: () => _openMovedTarget(targetCollectionId),
+            ),
+          ),
+        );
     }
+  }
+
+  /// Open the collection the cards just moved into, replacing this page.
+  void _openMovedTarget(String collectionId) {
+    if (!mounted) return;
+    CollectionScope.collectionRouteArgsWriter.open(collectionId);
+    Navigator.of(context).pushReplacement(CollectionPage.route());
   }
 
   // --- intents ---------------------------------------------------------------
@@ -378,6 +402,25 @@ class _CollectionPageState extends State<CollectionPage> {
       case _CardAction.reorder:
         _controller.dispatch(const StartReorder());
     }
+  }
+
+  /// Open the move picker over the selection: load the targets, let the user
+  /// choose one, then move the selected cards there.
+  Future<void> _openMovePicker() async {
+    _controller.dispatch(const MoveTargetsRequested());
+    final target = await showModalBottomSheet<MoveTarget>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ValueListenableBuilder<CollectionState>(
+        valueListenable: _controller.stateHolder,
+        builder: (context, state, _) => _MoveTargetSheet(
+          status: state.moveTargetsStatus,
+          targets: state.moveTargets,
+        ),
+      ),
+    );
+    if (target == null || !mounted) return;
+    _controller.dispatch(MoveTargetChosen(target));
   }
 
   /// Hand the card to the Card Edit carrier (cross_feature.md §2), then navigate
@@ -532,77 +575,113 @@ class _CollectionPageState extends State<CollectionPage> {
       ]),
       builder: (context, _) {
         final state = _controller.stateHolder.value;
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(l10n.collectionAppBarTitle),
-            actions: [
-              if (state.status == CollectionStatus.ready && state.canReorder)
-                state.reordering
-                    ? TextButton(
-                        onPressed: () =>
-                            _controller.dispatch(const EndReorder()),
-                        child: Text(l10n.actionDone),
-                      )
-                    : IconButton(
-                        tooltip: l10n.collectionReorderTooltip,
-                        icon: const Icon(Icons.swap_vert),
-                        onPressed: () =>
-                            _controller.dispatch(const StartReorder()),
-                      ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Expanded(child: _body(state)),
-              // The persistent player sits between the feed and the composer so
-              // it stays on screen as the feed scrolls — shown in reorder mode
-              // too, so the user never loses what's playing.
-              ValueListenableBuilder<PlaybackSnapshot>(
-                valueListenable: _playback.snapshot,
-                builder: (context, snap, _) {
-                  if (!snap.isActive) return const SizedBox.shrink();
-                  return AudioMiniPlayer(
-                    phase: snap.phase,
-                    position: snap.position,
-                    duration: snap.duration,
-                    onPlayPause: () => unawaited(_playback.togglePlayPause()),
-                    onSeek: (d) => unawaited(_playback.seek(d)),
-                    onClose: () => unawaited(_playback.close()),
-                  );
-                },
-              ),
-              if (!state.reordering)
-                _Composer(
-                  controller: _composer,
-                  pendingImageBytes: state.pendingImage?.bytes,
-                  pendingFileName: state.pendingFile?.name,
-                  showPhotoSources: _showPhotoSources,
-                  hasPendingAudio: state.pendingAudio != null,
-                  showAudioBar: _showAudioBar,
-                  recordingPhase: state.recordingPhase,
-                  onSend: _submitComposer,
-                  onAddBlock: _openAddBlock,
-                  onCancelPhotoSources: _cancelPhotoSources,
-                  onPickFromGallery: () =>
-                      _pickImage(ImagePickerSource.gallery),
-                  onPickFromCamera: () => _pickImage(ImagePickerSource.camera),
-                  onClearImage: () =>
-                      _controller.dispatch(const PendingImageCleared()),
-                  onClearFile: () =>
-                      _controller.dispatch(const PendingFileCleared()),
-                  onStartRecording: _startRecording,
-                  onPauseRecording: _pauseRecording,
-                  onResumeRecording: _resumeRecording,
-                  onStopRecording: _stopRecording,
-                  onCancelAudio: _cancelAudioMode,
-                  onClearAudio: _clearPendingAudio,
+        // System back leaves selection mode before it leaves the page.
+        return PopScope(
+          canPop: !state.selecting,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _controller.dispatch(const SelectionCleared());
+          },
+          child: Scaffold(
+            appBar: state.selecting
+                ? _selectionAppBar(l10n, state)
+                : AppBar(
+                    title: Text(l10n.collectionAppBarTitle),
+                    actions: [
+                      if (state.status == CollectionStatus.ready &&
+                          state.canReorder)
+                        state.reordering
+                            ? TextButton(
+                                onPressed: () =>
+                                    _controller.dispatch(const EndReorder()),
+                                child: Text(l10n.actionDone),
+                              )
+                            : IconButton(
+                                tooltip: l10n.collectionReorderTooltip,
+                                icon: const Icon(Icons.swap_vert),
+                                onPressed: () =>
+                                    _controller.dispatch(const StartReorder()),
+                              ),
+                    ],
+                  ),
+            body: Column(
+              children: [
+                Expanded(child: _body(state)),
+                // The persistent player sits between the feed and the composer so
+                // it stays on screen as the feed scrolls — shown in reorder mode
+                // too, so the user never loses what's playing.
+                ValueListenableBuilder<PlaybackSnapshot>(
+                  valueListenable: _playback.snapshot,
+                  builder: (context, snap, _) {
+                    if (!snap.isActive) return const SizedBox.shrink();
+                    return AudioMiniPlayer(
+                      phase: snap.phase,
+                      position: snap.position,
+                      duration: snap.duration,
+                      onPlayPause: () => unawaited(_playback.togglePlayPause()),
+                      onSeek: (d) => unawaited(_playback.seek(d)),
+                      onClose: () => unawaited(_playback.close()),
+                    );
+                  },
                 ),
-            ],
+                if (!state.reordering && !state.selecting)
+                  _Composer(
+                    controller: _composer,
+                    pendingImageBytes: state.pendingImage?.bytes,
+                    pendingFileName: state.pendingFile?.name,
+                    showPhotoSources: _showPhotoSources,
+                    hasPendingAudio: state.pendingAudio != null,
+                    showAudioBar: _showAudioBar,
+                    recordingPhase: state.recordingPhase,
+                    onSend: _submitComposer,
+                    onAddBlock: _openAddBlock,
+                    onCancelPhotoSources: _cancelPhotoSources,
+                    onPickFromGallery: () =>
+                        _pickImage(ImagePickerSource.gallery),
+                    onPickFromCamera: () =>
+                        _pickImage(ImagePickerSource.camera),
+                    onClearImage: () =>
+                        _controller.dispatch(const PendingImageCleared()),
+                    onClearFile: () =>
+                        _controller.dispatch(const PendingFileCleared()),
+                    onStartRecording: _startRecording,
+                    onPauseRecording: _pauseRecording,
+                    onResumeRecording: _resumeRecording,
+                    onStopRecording: _stopRecording,
+                    onCancelAudio: _cancelAudioMode,
+                    onClearAudio: _clearPendingAudio,
+                  ),
+              ],
+            ),
           ),
         );
       },
     );
   }
+
+  /// The app bar while cards are selected: a "✕" to leave, the count, and the
+  /// bulk actions (select all, move).
+  AppBar _selectionAppBar(AppLocalizations l10n, CollectionState state) =>
+      AppBar(
+        leading: IconButton(
+          tooltip: l10n.collectionClearSelectionTooltip,
+          icon: const Icon(Icons.close),
+          onPressed: () => _controller.dispatch(const SelectionCleared()),
+        ),
+        title: Text(l10n.collectionSelectedCount(state.selectedCardIds.length)),
+        actions: [
+          if (state.selectedCardIds.length < state.cards.length)
+            IconButton(
+              tooltip: l10n.collectionSelectAllTooltip,
+              icon: const Icon(Icons.select_all),
+              onPressed: () => _controller.dispatch(const AllCardsSelected()),
+            ),
+          IconButton(
+            tooltip: l10n.collectionMoveTooltip,
+            icon: const Icon(Icons.drive_file_move_outline),
+            onPressed: _openMovePicker,
+          ),
+        ],
+      );
 
   Widget _body(CollectionState state) {
     switch (state.status) {
@@ -790,12 +869,25 @@ class _CollectionPageState extends State<CollectionPage> {
               ),
             ],
           );
+    // A long-press anywhere on the row starts (or extends) multi-select.
+    void toggle() => _controller.dispatch(CardSelectionToggled(card.id));
+    final selection = _controller.stateHolder.value.selectedCardIds;
+    if (selection.isNotEmpty) {
+      // While selecting, a tap anywhere on the row toggles it: the inner tap
+      // targets (bubble, image, link, badge) are switched off.
+      return _SelectableRow(
+        selected: selection.contains(card.id),
+        onTap: toggle,
+        child: IgnorePointer(child: item),
+      );
+    }
     // The whole feed row — not just the bubble — opens the card-actions
     // sheet: a tap on the empty space beside a short bubble lands here.
     // Inner tap targets (bubble, image, link, badge) still win the arena.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _openCardActions(card),
+      onLongPress: toggle,
       child: item,
     );
   }
@@ -2252,6 +2344,117 @@ class _ErrorView extends StatelessWidget {
               onPressed: onRetry,
               child: Text(AppLocalizations.of(context).actionRetry),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A feed row in multi-select mode: tinted with a check mark when [selected];
+/// a tap anywhere on it calls [onTap] (toggle).
+class _SelectableRow extends StatelessWidget {
+  const _SelectableRow({
+    required this.selected,
+    required this.onTap,
+    required this.child,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: ColoredBox(
+        color: selected
+            ? scheme.primaryContainer.withValues(alpha: 0.5)
+            : Colors.transparent,
+        child: Stack(
+          children: [
+            child,
+            // The bubble leaves a right-hand gutter; the check sits in it.
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: 20,
+              child: Center(
+                child: Icon(
+                  selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: selected ? scheme.primary : scheme.outline,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The move picker (bottom sheet): every other collection, most recently
+/// updated first. Choosing one pops its [MoveTarget] back to the page.
+class _MoveTargetSheet extends StatelessWidget {
+  const _MoveTargetSheet({required this.status, required this.targets});
+
+  final MoveTargetsStatus status;
+  final List<MoveTarget> targets;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final Widget body = switch (status) {
+      MoveTargetsStatus.idle || MoveTargetsStatus.loading => const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      MoveTargetsStatus.failed => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(l10n.collectionMoveTargetsError),
+      ),
+      MoveTargetsStatus.ready when targets.isEmpty => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(l10n.collectionMoveNoTargets),
+      ),
+      MoveTargetsStatus.ready => Flexible(
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: targets.length,
+          itemBuilder: (context, i) {
+            final target = targets[i];
+            return ListTile(
+              leading: const Icon(Icons.folder_outlined),
+              title: Text(
+                target.title.isEmpty ? l10n.labelUntitled : target.title,
+              ),
+              onTap: () => Navigator.of(context).pop(target),
+            );
+          },
+        ),
+      ),
+    };
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+              child: Text(
+                l10n.collectionMoveSheetTitle,
+                style: theme.textTheme.titleMedium,
+              ),
+            ),
+            body,
           ],
         ),
       ),

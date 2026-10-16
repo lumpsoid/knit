@@ -9,8 +9,10 @@ import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
+import 'package:knit/features/collection/infra/sync_store_card_move_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
+import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
 import 'package:knit/features/collection/presentation/collection_shell.dart';
@@ -82,8 +84,12 @@ void main() {
   late SyncStoreCollectionWriteRepository write;
   late SyncStoreAttachmentWriteRepository attachmentWrite;
   late CollectionShell shell;
+  late List<CollectionUiEffect> uiEffects;
+  late _FakeTimelineChannel timelineChannel;
 
   setUp(() async {
+    uiEffects = [];
+    timelineChannel = _FakeTimelineChannel();
     graph = AppGraph();
     store = SyncStore.inMemory();
     await store.open();
@@ -99,6 +105,7 @@ void main() {
     shell = CollectionShell(
       readRepository: SyncStoreCollectionReadRepository(graph: graph),
       writeRepository: write,
+      moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
       attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
       attachmentWriteRepository: attachmentWrite,
       imageCache: AttachmentImageCache(
@@ -124,8 +131,8 @@ void main() {
           ids: ids,
         ),
       ),
-      effectEmitter: EffectEmitter<CollectionUiEffect>(),
-      timelineChannel: _FakeTimelineChannel(),
+      effectEmitter: EffectEmitter<CollectionUiEffect>()..attach(uiEffects.add),
+      timelineChannel: timelineChannel,
       logger: Logger('test.collection'),
     );
   });
@@ -202,5 +209,90 @@ void main() {
 
     await shell.run(DeleteCardEffect(cardId), dispatch: (_) {});
     expect((await store.get(EntityType.card, cardId))!.deleted, isTrue);
+  });
+
+  group('move selected cards to another collection', () {
+    test(
+      'targets list every live collection; the tail is the last card',
+      () async {
+        final src = (await timelineWrite.createCollection('Src')).getOrThrow();
+        final dst = (await timelineWrite.createCollection('Dst')).getOrThrow();
+        await write.addCard(
+          collectionId: dst,
+          kind: CardKind.text,
+          position: 'a3',
+          text: 'last',
+        );
+
+        final actions = <CollectionAction>[];
+        await shell.run(const LoadMoveTargetsEffect(), dispatch: actions.add);
+        final loaded = actions.single as MoveTargetsLoaded;
+        expect(
+          loaded.targets.map((t) => t.collectionId),
+          containsAll([src, dst]),
+        );
+
+        actions.clear();
+        final target = MoveTarget(collectionId: dst, title: 'Dst');
+        await shell.run(
+          LoadMoveTargetTailEffect(target),
+          dispatch: actions.add,
+        );
+        final tail = actions.single as MoveTargetTailLoaded;
+        expect(tail.lastPosition, 'a3');
+      },
+    );
+
+    test('moving writes the cards, refreshes, and reports the move', () async {
+      final src = (await timelineWrite.createCollection('Src')).getOrThrow();
+      final dst = (await timelineWrite.createCollection('Dst')).getOrThrow();
+      final a = (await write.addCard(
+        collectionId: src,
+        kind: CardKind.text,
+        position: 'a0',
+        text: 'a',
+      )).getOrThrow();
+      final b = (await write.addCard(
+        collectionId: src,
+        kind: CardKind.text,
+        position: 'a1',
+        text: 'b',
+      )).getOrThrow();
+
+      final actions = <CollectionAction>[];
+      await shell.run(
+        MoveCardsEffect(
+          target: MoveTarget(collectionId: dst, title: 'Dst'),
+          positions: {a: 'a0', b: 'a1'},
+        ),
+        dispatch: actions.add,
+      );
+
+      expect((await store.feed(dst)).map((s) => s.id), [a, b]);
+      expect(await store.feed(src), isEmpty);
+      expect(actions.single, isA<ReloadRequested>());
+      expect(timelineChannel.emits, 1);
+      final moved = uiEffects.single as CollectionCardsMovedUiEffect;
+      expect(moved.count, 2);
+      expect(moved.targetCollectionId, dst);
+      expect(moved.targetTitle, 'Dst');
+    });
+
+    test('a failed move surfaces a message and resyncs', () async {
+      final dst = (await timelineWrite.createCollection('Dst')).getOrThrow();
+      final actions = <CollectionAction>[];
+      await shell.run(
+        MoveCardsEffect(
+          target: MoveTarget(collectionId: dst, title: 'Dst'),
+          positions: const {'missing': 'a0'},
+        ),
+        dispatch: actions.add,
+      );
+      expect(actions.single, isA<ReloadRequested>());
+      expect(
+        (uiEffects.single as CollectionShowMessageUiEffect).message,
+        CollectionMessage.saveFailed,
+      );
+    });
   });
 }

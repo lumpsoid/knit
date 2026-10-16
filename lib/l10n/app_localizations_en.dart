@@ -818,4 +818,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String searchInCollection(String title) {
     return 'in $title';
   }
+
+  @override
+  String collectionSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get collectionSelectAllTooltip => 'Select all';
+
+  @override
+  String get collectionClearSelectionTooltip => 'Cancel selection';
+
+  @override
+  String get collectionMoveTooltip => 'Move to collection';
+
+  @override
+  String get collectionMoveSheetTitle => 'Move to…';
+
+  @override
+  String get collectionMoveNoTargets => 'No other collections yet.';
+
+  @override
+  String get collectionMoveTargetsError => 'Couldn\'t load collections.';
+
+  @override
+  String collectionCardsMoved(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Moved $count cards to “$title”',
+      one: 'Moved 1 card to “$title”',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get collectionCardsMovedOpen => 'Open';
 }

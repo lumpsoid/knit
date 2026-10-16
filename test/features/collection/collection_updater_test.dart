@@ -5,6 +5,7 @@ import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
+import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
@@ -918,6 +919,143 @@ void main() {
       expect(CardKind.forFileMime('application/pdf'), CardKind.file);
       expect(CardKind.forFileMime('video/mp4'), CardKind.file);
       expect(CardKind.forFileMime(''), CardKind.file);
+    });
+  });
+
+  group('multi-select + move to another collection', () {
+    const target = MoveTarget(collectionId: 'other', title: 'Other');
+    final cards = [card('c1', 'a0'), card('c2', 'a1'), card('c3', 'a2')];
+
+    CollectionState selecting(Set<String> ids) =>
+        ready(cards).copyWith(selectedCardIds: ids);
+
+    test('a toggle enters selection; toggling the last card leaves it', () {
+      var (next, effects) = updater.update(
+        ready(cards),
+        const CardSelectionToggled('c2'),
+      );
+      expect(next.selecting, isTrue);
+      expect(next.selectedCardIds, {'c2'});
+      expect(effects, isNull);
+
+      (next, _) = updater.update(next, const CardSelectionToggled('c1'));
+      expect(next.selectedCardIds, {'c1', 'c2'});
+      (next, _) = updater.update(next, const CardSelectionToggled('c1'));
+      (next, _) = updater.update(next, const CardSelectionToggled('c2'));
+      expect(next.selecting, isFalse);
+    });
+
+    test('toggling is inert in reorder mode or for an unknown card', () {
+      final reordering = ready(cards).copyWith(reordering: true);
+      expect(
+        updater.update(reordering, const CardSelectionToggled('c1')).$1,
+        same(reordering),
+      );
+      final idle = ready(cards);
+      expect(
+        updater.update(idle, const CardSelectionToggled('nope')).$1,
+        same(idle),
+      );
+    });
+
+    test('select all picks every loaded card; clear leaves the mode', () {
+      final (all, _) = updater.update(
+        selecting({'c1'}),
+        const AllCardsSelected(),
+      );
+      expect(all.selectedCardIds, {'c1', 'c2', 'c3'});
+      final (cleared, _) = updater.update(all, const SelectionCleared());
+      expect(cleared.selecting, isFalse);
+    });
+
+    test('starting reorder drops the selection', () {
+      final (next, _) = updater.update(selecting({'c1'}), const StartReorder());
+      expect(next.reordering, isTrue);
+      expect(next.selecting, isFalse);
+    });
+
+    test('a resync keeps the selection minus cards that left the feed', () {
+      final (next, _) = updater.update(
+        selecting({'c1', 'c3'}),
+        CollectionLoaded(
+          CollectionData(
+            collectionId: 'col',
+            title: 'T',
+            description: null,
+            coverAttachmentId: null,
+            cards: [cards[0], cards[1]],
+          ),
+        ),
+      );
+      expect(next.selectedCardIds, {'c1'});
+    });
+
+    test('loading targets excludes the current collection', () {
+      final (loading, effects) = updater.update(
+        selecting({'c1'}),
+        const MoveTargetsRequested(),
+      );
+      expect(loading.moveTargetsStatus, MoveTargetsStatus.loading);
+      expect(effects!.single, isA<LoadMoveTargetsEffect>());
+
+      final (loaded, _) = updater.update(
+        loading,
+        const MoveTargetsLoaded([
+          MoveTarget(collectionId: 'col', title: 'This'),
+          target,
+        ]),
+      );
+      expect(loaded.moveTargetsStatus, MoveTargetsStatus.ready);
+      expect(loaded.moveTargets, [target]);
+    });
+
+    test('choosing a target reads its tail', () {
+      final (next, effects) = updater.update(
+        selecting({'c1'}),
+        const MoveTargetChosen(target),
+      );
+      expect(next.moveTargetsStatus, MoveTargetsStatus.idle);
+      expect((effects!.single as LoadMoveTargetTailEffect).target, target);
+    });
+
+    test('choosing the current collection or with no selection is a no-op', () {
+      final (_, sameCol) = updater.update(
+        selecting({'c1'}),
+        const MoveTargetChosen(MoveTarget(collectionId: 'col', title: 'T')),
+      );
+      expect(sameCol, isNull);
+      final (_, none) = updater.update(
+        ready(cards),
+        const MoveTargetChosen(target),
+      );
+      expect(none, isNull);
+    });
+
+    test('the tail appends the selection in feed order, not tap order', () {
+      // Selected c3 first, then c1: they still land as c1, c3.
+      final (next, effects) = updater.update(
+        selecting({'c3', 'c1'}),
+        const MoveTargetTailLoaded(target, 'a5'),
+      );
+      final move = effects!.single as MoveCardsEffect;
+      expect(move.target, target);
+      expect(move.positions.keys, ['c1', 'c3']);
+      final p1 = move.positions['c1']!;
+      final p3 = move.positions['c3']!;
+      expect(p1.compareTo('a5'), greaterThan(0));
+      expect(p3.compareTo(p1), greaterThan(0));
+      // Removed from this feed optimistically; selection mode is over.
+      expect(next.cards.map((c) => c.id), ['c2']);
+      expect(next.selecting, isFalse);
+    });
+
+    test('an empty target starts at the first key', () {
+      final (_, effects) = updater.update(
+        selecting({'c2'}),
+        const MoveTargetTailLoaded(target, null),
+      );
+      final move = effects!.single as MoveCardsEffect;
+      expect(move.positions, {'c2': FractionalIndex.first()});
     });
   });
 }

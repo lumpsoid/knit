@@ -27,6 +27,7 @@ import 'package:knit/features/card_links/infra/sync_store_card_links_write_repos
 import 'package:knit/features/card_links/infra/sync_store_link_targets_read_repository.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection/infra/share_plus_card_share_repository.dart';
+import 'package:knit/features/collection/infra/sync_store_card_move_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/collection/infra/url_launcher_link_launcher.dart';
@@ -175,6 +176,8 @@ void bootstrap(AppConfig config) {
   final routeArgs = InMemoryCollectionRouteArgsStore();
   TimelineScope.setRouteArgsWriter(routeArgs);
   CollectionScope.setRouteArgs(routeArgs);
+  // ...and writes it itself to open the collection a selection moved into.
+  CollectionScope.setCollectionRouteArgsWriter(routeArgs);
   // Search (§3.2/§4.1), opened from the Timeline app bar: a fresh controller
   // per page; a tapped hit writes the same carrier (with the card to reveal).
   TimelineScope.setSearchFactory(
@@ -272,6 +275,7 @@ void bootstrap(AppConfig config) {
         graph: graph,
         ids: ids,
       ),
+      moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
       attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
       attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
         graph: graph,

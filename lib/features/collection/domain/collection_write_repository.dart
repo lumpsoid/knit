@@ -27,4 +27,12 @@ abstract interface class CollectionWriteRepository {
     String cardId,
     String position,
   );
+
+  /// Move cards into [collectionId] in one transaction (all or none):
+  /// [positions] maps each card id to its pre-computed position in the target
+  /// (§8.7). Returns the target collection id on success.
+  Future<Result<String, CollectionFailure>> moveCards(
+    String collectionId,
+    Map<String, String> positions,
+  );
 }

@@ -339,5 +339,25 @@
   "searchFilterAll": "Все",
   "searchFilterCollections": "Коллекции",
   "searchFilterCards": "Карточки",
-  "searchInCollection": "в «{title}»"
+  "searchInCollection": "в «{title}»",
+  "collectionSelectedCount": "Выбрано: {count}",
+  "@collectionSelectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionSelectAllTooltip": "Выбрать все",
+  "collectionClearSelectionTooltip": "Отменить выбор",
+  "collectionMoveTooltip": "Переместить в коллекцию",
+  "collectionMoveSheetTitle": "Переместить в…",
+  "collectionMoveNoTargets": "Других коллекций пока нет.",
+  "collectionMoveTargetsError": "Не удалось загрузить коллекции.",
+  "collectionCardsMoved": "{count, plural, =1{1 карточка перемещена в «{title}»} few{{count} карточки перемещены в «{title}»} many{{count} карточек перемещено в «{title}»} other{{count} карточки перемещены в «{title}»}}",
+  "@collectionCardsMoved": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "title": { "type": "String" }
+    }
+  },
+  "collectionCardsMovedOpen": "Открыть"
 }
