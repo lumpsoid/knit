@@ -5,8 +5,8 @@ import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/audio_player_port.dart';
 
-/// The at-a-glance state of audio playback for the Collection screen, shared by
-/// the persistent mini-player bar and the now-playing card flip. [cardId] is the
+/// The at-a-glance state of audio playback, shared by the Collection feed and
+/// the Media overview: the mini-player bar and the now-playing card flip. [cardId] is the
 /// feed card whose clip is loaded — null means nothing is playing (the bar is
 /// hidden, no card is flipped). A widget-facing view-model: primitives only
 /// (widgets.md §1), no sync-core type.
@@ -55,7 +55,7 @@ class AudioPlaybackController {
     Logger? logger,
   }) : _player = player,
        _attachmentRead = attachmentRead,
-       _log = logger ?? Logger('knit.collection.audio') {
+       _log = logger ?? Logger('knit.audio_playback') {
     _progressSub = _player.progress.listen(_onProgress);
     _phaseSub = _player.phases.listen(_onPhase);
   }

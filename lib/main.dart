@@ -29,7 +29,7 @@ import 'package:knit/features/collection/infra/share_plus_card_share_repository.
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/collection/infra/url_launcher_link_launcher.dart';
-import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
+import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';

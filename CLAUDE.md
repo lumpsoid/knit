@@ -69,7 +69,7 @@ files). The goal is testability and ease of writing:
   state notifier. No widget pumping is needed for logic. Domain logic gets plain unit
   tests.
 
-`AudioPlaybackController` (`lib/features/collection/presentation/`) is the
+`AudioPlaybackController` (`lib/features/audio_playback/presentation/`) is the
 closest existing example. The features built so far (listed below) use the full
 FCIS shape. Leave them as they are unless asked to migrate them.
 

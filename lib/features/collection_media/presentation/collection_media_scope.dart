@@ -1,6 +1,6 @@
 import 'package:knit/core/attachments/presentation/attachment_image_cache_state.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_route_args.dart';
-import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
+import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_controller.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_route_args.dart';
 

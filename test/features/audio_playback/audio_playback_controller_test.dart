@@ -6,7 +6,7 @@ import 'package:knit/core/attachments/domain/attachment_failure.dart';
 import 'package:knit/core/attachments/domain/attachment_models.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/audio_player_port.dart';
-import 'package:knit/features/collection/presentation/audio_playback_controller.dart';
+import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// A scriptable [AudioPlayerPort]: records the calls it received and lets the
