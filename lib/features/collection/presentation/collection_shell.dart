@@ -4,9 +4,6 @@ import 'package:logging/logging.dart';
 import 'package:result_dart/result_dart.dart';
 import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
-import 'package:knit/core/attachments/domain/audio_recorder_port.dart';
-import 'package:knit/core/attachments/domain/file_picker_port.dart';
-import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
@@ -40,9 +37,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required AttachmentImageCache imageCache,
-    required ImagePickerPort imagePicker,
-    required AudioRecorderPort audioRecorder,
-    required FilePickerPort filePicker,
     required CardShareRepository shareRepository,
     required LinkLauncher linkLauncher,
     required CollectionDetailsController collectionDetails,
@@ -56,9 +50,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
        _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
        _images = imageCache,
-       _picker = imagePicker,
-       _recorder = audioRecorder,
-       _filePicker = filePicker,
        _share = shareRepository,
        _links = linkLauncher,
        _details = collectionDetails,
@@ -73,9 +64,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
   final AttachmentImageCache _images;
-  final ImagePickerPort _picker;
-  final AudioRecorderPort _recorder;
-  final FilePickerPort _filePicker;
   final CardShareRepository _share;
   final LinkLauncher _links;
   final CollectionDetailsController _details;
@@ -169,10 +157,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           dispatch,
         );
 
-      case PickImageEffect(:final source):
-        final picked = await _picker.pickImage(source: source);
-        dispatch(ImagePicked(picked));
-
       case AddPhotoCardEffect(
         :final collectionId,
         :final position,
@@ -181,21 +165,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       ):
         await _addPhotoCard(collectionId, position, image, caption, dispatch);
 
-      case StartAudioRecordingEffect():
-        await _startRecording(dispatch);
-
-      case PauseAudioRecordingEffect():
-        await _safeRecorder(() => _recorder.pause(), 'pause recording');
-
-      case ResumeAudioRecordingEffect():
-        await _safeRecorder(() => _recorder.resume(), 'resume recording');
-
-      case StopAudioRecordingEffect():
-        await _stopRecording(dispatch);
-
-      case CancelAudioRecordingEffect():
-        await _safeRecorder(() => _recorder.cancel(), 'cancel recording');
-
       case AddAudioCardEffect(
         :final collectionId,
         :final position,
@@ -203,10 +172,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         :final caption,
       ):
         await _addAudioCard(collectionId, position, audio, caption, dispatch);
-
-      case PickFileEffect():
-        final picked = await _filePicker.pickFile();
-        dispatch(FilePicked(picked));
 
       case AddFileCardEffect(
         :final collectionId,
@@ -337,55 +302,6 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       'add photo card',
       dispatch,
     );
-  }
-
-  /// Begin capturing an audio message. A clean start delivers
-  /// [AudioRecordingStarted]; a denied microphone permission (or an error)
-  /// surfaces a message and delivers [AudioRecordingStartFailed] so the bar
-  /// returns to idle.
-  Future<void> _startRecording(void Function(CollectionAction) dispatch) async {
-    try {
-      if (await _recorder.start()) {
-        dispatch(const AudioRecordingStarted());
-      } else {
-        _effectEmitter.push(
-          const CollectionShowMessageUiEffect(
-            CollectionMessage.micPermissionDenied,
-          ),
-        );
-        dispatch(const AudioRecordingStartFailed());
-      }
-    } catch (e, s) {
-      _log.severe('Start audio recording failed', e, s);
-      _effectEmitter.push(
-        const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
-      );
-      dispatch(const AudioRecordingStartFailed());
-    }
-  }
-
-  /// Stop capturing and deliver the clip (null on failure/empty — the updater
-  /// then just leaves recording mode). A failure surfaces a message.
-  Future<void> _stopRecording(void Function(CollectionAction) dispatch) async {
-    try {
-      dispatch(AudioRecorded(await _recorder.stop()));
-    } catch (e, s) {
-      _log.severe('Stop audio recording failed', e, s);
-      _effectEmitter.push(
-        const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
-      );
-      dispatch(const AudioRecorded(null));
-    }
-  }
-
-  /// Run a fire-and-forget recorder call (pause/resume/cancel); the phase was
-  /// already moved optimistically, so a failure is logged only.
-  Future<void> _safeRecorder(Future<void> Function() op, String label) async {
-    try {
-      await op();
-    } catch (e, s) {
-      _log.severe('Audio $label failed', e, s);
-    }
   }
 
   /// Store the recorded [audio] (content-addressed, §7.4.8), then append an audio

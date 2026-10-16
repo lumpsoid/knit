@@ -1,4 +1,3 @@
-import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
@@ -64,14 +63,6 @@ class AddCardEffect extends CollectionEffect {
   final String? text;
 }
 
-/// Open the platform picker on [source] (camera or gallery) so the chosen image
-/// can be previewed in the composer (the shell delivers the result back as an
-/// [ImagePicked] action).
-class PickImageEffect extends CollectionEffect {
-  const PickImageEffect(this.source);
-  final ImagePickerSource source;
-}
-
 /// Store the already-picked [image] (§7.4.8), then append an image card at
 /// [position] carrying [caption] (the composer text, already trimmed; null when
 /// blank). The attachment id is minted in the shell from [image] — unlike a
@@ -89,30 +80,6 @@ class AddPhotoCardEffect extends CollectionEffect {
   final String? caption;
 }
 
-/// Audio capture lifecycle (§4.2), each a thin call into the [AudioRecorderPort].
-/// Start delivers an [AudioRecordingStarted]/[AudioRecordingStartFailed] action;
-/// stop delivers an [AudioRecorded]; pause/resume/cancel are fire-and-forget
-/// (the updater already moved the phase optimistically).
-class StartAudioRecordingEffect extends CollectionEffect {
-  const StartAudioRecordingEffect();
-}
-
-class PauseAudioRecordingEffect extends CollectionEffect {
-  const PauseAudioRecordingEffect();
-}
-
-class ResumeAudioRecordingEffect extends CollectionEffect {
-  const ResumeAudioRecordingEffect();
-}
-
-class StopAudioRecordingEffect extends CollectionEffect {
-  const StopAudioRecordingEffect();
-}
-
-class CancelAudioRecordingEffect extends CollectionEffect {
-  const CancelAudioRecordingEffect();
-}
-
 /// Store the recorded [audio] (§7.4.8), then append an audio card at [position]
 /// carrying [caption] (the composer text, already trimmed; null when blank). The
 /// audio twin of [AddPhotoCardEffect].
@@ -127,12 +94,6 @@ class AddAudioCardEffect extends CollectionEffect {
   final String position;
   final PickedAudio audio;
   final String? caption;
-}
-
-/// Open the platform file picker so the chosen file can be previewed in the
-/// composer (the shell delivers the result back as a [FilePicked] action).
-class PickFileEffect extends CollectionEffect {
-  const PickFileEffect();
 }
 
 /// Store the already-picked [file] (§7.4.8), then append a file card at

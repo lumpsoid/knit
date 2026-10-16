@@ -17,6 +17,7 @@ import 'package:knit/features/collection/domain/link_launcher.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
+import 'package:knit/features/collection/presentation/collection_composer_controller.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_loop.dart';
 import 'package:knit/features/collection/presentation/collection_shell.dart';
@@ -55,6 +56,7 @@ class CollectionController {
       const CollectionState(),
     );
     final effectEmitter = EffectEmitter<CollectionUiEffect>();
+    final log = logger ?? Logger('knit.collection');
     final shell = CollectionShell(
       readRepository: readRepository,
       writeRepository: writeRepository,
@@ -62,31 +64,43 @@ class CollectionController {
       attachmentReadRepository: attachmentReadRepository,
       attachmentWriteRepository: attachmentWriteRepository,
       imageCache: imageCache,
-      imagePicker: imagePicker,
-      audioRecorder: audioRecorder,
-      filePicker: filePicker,
       shareRepository: shareRepository,
       linkLauncher: linkLauncher,
       collectionDetails: collectionDetails,
       cardLinks: cardLinks,
       effectEmitter: effectEmitter,
       timelineChannel: timelineChannel,
-      logger: logger ?? Logger('knit.collection'),
+      logger: log,
     );
     _stateHolder = stateHolder;
     _effectEmitter = effectEmitter;
-    _sink = CollectionLoop(
+    final sink = CollectionLoop(
       stateHolder: stateHolder,
       updater: const CollectionUpdater(),
       effectRunner: ShellEffectRunner<CollectionEffect, CollectionAction>(
         shell: shell,
       ),
     );
+    _sink = sink;
+    // The composer (lightweight, §4.2) stages what's being composed and hands
+    // a send to the loop; its messages go out through the same effect seam.
+    composer = CollectionComposerController(
+      imagePicker: imagePicker,
+      audioRecorder: audioRecorder,
+      filePicker: filePicker,
+      onSend: sink.dispatch,
+      onMessage: (message) =>
+          effectEmitter.push(CollectionShowMessageUiEffect(message)),
+      logger: log,
+    );
   }
 
   late final ValueListenableStateHolder<CollectionState> _stateHolder;
   late final EffectEmitter<CollectionUiEffect> _effectEmitter;
   late final ActionSink<CollectionAction> _sink;
+
+  /// The page's composer: staged attachments, the recording, the inline panels.
+  late final CollectionComposerController composer;
 
   ValueListenable<CollectionState> get stateHolder => _stateHolder;
 
@@ -98,9 +112,11 @@ class CollectionController {
   void dispatch(CollectionAction action) => _sink.dispatch(action);
 
   /// Release the page-scoped resources this controller created: detach the
-  /// effect seam and dispose the state-holder notifier.
+  /// effect seam, release the composer (and the recorder, if it is still
+  /// capturing), and dispose the state-holder notifier.
   void dispose() {
     _effectEmitter.detach();
+    composer.dispose();
     _stateHolder.dispose();
   }
 }

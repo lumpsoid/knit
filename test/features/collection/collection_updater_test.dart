@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
@@ -289,353 +288,84 @@ void main() {
       expect(effect.text, 'https://x.y');
     });
 
-    test('photo block opens the picker on the chosen source', () {
+    test('sending an image emits a photo card with the trimmed caption', () {
       final (next, effects) = updater.update(
-        ready(const []),
-        const PickImageRequested(ImagePickerSource.camera),
+        ready([card('c1', 'a0')]),
+        ComposerSubmitted('  a caption  ', image: image),
       );
-      final effect = effects!.single as PickImageEffect;
-      expect(effect.source, ImagePickerSource.camera);
-      expect(next.pendingImage, isNull, reason: 'nothing staged until picked');
+      final effect = effects!.single as AddPhotoCardEffect;
+      expect(effect.collectionId, 'col');
+      expect(effect.position.compareTo('a0') > 0, isTrue);
+      expect(effect.caption, 'a caption', reason: 'trimmed');
+      expect(effect.image, same(image));
+      expect(next.cards, hasLength(1), reason: 'the feed waits for the resync');
     });
 
-    test('a picked image is staged as the composer preview', () {
-      final (next, effects) = updater.update(
-        ready(const []),
-        ImagePicked(image),
-      );
-      expect(next.pendingImage, same(image));
-      expect(effects, isNull);
-    });
-
-    test('a cancelled pick leaves the preview untouched', () {
-      final (next, effects) = updater.update(
-        ready(const []).copyWith(pendingImage: image),
-        const ImagePicked(null),
-      );
-      expect(next.pendingImage, same(image));
-      expect(effects, isNull);
-    });
-
-    test('clearing the preview drops the staged image', () {
-      final (next, effects) = updater.update(
-        ready(const []).copyWith(pendingImage: image),
-        const PendingImageCleared(),
-      );
-      expect(next.pendingImage, isNull);
-      expect(effects, isNull);
-    });
-
-    test(
-      'sending with a staged image emits a photo card and clears the preview',
-      () {
-        final (next, effects) = updater.update(
-          ready([card('c1', 'a0')]).copyWith(pendingImage: image),
-          const ComposerSubmitted('  a caption  '),
-        );
-        final effect = effects!.single as AddPhotoCardEffect;
-        expect(effect.collectionId, 'col');
-        expect(effect.position.compareTo('a0') > 0, isTrue);
-        expect(effect.caption, 'a caption', reason: 'trimmed');
-        expect(effect.image, same(image));
-        expect(next.pendingImage, isNull, reason: 'cleared optimistically');
-      },
-    );
-
-    test('sending a staged image with blank text carries a null caption', () {
+    test('an attachment with blank text carries a null caption', () {
       final (_, effects) = updater.update(
-        ready(const []).copyWith(pendingImage: image),
-        const ComposerSubmitted('   '),
+        ready(const []),
+        ComposerSubmitted('   ', image: image),
       );
       final effect = effects!.single as AddPhotoCardEffect;
       expect(effect.caption, isNull);
       expect(effect.position, 'a0');
     });
-  });
 
-  group('audio recording', () {
-    test('start request opens the recorder but stages no phase yet', () {
-      final (next, effects) = updater.update(
-        ready(const []),
-        const AudioRecordingRequested(),
-      );
-      expect(effects!.single, isA<StartAudioRecordingEffect>());
-      expect(next.recordingPhase, isNull, reason: 'wait for the recorder');
-    });
-
-    test('a confirmed start enters the recording phase', () {
-      final (next, effects) = updater.update(
-        ready(const []),
-        const AudioRecordingStarted(),
-      );
-      expect(next.recordingPhase, AudioRecordingPhase.recording);
-      expect(effects, isNull);
-    });
-
-    test('a failed start leaves recording mode', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(
-        state,
-        const AudioRecordingStartFailed(),
-      );
-      expect(next.recordingPhase, isNull);
-      expect(effects, isNull);
-    });
-
-    test('pause flips the phase optimistically and tells the recorder', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(
-        state,
-        const AudioRecordingPauseRequested(),
-      );
-      expect(next.recordingPhase, AudioRecordingPhase.paused);
-      expect(effects!.single, isA<PauseAudioRecordingEffect>());
-    });
-
-    test('resume flips back to recording and tells the recorder', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.paused);
-      final (next, effects) = updater.update(
-        state,
-        const AudioRecordingResumeRequested(),
-      );
-      expect(next.recordingPhase, AudioRecordingPhase.recording);
-      expect(effects!.single, isA<ResumeAudioRecordingEffect>());
-    });
-
-    test('stop requests the clip without yet leaving the phase', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(
-        state,
-        const AudioRecordingStopRequested(),
-      );
-      expect(effects!.single, isA<StopAudioRecordingEffect>());
-      expect(next.recordingPhase, AudioRecordingPhase.recording);
-    });
-
-    test('a captured clip is staged as the preview and clears the phase', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(state, AudioRecorded(audio));
-      expect(next.pendingAudio, same(audio));
-      expect(next.recordingPhase, isNull);
-      expect(effects, isNull);
-    });
-
-    test('an empty capture just leaves recording mode', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(state, const AudioRecorded(null));
-      expect(next.pendingAudio, isNull);
-      expect(next.recordingPhase, isNull);
-      expect(effects, isNull);
-    });
-
-    test('cancel drops everything and discards the recording', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(
-        state,
-        const AudioRecordingCancelled(),
-      );
-      expect(next.recordingPhase, isNull);
-      expect(next.pendingAudio, isNull);
-      expect(effects!.single, isA<CancelAudioRecordingEffect>());
-    });
-
-    test('clearing the pending clip drops it with no effect', () {
-      final state = ready(const []).copyWith(pendingAudio: audio);
-      final (next, effects) = updater.update(
-        state,
-        const PendingAudioCleared(),
-      );
-      expect(next.pendingAudio, isNull);
-      expect(effects, isNull);
-    });
-
-    test('sending a staged clip emits an audio card and clears it', () {
-      final state = ready([card('c1', 'a0')]).copyWith(pendingAudio: audio);
-      final (next, effects) = updater.update(
-        state,
-        const ComposerSubmitted('  a note  '),
+    test('sending a clip emits an audio card', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        ComposerSubmitted('  a note  ', audio: audio),
       );
       final effect = effects!.single as AddAudioCardEffect;
-      expect(effect.collectionId, 'col');
       expect(effect.position.compareTo('a0') > 0, isTrue);
-      expect(effect.caption, 'a note', reason: 'trimmed');
+      expect(effect.caption, 'a note');
       expect(effect.audio, same(audio));
-      expect(next.pendingAudio, isNull, reason: 'cleared optimistically');
     });
 
-    test('sending a staged clip with blank text carries a null caption', () {
-      final state = ready(const []).copyWith(pendingAudio: audio);
+    test('sending a file emits a file card', () {
       final (_, effects) = updater.update(
-        state,
-        const ComposerSubmitted('   '),
-      );
-      final effect = effects!.single as AddAudioCardEffect;
-      expect(effect.caption, isNull);
-      expect(effect.position, 'a0');
-    });
-
-    test('a pending image wins over a pending clip on send', () {
-      final state = ready(
-        const [],
-      ).copyWith(pendingImage: image, pendingAudio: audio);
-      final (_, effects) = updater.update(state, const ComposerSubmitted('hi'));
-      expect(effects!.single, isA<AddPhotoCardEffect>());
-    });
-
-    test('send is inert while a recording is in flight', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(
-        state,
-        const ComposerSubmitted('hi'),
-      );
-      expect(effects, isNull);
-      expect(next.recordingPhase, AudioRecordingPhase.recording);
-    });
-
-    test('leaving the page cancels an in-flight recording', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.recording);
-      final (next, effects) = updater.update(state, const DeactivateFeature());
-      expect(next.recordingPhase, isNull);
-      expect(effects!.whereType<CancelAudioRecordingEffect>(), hasLength(1));
-    });
-
-    test('leaving the page with no recording emits no cancel', () {
-      final (next, effects) = updater.update(
-        ready(const []),
-        const DeactivateFeature(),
-      );
-      expect(next.recordingPhase, isNull);
-      expect(effects!.whereType<CancelAudioRecordingEffect>(), isEmpty);
-    });
-  });
-
-  group('file attachment', () {
-    test('PickFileRequested emits the pick effect, stages nothing yet', () {
-      final (next, effects) = updater.update(
-        ready(const []),
-        const PickFileRequested(),
-      );
-      expect(effects!.single, isA<PickFileEffect>());
-      expect(next.pendingFile, isNull, reason: 'nothing staged until picked');
-    });
-
-    test('a cancelled pick leaves state unchanged', () {
-      final (next, effects) = updater.update(
-        ready(const []),
-        const FilePicked(null),
-      );
-      expect(next.pendingFile, isNull);
-      expect(effects, isNull);
-    });
-
-    test('a picked file is staged as the pending preview', () {
-      final (next, effects) = updater.update(
-        ready(const []),
-        FilePicked(pickedFile),
-      );
-      expect(next.pendingFile, same(pickedFile));
-      expect(effects, isNull);
-    });
-
-    test('clearing the pending file drops it with no effect', () {
-      final state = ready(const []).copyWith(pendingFile: pickedFile);
-      final (next, effects) = updater.update(state, const PendingFileCleared());
-      expect(next.pendingFile, isNull);
-      expect(effects, isNull);
-    });
-
-    test('sending a staged file emits a file card and clears it', () {
-      final state = ready([card('c1', 'a0')]).copyWith(pendingFile: pickedFile);
-      final (next, effects) = updater.update(
-        state,
-        const ComposerSubmitted('  a caption  '),
+        ready([card('c1', 'a0')]),
+        ComposerSubmitted('  a caption  ', file: pickedFile),
       );
       final effect = effects!.single as AddFileCardEffect;
       expect(effect.collectionId, 'col');
       expect(effect.position.compareTo('a0') > 0, isTrue);
-      expect(effect.caption, 'a caption', reason: 'trimmed');
+      expect(effect.caption, 'a caption');
       expect(effect.file, same(pickedFile));
-      expect(next.pendingFile, isNull, reason: 'cleared optimistically');
     });
 
-    test('sending a staged file with blank text carries a null caption', () {
-      final state = ready(const []).copyWith(pendingFile: pickedFile);
-      final (_, effects) = updater.update(
-        state,
-        const ComposerSubmitted('   '),
-      );
-      final effect = effects!.single as AddFileCardEffect;
-      expect(effect.caption, isNull);
-      expect(effect.position, 'a0');
-    });
-
-    test('an image-typed picked file is sent as a photo card', () {
+    test('an image-typed file is sent as a photo card', () {
       final imageFile = PickedFile(
         bytes: Uint8List.fromList([10, 11, 12]),
         mime: 'image/jpeg',
         name: 'holiday.jpg',
       );
-      final state = ready([card('c1', 'a0')]).copyWith(pendingFile: imageFile);
-      final (next, effects) = updater.update(
-        state,
-        const ComposerSubmitted('beach'),
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        ComposerSubmitted('beach', file: imageFile),
       );
       final effect = effects!.single as AddPhotoCardEffect;
       expect(effect.image.bytes, imageFile.bytes);
       expect(effect.image.mime, 'image/jpeg');
       expect(effect.caption, 'beach');
       expect(effect.position.compareTo('a0') > 0, isTrue);
-      expect(next.pendingFile, isNull, reason: 'cleared optimistically');
     });
 
-    test('an audio-typed picked file is sent as an audio card', () {
+    test('an audio-typed file is sent as an audio card', () {
       final audioFile = PickedFile(
         bytes: Uint8List.fromList([13, 14, 15]),
         mime: 'audio/mpeg',
         name: 'song.mp3',
       );
-      final state = ready(const []).copyWith(pendingFile: audioFile);
-      final (next, effects) = updater.update(
-        state,
-        const ComposerSubmitted('  '),
+      final (_, effects) = updater.update(
+        ready(const []),
+        ComposerSubmitted('  ', file: audioFile),
       );
       final effect = effects!.single as AddAudioCardEffect;
       expect(effect.audio.bytes, audioFile.bytes);
       expect(effect.audio.mime, 'audio/mpeg');
+      expect(effect.audio.name, 'song.mp3');
       expect(effect.caption, isNull);
-      expect(next.pendingFile, isNull);
-    });
-
-    test('a pending image wins over a pending file on send', () {
-      final state = ready(
-        const [],
-      ).copyWith(pendingImage: image, pendingFile: pickedFile);
-      final (_, effects) = updater.update(state, const ComposerSubmitted('hi'));
-      expect(effects!.single, isA<AddPhotoCardEffect>());
-    });
-
-    test('leaving the page drops a staged file', () {
-      final state = ready(const []).copyWith(pendingFile: pickedFile);
-      final (next, _) = updater.update(state, const DeactivateFeature());
-      expect(next.pendingFile, isNull);
     });
   });
 
@@ -870,37 +600,6 @@ void main() {
       );
       final (next, _) = updater.update(state, CollectionLoaded(data));
       expect(next.reordering, isFalse);
-    });
-  });
-
-  group('a resync keeps what the composer holds', () {
-    const data = CollectionData(
-      collectionId: 'col',
-      title: 'Notes',
-      description: null,
-      coverAttachmentId: null,
-      cards: [],
-    );
-
-    test('an in-flight recording keeps its phase', () {
-      final state = ready(
-        const [],
-      ).copyWith(recordingPhase: AudioRecordingPhase.paused);
-      final (next, effects) = updater.update(state, CollectionLoaded(data));
-      expect(next.recordingPhase, AudioRecordingPhase.paused);
-      expect(effects!.whereType<CancelAudioRecordingEffect>(), isEmpty);
-    });
-
-    test('staged image, audio and file all survive', () {
-      final state = ready(const []).copyWith(
-        pendingImage: image,
-        pendingAudio: audio,
-        pendingFile: pickedFile,
-      );
-      final (next, _) = updater.update(state, CollectionLoaded(data));
-      expect(next.pendingImage, same(image));
-      expect(next.pendingAudio, same(audio));
-      expect(next.pendingFile, same(pickedFile));
     });
   });
 

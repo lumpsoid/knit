@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:knit/features/collection/presentation/collection_state.dart';
+import 'package:knit/features/collection/presentation/collection_composer_state.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// The inline audio-recording bar shown above the composer (§4.2). Idle (no

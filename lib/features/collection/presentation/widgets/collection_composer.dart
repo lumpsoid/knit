@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:knit/features/collection/presentation/collection_state.dart';
+import 'package:knit/features/collection/presentation/collection_composer_state.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/widgets/audio_record_bar.dart';
 import 'package:knit/features/collection/presentation/widgets/composer_previews.dart';

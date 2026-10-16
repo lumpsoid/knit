@@ -32,8 +32,6 @@ class CollectionUpdater
           state.copyWith(
             collectionId: collectionId,
             status: CollectionStatus.loading,
-            // A fresh entry into a collection starts with no pending preview.
-            clearPendingImage: true,
           ),
           [
             LoadCollectionEffect(
@@ -69,14 +67,6 @@ class CollectionUpdater
             // Stay in reorder mode only while it remains reorderable (2+ cards),
             // so a feed that shrinks under it can't strand the user with no Done.
             reordering: state.reordering && data.cards.length > 1,
-            // A resync (pull-to-refresh / post-write) must not drop anything
-            // the composer holds: a staged image/audio/file the user is still
-            // captioning, or a recording that is still capturing (the recorder
-            // keeps running, so dropping its phase would orphan it).
-            pendingImage: state.pendingImage,
-            recordingPhase: state.recordingPhase,
-            pendingAudio: state.pendingAudio,
-            pendingFile: state.pendingFile,
             // Keep the selection across a resync, minus any card that left
             // the feed (deleted or moved elsewhere meanwhile).
             selectedCardIds: _keepLoaded(state.selectedCardIds, data.cards),
@@ -127,86 +117,81 @@ class CollectionUpdater
       case OlderCardsLoadFailed():
         return (state.copyWith(loadingOlder: false), null);
 
-      case ComposerSubmitted(:final text):
-        // Mid-recording, or nothing to send: inert.
-        if (!state.canSendComposer(text)) return (state, null);
+      case ComposerSubmitted(
+        :final text,
+        :final image,
+        :final file,
+        :final audio,
+      ):
         final body = text.trim();
-        final pendingImage = state.pendingImage;
-        // A pending image wins: send it as an image card with the (optional)
-        // text as its caption, and clear the preview optimistically.
-        if (pendingImage != null) {
+        final caption = body.isEmpty ? null : body;
+        final position = _appendPosition(state.cards);
+        // A staged attachment goes as its card, the (optional) text its caption.
+        if (image != null) {
           return (
-            state.copyWith(clearPendingImage: true),
+            state,
             [
               AddPhotoCardEffect(
                 collectionId: state.collectionId,
-                position: _appendPosition(state.cards),
-                image: pendingImage,
-                caption: body.isEmpty ? null : body,
+                position: position,
+                image: image,
+                caption: caption,
               ),
             ],
           );
         }
-        // Then a picked file: judge it by its declared mime (§4.2) — an image
-        // becomes an image card and an audio file an audio card (the picker
-        // derives the mime from the extension), so it renders/plays like one
-        // captured in-app; anything else stays a generic file card. The caption
-        // (optional) rides along, and the preview clears optimistically.
-        final pendingFile = state.pendingFile;
-        if (pendingFile != null) {
-          final caption = body.isEmpty ? null : body;
-          final position = _appendPosition(state.cards);
-          final effect = switch (CardKind.forFileMime(pendingFile.mime)) {
+        // A picked file is judged by its declared mime (§4.2): an image becomes
+        // an image card and an audio file an audio card (the picker derives the
+        // mime from the extension), so it renders/plays like one captured
+        // in-app; anything else stays a generic file card.
+        if (file != null) {
+          final effect = switch (CardKind.forFileMime(file.mime)) {
             CardKind.image => AddPhotoCardEffect(
               collectionId: state.collectionId,
               position: position,
-              image: PickedImage(
-                bytes: pendingFile.bytes,
-                mime: pendingFile.mime,
-              ),
+              image: PickedImage(bytes: file.bytes, mime: file.mime),
               caption: caption,
             ),
             CardKind.audio => AddAudioCardEffect(
               collectionId: state.collectionId,
               position: position,
               audio: PickedAudio(
-                bytes: pendingFile.bytes,
-                mime: pendingFile.mime,
-                name: pendingFile.name,
+                bytes: file.bytes,
+                mime: file.mime,
+                name: file.name,
               ),
               caption: caption,
             ),
             _ => AddFileCardEffect(
               collectionId: state.collectionId,
               position: position,
-              file: pendingFile,
+              file: file,
               caption: caption,
             ),
           };
-          return (state.copyWith(clearPendingFile: true), [effect]);
+          return (state, [effect]);
         }
-        // Then a recorded audio clip: send it as an audio card with the caption.
-        final pendingAudio = state.pendingAudio;
-        if (pendingAudio != null) {
+        if (audio != null) {
           return (
-            state.copyWith(clearPendingAudio: true),
+            state,
             [
               AddAudioCardEffect(
                 collectionId: state.collectionId,
-                position: _appendPosition(state.cards),
-                audio: pendingAudio,
-                caption: body.isEmpty ? null : body,
+                position: position,
+                audio: audio,
+                caption: caption,
               ),
             ],
           );
         }
+        if (body.isEmpty) return (state, null);
         return (
           state,
           [
             AddCardEffect(
               collectionId: state.collectionId,
               kind: CardKind.text,
-              position: _appendPosition(state.cards),
+              position: position,
               text: body,
             ),
           ],
@@ -226,80 +211,6 @@ class CollectionUpdater
             ),
           ],
         );
-
-      case PickImageRequested(:final source):
-        return (state, [PickImageEffect(source)]);
-
-      case ImagePicked(:final image):
-        // Cancelled pick ⇒ no change; otherwise stage it as the preview.
-        if (image == null) return (state, null);
-        return (state.copyWith(pendingImage: image), null);
-
-      case PendingImageCleared():
-        return (state.copyWith(clearPendingImage: true), null);
-
-      case AudioRecordingRequested():
-        // Don't stage the phase yet — wait for the recorder to confirm it
-        // started (permission may be denied), mirroring the image-pick path.
-        return (state, const [StartAudioRecordingEffect()]);
-
-      case AudioRecordingStarted():
-        return (
-          state.copyWith(recordingPhase: AudioRecordingPhase.recording),
-          null,
-        );
-
-      case AudioRecordingStartFailed():
-        // Bar returns to idle; the shell already surfaced the reason.
-        return (state.copyWith(clearRecordingPhase: true), null);
-
-      case AudioRecordingPauseRequested():
-        // Optimistic, like reorder: flip the phase now, tell the recorder.
-        return (
-          state.copyWith(recordingPhase: AudioRecordingPhase.paused),
-          const [PauseAudioRecordingEffect()],
-        );
-
-      case AudioRecordingResumeRequested():
-        return (
-          state.copyWith(recordingPhase: AudioRecordingPhase.recording),
-          const [ResumeAudioRecordingEffect()],
-        );
-
-      case AudioRecordingStopRequested():
-        // Keep the phase until the clip is delivered (AudioRecorded clears it).
-        return (state, const [StopAudioRecordingEffect()]);
-
-      case AudioRecorded(:final audio):
-        // Nothing captured ⇒ just leave recording mode; otherwise stage the clip
-        // as the pending preview so a caption can be added before sending.
-        if (audio == null) {
-          return (state.copyWith(clearRecordingPhase: true), null);
-        }
-        return (
-          state.copyWith(clearRecordingPhase: true, pendingAudio: audio),
-          null,
-        );
-
-      case AudioRecordingCancelled():
-        return (
-          state.copyWith(clearRecordingPhase: true, clearPendingAudio: true),
-          const [CancelAudioRecordingEffect()],
-        );
-
-      case PendingAudioCleared():
-        return (state.copyWith(clearPendingAudio: true), null);
-
-      case PickFileRequested():
-        return (state, const [PickFileEffect()]);
-
-      case FilePicked(:final file):
-        // Cancelled pick ⇒ no change; otherwise stage it as the preview.
-        if (file == null) return (state, null);
-        return (state.copyWith(pendingFile: file), null);
-
-      case PendingFileCleared():
-        return (state.copyWith(clearPendingFile: true), null);
 
       case CardDeleteRequested(:final cardId):
         // Carry the card's attachment id so the shell can reclaim it after
@@ -400,20 +311,10 @@ class CollectionUpdater
         return _moveSelection(state, target, lastPosition);
 
       case DeactivateFeature():
-        // Leaving the page must release the recorder if it's still capturing.
+        // The composer releases the recorder itself, with the page.
         return (
-          state.copyWith(
-            reordering: false,
-            selectedCardIds: const {},
-            clearPendingImage: true,
-            clearRecordingPhase: true,
-            clearPendingAudio: true,
-            clearPendingFile: true,
-          ),
-          [
-            const ReleaseImagesEffect(),
-            if (state.isRecordingAudio) const CancelAudioRecordingEffect(),
-          ],
+          state.copyWith(reordering: false, selectedCardIds: const {}),
+          const [ReleaseImagesEffect()],
         );
     }
   }

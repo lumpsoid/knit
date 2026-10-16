@@ -1,15 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:knit/core/attachments/domain/picked_audio.dart';
-import 'package:knit/core/attachments/domain/picked_file.dart';
-import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 
 enum CollectionStatus { loading, ready, failed }
-
-/// Whether an audio message is actively being captured, and if so its sub-state
-/// (§4.2). Null (the field is nullable) ⇒ no recording in flight: either the bar
-/// is idle/hidden or a recorded clip is already staged in [CollectionState.pendingAudio].
-enum AudioRecordingPhase { recording, paused }
 
 /// Where the move picker's list of target collections stands. [idle] until the
 /// user asks to move the selection; the picker shows a spinner while [loading].
@@ -20,6 +12,8 @@ enum MoveTargetsStatus { idle, loading, ready, failed }
 /// it. Sheets/dialogs (compose, add-block, actions, link picker, edit) are transient
 /// View concerns that dispatch intents; they are not modelled here. The header
 /// (title, description, cover) is the shared collection details, not a copy here.
+/// What the composer holds (staged attachments, the recording) is its own
+/// `CollectionComposerState`.
 @immutable
 class CollectionState {
   const CollectionState({
@@ -30,10 +24,6 @@ class CollectionState {
     this.loadingOlder = false,
     this.connectionCount = 0,
     this.reordering = false,
-    this.pendingImage,
-    this.recordingPhase,
-    this.pendingAudio,
-    this.pendingFile,
     this.selectedCardIds = const {},
     this.moveTargetsStatus = MoveTargetsStatus.idle,
     this.moveTargets = const [],
@@ -60,29 +50,6 @@ class CollectionState {
   /// Whether drag-to-reorder mode is active (§4.2).
   final bool reordering;
 
-  /// An image the user picked from the composer's "+" and is still composing a
-  /// caption for, held in memory and shown as a preview above the input field.
-  /// It is not stored or attached to any card until the composer is sent;
-  /// clearing or repicking just drops these bytes — no attachment is written.
-  final PickedImage? pendingImage;
-
-  /// The live audio-capture sub-state (§4.2): non-null while recording or paused,
-  /// driving the recording controls above the composer. Null once stopped — the
-  /// captured clip then lives in [pendingAudio].
-  final AudioRecordingPhase? recordingPhase;
-
-  /// An audio message the user recorded but hasn't sent yet — the audio twin of
-  /// [pendingImage]. Held in memory and shown as a preview chip; the user can add
-  /// a caption before sending. Clearing it just drops these bytes — no attachment
-  /// is written until the composer is sent.
-  final PickedAudio? pendingAudio;
-
-  /// A file the user picked but hasn't sent yet — the file twin of [pendingImage].
-  /// Held in memory and shown as a preview chip (its name); the user can add a
-  /// caption before sending. Clearing it just drops these bytes — no attachment
-  /// is written until the composer is sent.
-  final PickedFile? pendingFile;
-
   /// The cards picked in multi-select mode (§4.2), by id. Selection mode *is*
   /// a non-empty set: deselecting the last card leaves it, so an empty
   /// selection mode can't exist.
@@ -98,20 +65,6 @@ class CollectionState {
 
   /// Whether "select all" would add anything: some loaded card is unselected.
   bool get canSelectAll => selectedCardIds.length < cards.length;
-
-  /// Whether an audio recording is actively being captured (not merely staged).
-  bool get isRecordingAudio => recordingPhase != null;
-
-  /// Whether the composer's send goes through with [text]: never while a
-  /// recording is in flight (the user stops it first); otherwise a non-blank
-  /// [text] or a staged image, audio clip, or file (which makes an empty
-  /// caption a valid send).
-  bool canSendComposer(String text) =>
-      !isRecordingAudio &&
-      (text.trim().isNotEmpty ||
-          pendingImage != null ||
-          pendingAudio != null ||
-          pendingFile != null);
 
   bool get isEmpty => cards.isEmpty && !hasOlder;
 
@@ -129,14 +82,6 @@ class CollectionState {
     bool? loadingOlder,
     int? connectionCount,
     bool? reordering,
-    PickedImage? pendingImage,
-    bool clearPendingImage = false,
-    AudioRecordingPhase? recordingPhase,
-    bool clearRecordingPhase = false,
-    PickedAudio? pendingAudio,
-    bool clearPendingAudio = false,
-    PickedFile? pendingFile,
-    bool clearPendingFile = false,
     Set<String>? selectedCardIds,
     MoveTargetsStatus? moveTargetsStatus,
     List<MoveTarget>? moveTargets,
@@ -150,18 +95,6 @@ class CollectionState {
     loadingOlder: loadingOlder ?? this.loadingOlder,
     connectionCount: connectionCount ?? this.connectionCount,
     reordering: reordering ?? this.reordering,
-    // Nullable fields: the matching `clear…` flag drops them (the `?? this`
-    // idiom can't express "set to null").
-    pendingImage: clearPendingImage
-        ? null
-        : (pendingImage ?? this.pendingImage),
-    recordingPhase: clearRecordingPhase
-        ? null
-        : (recordingPhase ?? this.recordingPhase),
-    pendingAudio: clearPendingAudio
-        ? null
-        : (pendingAudio ?? this.pendingAudio),
-    pendingFile: clearPendingFile ? null : (pendingFile ?? this.pendingFile),
     selectedCardIds: selectedCardIds ?? this.selectedCardIds,
     moveTargetsStatus: moveTargetsStatus ?? this.moveTargetsStatus,
     moveTargets: moveTargets ?? this.moveTargets,

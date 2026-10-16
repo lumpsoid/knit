@@ -235,6 +235,14 @@ the `lib/sync/` core below.
   `SyncStatusScope` controller reading `pendingCount()`. Only the Timeline app
   bar embeds it today, and it reads the count when it mounts — writes do not
   refresh it. It carries no UiEffect/EffectEmitter (no one-shot effects).
+- `collection` page widgets live in `presentation/widgets/` (one concern per
+  file, each taking only the fields it renders). `CollectionFeed` owns the
+  feed's view state: the animated-list mirror, scroll, older-page paging and
+  the focus reveal. The composer is a lightweight sub-controller inside this
+  FCIS feature: `CollectionComposerController` + `CollectionComposerState`
+  hold the staged attachments, the recording and the inline panel.
+  `CollectionController.composer` exposes it. A send reaches the loop as
+  `ComposerSubmitted(text, image/file/audio)`.
 - `collection` multi-select (§4.2): `CollectionState.selectedCardIds` (a
   non-empty set *is* selection mode). Move loads targets through the narrow
   `CardMoveReadRepository`, reads the target's tail, and the updater appends

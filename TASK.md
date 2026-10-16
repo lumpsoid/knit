@@ -127,9 +127,15 @@ Drive the live flow (create → cards → reorder → link card→collection + a
    take the fields they use. A feed row gets the selection passed in instead
    of reading the state holder. "Select all" availability is
    `CollectionState.canSelectAll`.
-3. **Only then split `CollectionState`.** The composer and recording state is
-   the clearest part to move into its own notifier. Do not start this before
-   steps 1 and 2.
+3. ~~**Only then split `CollectionState`.**~~ **Done.** The composer is a
+   lightweight `CollectionComposerController` + `CollectionComposerState`
+   (`ChangeNotifier`). It owns the staged image, clip and file, the recording
+   phase, and the inline panel (the page's last `setState` flags).
+   `CollectionController` builds it with the picker and recorder ports and
+   disposes it with the page, which cancels an in-flight recording. A send
+   dispatches `ComposerSubmitted(text, image/file/audio)`, and the updater
+   still computes the position and the write effect. The pick and record
+   actions and effects left the FCIS loop.
 
 ## After this
 

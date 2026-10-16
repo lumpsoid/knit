@@ -32,31 +32,6 @@ import 'package:result_dart/result_dart.dart';
 /// attachment record + blob, but a legacy shared record (one record reused by
 /// two cards) must survive while a sibling still references it. The ports the
 /// delete path never touches are [UnimplementedError] fakes.
-class _UnusedImagePicker implements ImagePickerPort {
-  @override
-  Future<PickedImage?> pickImage({
-    ImagePickerSource source = ImagePickerSource.gallery,
-  }) => throw UnimplementedError();
-}
-
-class _UnusedAudioRecorder implements AudioRecorderPort {
-  @override
-  Future<bool> start() => throw UnimplementedError();
-  @override
-  Future<void> pause() => throw UnimplementedError();
-  @override
-  Future<void> resume() => throw UnimplementedError();
-  @override
-  Future<PickedAudio?> stop() => throw UnimplementedError();
-  @override
-  Future<void> cancel() => throw UnimplementedError();
-}
-
-class _UnusedFilePicker implements FilePickerPort {
-  @override
-  Future<PickedFile?> pickFile() => throw UnimplementedError();
-}
-
 class _UnusedShare implements CardShareRepository {
   @override
   Future<Result<void, CollectionFailure>> share(ShareableCard card) =>
@@ -113,9 +88,6 @@ void main() {
           graph: graph,
         ),
       ),
-      imagePicker: _UnusedImagePicker(),
-      audioRecorder: _UnusedAudioRecorder(),
-      filePicker: _UnusedFilePicker(),
       shareRepository: _UnusedShare(),
       linkLauncher: _UnusedLinkLauncher(),
       collectionDetails: CollectionDetailsController(

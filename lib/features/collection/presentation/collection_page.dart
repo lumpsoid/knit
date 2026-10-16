@@ -12,6 +12,7 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_page.
 import 'package:knit/features/audio_playback/presentation/audio_mini_player.dart';
 import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
+import 'package:knit/features/collection/presentation/collection_composer_controller.dart';
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
@@ -52,24 +53,13 @@ class _CollectionPageState extends State<CollectionPage> {
   // pushed from Connections) never shares state with it. The audio player stays
   // an app-wide singleton.
   late final CollectionController _controller;
+  CollectionComposerController get _composerInput => _controller.composer;
   AudioPlaybackController get _playback => CollectionScope.playbackController;
   final TextEditingController _composer = TextEditingController();
 
   /// A card the route args asked to reveal on entry (e.g. a search hit). The
   /// feed reveals it when it first appears.
   late final String? _focusCardId = CollectionScope.routeArgs.focusCardId;
-
-  /// Whether the inline gallery/camera options are shown above the composer.
-  /// Pure UI state (like [_composer]): the user revealed them via "+" → Photo
-  /// and dismisses them by picking a source. Kept local — no business decision.
-  bool _showPhotoSources = false;
-
-  /// Whether the inline audio-recording bar is revealed above the composer. Pure
-  /// UI state (the "reveal" gesture from "+" → Audio); the *recording* sub-state
-  /// itself lives in [CollectionState.recordingPhase] since it drives a real
-  /// resource. Reset once a clip is captured (the pending preview takes over) or
-  /// the user backs out.
-  bool _showAudioBar = false;
 
   @override
   void initState() {
@@ -142,62 +132,9 @@ class _CollectionPageState extends State<CollectionPage> {
   // --- intents ---------------------------------------------------------------
 
   void _submitComposer() {
-    final text = _composer.text;
-    // Keep the typed text when the send wouldn't go through (e.g. mid-recording).
-    if (!_controller.stateHolder.value.canSendComposer(text)) return;
-    _controller.dispatch(ComposerSubmitted(text));
-    _composer.clear();
-    if (_showPhotoSources || _showAudioBar) {
-      setState(() {
-        _showPhotoSources = false;
-        _showAudioBar = false;
-      });
-    }
+    // A send that doesn't go through (e.g. mid-recording) keeps the typed text.
+    if (_composerInput.submit(_composer.text)) _composer.clear();
   }
-
-  /// A source was chosen from the inline options: hide them and open the picker.
-  void _pickImage(ImagePickerSource source) {
-    setState(() => _showPhotoSources = false);
-    _controller.dispatch(PickImageRequested(source));
-  }
-
-  /// Leave the photo-source mode without picking (the "✕" the "+" turns into).
-  void _cancelPhotoSources() => setState(() => _showPhotoSources = false);
-
-  // --- audio recording intents ----------------------------------------------
-
-  /// Reveal the inline audio bar (from "+" → Audio); modes are exclusive.
-  void _revealAudioBar() => setState(() {
-    _showAudioBar = true;
-    _showPhotoSources = false;
-  });
-
-  void _startRecording() =>
-      _controller.dispatch(const AudioRecordingRequested());
-
-  void _pauseRecording() =>
-      _controller.dispatch(const AudioRecordingPauseRequested());
-
-  void _resumeRecording() =>
-      _controller.dispatch(const AudioRecordingResumeRequested());
-
-  /// Stop capturing: hide the bar now (the captured clip arrives as a pending
-  /// preview) and finish the recording.
-  void _stopRecording() {
-    setState(() => _showAudioBar = false);
-    _controller.dispatch(const AudioRecordingStopRequested());
-  }
-
-  /// Back out of the audio bar (its "✕"): hide it, and discard an in-flight
-  /// recording if one is running.
-  void _cancelAudioMode() {
-    final recording = _controller.stateHolder.value.isRecordingAudio;
-    setState(() => _showAudioBar = false);
-    if (recording) _controller.dispatch(const AudioRecordingCancelled());
-  }
-
-  void _clearPendingAudio() =>
-      _controller.dispatch(const PendingAudioCleared());
 
   Future<void> _openAddBlock() async {
     final kind = await showModalBottomSheet<CardKind>(
@@ -218,15 +155,15 @@ class _CollectionPageState extends State<CollectionPage> {
         // Reveal the inline gallery/camera options above the composer; choosing
         // one opens the picker. The photo only becomes a card when the user
         // sends, so they can add a caption, clear it, or repick first.
-        setState(() => _showPhotoSources = true);
+        _composerInput.showPhotoSources();
       case CardKind.audio:
         // Reveal the inline recording bar above the composer; the user records,
         // optionally adds a caption, and sends — mirroring the photo flow.
-        _revealAudioBar();
+        _composerInput.showAudioBar();
       case CardKind.file:
         // Open the platform picker straight away; the chosen file becomes a
         // pending preview above the composer (the user can caption it, then send).
-        _controller.dispatch(const PickFileRequested());
+        unawaited(_composerInput.pickFile());
       case CardKind.text:
       case CardKind.unknown:
         break;
@@ -477,36 +414,46 @@ class _CollectionPageState extends State<CollectionPage> {
                     );
                   },
                 ),
-                if (!state.reordering && !state.selecting)
-                  CollectionComposer(
-                    controller: _composer,
-                    pendingImageBytes: state.pendingImage?.bytes,
-                    pendingFileName: state.pendingFile?.name,
-                    showPhotoSources: _showPhotoSources,
-                    hasPendingAudio: state.pendingAudio != null,
-                    showAudioBar: _showAudioBar,
-                    recordingPhase: state.recordingPhase,
-                    onSend: _submitComposer,
-                    onAddBlock: _openAddBlock,
-                    onCancelPhotoSources: _cancelPhotoSources,
-                    onPickFromGallery: () =>
-                        _pickImage(ImagePickerSource.gallery),
-                    onPickFromCamera: () =>
-                        _pickImage(ImagePickerSource.camera),
-                    onClearImage: () =>
-                        _controller.dispatch(const PendingImageCleared()),
-                    onClearFile: () =>
-                        _controller.dispatch(const PendingFileCleared()),
-                    onStartRecording: _startRecording,
-                    onPauseRecording: _pauseRecording,
-                    onResumeRecording: _resumeRecording,
-                    onStopRecording: _stopRecording,
-                    onCancelAudio: _cancelAudioMode,
-                    onClearAudio: _clearPendingAudio,
-                  ),
+                if (!state.reordering && !state.selecting) _composerPanel(),
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  /// The bottom composer over the composer state; it rebuilds on its own as
+  /// attachments are staged and the recording moves on.
+  Widget _composerPanel() {
+    final input = _composerInput;
+    return ListenableBuilder(
+      listenable: input.state,
+      builder: (context, _) {
+        final composer = input.state;
+        return CollectionComposer(
+          controller: _composer,
+          pendingImageBytes: composer.pendingImage?.bytes,
+          pendingFileName: composer.pendingFile?.name,
+          showPhotoSources: composer.showPhotoSources,
+          hasPendingAudio: composer.pendingAudio != null,
+          showAudioBar: composer.showAudioBar,
+          recordingPhase: composer.recordingPhase,
+          onSend: _submitComposer,
+          onAddBlock: _openAddBlock,
+          onCancelPhotoSources: input.closePhotoSources,
+          onPickFromGallery: () =>
+              unawaited(input.pickImage(ImagePickerSource.gallery)),
+          onPickFromCamera: () =>
+              unawaited(input.pickImage(ImagePickerSource.camera)),
+          onClearImage: input.clearImage,
+          onClearFile: input.clearFile,
+          onStartRecording: () => unawaited(input.startRecording()),
+          onPauseRecording: () => unawaited(input.pauseRecording()),
+          onResumeRecording: () => unawaited(input.resumeRecording()),
+          onStopRecording: () => unawaited(input.stopRecording()),
+          onCancelAudio: () => unawaited(input.closeAudioBar()),
+          onClearAudio: input.clearAudio,
         );
       },
     );
