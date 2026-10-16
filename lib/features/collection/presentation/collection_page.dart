@@ -184,16 +184,8 @@ class _CollectionPageState extends State<CollectionPage> {
         _controller.dispatch(CardDeleteRequested(card.id));
       case CardAction.link:
         await _openLinkFinder(card);
-      case CardAction.connections:
-        await _openConnections(
-          kind: ConnectedEntityKind.card,
-          id: card.id,
-          title: _cardLabel(AppLocalizations.of(context), card),
-        );
       case CardAction.share:
         _controller.dispatch(CardShareRequested(card.id));
-      case CardAction.reorder:
-        _controller.dispatch(const StartReorder());
     }
   }
 

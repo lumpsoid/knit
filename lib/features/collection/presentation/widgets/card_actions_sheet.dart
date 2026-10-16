@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-enum CardAction { edit, delete, link, connections, share, reorder }
+enum CardAction { edit, delete, link, share }
 
 class CardActionsSheet extends StatelessWidget {
   const CardActionsSheet({super.key});
@@ -24,19 +24,9 @@ class CardActionsSheet extends StatelessWidget {
             onTap: () => Navigator.of(context).pop(CardAction.link),
           ),
           ListTile(
-            leading: const Icon(Icons.hub_outlined),
-            title: Text(l10n.collectionActionConnections),
-            onTap: () => Navigator.of(context).pop(CardAction.connections),
-          ),
-          ListTile(
             leading: const Icon(Icons.ios_share),
             title: Text(l10n.collectionActionShare),
             onTap: () => Navigator.of(context).pop(CardAction.share),
-          ),
-          ListTile(
-            leading: const Icon(Icons.swap_vert),
-            title: Text(l10n.collectionActionReorder),
-            onTap: () => Navigator.of(context).pop(CardAction.reorder),
           ),
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),

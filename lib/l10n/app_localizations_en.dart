@@ -375,13 +375,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionActionMakeLink => 'Make a link';
 
   @override
-  String get collectionActionConnections => 'Connections';
-
-  @override
   String get collectionActionShare => 'Share';
-
-  @override
-  String get collectionActionReorder => 'Reorder';
 
   @override
   String get collectionActionDelete => 'Delete';

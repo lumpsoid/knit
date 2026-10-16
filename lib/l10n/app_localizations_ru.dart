@@ -379,13 +379,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionActionMakeLink => 'Создать связь';
 
   @override
-  String get collectionActionConnections => 'Связи';
-
-  @override
   String get collectionActionShare => 'Поделиться';
-
-  @override
-  String get collectionActionReorder => 'Изменить порядок';
 
   @override
   String get collectionActionDelete => 'Удалить';
