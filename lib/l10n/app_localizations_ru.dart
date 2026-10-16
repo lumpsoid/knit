@@ -1015,4 +1015,23 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get collectionWidgetPickTitle => 'Выберите коллекцию для виджета';
+
+  @override
+  String get collectionWidgetEmpty =>
+      'Коллекций пока нет — сначала создайте её в Knit';
+
+  @override
+  String get collectionWidgetSaveError =>
+      'Не удалось настроить виджет — попробуйте ещё раз';
+
+  @override
+  String get collectionWidgetNeedsSetup =>
+      'Сначала настройте Knit, затем снова нажмите на виджет';
+
+  @override
+  String get collectionWidgetRemoved =>
+      'Эта коллекция удалена — нажмите на виджет, чтобы выбрать другую';
 }

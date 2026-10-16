@@ -46,6 +46,10 @@ import 'package:knit/features/collection_media/infra/sync_store_collection_media
 import 'package:knit/features/collection_media/presentation/collection_media_module.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_route_args.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_scope.dart';
+import 'package:knit/features/collection_widget/infra/infra.dart';
+import 'package:knit/features/collection_widget/presentation/collection_widget_controller.dart';
+import 'package:knit/features/collection_widget/presentation/collection_widget_picker_controller.dart';
+import 'package:knit/features/collection_widget/presentation/collection_widget_scope.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_read_repository.dart';
 import 'package:knit/features/connections/presentation/connections_controller.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
@@ -405,6 +409,30 @@ void bootstrap(AppConfig config) {
       timelineChannel: timelineChannel,
     ),
   );
+
+  // Home-screen collection widgets (Android only): a tap opens its collection,
+  // a newly placed (or orphaned) widget opens a picker; the Timeline's gate
+  // handles both and keeps every widget's title current after renames and
+  // deletes.
+  if (Platform.isAndroid) {
+    final widgetHost = MethodChannelCollectionWidgetHost();
+    final widgetRead = SyncStoreCollectionWidgetReadRepository(graph: graph);
+    final collectionWidgets = CollectionWidgetController(
+      source: widgetHost,
+      host: widgetHost,
+      readRepository: widgetRead,
+      headerChanges: collectionDetails.state,
+    )..start();
+    CollectionWidgetScope.setController(collectionWidgets);
+    CollectionWidgetScope.setCollectionRouteArgsWriter(routeArgs);
+    CollectionWidgetScope.setPickerFactory(
+      (widgetId) => CollectionWidgetPickerController(
+        widgetId: widgetId,
+        readRepository: widgetRead,
+        host: widgetHost,
+      ),
+    );
+  }
 
   runApp(KnitApp(config: config));
 }

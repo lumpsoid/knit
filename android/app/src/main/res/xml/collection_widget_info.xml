@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The collection widget (CollectionWidgetProvider). Placing it runs the
+     configure activity, which hands the collection pick to the app; on
+     Android 12+ "reconfigurable" lets the launcher re-run it later. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.example.knit.CollectionWidgetConfigureActivity"
+    android:description="@string/collection_widget_description"
+    android:initialLayout="@layout/collection_widget"
+    android:minWidth="110dp"
+    android:minHeight="40dp"
+    android:minResizeWidth="40dp"
+    android:minResizeHeight="40dp"
+    android:previewLayout="@layout/collection_widget"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

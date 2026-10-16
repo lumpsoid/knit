@@ -293,6 +293,21 @@ the `lib/sync/` core below.
   and Connections remove links through it. The `LinkSource` rule (no self-link,
   no link to the card's own collection) lives in its domain.
 
+- `collection_widget` (lightweight, **Android only**) is the home-screen widget
+  that opens Knit on one collection. Native side (`android/.../knit/`):
+  `CollectionWidgetProvider` draws a title tile from SharedPreferences
+  (`CollectionWidgetStore`). `CollectionWidgetConfigureActivity` accepts a
+  newly placed widget right away and hands the pick to MainActivity. The
+  `knit/collection_widget` method channel (`CollectionWidgetChannel`) carries
+  requests in and bindings and tiles out. Dart side: the app-wide
+  `CollectionWidgetController` holds the pending request, and a
+  `CollectionWidgetGate` handles it. The Timeline's gate opens the collection,
+  or the `CollectionWidgetPickerPage` for a widget being set up; the Onboard
+  gate refuses setup. While attached, the controller republishes tiles through
+  the pure `CollectionWidgetTilePlanner` on every `CollectionDetailsState`
+  change and whenever the app is hidden. A deleted collection's widget shows
+  "removed" and taps through to the picker.
+
 ### `packages/` — extracted local packages (path deps)
 - `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod
   graph). `effect_emitter/` — the `EffectEmitter` UI side-effect seam

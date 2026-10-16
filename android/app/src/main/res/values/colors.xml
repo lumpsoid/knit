@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Collection widget tile (light). -->
+    <color name="collection_widget_background">#FFF3F3FF</color>
+    <color name="collection_widget_text">#FF1B1B21</color>
+    <color name="collection_widget_subtext">#FF5B5D72</color>
+</resources>

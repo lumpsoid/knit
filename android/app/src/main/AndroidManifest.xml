@@ -46,6 +46,31 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
+        <!-- Home-screen collection widget: a tile that opens Knit on one
+             collection. Placing it runs the configure activity, which hands
+             the pick to MainActivity's Flutter picker. -->
+        <receiver
+            android:name=".CollectionWidgetProvider"
+            android:exported="false"
+            android:label="@string/collection_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/collection_widget_info" />
+        </receiver>
+        <activity
+            android:name=".CollectionWidgetConfigureActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

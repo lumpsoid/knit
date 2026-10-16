@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The home-screen collection widget. (app_name comes from the flavor.) -->
+    <string name="collection_widget_label">Knit collection</string>
+    <string name="collection_widget_description">Opens Knit straight into a collection</string>
+    <string name="collection_widget_unbound">Choose a collection</string>
+    <string name="collection_widget_removed">Collection removed</string>
+    <string name="collection_widget_reconfigure">Tap to pick another</string>
+</resources>

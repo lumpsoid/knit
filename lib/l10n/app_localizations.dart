@@ -1771,6 +1771,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{Saved 1 card to “{title}”} other{Saved {count} cards to “{title}”}}'**
   String shareCaptureSaved(int count, String title);
+
+  /// No description provided for @collectionWidgetPickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a collection for the widget'**
+  String get collectionWidgetPickTitle;
+
+  /// No description provided for @collectionWidgetEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No collections yet — create one in Knit first'**
+  String get collectionWidgetEmpty;
+
+  /// No description provided for @collectionWidgetSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t set up the widget — try again'**
+  String get collectionWidgetSaveError;
+
+  /// No description provided for @collectionWidgetNeedsSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up Knit first, then tap the widget again'**
+  String get collectionWidgetNeedsSetup;
+
+  /// No description provided for @collectionWidgetRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'That collection was removed — tap the widget to pick another'**
+  String get collectionWidgetRemoved;
 }
 
 class _AppLocalizationsDelegate

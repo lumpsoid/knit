@@ -439,5 +439,10 @@
       "count": { "type": "int" },
       "title": { "type": "String" }
     }
-  }
+  },
+  "collectionWidgetPickTitle": "Choose a collection for the widget",
+  "collectionWidgetEmpty": "No collections yet — create one in Knit first",
+  "collectionWidgetSaveError": "Couldn't set up the widget — try again",
+  "collectionWidgetNeedsSetup": "Set up Knit first, then tap the widget again",
+  "collectionWidgetRemoved": "That collection was removed — tap the widget to pick another"
 }

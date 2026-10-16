@@ -992,4 +992,23 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get collectionWidgetPickTitle => 'Choose a collection for the widget';
+
+  @override
+  String get collectionWidgetEmpty =>
+      'No collections yet — create one in Knit first';
+
+  @override
+  String get collectionWidgetSaveError =>
+      'Couldn\'t set up the widget — try again';
+
+  @override
+  String get collectionWidgetNeedsSetup =>
+      'Set up Knit first, then tap the widget again';
+
+  @override
+  String get collectionWidgetRemoved =>
+      'That collection was removed — tap the widget to pick another';
 }

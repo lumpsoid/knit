@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:knit/l10n/app_localizations.dart';
+import 'package:knit/features/collection_widget/presentation/collection_widget_gate.dart';
 import 'package:knit/features/onboard/domain/identity_card.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
 import 'package:knit/features/onboard/presentation/onboard_controller.dart';
@@ -59,21 +60,25 @@ class _OnboardPageState extends State<OnboardPage> {
   @override
   Widget build(BuildContext context) {
     // No identity yet, so a share can't be signed: drop it and say so (§4.7).
-    return IncomingShareGate(
-      mode: IncomingShareGateMode.reject,
-      child: Scaffold(
-        body: SafeArea(
-          child: ValueListenableBuilder<OnboardState>(
-            valueListenable: _controller.stateHolder,
-            builder: (context, state, _) {
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                child: KeyedSubtree(
-                  key: ValueKey(state.step),
-                  child: _stepView(state),
-                ),
-              );
-            },
+    // A widget can't be set up either; a widget tap just lands here.
+    return CollectionWidgetGate(
+      mode: CollectionWidgetGateMode.reject,
+      child: IncomingShareGate(
+        mode: IncomingShareGateMode.reject,
+        child: Scaffold(
+          body: SafeArea(
+            child: ValueListenableBuilder<OnboardState>(
+              valueListenable: _controller.stateHolder,
+              builder: (context, state, _) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  child: KeyedSubtree(
+                    key: ValueKey(state.step),
+                    child: _stepView(state),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),

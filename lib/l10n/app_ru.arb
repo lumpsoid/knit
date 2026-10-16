@@ -426,5 +426,10 @@
       "count": { "type": "int" },
       "title": { "type": "String" }
     }
-  }
+  },
+  "collectionWidgetPickTitle": "Выберите коллекцию для виджета",
+  "collectionWidgetEmpty": "Коллекций пока нет — сначала создайте её в Knit",
+  "collectionWidgetSaveError": "Не удалось настроить виджет — попробуйте ещё раз",
+  "collectionWidgetNeedsSetup": "Сначала настройте Knit, затем снова нажмите на виджет",
+  "collectionWidgetRemoved": "Эта коллекция удалена — нажмите на виджет, чтобы выбрать другую"
 }

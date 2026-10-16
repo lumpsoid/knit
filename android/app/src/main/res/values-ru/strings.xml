@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="collection_widget_label">Коллекция Knit</string>
+    <string name="collection_widget_description">Открывает Knit сразу в коллекции</string>
+    <string name="collection_widget_unbound">Выберите коллекцию</string>
+    <string name="collection_widget_removed">Коллекция удалена</string>
+    <string name="collection_widget_reconfigure">Нажмите, чтобы выбрать другую</string>
+</resources>
