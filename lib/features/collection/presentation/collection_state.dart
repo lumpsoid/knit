@@ -99,6 +99,17 @@ class CollectionState {
   /// Whether an audio recording is actively being captured (not merely staged).
   bool get isRecordingAudio => recordingPhase != null;
 
+  /// Whether the composer's send goes through with [text]: never while a
+  /// recording is in flight (the user stops it first); otherwise a non-blank
+  /// [text] or a staged image, audio clip, or file (which makes an empty
+  /// caption a valid send).
+  bool canSendComposer(String text) =>
+      !isRecordingAudio &&
+      (text.trim().isNotEmpty ||
+          pendingImage != null ||
+          pendingAudio != null ||
+          pendingFile != null);
+
   bool get isEmpty => cards.isEmpty && !hasOlder;
 
   /// Whether older cards exist beyond the loaded window.

@@ -113,9 +113,14 @@ Drive the live flow (create → cards → reorder → link card→collection + a
 
 ## Planned refactors (in this order)
 
-1. **Split `collection_page.dart` into widget files.** It is about 2,400 lines
-   and keeps some state of its own through `setState`. That logic has not been
-   audited yet; audit it as part of the split.
+1. ~~**Split `collection_page.dart` into widget files.**~~ **Done.** The
+   widgets live in `lib/features/collection/presentation/widgets/`. The audit
+   moved the feed's view state (animated-list mirror, scroll, older-page
+   paging, focus reveal) into the stateful `CollectionFeed`, which takes its
+   inputs through its constructor (no state-holder listeners). The composer's
+   send guard, which the page and the updater each had, is now one rule:
+   `CollectionState.canSendComposer`. The page still keeps the two composer
+   reveal flags (`_showPhotoSources`, `_showAudioBar`) for step 3.
 2. **A data-passing pass over the Collection widgets.** Each widget takes only
    the data it uses through its constructor (widgets.md §2). Passing the whole
    `CollectionState` (or another aggregate) into a widget is not allowed.

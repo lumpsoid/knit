@@ -128,9 +128,9 @@ class CollectionUpdater
         return (state.copyWith(loadingOlder: false), null);
 
       case ComposerSubmitted(:final text):
+        // Mid-recording, or nothing to send: inert.
+        if (!state.canSendComposer(text)) return (state, null);
         final body = text.trim();
-        // While a recording is in flight, send is inert — the user stops first.
-        if (state.isRecordingAudio) return (state, null);
         final pendingImage = state.pendingImage;
         // A pending image wins: send it as an image card with the (optional)
         // text as its caption, and clear the preview optimistically.
@@ -200,7 +200,6 @@ class CollectionUpdater
             ],
           );
         }
-        if (body.isEmpty) return (state, null);
         return (
           state,
           [
