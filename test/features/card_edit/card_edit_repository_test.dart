@@ -71,6 +71,22 @@ void main() {
     expect(data.cards.single.text, 'first (edited)');
   });
 
+  test('setCardSettled settles and unsettles, keeping the text', () async {
+    final colId = (await timelineWrite.createCollection(
+      'Espresso',
+    )).getOrThrow();
+    final cardId = await newCard(colId, 'pulled the shot');
+
+    await cardEditWrite.setCardSettled(cardId: cardId, settled: true);
+    var card = (await read.loadCollection(colId)).getOrThrow().cards.single;
+    expect(card.settled, isTrue);
+    expect(card.text, 'pulled the shot');
+
+    await cardEditWrite.setCardSettled(cardId: cardId, settled: false);
+    card = (await read.loadCollection(colId)).getOrThrow().cards.single;
+    expect(card.settled, isFalse);
+  });
+
   group('links', () {
     test(
       'add a card→collection and a card→card link, then read them back',

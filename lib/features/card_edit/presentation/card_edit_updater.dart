@@ -26,6 +26,7 @@ class CardEditUpdater
         :final initialAttachmentKind,
         :final initialFileName,
         :final initialFileSize,
+        :final initialSettled,
       ):
         // An image attachment shows through the shared image cache; audio/file
         // render straight from the metadata the carrier passed.
@@ -41,6 +42,8 @@ class CardEditUpdater
             attachmentName: initialFileName,
             attachmentSize: initialFileSize,
             attachmentBusy: false,
+            settled: initialSettled,
+            settledBusy: false,
           ),
           [
             LoadLinksEffect(cardId),
@@ -156,12 +159,30 @@ class CardEditUpdater
       case AttachmentEditEnded():
         return (state.copyWith(attachmentBusy: false), null);
 
+      // --- settled ----------------------------------------------------------
+
+      case SettledToggled(:final settled):
+        if (state.settledBusy || settled == state.settled) return (state, null);
+        return (
+          state.copyWith(settledBusy: true),
+          [SetSettledEffect(state.cardId, settled: settled)],
+        );
+
+      case SettledResolved(:final settled):
+        return (
+          state.copyWith(settled: settled, settledBusy: false),
+          _refreshTimeline(state),
+        );
+
+      case SettledEditFailed():
+        return (state.copyWith(settledBusy: false), null);
+
       case DeactivateFeature():
         return (state, const [ReleaseImageEffect()]);
     }
   }
 
-  /// A text or attachment edit changes the Timeline only when this card is the
+  /// A text, attachment or settled edit changes the Timeline only when this card is the
   /// one its collection's row previews (§8.6.3).
   static List<CardEditEffect>? _refreshTimeline(CardEditState state) =>
       state.isTimelinePreview ? const [RefreshTimelineEffect()] : null;

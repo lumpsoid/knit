@@ -249,6 +249,13 @@ the `lib/sync/` core below.
   the cards after it (feed order) → one `SyncStore.moveCards` transaction
   (content + placement on one stamp, §8.4). `CollectionCardsMovedUiEffect`
   shows the snackbar whose "Open" writes the Collection carrier.
+- Settled cards (§3.3): a nullable, synced `card.settled_at` (v5 migration),
+  written by `SyncStore.setCardsSettled` on the content clock. The domain's
+  `SettleChange` decides settle vs unsettle (all settled → unsettle). The
+  Collection offers it in the actions sheet and the selection bar, and Card Edit
+  as a toggle. A settled bubble is drawn in `SettledPalette` (`lib/core/settled/`)
+  with `SettledRootsPainter` roots seeded by the card id. There is no
+  strikethrough. The Timeline mutes a settled newest card's preview.
 - `search` (§3.2/§4.1) is the first **lightweight** feature (controller +
   `SearchState` ChangeNotifier + page). The Timeline app bar opens it; it
   runs on submit. `SearchReadRepository` flattens live collections and cards into

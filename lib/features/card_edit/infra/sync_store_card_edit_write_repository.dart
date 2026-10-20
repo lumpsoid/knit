@@ -38,6 +38,15 @@ class SyncStoreCardEditWriteRepository implements CardEditWriteRepository {
   });
 
   @override
+  Future<Result<String, CardEditFailure>> setCardSettled({
+    required String cardId,
+    required bool settled,
+  }) => _write(() async {
+    await _graph.store.setCardsSettled([cardId], settled: settled);
+    return cardId;
+  });
+
+  @override
   Future<Result<String, CardEditFailure>> removeCardAttachment({
     required String cardId,
   }) => _write(() async {

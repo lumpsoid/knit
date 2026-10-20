@@ -235,6 +235,7 @@ class _CollectionPageState extends State<CollectionPage> {
       initialAttachmentKind: card.attachmentId == null ? null : card.kind,
       initialFileName: card.fileName,
       initialFileSize: card.fileSize,
+      initialSettled: card.settled,
     );
     await Navigator.of(context).push(CardEditPage.route());
     if (mounted) _controller.dispatch(const ReloadRequested());

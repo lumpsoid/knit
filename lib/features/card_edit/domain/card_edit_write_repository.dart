@@ -23,6 +23,13 @@ abstract interface class CardEditWriteRepository {
     required CardKind kind,
   });
 
+  /// Settle (or, with [settled] false, unsettle) the card (§3.3) — a content
+  /// write, placement frozen.
+  Future<Result<String, CardEditFailure>> setCardSettled({
+    required String cardId,
+    required bool settled,
+  });
+
   /// Remove the card's attachment: clear `attachment_id` and flip `kind` back to
   /// `text`. The `attachment` record itself is GC'd separately (ref-counted).
   Future<Result<String, CardEditFailure>> removeCardAttachment({

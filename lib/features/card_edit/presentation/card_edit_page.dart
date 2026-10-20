@@ -47,6 +47,7 @@ class _CardEditPageState extends State<CardEditPage> {
           initialAttachmentKind: args.initialAttachmentKind,
           initialFileName: args.initialFileName,
           initialFileSize: args.initialFileSize,
+          initialSettled: args.initialSettled,
         ),
       );
   }
@@ -155,6 +156,19 @@ class _CardEditPageState extends State<CardEditPage> {
                 onAdd: _addLink,
                 onRemove: (linkId) =>
                     _controller.dispatch(RemoveLinkRequested(linkId)),
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: Icon(
+                  state.settled ? Icons.eco : Icons.eco_outlined,
+                ),
+                title: Text(l10n.cardEditSettled),
+                subtitle: Text(l10n.cardEditSettledSubtitle),
+                value: state.settled,
+                onChanged: state.settledBusy
+                    ? null
+                    : (v) => _controller.dispatch(SettledToggled(v)),
               ),
             ],
           ),

@@ -12,6 +12,13 @@ class SaveCardEffect extends CardEditEffect {
   final String text;
 }
 
+/// Settle (or, with [settled] false, unsettle) [cardId] (§3.3).
+class SetSettledEffect extends CardEditEffect {
+  const SetSettledEffect(this.cardId, {required this.settled});
+  final String cardId;
+  final bool settled;
+}
+
 /// Find out whether [cardId] is [collectionId]'s home-timeline preview card.
 class LoadTimelinePreviewEffect extends CardEditEffect {
   const LoadTimelinePreviewEffect({

@@ -20,6 +20,7 @@ class ViewAttached extends CardEditAction {
     this.initialAttachmentKind,
     this.initialFileName,
     this.initialFileSize,
+    this.initialSettled = false,
   });
   final String cardId;
   final String collectionId;
@@ -28,6 +29,7 @@ class ViewAttached extends CardEditAction {
   final CardKind? initialAttachmentKind;
   final String? initialFileName;
   final int? initialFileSize;
+  final bool initialSettled;
 }
 
 /// Whether the card is its collection's home-timeline preview (§8.6.3).
@@ -123,6 +125,25 @@ class AttachmentResolved extends CardEditAction {
 /// failure) — drop the busy flag, leave the current attachment in place.
 class AttachmentEditEnded extends CardEditAction {
   const AttachmentEditEnded();
+}
+
+// --- settled (§3.3) ----------------------------------------------------------
+
+/// The Settled toggle flipped to [settled].
+class SettledToggled extends CardEditAction {
+  const SettledToggled(this.settled);
+  final bool settled;
+}
+
+/// The settle write committed: the card is now [settled].
+class SettledResolved extends CardEditAction {
+  const SettledResolved(this.settled);
+  final bool settled;
+}
+
+/// The settle write failed; the toggle stays where it was.
+class SettledEditFailed extends CardEditAction {
+  const SettledEditFailed();
 }
 
 class DeactivateFeature extends CardEditAction {

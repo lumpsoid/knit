@@ -85,6 +85,19 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
           },
         );
 
+      case SetSettledEffect(:final cardId, :final settled):
+        final result = await _write.setCardSettled(
+          cardId: cardId,
+          settled: settled,
+        );
+        result.onTap((_) => dispatch(SettledResolved(settled)), (failure) {
+          _log.severe('Card settle failed', failure.error, failure.stackTrace);
+          _effectEmitter.push(
+            const CardEditShowMessageUiEffect(CardEditMessage.saveFailed),
+          );
+          dispatch(const SettledEditFailed());
+        });
+
       // --- timeline -------------------------------------------------------
 
       case LoadTimelinePreviewEffect(:final cardId, :final collectionId):

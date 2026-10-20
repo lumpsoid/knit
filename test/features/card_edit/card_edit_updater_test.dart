@@ -313,4 +313,76 @@ void main() {
     );
     expect(effects!.single, isA<ReleaseImageEffect>());
   });
+
+  group('settled (§3.3)', () {
+    test('ViewAttached seeds the toggle from the carrier', () {
+      final (next, _) = updater.update(
+        const CardEditState(),
+        const ViewAttached(
+          cardId: 'c1',
+          collectionId: 'col-1',
+          initialText: '',
+          initialAttachmentId: null,
+          initialSettled: true,
+        ),
+      );
+      expect(next.settled, isTrue);
+      expect(next.settledBusy, isFalse);
+    });
+
+    test('flipping the toggle writes and marks busy', () {
+      final (next, effects) = updater.update(
+        const CardEditState(cardId: 'c1'),
+        const SettledToggled(true),
+      );
+      expect(next.settledBusy, isTrue);
+      expect(next.settled, isFalse, reason: 'flips once the write lands');
+      final effect = effects!.single as SetSettledEffect;
+      expect(effect.cardId, 'c1');
+      expect(effect.settled, isTrue);
+    });
+
+    test('a toggle to the current value or while busy is a no-op', () {
+      final (_, same) = updater.update(
+        const CardEditState(cardId: 'c1', settled: true),
+        const SettledToggled(true),
+      );
+      expect(same, isNull);
+      final (_, busy) = updater.update(
+        const CardEditState(cardId: 'c1', settledBusy: true),
+        const SettledToggled(true),
+      );
+      expect(busy, isNull);
+    });
+
+    test('a resolved write flips it and refreshes a previewed Timeline', () {
+      final (next, effects) = updater.update(
+        const CardEditState(cardId: 'c1', settledBusy: true),
+        const SettledResolved(true),
+      );
+      expect(next.settled, isTrue);
+      expect(next.settledBusy, isFalse);
+      expect(effects!.single, isA<RefreshTimelineEffect>());
+
+      final (_, quiet) = updater.update(
+        const CardEditState(
+          cardId: 'c1',
+          settledBusy: true,
+          isTimelinePreview: false,
+        ),
+        const SettledResolved(true),
+      );
+      expect(quiet, isNull);
+    });
+
+    test('a failed write leaves the toggle where it was', () {
+      final (next, effects) = updater.update(
+        const CardEditState(cardId: 'c1', settledBusy: true),
+        const SettledEditFailed(),
+      );
+      expect(next.settled, isFalse);
+      expect(next.settledBusy, isFalse);
+      expect(effects, isNull);
+    });
+  });
 }

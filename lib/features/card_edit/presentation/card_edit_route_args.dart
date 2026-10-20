@@ -31,6 +31,9 @@ abstract interface class CardEditRouteArgs {
   /// the file chip can label/size it without loading the bytes; null otherwise.
   String? get initialFileName;
   int? get initialFileSize;
+
+  /// Whether the card is settled (§3.3), seeding the Settled toggle.
+  bool get initialSettled;
 }
 
 /// Write side — what an origin screen (Collection) sets before navigating.
@@ -43,6 +46,7 @@ abstract interface class CardEditRouteArgsWriter {
     CardKind? initialAttachmentKind,
     String? initialFileName,
     int? initialFileSize,
+    bool initialSettled,
   });
 }
 
@@ -60,6 +64,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   CardKind? _initialAttachmentKind;
   String? _initialFileName;
   int? _initialFileSize;
+  bool _initialSettled = false;
 
   @override
   String get cardId => _cardId;
@@ -83,6 +88,9 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   int? get initialFileSize => _initialFileSize;
 
   @override
+  bool get initialSettled => _initialSettled;
+
+  @override
   void open({
     required String cardId,
     required String collectionId,
@@ -91,6 +99,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     CardKind? initialAttachmentKind,
     String? initialFileName,
     int? initialFileSize,
+    bool initialSettled = false,
   }) {
     _cardId = cardId;
     _collectionId = collectionId;
@@ -99,5 +108,6 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     _initialAttachmentKind = initialAttachmentKind;
     _initialFileName = initialFileName;
     _initialFileSize = initialFileSize;
+    _initialSettled = initialSettled;
   }
 }

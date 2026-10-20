@@ -22,6 +22,8 @@ class CardEditState {
     this.attachmentName,
     this.attachmentSize,
     this.attachmentBusy = false,
+    this.settled = false,
+    this.settledBusy = false,
     this.isTimelinePreview = true,
   });
 
@@ -48,6 +50,13 @@ class CardEditState {
   /// An attachment add/replace/remove is in flight — gates the controls.
   final bool attachmentBusy;
 
+  /// Whether the card is settled (§3.3); the toggle applies at once, like the
+  /// links and the attachment.
+  final bool settled;
+
+  /// A settle write is in flight — gates the toggle.
+  final bool settledBusy;
+
   /// The card is its collection's home-timeline preview (§8.6.3), so a text or
   /// attachment edit must refresh the Timeline. True until the read says
   /// otherwise: an extra refresh is harmless, a missed one leaves a stale row.
@@ -68,6 +77,8 @@ class CardEditState {
     Object? attachmentName = _unset,
     Object? attachmentSize = _unset,
     bool? attachmentBusy,
+    bool? settled,
+    bool? settledBusy,
     bool? isTimelinePreview,
   }) => CardEditState(
     status: status ?? this.status,
@@ -88,6 +99,8 @@ class CardEditState {
         ? this.attachmentSize
         : attachmentSize as int?,
     attachmentBusy: attachmentBusy ?? this.attachmentBusy,
+    settled: settled ?? this.settled,
+    settledBusy: settledBusy ?? this.settledBusy,
     isTimelinePreview: isTimelinePreview ?? this.isTimelinePreview,
   );
 }
