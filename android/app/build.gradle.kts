@@ -36,6 +36,10 @@ android {
     // suffix so all three install side by side, and a flavor-specific app name
     // surfaced to the manifest via @string/app_name. Pair with the matching
     // Dart entry point, e.g. `flutter run --flavor dev -t lib/main_dev.dart`.
+    // AGP 9 disables resValue by default; the flavors need it for app_name.
+    buildFeatures {
+        resValues = true
+    }
     flavorDimensions += "environment"
     productFlavors {
         create("dev") {
