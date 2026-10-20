@@ -12,7 +12,10 @@ kotlin {
 
 android {
     namespace = "com.example.knit"
-    compileSdk = 37
+    // API 37 ships as a minor-versioned platform (platforms/android-37.0).
+    compileSdk {
+        version = release(37) { minorApiLevel = 0 }
+    }
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
