@@ -72,8 +72,11 @@
   "onboardWelcomeBackTitle": "С возвращением",
 
   "timelineCollectionFab": "Коллекция",
-  "timelineNewCollectionTitle": "Новая коллекция",
-  "timelineNewCollectionHint": "Название или тема",
+  "newCollectionHint": "О чём эта коллекция?",
+  "newCollectionCreateTooltip": "Создать коллекцию",
+  "newCollectionExistingLead": "У вас уже есть",
+  "newCollectionOpenExisting": "Открыть",
+  "newCollectionSaveThere": "Сохранить туда",
   "timelineDeleteTitle": "Удалить коллекцию?",
   "timelineDeleteBody": "«{title}» и её карточки будут удалены.",
   "@timelineDeleteBody": {

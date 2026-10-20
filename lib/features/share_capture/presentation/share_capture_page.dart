@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:knit/features/new_collection/new_collection.dart';
 import 'package:knit/features/share_capture/domain/share_capture_models.dart';
 import 'package:knit/features/share_capture/domain/shared_item.dart';
 import 'package:knit/features/share_capture/presentation/share_capture_controller.dart';
@@ -29,6 +30,9 @@ class ShareCapturePage extends StatefulWidget {
 class _ShareCapturePageState extends State<ShareCapturePage> {
   ShareCaptureController get _controller => widget.controller;
 
+  /// The "New collection" row the title line grows out of.
+  final _newRowKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -44,13 +48,33 @@ class _ShareCapturePageState extends State<ShareCapturePage> {
   Future<void> _saveTo(ShareTarget target) =>
       _finish(_controller.saveTo(target));
 
+  /// The "New collection" row grows into the title line (§4.1). A title that
+  /// reads like an existing collection offers to save there instead.
   Future<void> _saveToNew() async {
-    final title = await showDialog<String>(
-      context: context,
-      builder: (_) => const _NewCollectionDialog(),
+    final box = _newRowKey.currentContext?.findRenderObject() as RenderBox?;
+    final targets = _controller.state.targets;
+    final choice = await showNewCollectionBar(
+      context,
+      origin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+      originColor: Theme.of(context).colorScheme.surface,
+      originRadius: 0,
+      existing: [
+        for (final t in targets)
+          CollectionTitle(collectionId: t.collectionId, title: t.title),
+      ],
+      existingActionLabel: AppLocalizations.of(context).newCollectionSaveThere,
     );
-    if (title == null || title.trim().isEmpty || !mounted) return;
-    await _finish(_controller.saveToNew(title));
+    if (!mounted) return;
+    switch (choice) {
+      case NewCollectionCreate(:final title):
+        await _finish(_controller.saveToNew(title));
+      case NewCollectionUseExisting(:final collectionId):
+        await _saveTo(
+          targets.firstWhere((t) => t.collectionId == collectionId),
+        );
+      case null:
+        break;
+    }
   }
 
   Future<void> _finish(Future<ShareCaptureSaved?> save) async {
@@ -111,6 +135,7 @@ class _ShareCapturePageState extends State<ShareCapturePage> {
                   ),
                 ),
                 ListTile(
+                  key: _newRowKey,
                   leading: const Icon(Icons.add),
                   title: Text(l10n.shareCaptureNewCollection),
                   onTap: _saveToNew,
@@ -272,53 +297,6 @@ class _PreviewTile extends StatelessWidget {
         color: scheme.surfaceContainerHighest,
         child: content,
       ),
-    );
-  }
-}
-
-class _NewCollectionDialog extends StatefulWidget {
-  const _NewCollectionDialog();
-
-  @override
-  State<_NewCollectionDialog> createState() => _NewCollectionDialogState();
-}
-
-class _NewCollectionDialogState extends State<_NewCollectionDialog> {
-  final TextEditingController _field = TextEditingController();
-
-  @override
-  void dispose() {
-    _field.dispose();
-    super.dispose();
-  }
-
-  void _submit() => Navigator.of(context).pop(_field.text);
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l10n.timelineNewCollectionTitle),
-      content: TextField(
-        controller: _field,
-        autofocus: true,
-        textCapitalization: TextCapitalization.sentences,
-        onSubmitted: (_) => _submit(),
-        decoration: InputDecoration(hintText: l10n.timelineNewCollectionHint),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: _field,
-          builder: (context, value, _) => FilledButton(
-            onPressed: value.text.trim().isEmpty ? null : _submit,
-            child: Text(l10n.actionCreate),
-          ),
-        ),
-      ],
     );
   }
 }

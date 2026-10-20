@@ -192,10 +192,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get timelineCollectionFab => 'Коллекция';
 
   @override
-  String get timelineNewCollectionTitle => 'Новая коллекция';
+  String get newCollectionHint => 'О чём эта коллекция?';
 
   @override
-  String get timelineNewCollectionHint => 'Название или тема';
+  String get newCollectionCreateTooltip => 'Создать коллекцию';
+
+  @override
+  String get newCollectionExistingLead => 'У вас уже есть';
+
+  @override
+  String get newCollectionOpenExisting => 'Открыть';
+
+  @override
+  String get newCollectionSaveThere => 'Сохранить туда';
 
   @override
   String get timelineDeleteTitle => 'Удалить коллекцию?';

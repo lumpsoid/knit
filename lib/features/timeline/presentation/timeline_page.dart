@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/collection_widget/presentation/collection_widget_gate.dart';
+import 'package:knit/features/new_collection/new_collection.dart';
 import 'package:knit/features/profile/presentation/profile_page.dart';
 import 'package:knit/features/search/presentation/search_page.dart';
 import 'package:knit/features/settings/presentation/settings_page.dart';
@@ -36,6 +37,9 @@ class TimelinePage extends StatefulWidget {
 
 class _TimelinePageState extends State<TimelinePage> {
   TimelineController get _controller => TimelineScope.controller;
+
+  /// The FAB the new-collection line grows out of.
+  final _fabKey = GlobalKey();
 
   @override
   void initState() {
@@ -92,14 +96,43 @@ class _TimelinePageState extends State<TimelinePage> {
     _controller.dispatch(action.toAction(summary.collectionId));
   }
 
-  /// Inline collection creation (§4.1): a title/theme line → create → open.
+  /// Inline collection creation (§4.1): the FAB grows into a title/theme line
+  /// → create → open. A title that reads like an existing collection offers
+  /// to open that one instead.
   Future<void> _createCollection() async {
-    final title = await showDialog<String>(
-      context: context,
-      builder: (_) => const _NewCollectionDialog(),
+    final choice = await showNewCollectionBar(
+      context,
+      origin: _globalRect(_fabKey),
+      existing: [
+        for (final summary in _controller.stateHolder.value.collections)
+          CollectionTitle(
+            collectionId: summary.collectionId,
+            title:
+                TimelineScope.collectionDetails
+                    .of(summary.collectionId)
+                    ?.title ??
+                summary.title,
+          ),
+      ],
+      existingActionLabel: AppLocalizations.of(
+        context,
+      ).newCollectionOpenExisting,
     );
-    if (title == null || title.trim().isEmpty || !mounted) return;
-    _controller.dispatch(CreateCollectionRequested(title));
+    if (!mounted) return;
+    switch (choice) {
+      case NewCollectionCreate(:final title):
+        _controller.dispatch(CreateCollectionRequested(title));
+      case NewCollectionUseExisting(:final collectionId):
+        _controller.dispatch(CollectionTapped(collectionId));
+      case null:
+        break;
+    }
+  }
+
+  static Rect? _globalRect(GlobalKey key) {
+    final box = key.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
   }
 
   @override
@@ -138,6 +171,7 @@ class _TimelinePageState extends State<TimelinePage> {
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
+            key: _fabKey,
             onPressed: _createCollection,
             icon: const Icon(Icons.add),
             label: Text(l10n.timelineCollectionFab),
@@ -223,51 +257,6 @@ class _TimelinePageState extends State<TimelinePage> {
         onLongPress: () => _openCollectionActions(summary, isPinned: isPinned),
       );
     }
-  }
-}
-
-/// The inline "new collection" prompt. Owns its [TextEditingController] so it's
-/// disposed when the dialog route is actually removed — disposing it the moment
-/// `showDialog` returns races the route's exit animation, which still rebuilds
-/// the `TextField` (TextEditingController used after being disposed).
-class _NewCollectionDialog extends StatefulWidget {
-  const _NewCollectionDialog();
-
-  @override
-  State<_NewCollectionDialog> createState() => _NewCollectionDialogState();
-}
-
-class _NewCollectionDialogState extends State<_NewCollectionDialog> {
-  final _field = TextEditingController();
-
-  @override
-  void dispose() {
-    _field.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l10n.timelineNewCollectionTitle),
-      content: TextField(
-        controller: _field,
-        autofocus: true,
-        decoration: InputDecoration(hintText: l10n.timelineNewCollectionHint),
-        onSubmitted: (v) => Navigator.of(context).pop(v),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_field.text),
-          child: Text(l10n.actionCreate),
-        ),
-      ],
-    );
   }
 }
 

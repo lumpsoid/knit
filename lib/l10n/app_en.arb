@@ -75,8 +75,11 @@
   "onboardWelcomeBackTitle": "Welcome back",
 
   "timelineCollectionFab": "Collection",
-  "timelineNewCollectionTitle": "New collection",
-  "timelineNewCollectionHint": "Title or theme",
+  "newCollectionHint": "What's this about?",
+  "newCollectionCreateTooltip": "Create collection",
+  "newCollectionExistingLead": "You already have",
+  "newCollectionOpenExisting": "Open",
+  "newCollectionSaveThere": "Save there",
   "timelineDeleteTitle": "Delete collection?",
   "timelineDeleteBody": "\"{title}\" and its cards will be removed.",
   "@timelineDeleteBody": {

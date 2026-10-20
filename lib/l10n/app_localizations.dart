@@ -434,17 +434,35 @@ abstract class AppLocalizations {
   /// **'Collection'**
   String get timelineCollectionFab;
 
-  /// No description provided for @timelineNewCollectionTitle.
+  /// No description provided for @newCollectionHint.
   ///
   /// In en, this message translates to:
-  /// **'New collection'**
-  String get timelineNewCollectionTitle;
+  /// **'What\'s this about?'**
+  String get newCollectionHint;
 
-  /// No description provided for @timelineNewCollectionHint.
+  /// No description provided for @newCollectionCreateTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Title or theme'**
-  String get timelineNewCollectionHint;
+  /// **'Create collection'**
+  String get newCollectionCreateTooltip;
+
+  /// No description provided for @newCollectionExistingLead.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have'**
+  String get newCollectionExistingLead;
+
+  /// No description provided for @newCollectionOpenExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get newCollectionOpenExisting;
+
+  /// No description provided for @newCollectionSaveThere.
+  ///
+  /// In en, this message translates to:
+  /// **'Save there'**
+  String get newCollectionSaveThere;
 
   /// No description provided for @timelineDeleteTitle.
   ///

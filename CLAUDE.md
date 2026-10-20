@@ -278,6 +278,13 @@ the `lib/sync/` core below.
   some words, then title > card text > description/label/file name, then
   word-start, then recency. A tapped hit writes `CollectionRouteArgs` with an
   optional `focusCardId`, which the Collection page scrolls to and highlights.
+- `new_collection` (§4.1) is the shared inline-create line, not a page.
+  `showNewCollectionBar` grows the tapped button (the Timeline FAB, or share
+  capture's "New collection" row) into a composer-style title line docked
+  above the keyboard, over a solid scrim. Sending creates, and back, a tap
+  outside or an empty title shrink it back. The pure `SimilarCollectionFinder`
+  (search's folding) flags a title like an existing collection, and the line
+  then offers that one instead ("Open" / "Save there").
 - `share_capture` (§4.7, lightweight, **Android only**) takes text, photos and
   files shared from other apps (`receive_sharing_intent`; `ACTION_SEND` /
   `SEND_MULTIPLE` filters, activity `singleTask`). The app-wide

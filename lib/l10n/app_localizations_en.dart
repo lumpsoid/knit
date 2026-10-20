@@ -192,10 +192,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timelineCollectionFab => 'Collection';
 
   @override
-  String get timelineNewCollectionTitle => 'New collection';
+  String get newCollectionHint => 'What\'s this about?';
 
   @override
-  String get timelineNewCollectionHint => 'Title or theme';
+  String get newCollectionCreateTooltip => 'Create collection';
+
+  @override
+  String get newCollectionExistingLead => 'You already have';
+
+  @override
+  String get newCollectionOpenExisting => 'Open';
+
+  @override
+  String get newCollectionSaveThere => 'Save there';
 
   @override
   String get timelineDeleteTitle => 'Delete collection?';
