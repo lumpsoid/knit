@@ -243,6 +243,13 @@ the `lib/sync/` core below.
   hold the staged attachments, the recording and the inline panel.
   `CollectionController.composer` exposes it. A send reaches the loop as
   `ComposerSubmitted(text, image/file/audio)`.
+- `collection` app bar: `CollectionHeaderBar` is the title card, docked. A
+  `TitleMorphLink` (`widgets/title_morph.dart`) ties the card's name
+  (`TitleMorphSource`) to the bar's slot (`TitleMorphTarget`). The
+  `TitleMorphFlight` overlay paints the name flying between them, and
+  `TitleMorphReveal` fades in the bar's surface, cover thumbnail and
+  Connections button. All of it reads positions at paint time, and the feed's
+  header sliver reports every layout through `onHeaderMoved`.
 - `collection` multi-select (§4.2): `CollectionState.selectedCardIds` (a
   non-empty set *is* selection mode). Move loads targets through the narrow
   `CardMoveReadRepository`, reads the target's tail, and the updater appends

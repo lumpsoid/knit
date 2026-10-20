@@ -27,11 +27,13 @@ import 'package:knit/features/collection/presentation/widgets/card_reorder_row.d
 import 'package:knit/features/collection/presentation/widgets/collection_composer.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_error_view.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_feed.dart';
+import 'package:knit/features/collection/presentation/widgets/collection_header_bar.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_title_card.dart';
 import 'package:knit/features/collection/presentation/widgets/move_target_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/selectable_card_row.dart';
 import 'package:knit/features/collection/presentation/widgets/selection_action_bar.dart';
 import 'package:knit/features/collection/presentation/widgets/text_prompt_dialog.dart';
+import 'package:knit/features/collection/presentation/widgets/title_morph.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_page.dart';
 
@@ -63,12 +65,9 @@ class _CollectionPageState extends State<CollectionPage> {
   /// feed reveals it when it first appears.
   late final String? _focusCardId = CollectionScope.routeArgs.focusCardId;
 
-  /// Marks the title card's name, which the feed follows as it scrolls.
-  final GlobalKey _titleKey = GlobalKey();
-
-  /// How much of the title card's name has scrolled out of view (0–1); the app
-  /// bar shows the name to the same degree, so it is always somewhere in sight.
-  final ValueNotifier<double> _titleHidden = ValueNotifier(0);
+  /// Carries the collection name from the title card into the app bar as the
+  /// card scrolls under it.
+  final TitleMorphLink _titleMorph = TitleMorphLink();
 
   @override
   void initState() {
@@ -94,7 +93,7 @@ class _CollectionPageState extends State<CollectionPage> {
       ..dispatch(const DeactivateFeature())
       ..dispose();
     _composer.dispose();
-    _titleHidden.dispose();
+    _titleMorph.dispose();
     super.dispose();
   }
 
@@ -383,74 +382,79 @@ class _CollectionPageState extends State<CollectionPage> {
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) _controller.dispatch(const SelectionCleared());
           },
-          child: Scaffold(
-            appBar: state.selecting
-                ? _selectionAppBar(
-                    l10n,
-                    selectedCount: state.selectedCardIds.length,
-                  )
-                : AppBar(
-                    title: _appBarTitle(state.collectionId),
-                    actions: [
-                      if (state.status == CollectionStatus.ready &&
-                          state.canReorder)
-                        state.reordering
-                            ? TextButton(
-                                onPressed: () =>
-                                    _controller.dispatch(const EndReorder()),
-                                child: Text(l10n.actionDone),
-                              )
-                            : IconButton(
-                                tooltip: l10n.collectionReorderTooltip,
-                                icon: const Icon(Icons.swap_vert),
-                                onPressed: () =>
-                                    _controller.dispatch(const StartReorder()),
-                              ),
-                    ],
-                  ),
-            body: Column(
-              children: [
-                Expanded(child: _body(state)),
-                // The persistent player sits between the feed and the composer so
-                // it stays on screen as the feed scrolls — shown in reorder mode
-                // too, so the user never loses what's playing.
-                ValueListenableBuilder<PlaybackSnapshot>(
-                  valueListenable: _playback.snapshot,
-                  builder: (context, snap, _) {
-                    if (!snap.isActive) return const SizedBox.shrink();
-                    return AudioMiniPlayer(
-                      phase: snap.phase,
-                      position: snap.position,
-                      duration: snap.duration,
-                      onPlayPause: () => unawaited(_playback.togglePlayPause()),
-                      onSeek: (d) => unawaited(_playback.seek(d)),
-                      onClose: () => unawaited(_playback.close()),
-                    );
-                  },
-                ),
-                // Selection swaps the composer for its actions at the same
-                // height, so the feed doesn't jump.
-                if (state.selecting)
-                  SelectionActionBar(
-                    canSelectAll: state.canSelectAll,
-                    onSelectAll: () =>
-                        _controller.dispatch(const AllCardsSelected()),
-                    onUnselectAll: () =>
-                        _controller.dispatch(const SelectionCleared()),
-                    allSettled: state.selectionAllSettled,
-                    onSettle: () =>
-                        _controller.dispatch(const SelectionSettleRequested()),
-                    onMove: _openMovePicker,
-                  )
-                else if (!state.reordering)
-                  _composerPanel(),
-              ],
-            ),
+          child: Stack(
+            children: [
+              _scaffold(state, l10n),
+              // Over the whole page, so the name can fly out of the feed and
+              // across the bar's edge.
+              // The selection bar has no slot for the name: nothing flies.
+              if (!state.selecting)
+                Positioned.fill(child: _titleFlight(state.collectionId)),
+            ],
           ),
         );
       },
     );
   }
+
+  Widget _scaffold(CollectionState state, AppLocalizations l10n) => Scaffold(
+    appBar: state.selecting
+        ? _selectionAppBar(l10n, selectedCount: state.selectedCardIds.length)
+        : _headerBar(
+            state,
+            actions: [
+              if (state.status == CollectionStatus.ready && state.canReorder)
+                state.reordering
+                    ? TextButton(
+                        onPressed: () =>
+                            _controller.dispatch(const EndReorder()),
+                        child: Text(l10n.actionDone),
+                      )
+                    : IconButton(
+                        tooltip: l10n.collectionReorderTooltip,
+                        icon: const Icon(Icons.swap_vert),
+                        onPressed: () =>
+                            _controller.dispatch(const StartReorder()),
+                      ),
+            ],
+          ),
+    body: Column(
+      children: [
+        Expanded(child: _body(state)),
+        // The persistent player sits between the feed and the composer so
+        // it stays on screen as the feed scrolls — shown in reorder mode
+        // too, so the user never loses what's playing.
+        ValueListenableBuilder<PlaybackSnapshot>(
+          valueListenable: _playback.snapshot,
+          builder: (context, snap, _) {
+            if (!snap.isActive) return const SizedBox.shrink();
+            return AudioMiniPlayer(
+              phase: snap.phase,
+              position: snap.position,
+              duration: snap.duration,
+              onPlayPause: () => unawaited(_playback.togglePlayPause()),
+              onSeek: (d) => unawaited(_playback.seek(d)),
+              onClose: () => unawaited(_playback.close()),
+            );
+          },
+        ),
+        // Selection swaps the composer for its actions at the same
+        // height, so the feed doesn't jump.
+        if (state.selecting)
+          SelectionActionBar(
+            canSelectAll: state.canSelectAll,
+            onSelectAll: () => _controller.dispatch(const AllCardsSelected()),
+            onUnselectAll: () => _controller.dispatch(const SelectionCleared()),
+            allSettled: state.selectionAllSettled,
+            onSettle: () =>
+                _controller.dispatch(const SelectionSettleRequested()),
+            onMove: _openMovePicker,
+          )
+        else if (!state.reordering)
+          _composerPanel(),
+      ],
+    ),
+  );
 
   /// The bottom composer over the composer state; it rebuilds on its own as
   /// attachments are staged and the recording moves on.
@@ -502,31 +506,65 @@ class _CollectionPageState extends State<CollectionPage> {
     title: Text(l10n.collectionSelectedCount(selectedCount)),
   );
 
-  /// The collection's name in the app bar. It slides up and fades in as the
-  /// title card's name scrolls off the top of the feed, and out again as it
-  /// comes back, so the name never shows twice and is never lost.
-  Widget _appBarTitle(String collectionId) {
+  /// The app bar: the title card, docked — the shared collection details give
+  /// its name and cover (it rebuilds when they change).
+  PreferredSizeWidget _headerBar(
+    CollectionState state, {
+    required List<Widget> actions,
+  }) {
+    final collectionId = state.collectionId;
+    final details = CollectionScope.collectionDetails;
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: ListenableBuilder(
+        listenable: Listenable.merge([details, CollectionScope.images]),
+        builder: (context, _) {
+          final header = details.of(collectionId);
+          final coverId = header?.coverAttachmentId;
+          return CollectionHeaderBar(
+            titleMorph: _titleMorph,
+            title: _displayTitle(header?.title),
+            hasCover: coverId != null,
+            coverBytes: coverId == null
+                ? null
+                : CollectionScope.images.of(coverId),
+            connectionCount: state.connectionCount,
+            onTitleTap: () => _openCollectionEdit(collectionId),
+            onConnectionsTap: () => _openConnections(
+              kind: ConnectedEntityKind.collection,
+              id: collectionId,
+              title: header?.title ?? '',
+            ),
+            actions: actions,
+          );
+        },
+      ),
+    );
+  }
+
+  /// The collection's name in flight between the title card and the bar.
+  Widget _titleFlight(String collectionId) {
     final details = CollectionScope.collectionDetails;
     return ListenableBuilder(
-      listenable: Listenable.merge([details, _titleHidden]),
+      listenable: details,
       builder: (context, _) {
-        final hidden = _titleHidden.value;
-        final title = details.of(collectionId)?.title.trim() ?? '';
-        return Opacity(
-          opacity: hidden,
-          child: Transform.translate(
-            offset: Offset(0, (1 - hidden) * 12),
-            child: Text(
-              title.isEmpty
-                  ? AppLocalizations.of(context).labelUntitled
-                  : title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+        final theme = Theme.of(context);
+        return TitleMorphFlight(
+          link: _titleMorph,
+          title: _displayTitle(details.of(collectionId)?.title),
+          sourceStyle: CollectionTitleCard.nameStyle(theme),
+          targetStyle: CollectionHeaderBar.titleStyle(theme),
         );
       },
     );
+  }
+
+  /// A collection title as shown: trimmed, or "Untitled" when blank.
+  String _displayTitle(String? title) {
+    final trimmed = title?.trim() ?? '';
+    return trimmed.isEmpty
+        ? AppLocalizations.of(context).labelUntitled
+        : trimmed;
   }
 
   Widget _body(CollectionState state) {
@@ -571,8 +609,7 @@ class _CollectionPageState extends State<CollectionPage> {
     onRefresh: () => _controller.dispatch(const ReloadRequested()),
     onReorder: (oldIndex, newIndex) =>
         _controller.dispatch(CardMoved(oldIndex, newIndex)),
-    headerTitleKey: _titleKey,
-    onHeaderTitleHidden: (hidden) => _titleHidden.value = hidden,
+    onHeaderMoved: _titleMorph.markMoved,
   );
 
   /// The title card heading the feed: the collection's header from the shared
@@ -593,7 +630,7 @@ class _CollectionPageState extends State<CollectionPage> {
             ? null
             : CollectionScope.images.of(coverId);
         return CollectionTitleCard(
-          titleKey: _titleKey,
+          titleMorph: _titleMorph,
           title: title,
           description: header?.description,
           hasCover: coverId != null,

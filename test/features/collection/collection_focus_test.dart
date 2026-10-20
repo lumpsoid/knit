@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +21,7 @@ import 'package:knit/features/collection/presentation/collection_controller.dart
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection/presentation/collection_scope.dart';
+import 'package:knit/features/collection/presentation/widgets/title_morph.dart';
 import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/card_links/infra/sync_store_link_targets_read_repository.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
@@ -256,33 +258,32 @@ void main() {
     expect(find.text('card 0'), findsOneWidget);
   });
 
-  testWidgets('the collection name moves to the app bar once scrolled away', (
+  testWidgets('the collection name flies into the app bar as it scrolls away', (
     tester,
   ) async {
     await seed(tester);
     routeArgs.open(routeArgs.collectionId);
     await pumpPage(tester);
-    final appBarName = find.descendant(
-      of: find.byType(AppBar),
-      matching: find.byType(Opacity),
-    );
-    double nameOpacity() => tester.widget<Opacity>(appBarName).opacity;
+    double? progress() => tester
+        .widget<TitleMorphFlight>(find.byType(TitleMorphFlight))
+        .link
+        .progress;
 
-    // Opened on the newest cards: the title card isn't in sight, so the app
-    // bar carries the name.
-    expect(nameOpacity(), 1);
+    // Opened on the newest cards: the title card isn't built, so the name is
+    // docked in the app bar (its slot is there for semantics and taps).
+    expect(progress(), 1);
     expect(
       find.descendant(of: find.byType(AppBar), matching: find.text('Long')),
       findsOneWidget,
     );
 
-    // Back at the top, the title card shows it and the app bar steps aside.
-    for (var i = 0; i < 30 && nameOpacity() > 0; i++) {
+    // Back at the top, the name sits whole in the title card.
+    for (var i = 0; i < 30 && progress()! > 0; i++) {
       await tester.drag(find.byType(CustomScrollView), const Offset(0, 600));
       await tester.runAsync(() => Future<void>.delayed(Duration.zero));
       await tester.pumpAndSettle();
     }
-    expect(nameOpacity(), 0);
+    expect(progress(), 0);
     expect(
       find.descendant(
         of: find.byType(CustomScrollView),
@@ -291,10 +292,24 @@ void main() {
       findsOneWidget,
     );
 
-    // Scrolling the title card away hands the name back to the app bar.
+    // Edging the card under the bar puts the name mid-flight, in step with
+    // the finger.
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(CustomScrollView)),
+    );
+    await gesture.moveBy(const Offset(0, -kTouchSlop - 1));
+    for (var i = 0; i < 40 && progress()! == 0; i++) {
+      await gesture.moveBy(const Offset(0, -4));
+      await tester.pump();
+    }
+    expect(progress(), inExclusiveRange(0, 1));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    // Scrolling the title card away docks it in the bar.
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
     await tester.pumpAndSettle();
-    expect(nameOpacity(), 1);
+    expect(progress(), 1);
   });
 
   testWidgets('long-press selects cards and moves them to another collection', (

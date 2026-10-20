@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/widgets/card_entrance.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_empty_hint.dart';
@@ -45,8 +46,7 @@ class CollectionFeed extends StatefulWidget {
     required this.onLoadOlder,
     required this.onRefresh,
     required this.onReorder,
-    required this.headerTitleKey,
-    required this.onHeaderTitleHidden,
+    required this.onHeaderMoved,
     this.focusCardId,
   });
 
@@ -66,15 +66,10 @@ class CollectionFeed extends StatefulWidget {
   /// The title card heading the feed.
   final Widget header;
 
-  /// Marks the collection name inside [header], so the feed can tell how far
-  /// it has scrolled out of view.
-  final GlobalKey headerTitleKey;
-
-  /// How much of the header's collection name has scrolled off the top of the
-  /// feed: 0 while it is fully in view, 1 once it is gone (or not loaded yet,
-  /// while older pages remain). Reported on every scroll and layout change; the
-  /// page moves the name into its app bar as it goes.
-  final ValueChanged<double> onHeaderTitleHidden;
+  /// The header may have moved on screen: called on every layout of the chat
+  /// feed's header and every scroll of the reorder list, so the page can carry
+  /// the collection name into its app bar in step. Called during layout.
+  final VoidCallback onHeaderMoved;
 
   /// One feed row for a card.
   final Widget Function(FeedCard card) cardBuilder;
@@ -114,11 +109,8 @@ class _CollectionFeedState extends State<CollectionFeed> {
   /// The feed's scroll position — driven to reveal a focused card.
   final ScrollController _scroll = ScrollController();
 
-  /// The reorder list's scroll position, followed only for the header name.
+  /// The reorder list's scroll position, followed only for the header.
   final ScrollController _reorderScroll = ScrollController();
-
-  /// Wraps [CollectionFeed.header], to place its name within it.
-  final GlobalKey _headerKey = GlobalKey();
 
   /// The revealed card: its row carries [_focusCardKey] (so it can be scrolled
   /// to) and, while [_highlightFocus] holds, a fading highlight.
@@ -130,10 +122,8 @@ class _CollectionFeedState extends State<CollectionFeed> {
   @override
   void initState() {
     super.initState();
-    _scroll
-      ..addListener(_maybeLoadOlder)
-      ..addListener(_reportHeaderTitle);
-    _reorderScroll.addListener(_reportHeaderTitle);
+    _scroll.addListener(_maybeLoadOlder);
+    _reorderScroll.addListener(_reportHeaderMoved);
     final focusId = widget.focusCardId;
     if (focusId != null && widget.cards.any((c) => c.id == focusId)) {
       _focusCardId = focusId;
@@ -141,7 +131,6 @@ class _CollectionFeedState extends State<CollectionFeed> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _revealFocusedCard());
     }
     _scheduleLoadOlderCheck();
-    _scheduleHeaderTitleReport();
   }
 
   @override
@@ -149,7 +138,6 @@ class _CollectionFeedState extends State<CollectionFeed> {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.cards, widget.cards)) _syncList();
     _scheduleLoadOlderCheck();
-    _scheduleHeaderTitleReport();
   }
 
   @override
@@ -179,45 +167,7 @@ class _CollectionFeedState extends State<CollectionFeed> {
     });
   }
 
-  /// Report how much of the header's name has scrolled off the top, from how
-  /// far the header's top sits above the viewport and where the name sits
-  /// within the header. Until the header is built and laid out (older pages
-  /// remain, or it's far out of view), the name counts as gone.
-  void _reportHeaderTitle() {
-    widget.onHeaderTitleHidden(_headerTitleHidden());
-  }
-
-  double _headerTitleHidden() {
-    if (widget.hasOlder && !widget.reordering) return 1;
-    final scroll = widget.reordering ? _reorderScroll : _scroll;
-    final header = _headerKey.currentContext?.findRenderObject();
-    final name = widget.headerTitleKey.currentContext?.findRenderObject();
-    if (!scroll.hasClients ||
-        header is! RenderBox ||
-        name is! RenderBox ||
-        !header.hasSize ||
-        !name.hasSize ||
-        name.size.height <= 0) {
-      return 1;
-    }
-    final position = scroll.position;
-    // The feed is reversed, so its top is the scroll's far end; the reorder
-    // list's top is its start.
-    final scrolledPastTop = widget.reordering
-        ? position.pixels
-        : position.maxScrollExtent - position.pixels;
-    final nameTop = name.localToGlobal(Offset.zero, ancestor: header).dy;
-    final hidden = scrolledPastTop - _kFeedEdgePadding - nameTop;
-    return (hidden / name.size.height).clamp(0.0, 1.0);
-  }
-
-  /// Report again once the next layout lands — a page in, a mode switch or a
-  /// header edit moves the name without a scroll.
-  void _scheduleHeaderTitleReport() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _reportHeaderTitle();
-    });
-  }
+  void _reportHeaderMoved() => widget.onHeaderMoved();
 
   /// Scroll the focused card into view. The feed builds lazily, so an older
   /// card's row may not exist yet: step up the (reversed) feed a screen at a
@@ -305,7 +255,7 @@ class _CollectionFeedState extends State<CollectionFeed> {
       // The title card heads the reorder list as a fixed, non-draggable header.
       return ReorderableListView.builder(
         scrollController: _reorderScroll,
-        header: KeyedSubtree(key: _headerKey, child: widget.header),
+        header: widget.header,
         padding: const EdgeInsets.symmetric(vertical: _kFeedEdgePadding),
         itemCount: cards.length,
         onReorderItem: widget.onReorder,
@@ -363,12 +313,42 @@ class _CollectionFeedState extends State<CollectionFeed> {
               child: OlderCardsLoader(loading: widget.loadingOlder),
             )
           else
-            SliverToBoxAdapter(
-              child: KeyedSubtree(key: _headerKey, child: widget.header),
-            ),
+            _HeaderSliver(onLayout: _reportHeaderMoved, child: widget.header),
           const SliverPadding(padding: EdgeInsets.only(top: _kFeedEdgePadding)),
         ],
       ),
     );
+  }
+}
+
+/// The title card's sliver: a [SliverToBoxAdapter] that reports each of its
+/// layouts. The viewport lays it out whenever its place on screen may change —
+/// a scroll, a card animating in below it, the feed resizing — so the report
+/// lands in the same frame, before paint.
+class _HeaderSliver extends SingleChildRenderObjectWidget {
+  const _HeaderSliver({required this.onLayout, required Widget super.child});
+
+  final VoidCallback onLayout;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderHeaderSliver(onLayout);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderHeaderSliver renderObject,
+  ) => renderObject.onLayout = onLayout;
+}
+
+class _RenderHeaderSliver extends RenderSliverToBoxAdapter {
+  _RenderHeaderSliver(this.onLayout);
+
+  VoidCallback onLayout;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    onLayout();
   }
 }

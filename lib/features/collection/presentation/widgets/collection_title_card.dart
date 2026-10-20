@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
+import 'package:knit/features/collection/presentation/widgets/title_morph.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// The shared [Hero] tag tying a collection's cover banner to its full-screen
@@ -24,15 +25,22 @@ class CollectionTitleCard extends StatelessWidget {
     required this.connectionCount,
     required this.onTap,
     required this.onConnectionsTap,
-    this.titleKey,
+    this.titleMorph,
     this.onCoverTap,
   });
 
   final String title;
   final String? description;
 
-  /// Marks the title text, so the feed can follow it as it scrolls away.
-  final Key? titleKey;
+  /// The name's style in the card; the flight to the app bar starts from it.
+  static TextStyle nameStyle(ThemeData theme) =>
+      (theme.textTheme.headlineSmall ?? const TextStyle(fontSize: 24)).copyWith(
+        fontWeight: FontWeight.w700,
+      );
+
+  /// Hands the name to the app bar as the card scrolls away; null keeps it
+  /// here.
+  final TitleMorphLink? titleMorph;
 
   /// Whether a cover is set — drives the banner (a placeholder shows while its
   /// bytes load).
@@ -70,6 +78,18 @@ class CollectionTitleCard extends StatelessWidget {
     );
   }
 
+  /// The name, filling the text column so a flying copy laid out at its width
+  /// wraps the same way.
+  Widget _name(String name, ThemeData theme) {
+    final text = Text(name, style: nameStyle(theme));
+    final link = titleMorph;
+    if (link == null) return text;
+    return TitleMorphSource(
+      link: link,
+      child: SizedBox(width: double.infinity, child: text),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -99,13 +119,7 @@ class CollectionTitleCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            name,
-                            key: titleKey,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          _name(name, theme),
                           if (blurb != null && blurb.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Text(
