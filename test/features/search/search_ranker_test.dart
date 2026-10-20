@@ -158,4 +158,20 @@ void main() {
     expect(byId['c']!.focusCardId, 'c');
     expect(byId['k']!.focusCardId, isNull);
   });
+
+  test('a hit carries its document\'s archived flag', () {
+    final archived = SearchDocument(
+      kind: SearchHitKind.collection,
+      id: 'k',
+      collectionId: 'k',
+      collectionTitle: 'tea',
+      texts: const [SearchText(SearchField.collectionTitle, 'tea')],
+      updatedAtMs: 0,
+      archived: true,
+    );
+    final hits = ranker.rank('tea', [archived, card('c', 'tea')]);
+    final byId = {for (final h in hits) h.id: h};
+    expect(byId['k']!.archived, isTrue);
+    expect(byId['c']!.archived, isFalse);
+  });
 }

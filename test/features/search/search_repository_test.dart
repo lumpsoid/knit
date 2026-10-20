@@ -114,4 +114,21 @@ void main() {
       expect((await load()).keys.toSet(), {'live', 'c-live'});
     },
   );
+
+  test(
+    'archived collections and their cards stay searchable, flagged',
+    () async {
+      await addCollection('old', 'Old trips');
+      await addCard('card-old', 'old', text: 'Rome');
+      await addCollection('live', 'Trips');
+      await addCard('card-live', 'live', text: 'Oslo');
+      await store.setCollectionArchived('old', archived: true);
+
+      final docs = await load();
+      expect(docs['old']!.archived, isTrue);
+      expect(docs['card-old']!.archived, isTrue);
+      expect(docs['live']!.archived, isFalse);
+      expect(docs['card-live']!.archived, isFalse);
+    },
+  );
 }

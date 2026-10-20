@@ -156,7 +156,8 @@ class _FilterChips extends StatelessWidget {
 
 /// One result row. A collection hit shows its title, plus the matched snippet
 /// when the match was in its description or a link label; a card hit shows the
-/// matched snippet and the collection it lives in.
+/// matched snippet and the collection it lives in. A hit in an archived
+/// collection (§3.4) is marked as such.
 class _HitTile extends StatelessWidget {
   const _HitTile({required this.hit, required this.onTap});
 
@@ -185,6 +186,7 @@ class _HitTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+      trailing: hit.archived ? const _ArchivedMark() : null,
       onTap: onTap,
     );
   }
@@ -198,6 +200,28 @@ class _HitTile extends StatelessWidget {
       'link' => Icons.link,
       _ => Icons.notes,
     };
+  }
+}
+
+/// A small "Archived" label on a hit in an archived collection (§3.4).
+class _ArchivedMark extends StatelessWidget {
+  const _ArchivedMark();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurfaceVariant;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.archive_outlined, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          AppLocalizations.of(context).searchArchived,
+          style: theme.textTheme.labelSmall?.copyWith(color: color),
+        ),
+      ],
+    );
   }
 }
 

@@ -275,6 +275,7 @@ class SearchRanker {
       snippet: '$prefix$body$suffix',
       ranges: ranges,
       cardKind: doc.cardKind,
+      archived: doc.archived,
     );
   }
 }

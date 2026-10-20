@@ -542,6 +542,12 @@ abstract class AppLocalizations {
   /// **'No archived collections'**
   String get archiveEmpty;
 
+  /// No description provided for @searchArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get searchArchived;
+
   /// No description provided for @timelineNoCardsYet.
   ///
   /// In en, this message translates to:

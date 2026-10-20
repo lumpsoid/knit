@@ -268,6 +268,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get archiveEmpty => 'No archived collections';
 
   @override
+  String get searchArchived => 'Archived';
+
+  @override
   String get timelineNoCardsYet => 'No cards yet';
 
   @override

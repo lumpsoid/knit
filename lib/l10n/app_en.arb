@@ -108,6 +108,7 @@
   },
   "archiveTitle": "Archive",
   "archiveEmpty": "No archived collections",
+  "searchArchived": "Archived",
   "timelineNoCardsYet": "No cards yet",
   "timelinePreviewPhoto": "📷 Photo",
   "timelinePreviewAudio": "🎙 Audio",

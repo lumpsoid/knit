@@ -9,7 +9,7 @@ import 'package:result_dart/result_dart.dart';
 /// collection (title, description) and every live card of a live collection
 /// (text, attachment file name) into a [SearchDocument]. A live link's label is
 /// searchable on its *source* entity — the card or collection it was made from.
-/// Tombstoned rows never surface.
+/// Tombstoned rows never surface; archived ones do, flagged (§3.4).
 class SyncStoreSearchReadRepository implements SearchReadRepository {
   SyncStoreSearchReadRepository({required AppGraph graph}) : _graph = graph;
 
@@ -57,6 +57,7 @@ class SyncStoreSearchReadRepository implements SearchReadRepository {
               ...labelsOf(col.id),
             ],
             updatedAtMs: col.hlc.ms,
+            archived: _isArchived(col),
           ),
         );
       }
@@ -82,6 +83,7 @@ class SyncStoreSearchReadRepository implements SearchReadRepository {
             ],
             updatedAtMs: card.hlc.ms,
             cardKind: card.content['kind'] as String?,
+            archived: _isArchived(col),
           ),
         );
       }
@@ -90,4 +92,7 @@ class SyncStoreSearchReadRepository implements SearchReadRepository {
       return Failure(SearchLoadFailure(e, st));
     }
   }
+
+  static bool _isArchived(Snapshot collection) =>
+      collection.content[CollectionSchema.colArchivedAt] != null;
 }

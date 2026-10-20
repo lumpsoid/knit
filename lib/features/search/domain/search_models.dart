@@ -42,6 +42,7 @@ class SearchDocument {
     required this.texts,
     required this.updatedAtMs,
     this.cardKind,
+    this.archived = false,
   });
 
   final SearchHitKind kind;
@@ -56,6 +57,10 @@ class SearchDocument {
   /// The card's `kind` tag (text · image · audio · file · link), for its icon.
   /// Null for a collection.
   final String? cardKind;
+
+  /// Whether the collection the hit opens is archived (§3.4). Archived
+  /// collections stay searchable; the row just says so.
+  final bool archived;
 }
 
 /// A highlighted stretch of a [SearchHit.snippet], `[start, end)` in UTF-16
@@ -89,6 +94,7 @@ class SearchHit {
     required this.snippet,
     required this.ranges,
     this.cardKind,
+    this.archived = false,
   });
 
   final SearchHitKind kind;
@@ -99,6 +105,7 @@ class SearchHit {
   final String snippet;
   final List<MatchRange> ranges;
   final String? cardKind;
+  final bool archived;
 
   /// The card to reveal when this hit opens its collection; null for a
   /// collection hit (it opens the feed at its normal position).

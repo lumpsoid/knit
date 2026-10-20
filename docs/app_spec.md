@@ -97,7 +97,8 @@ deleted. Archiving takes it off the home timeline without losing anything.
   page, reached from a hidden row at the top of Home. Its cards, links and title are
   untouched, and it still opens, edits and accepts new cards as usual.
 - It **stays reachable everywhere else**: search, the link picker, Move to collection, share
-  capture and the home-screen widget picker still offer it.
+  capture and the home-screen widget picker still offer it. Search marks its hits (and its
+  cards' hits) "Archived".
 - New cards do **not** unarchive it, whether added here, captured, moved in or synced.
   Unarchiving is always explicit.
 - Archiving a pinned collection also **unpins** it (pins are device-local, §4.1).

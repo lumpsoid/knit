@@ -105,6 +105,7 @@
   },
   "archiveTitle": "Архив",
   "archiveEmpty": "В архиве пусто",
+  "searchArchived": "В архиве",
   "timelineNoCardsYet": "Пока нет карточек",
   "timelinePreviewPhoto": "📷 Фото",
   "timelinePreviewAudio": "🎙 Аудио",

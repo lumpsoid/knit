@@ -273,6 +273,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get archiveEmpty => 'В архиве пусто';
 
   @override
+  String get searchArchived => 'В архиве';
+
+  @override
   String get timelineNoCardsYet => 'Пока нет карточек';
 
   @override
