@@ -18,8 +18,8 @@ class SelectionActionBar extends StatelessWidget {
     required this.onDelete,
   });
 
-  /// Whether some cards are still unselected; once all are, the button flips
-  /// to "Unselect all".
+  /// Whether some cards are still unselected; once all are, the icon button
+  /// flips to "Unselect all".
   final bool canSelectAll;
   final VoidCallback onSelectAll;
   final VoidCallback onUnselectAll;
@@ -50,45 +50,63 @@ class SelectionActionBar extends StatelessWidget {
           child: Row(
             children: [
               canSelectAll
-                  ? TextButton.icon(
+                  ? IconButton(
+                      tooltip: l10n.collectionSelectAllTooltip,
                       icon: const Icon(Icons.select_all),
-                      label: Text(l10n.collectionSelectAllTooltip),
                       onPressed: onSelectAll,
                     )
-                  : TextButton.icon(
+                  : IconButton(
+                      tooltip: l10n.collectionUnselectAll,
                       icon: const Icon(Icons.deselect),
-                      label: Text(l10n.collectionUnselectAll),
                       onPressed: onUnselectAll,
                     ),
-              const Spacer(),
-              IconButton(
-                tooltip: l10n.collectionDeleteSelectedTooltip,
-                icon: const Icon(Icons.delete_outline),
-                onPressed: onDelete,
-              ),
-              IconButton(
-                tooltip: allSettled
-                    ? l10n.collectionActionUnsettle
-                    : l10n.collectionActionSettle,
-                icon: Icon(allSettled ? Icons.eco : Icons.eco_outlined),
-                onPressed: onSettle,
-              ),
-              IconButton(
-                tooltip: allEmphasized
-                    ? l10n.collectionActionUnemphasize
-                    : l10n.collectionActionEmphasize,
-                icon: Icon(
-                  allEmphasized
-                      ? Icons.auto_awesome
-                      : Icons.auto_awesome_outlined,
+              // The actions hug the right edge. Move carries a short label (the
+              // full one is its tooltip) and still ellipsizes on a very narrow
+              // screen, so nothing leaves it.
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: l10n.collectionDeleteSelectedTooltip,
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: onDelete,
+                    ),
+                    IconButton(
+                      tooltip: allSettled
+                          ? l10n.collectionActionUnsettle
+                          : l10n.collectionActionSettle,
+                      icon: Icon(allSettled ? Icons.eco : Icons.eco_outlined),
+                      onPressed: onSettle,
+                    ),
+                    IconButton(
+                      tooltip: allEmphasized
+                          ? l10n.collectionActionUnemphasize
+                          : l10n.collectionActionEmphasize,
+                      icon: Icon(
+                        allEmphasized
+                            ? Icons.auto_awesome
+                            : Icons.auto_awesome_outlined,
+                      ),
+                      onPressed: onEmphasize,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Tooltip(
+                        message: l10n.collectionMoveTooltip,
+                        child: FilledButton.tonalIcon(
+                          icon: const Icon(Icons.drive_file_move_outline),
+                          label: Text(
+                            l10n.collectionMoveShort,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onPressed: onMove,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                onPressed: onEmphasize,
-              ),
-              const SizedBox(width: 4),
-              FilledButton.tonalIcon(
-                icon: const Icon(Icons.drive_file_move_outline),
-                label: Text(l10n.collectionMoveTooltip),
-                onPressed: onMove,
               ),
             ],
           ),

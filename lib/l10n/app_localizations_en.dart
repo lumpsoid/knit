@@ -984,6 +984,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionMoveTooltip => 'Move to collection';
 
   @override
+  String get collectionMoveShort => 'Move';
+
+  @override
   String get collectionDeleteSelectedTooltip => 'Delete selected';
 
   @override

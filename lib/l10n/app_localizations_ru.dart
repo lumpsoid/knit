@@ -1003,6 +1003,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionMoveTooltip => 'Переместить в коллекцию';
 
   @override
+  String get collectionMoveShort => 'Переместить';
+
+  @override
   String get collectionDeleteSelectedTooltip => 'Удалить выбранные';
 
   @override

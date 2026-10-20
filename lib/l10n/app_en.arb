@@ -430,6 +430,7 @@
   "collectionUnselectAll": "Unselect all",
   "collectionClearSelectionTooltip": "Cancel selection",
   "collectionMoveTooltip": "Move to collection",
+  "collectionMoveShort": "Move",
   "collectionDeleteSelectedTooltip": "Delete selected",
   "collectionDeleteSelectedTitle": "{count, plural, =1{Delete 1 card?} other{Delete {count} cards?}}",
   "@collectionDeleteSelectedTitle": {

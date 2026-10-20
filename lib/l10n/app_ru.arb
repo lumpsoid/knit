@@ -417,6 +417,7 @@
   "collectionUnselectAll": "Снять выбор",
   "collectionClearSelectionTooltip": "Отменить выбор",
   "collectionMoveTooltip": "Переместить в коллекцию",
+  "collectionMoveShort": "Переместить",
   "collectionDeleteSelectedTooltip": "Удалить выбранные",
   "collectionDeleteSelectedTitle": "{count, plural, =1{Удалить 1 карточку?} few{Удалить {count} карточки?} many{Удалить {count} карточек?} other{Удалить {count} карточки?}}",
   "@collectionDeleteSelectedTitle": {

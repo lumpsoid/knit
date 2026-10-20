@@ -1784,6 +1784,12 @@ abstract class AppLocalizations {
   /// **'Move to collection'**
   String get collectionMoveTooltip;
 
+  /// No description provided for @collectionMoveShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get collectionMoveShort;
+
   /// No description provided for @collectionDeleteSelectedTooltip.
   ///
   /// In en, this message translates to:

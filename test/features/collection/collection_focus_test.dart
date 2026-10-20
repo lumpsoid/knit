@@ -335,7 +335,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2 selected'), findsOneWidget);
 
-    await tester.tap(find.text('Move to collection'));
+    await tester.tap(find.byTooltip('Move to collection'));
     await settle(tester);
     // The picker lists other collections only — not this one.
     expect(find.text('Long'), findsNothing);
