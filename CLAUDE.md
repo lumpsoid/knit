@@ -253,8 +253,9 @@ the `lib/sync/` core below.
   written by `SyncStore.setCardsSettled` on the content clock. The domain's
   `SettleChange` decides settle vs unsettle (all settled → unsettle). The
   Collection offers it in the actions sheet and the selection bar, and Card Edit
-  as a toggle. A settled bubble is drawn in `SettledPalette` (`lib/core/settled/`)
-  with `SettledRootsPainter` roots seeded by the card id. There is no
+  as a toggle. A settled bubble is drawn by `SettledPalette` (`lib/core/settled/`):
+  receded toward the page, greyed and faded, no tint, with faint
+  `SettledRootsPainter` roots seeded by the card id. There is no
   strikethrough. The Timeline mutes a settled newest card's preview.
 - `search` (§3.2/§4.1) is the first **lightweight** feature (controller +
   `SearchState` ChangeNotifier + page). The Timeline app bar opens it; it

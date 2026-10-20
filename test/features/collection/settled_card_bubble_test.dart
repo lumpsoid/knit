@@ -40,6 +40,7 @@ void main() {
   testWidgets('a live card has no roots', (tester) async {
     await tester.pumpWidget(bubble(settled: false));
     expect(rootsPainter(tester), isNull);
+    expect(find.byType(ColorFiltered), findsNothing);
   });
 
   testWidgets('a card that is already settled shows its roots in full', (
@@ -48,6 +49,7 @@ void main() {
     await tester.pumpWidget(bubble(settled: true));
     expect(rootsPainter(tester)?.progress, 1);
     expect(find.bySemanticsLabel(RegExp('^Settled')), findsOneWidget);
+    expect(find.byType(ColorFiltered), findsOneWidget);
   });
 
   testWidgets('settling grows the roots', (tester) async {

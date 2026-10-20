@@ -76,8 +76,9 @@ keeping: a finished step, an answered question, a price that changed. Deleting l
 history, so a card can instead be **settled**.
 
 - A settled card **stays where it is** in the feed, in search and in links. Nothing is
-  hidden or reordered. It is only drawn quieter: dimmed, with a warm autumn tint and faint
-  roots behind it. There is **no strikethrough and no checkbox**, so a collection never
+  hidden or reordered. It is only drawn quieter: the bubble recedes toward the page, its
+  content fades and loses its colour, and barely visible roots sit behind it. There is no
+  tint, so it never competes with live cards. There is **no strikethrough and no checkbox**, so a collection never
   reads as a to-do list.
 - **Settle / Unsettle** lives in the card actions sheet, in the multi-select bar (it
   settles every selected card, or unsettles them all once all are settled), and as a toggle

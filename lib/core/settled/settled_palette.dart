@@ -1,32 +1,44 @@
 import 'package:flutter/material.dart';
 
-/// The autumn palette a settled card (§3.3) is drawn in: a warm amber wash
-/// over the bubble, faint brown roots, and a quieter foreground. Tuned per
-/// brightness so it reads as "faded" in both themes.
+/// How a settled card (§3.3) is drawn: it recedes toward the page, loses its
+/// colour and fades, with barely visible roots. Neutral, no tint, so it never
+/// competes with the live cards (the "Ghost" tuning).
 abstract final class SettledPalette {
-  static const Color _amber = Color(0xFFE8892C);
-  static const Color _rootLight = Color(0xFF8A4B14);
-  static const Color _rootDark = Color(0xFFE3A55E);
+  /// How far the bubble blends from its live fill toward the page surface.
+  static const double recede = 0.8;
 
   /// How much a settled card's content fades (1 = fully faded).
-  static const double contentFade = 0.3;
+  static const double contentFade = 0.55;
 
-  /// The bubble fill once settled, warmed from the live [base] fill.
-  static Color background(ColorScheme scheme, Color base) => Color.alphaBlend(
-    _amber.withValues(alpha: _isDark(scheme) ? 0.14 : 0.2),
-    base,
-  );
+  /// How much colour a settled card's content loses (1 = greyscale).
+  static const double desaturation = 1;
+
+  static const double _rootsAlpha = 0.04;
+
+  /// The bubble fill once settled: the live [base] fill receded toward the
+  /// page surface.
+  static Color background(ColorScheme scheme, Color base) =>
+      Color.lerp(base, scheme.surface, recede)!;
 
   /// The roots' stroke colour.
-  static Color roots(ColorScheme scheme) => _isDark(scheme)
-      ? _rootDark.withValues(alpha: 0.2)
-      : _rootLight.withValues(alpha: 0.17);
+  static Color roots(ColorScheme scheme) =>
+      scheme.onSurfaceVariant.withValues(alpha: _rootsAlpha);
 
-  /// A settled card's one-line preview text elsewhere (the home row): a
-  /// muted, slightly warm tone.
+  /// A settled card's one-line preview text elsewhere (the home row).
   static Color previewText(ColorScheme scheme) =>
-      Color.lerp(scheme.onSurfaceVariant, _amber, 0.3)!.withValues(alpha: 0.65);
+      scheme.onSurfaceVariant.withValues(alpha: 1 - contentFade);
 
-  static bool _isDark(ColorScheme scheme) =>
-      scheme.brightness == Brightness.dark;
+  /// A filter that drains colour from a settled card's content, [t] of the
+  /// way (0 = untouched, 1 = settled).
+  static ColorFilter desaturate(double t) {
+    final s = 1 - desaturation * t;
+    // Rec. 709 luma weights.
+    const r = 0.2126, g = 0.7152, b = 0.0722;
+    return ColorFilter.matrix([
+      r + (1 - r) * s, g - g * s, b - b * s, 0, 0, //
+      r - r * s, g + (1 - g) * s, b - b * s, 0, 0, //
+      r - r * s, g - g * s, b + (1 - b) * s, 0, 0, //
+      0, 0, 0, 1, 0,
+    ]);
+  }
 }

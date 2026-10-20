@@ -44,8 +44,8 @@ class CardBubble extends StatelessWidget {
   final Uint8List? imageBytes;
   final VoidCallback onTap;
 
-  /// Whether the card is settled (§3.3): drawn in the autumn palette with
-  /// roots behind it. Flipping it animates the change.
+  /// Whether the card is settled (§3.3): drawn receded and greyed, with
+  /// faint roots behind it. Flipping it animates the change.
   final bool settled;
 
   /// Opens the full-screen image preview; null when the image hasn't loaded yet
@@ -80,8 +80,8 @@ class CardBubble extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 64, 4),
-        // Settling fades the card into autumn and grows its roots; a card
-        // that is already settled when it appears shows them straight away.
+        // Settling recedes, greys and fades the card and grows its roots; a
+        // card that is already settled when it appears starts there.
         child: TweenAnimationBuilder<double>(
           tween: Tween(end: settled ? 1 : 0),
           duration: const Duration(milliseconds: 900),
@@ -111,7 +111,13 @@ class CardBubble extends StatelessWidget {
                 onTap: onTap,
                 child: Opacity(
                   opacity: 1 - SettledPalette.contentFade * t,
-                  child: content,
+                  // No filter layer at all for a live card.
+                  child: t == 0
+                      ? content
+                      : ColorFiltered(
+                          colorFilter: SettledPalette.desaturate(t),
+                          child: content,
+                        ),
                 ),
               ),
             ),
