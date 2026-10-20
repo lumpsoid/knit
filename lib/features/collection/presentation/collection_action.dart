@@ -89,6 +89,13 @@ class CardSettleToggled extends CollectionAction {
   final String cardId;
 }
 
+/// Actions sheet → emphasize [cardId], or unemphasize it when it is
+/// emphasized (§3.3).
+class CardEmphasisToggled extends CollectionAction {
+  const CardEmphasisToggled(this.cardId);
+  final String cardId;
+}
+
 /// Tapped a link card's URL → open it in the system browser (§4.2). The updater
 /// resolves the card to its stored link text and emits the open effect; the
 /// launch itself lives behind the LinkLauncher port.
@@ -148,6 +155,12 @@ class SelectionSettleRequested extends CollectionAction {
 /// Links to them become broken, not gone. Leaves selection mode.
 class SelectionDeleteRequested extends CollectionAction {
   const SelectionDeleteRequested();
+}
+
+/// The selection's Emphasize / Unemphasize (§3.3), by the settle rule.
+/// Leaves selection mode.
+class SelectionEmphasisRequested extends CollectionAction {
+  const SelectionEmphasisRequested();
 }
 
 /// Leave multi-select mode (the app-bar "✕" or system back).

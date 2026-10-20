@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
+import 'package:knit/core/emphasized/emphasized_palette.dart';
 import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/core/settled/settled_palette.dart';
@@ -24,6 +25,7 @@ class CardBubble extends StatelessWidget {
     required this.imageBytes,
     required this.onTap,
     this.settled = false,
+    this.emphasized = false,
     this.onImageTap,
     this.onFileTap,
     this.onLinkTap,
@@ -47,6 +49,10 @@ class CardBubble extends StatelessWidget {
   /// Whether the card is settled (§3.3): drawn receded and greyed, with
   /// faint roots behind it. Flipping it animates the change.
   final bool settled;
+
+  /// Whether the card is emphasized (§3.3): a bright warm frame with a soft
+  /// glow. Flipping it animates the change.
+  final bool emphasized;
 
   /// Opens the full-screen image preview; null when the image hasn't loaded yet
   /// (a tap then falls through to [onTap], the card-actions sheet).
@@ -80,57 +86,100 @@ class CardBubble extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 64, 4),
-        // Settling recedes, greys and fades the card and grows its roots; a
-        // card that is already settled when it appears starts there.
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(end: settled ? 1 : 0),
-          duration: const Duration(milliseconds: 900),
-          curve: Curves.easeOutCubic,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: _content(theme, l10n),
-          ),
-          builder: (context, t, content) => Material(
-            color: Color.lerp(
-              base,
-              SettledPalette.background(scheme, base),
-              t,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            clipBehavior: Clip.antiAlias,
-            child: CustomPaint(
-              painter: t == 0
-                  ? null
-                  : SettledRootsPainter(
-                      seed: cardId,
-                      progress: t,
-                      color: SettledPalette.roots(scheme),
-                    ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: onTap,
-                child: Opacity(
-                  opacity: 1 - SettledPalette.contentFade * t,
-                  // No filter layer at all for a live card.
-                  child: t == 0
-                      ? content
-                      : ColorFiltered(
-                          colorFilter: SettledPalette.desaturate(t),
-                          child: content,
-                        ),
-                ),
-              ),
-            ),
-          ),
-        ),
+        child: _emphasisFrame(theme, _settledBubble(scheme, base, l10n, theme)),
       ),
     );
     // Always wrapped, so settling keeps the subtree (and runs the animation).
     return Semantics(
-      label: settled ? l10n.collectionCardSettled : null,
+      label: settled
+          ? l10n.collectionCardSettled
+          : emphasized
+          ? l10n.collectionCardEmphasized
+          : null,
       child: bubble,
     );
   }
+
+  /// Emphasis lights a warm frame and glow around [bubble]; a card that is
+  /// already emphasized when it appears starts there.
+  Widget _emphasisFrame(ThemeData theme, Widget bubble) {
+    final frame = EmphasizedPalette.frame(theme.brightness);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: emphasized ? 1 : 0),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      child: bubble,
+      // Always wrapped, so a flip keeps the bubble's subtree (and its settle
+      // animation); a live card paints no frame and no glow.
+      builder: (context, e, bubble) => DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: e == 0
+              ? null
+              : Border.all(
+                  color: frame.withValues(alpha: e),
+                  width: EmphasizedPalette.frameWidth,
+                ),
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: e == 0
+                ? null
+                : EmphasizedPalette.glow(theme.brightness, e),
+          ),
+          child: bubble,
+        ),
+      ),
+    );
+  }
+
+  Widget _settledBubble(
+    ColorScheme scheme,
+    Color base,
+    AppLocalizations l10n,
+    ThemeData theme,
+  ) =>
+      // Settling recedes, greys and fades the card and grows its roots; a
+      // card that is already settled when it appears starts there.
+      TweenAnimationBuilder<double>(
+        tween: Tween(end: settled ? 1 : 0),
+        duration: const Duration(milliseconds: 900),
+        curve: Curves.easeOutCubic,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: _content(theme, l10n),
+        ),
+        builder: (context, t, content) => Material(
+          color: Color.lerp(base, SettledPalette.background(scheme, base), t),
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: CustomPaint(
+            painter: t == 0
+                ? null
+                : SettledRootsPainter(
+                    seed: cardId,
+                    progress: t,
+                    color: SettledPalette.roots(scheme),
+                  ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: onTap,
+              child: Opacity(
+                opacity: 1 - SettledPalette.contentFade * t,
+                // No filter layer at all for a live card.
+                child: t == 0
+                    ? content
+                    : ColorFiltered(
+                        colorFilter: SettledPalette.desaturate(t),
+                        child: content,
+                      ),
+              ),
+            ),
+          ),
+        ),
+      );
 
   Widget _content(ThemeData theme, AppLocalizations l10n) {
     switch (kind) {

@@ -219,6 +219,13 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           dispatch,
         );
 
+      case EmphasizeCardsEffect(:final cardIds, :final emphasized):
+        await _runWrite(
+          () => _write.setCardsEmphasized(cardIds, emphasized: emphasized),
+          emphasized ? 'emphasize cards' : 'unemphasize cards',
+          dispatch,
+        );
+
       case ReorderCardEffect(:final cardId, :final position):
         await _runWrite(
           () => _write.reorderCard(cardId, position),

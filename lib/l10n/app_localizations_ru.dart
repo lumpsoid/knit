@@ -432,6 +432,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionCardSettled => 'Приглушена';
 
   @override
+  String get collectionActionEmphasize => 'Выделить';
+
+  @override
+  String get collectionActionUnemphasize => 'Снять выделение';
+
+  @override
+  String get collectionCardEmphasized => 'Выделена';
+
+  @override
   String get collectionActionDelete => 'Удалить';
 
   @override
@@ -631,6 +640,12 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get cardEditSettledSubtitle =>
       'Остаётся в истории, но уже не актуальна';
+
+  @override
+  String get cardEditEmphasized => 'Выделена';
+
+  @override
+  String get cardEditEmphasizedSubtitle => 'Выделяется в ленте яркой рамкой';
 
   @override
   String get connectionsTitle => 'Связи';

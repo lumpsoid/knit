@@ -163,6 +163,14 @@ class SettleCardsEffect extends CollectionEffect {
   final bool settled;
 }
 
+/// Emphasize (or, with [emphasized] false, unemphasize) [cardIds] in one
+/// transaction (§3.3).
+class EmphasizeCardsEffect extends CollectionEffect {
+  const EmphasizeCardsEffect(this.cardIds, {required this.emphasized});
+  final List<String> cardIds;
+  final bool emphasized;
+}
+
 class ReorderCardEffect extends CollectionEffect {
   const ReorderCardEffect(this.cardId, this.position);
   final String cardId;

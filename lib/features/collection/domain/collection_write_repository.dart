@@ -40,6 +40,13 @@ abstract interface class CollectionWriteRepository {
     required bool settled,
   });
 
+  /// Emphasize (or, with [emphasized] false, unemphasize) [cardIds] in one
+  /// transaction (§3.3); emphasizing unsettles. Returns the first card's id.
+  Future<Result<String, CollectionFailure>> setCardsEmphasized(
+    List<String> cardIds, {
+    required bool emphasized,
+  });
+
   /// Move cards into [collectionId] in one transaction (all or none):
   /// [positions] maps each card id to its pre-computed position in the target
   /// (§8.7). Returns the target collection id on success.

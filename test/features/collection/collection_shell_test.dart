@@ -338,4 +338,28 @@ void main() {
       expect(after.cards.single.settled, isFalse);
     },
   );
+
+  test('emphasizing writes the cards and clears their settle', () async {
+    final col = (await timelineWrite.createCollection('Steps')).getOrThrow();
+    final a = (await write.addCard(
+      collectionId: col,
+      kind: CardKind.text,
+      position: 'a0',
+      text: 'a',
+    )).getOrThrow();
+    await shell.run(SettleCardsEffect([a], settled: true), dispatch: (_) {});
+
+    final actions = <CollectionAction>[];
+    await shell.run(
+      EmphasizeCardsEffect([a], emphasized: true),
+      dispatch: actions.add,
+    );
+
+    expect(actions.single, isA<ReloadRequested>());
+    final data = (await SyncStoreCollectionReadRepository(
+      graph: graph,
+    ).loadCollection(col)).getOrThrow();
+    expect(data.cards.single.emphasized, isTrue);
+    expect(data.cards.single.settled, isFalse);
+  });
 }

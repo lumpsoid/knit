@@ -73,6 +73,15 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
   });
 
   @override
+  Future<Result<String, CollectionFailure>> setCardsEmphasized(
+    List<String> cardIds, {
+    required bool emphasized,
+  }) => _write(() async {
+    await _graph.store.setCardsEmphasized(cardIds, emphasized: emphasized);
+    return cardIds.first;
+  });
+
+  @override
   Future<Result<String, CollectionFailure>> moveCards(
     String collectionId,
     Map<String, String> positions,

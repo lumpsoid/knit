@@ -57,6 +57,7 @@ class FeedCard {
     this.fileSize,
     this.connectionCount = 0,
     this.settledAt,
+    this.emphasizedAt,
   });
 
   final String id;
@@ -93,6 +94,13 @@ class FeedCard {
 
   bool get settled => settledAt != null;
 
+  /// When the card was emphasized (§3.3), in ms; null when it is not. An
+  /// emphasized card is drawn with a bright frame. The marks are exclusive, so
+  /// a settled card never reads as emphasized.
+  final int? emphasizedAt;
+
+  bool get emphasized => emphasizedAt != null && !settled;
+
   /// The card's capture time, decoded from the millisecond timestamp in the
   /// leading 48 bits of its UUIDv7 [id] (§6.1) — every minted card id is v7, so
   /// this resolves for real cards. Null when [id] isn't a v7 uuid, so callers
@@ -116,6 +124,7 @@ class FeedCard {
     fileSize: fileSize,
     connectionCount: connectionCount,
     settledAt: settledAt,
+    emphasizedAt: emphasizedAt,
   );
 }
 
@@ -145,6 +154,34 @@ class SettleChange {
 
   final List<String> cardIds;
   final bool settled;
+}
+
+/// What an Emphasize / Unemphasize over some cards does (§3.3), by the same
+/// rule as [SettleChange]: unemphasize when every card is emphasized, otherwise
+/// emphasize the rest. [cardIds] holds only the cards whose state changes.
+@immutable
+class EmphasisChange {
+  const EmphasisChange({required this.cardIds, required this.emphasized});
+
+  /// The change for [cards]; empty [cardIds] when there are no cards.
+  factory EmphasisChange.of(Iterable<FeedCard> cards) {
+    final emphasized = !allEmphasized(cards);
+    return EmphasisChange(
+      cardIds: [
+        for (final c in cards)
+          if (c.emphasized != emphasized) c.id,
+      ],
+      emphasized: emphasized,
+    );
+  }
+
+  /// Whether [cards] is non-empty and every one is emphasized — so the action
+  /// reads "Unemphasize".
+  static bool allEmphasized(Iterable<FeedCard> cards) =>
+      cards.isNotEmpty && cards.every((c) => c.emphasized);
+
+  final List<String> cardIds;
+  final bool emphasized;
 }
 
 /// The Collection screen payload — header + ordered feed.

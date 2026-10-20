@@ -67,6 +67,11 @@ class CollectionState {
   /// "Unsettle" (§3.3).
   bool get selectionAllSettled => SettleChange.allSettled(_selectedCards);
 
+  /// Whether every selected card is emphasized, so the selection's action
+  /// reads "Unemphasize" (§3.3).
+  bool get selectionAllEmphasized =>
+      EmphasisChange.allEmphasized(_selectedCards);
+
   Iterable<FeedCard> get _selectedCards =>
       cards.where((c) => selectedCardIds.contains(c.id));
 

@@ -867,4 +867,88 @@ void main() {
       });
     });
   });
+
+  group('emphasize (§3.3)', () {
+    FeedCard marked(String id, String position, {bool settled = false}) =>
+        FeedCard(
+          id: id,
+          kind: CardKind.text,
+          position: position,
+          text: id,
+          settledAt: settled ? 1000 : null,
+          emphasizedAt: settled ? null : 1000,
+        );
+
+    test('the actions sheet emphasizes a live card', () {
+      final (next, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const CardEmphasisToggled('c1'),
+      );
+      final effect = effects!.single as EmphasizeCardsEffect;
+      expect(effect.cardIds, ['c1']);
+      expect(effect.emphasized, isTrue);
+      expect(next.cards.single.emphasized, isFalse, reason: 'no optimism');
+    });
+
+    test('the actions sheet unemphasizes an emphasized card', () {
+      final (_, effects) = updater.update(
+        ready([marked('c1', 'a0')]),
+        const CardEmphasisToggled('c1'),
+      );
+      final effect = effects!.single as EmphasizeCardsEffect;
+      expect(effect.emphasized, isFalse);
+    });
+
+    test('a settled card is emphasized (the write unsettles it)', () {
+      final (_, effects) = updater.update(
+        ready([marked('c1', 'a0', settled: true)]),
+        const CardEmphasisToggled('c1'),
+      );
+      final effect = effects!.single as EmphasizeCardsEffect;
+      expect(effect.cardIds, ['c1']);
+      expect(effect.emphasized, isTrue);
+    });
+
+    test('a mixed selection emphasizes the rest, then clears', () {
+      final state = ready([
+        marked('c1', 'a0'),
+        card('c2', 'a1'),
+        marked('c3', 'a2', settled: true),
+      ]).copyWith(selectedCardIds: {'c1', 'c2', 'c3'});
+      expect(state.selectionAllEmphasized, isFalse);
+
+      final (next, effects) = updater.update(
+        state,
+        const SelectionEmphasisRequested(),
+      );
+      final effect = effects!.single as EmphasizeCardsEffect;
+      expect(effect.cardIds, ['c2', 'c3']);
+      expect(effect.emphasized, isTrue);
+      expect(next.selecting, isFalse);
+    });
+
+    test('an all-emphasized selection unemphasizes them all', () {
+      final state = ready([
+        marked('c1', 'a0'),
+        marked('c2', 'a1'),
+      ]).copyWith(selectedCardIds: {'c1', 'c2'});
+      expect(state.selectionAllEmphasized, isTrue);
+
+      final (_, effects) = updater.update(
+        state,
+        const SelectionEmphasisRequested(),
+      );
+      final effect = effects!.single as EmphasizeCardsEffect;
+      expect(effect.cardIds, ['c1', 'c2']);
+      expect(effect.emphasized, isFalse);
+    });
+
+    test('outside selection mode it does nothing', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const SelectionEmphasisRequested(),
+      );
+      expect(effects, isNull);
+    });
+  });
 }

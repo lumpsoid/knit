@@ -172,6 +172,9 @@
   "collectionActionSettle": "Приглушить",
   "collectionActionUnsettle": "Оживить",
   "collectionCardSettled": "Приглушена",
+  "collectionActionEmphasize": "Выделить",
+  "collectionActionUnemphasize": "Снять выделение",
+  "collectionCardEmphasized": "Выделена",
   "collectionActionDelete": "Удалить",
   "collectionCardLink": "Ссылка",
   "collectionCardPhoto": "Фото",
@@ -252,6 +255,8 @@
   "cardEditSaveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
   "cardEditSettled": "Приглушена",
   "cardEditSettledSubtitle": "Остаётся в истории, но уже не актуальна",
+  "cardEditEmphasized": "Выделена",
+  "cardEditEmphasizedSubtitle": "Выделяется в ленте яркой рамкой",
 
   "connectionsTitle": "Связи",
   "connectionsClearTitle": "Очистить эту связь?",

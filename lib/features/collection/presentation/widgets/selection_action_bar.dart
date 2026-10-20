@@ -12,6 +12,8 @@ class SelectionActionBar extends StatelessWidget {
     required this.onUnselectAll,
     required this.allSettled,
     required this.onSettle,
+    required this.allEmphasized,
+    required this.onEmphasize,
     required this.onMove,
     required this.onDelete,
   });
@@ -26,6 +28,11 @@ class SelectionActionBar extends StatelessWidget {
   /// unsettles them.
   final bool allSettled;
   final VoidCallback onSettle;
+
+  /// Whether every selected card is emphasized (§3.3); the emphasize button
+  /// then unemphasizes them.
+  final bool allEmphasized;
+  final VoidCallback onEmphasize;
   final VoidCallback onMove;
   final VoidCallback onDelete;
 
@@ -65,6 +72,17 @@ class SelectionActionBar extends StatelessWidget {
                     : l10n.collectionActionSettle,
                 icon: Icon(allSettled ? Icons.eco : Icons.eco_outlined),
                 onPressed: onSettle,
+              ),
+              IconButton(
+                tooltip: allEmphasized
+                    ? l10n.collectionActionUnemphasize
+                    : l10n.collectionActionEmphasize,
+                icon: Icon(
+                  allEmphasized
+                      ? Icons.auto_awesome
+                      : Icons.auto_awesome_outlined,
+                ),
+                onPressed: onEmphasize,
               ),
               const SizedBox(width: 4),
               FilledButton.tonalIcon(

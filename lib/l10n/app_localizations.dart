@@ -824,6 +824,24 @@ abstract class AppLocalizations {
   /// **'Settled'**
   String get collectionCardSettled;
 
+  /// No description provided for @collectionActionEmphasize.
+  ///
+  /// In en, this message translates to:
+  /// **'Emphasize'**
+  String get collectionActionEmphasize;
+
+  /// No description provided for @collectionActionUnemphasize.
+  ///
+  /// In en, this message translates to:
+  /// **'Unemphasize'**
+  String get collectionActionUnemphasize;
+
+  /// No description provided for @collectionCardEmphasized.
+  ///
+  /// In en, this message translates to:
+  /// **'Emphasized'**
+  String get collectionCardEmphasized;
+
   /// No description provided for @collectionActionDelete.
   ///
   /// In en, this message translates to:
@@ -1135,6 +1153,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kept for history, no longer current'**
   String get cardEditSettledSubtitle;
+
+  /// No description provided for @cardEditEmphasized.
+  ///
+  /// In en, this message translates to:
+  /// **'Emphasized'**
+  String get cardEditEmphasized;
+
+  /// No description provided for @cardEditEmphasizedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stands out in the feed with a bright frame'**
+  String get cardEditEmphasizedSubtitle;
 
   /// No description provided for @connectionsTitle.
   ///

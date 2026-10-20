@@ -426,6 +426,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionCardSettled => 'Settled';
 
   @override
+  String get collectionActionEmphasize => 'Emphasize';
+
+  @override
+  String get collectionActionUnemphasize => 'Unemphasize';
+
+  @override
+  String get collectionCardEmphasized => 'Emphasized';
+
+  @override
   String get collectionActionDelete => 'Delete';
 
   @override
@@ -615,6 +624,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardEditSettledSubtitle => 'Kept for history, no longer current';
+
+  @override
+  String get cardEditEmphasized => 'Emphasized';
+
+  @override
+  String get cardEditEmphasizedSubtitle =>
+      'Stands out in the feed with a bright frame';
 
   @override
   String get connectionsTitle => 'Connections';

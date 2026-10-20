@@ -175,6 +175,9 @@
   "collectionActionSettle": "Settle",
   "collectionActionUnsettle": "Unsettle",
   "collectionCardSettled": "Settled",
+  "collectionActionEmphasize": "Emphasize",
+  "collectionActionUnemphasize": "Unemphasize",
+  "collectionCardEmphasized": "Emphasized",
   "collectionActionDelete": "Delete",
   "collectionCardLink": "Link",
   "collectionCardPhoto": "Photo",
@@ -255,6 +258,8 @@
   "cardEditSaveFailed": "That didn't save. Please try again.",
   "cardEditSettled": "Settled",
   "cardEditSettledSubtitle": "Kept for history, no longer current",
+  "cardEditEmphasized": "Emphasized",
+  "cardEditEmphasizedSubtitle": "Stands out in the feed with a bright frame",
 
   "connectionsTitle": "Connections",
   "connectionsClearTitle": "Clear this link?",
