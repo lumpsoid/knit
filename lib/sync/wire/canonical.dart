@@ -40,6 +40,7 @@ abstract class CanonicalSerializer {
     'created_at',
     'created_by',
     'deleted',
+    'emphasized_at',
     'hlc_counter',
     'hlc_ms',
     'id',

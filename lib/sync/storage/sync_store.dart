@@ -454,11 +454,46 @@ class SyncStore {
 
   /// Settle (or, with [settled] false, unsettle) cards (§3.3) — a content
   /// write per card that sets `settled_at` to the write's own stamp time, or
-  /// clears it. Placement is left frozen (§8.4). All the ops commit in **one**
-  /// transaction. Returns the ops in [cardIds] order.
+  /// clears it. Settling also clears `emphasized_at`: a card is live, settled
+  /// or emphasized, never both. Placement is left frozen (§8.4). All the ops
+  /// commit in **one** transaction. Returns the ops in [cardIds] order.
   Future<List<PersistedOp>> setCardsSettled(
     Iterable<String> cardIds, {
     required bool settled,
+    int? physicalNowMs,
+  }) => _setCardsMark(
+    cardIds,
+    field: 'settled_at',
+    other: 'emphasized_at',
+    on: settled,
+    what: 'settle',
+    physicalNowMs: physicalNowMs,
+  );
+
+  /// Emphasize (or, with [emphasized] false, unemphasize) cards (§3.3) — the
+  /// counterpart of [setCardsSettled] on `emphasized_at`. Emphasizing clears
+  /// `settled_at`. One transaction; returns the ops in [cardIds] order.
+  Future<List<PersistedOp>> setCardsEmphasized(
+    Iterable<String> cardIds, {
+    required bool emphasized,
+    int? physicalNowMs,
+  }) => _setCardsMark(
+    cardIds,
+    field: 'emphasized_at',
+    other: 'settled_at',
+    on: emphasized,
+    what: 'emphasize',
+    physicalNowMs: physicalNowMs,
+  );
+
+  /// Sets a card mark [field] to the write's stamp time (or clears it), and
+  /// clears the exclusive [other] mark when setting it.
+  Future<List<PersistedOp>> _setCardsMark(
+    Iterable<String> cardIds, {
+    required String field,
+    required String other,
+    required bool on,
+    required String what,
     int? physicalNowMs,
   }) async {
     final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
@@ -474,16 +509,17 @@ class SyncStore {
             type: EntityType.card,
             id: cardId,
             build: (stamp, prior, author) {
-              final base = _require(prior, 'settle', EntityType.card, cardId);
+              final base = _require(prior, what, EntityType.card, cardId);
               return base.copyWith(
                 author: author,
                 createdBy: base.createdBy, // preserve, never restamp (§6.2)
-                hlc: stamp, // settled_at is content (§8.4)
+                hlc: stamp, // the marks are content (§8.4)
                 deleted: false,
                 sig: '',
                 content: {
                   ...base.content,
-                  'settled_at': settled ? stamp.ms : null,
+                  field: on ? stamp.ms : null,
+                  if (on) other: null,
                 },
               );
             },
@@ -724,6 +760,7 @@ class SyncStore {
         'attachment_id': null,
         'text': null,
         'settled_at': null,
+        'emphasized_at': null,
       },
       EntityType.link => const {'label': null},
       EntityType.profile => const {'nickname': null},

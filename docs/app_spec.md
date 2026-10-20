@@ -88,6 +88,19 @@ history, so a card can instead be **settled**.
   clock like any edit (§8.4). It is synced and signed, so other devices and shared copies
   see it. Its value is the settling write's own stamp time.
 
+**Emphasized cards** are the opposite mark: a card that matters more than its neighbours
+(a key decision, the one number to remember) can be **emphasized**.
+
+- An emphasized card also **stays where it is**. It is drawn louder: a bright warm-amber
+  frame with a soft glow around the bubble. Only the Collection feed shows it; home and
+  search are unchanged.
+- A card is live, settled **or** emphasized, never both: emphasizing a settled card
+  unsettles it, and settling an emphasized card clears the emphasis.
+- **Emphasize / Unemphasize** sits beside Settle in the actions sheet, the multi-select bar
+  (same all-or-nothing rule) and Card Edit.
+- Data: one nullable `emphasized_at` on `card` (ms), written exactly like `settled_at`; the
+  write that sets one mark nulls the other in the same op.
+
 ### 3.4 Archived collections
 
 A collection that is done for now, but worth keeping, can be **archived** instead of
@@ -138,13 +151,13 @@ deleted. Archiving takes it off the home timeline without losing anything.
 - **"+" add-block menu** (bottom sheet, grid: link · photo · audio-later) → standalone card
   blocks. Selecting a type transforms the sheet into that block's sheet — "link" becomes a
   **finder sheet** (search cards / collections / existing link objects).
-- **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle (§3.3) ·
+- **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle · emphasize/unemphasize (§3.3) ·
   delete.
 - **Reorder mode** — drag-to-reorder, a *state of this screen*, not a separate screen.
   **Reorder applies only to cards within this collection**; there is no reordering on Home.
 - **Multi-select mode** — long-press a card to select it; while selecting, a tap toggles a
   card, the app bar shows the count, and the bottom bar offers *select all*, **Settle /
-  Unsettle** (§3.3) and **Move to collection**. Move opens a
+  Unsettle**, **Emphasize / Unemphasize** (§3.3) and **Move to collection**. Move opens a
   picker of the other live collections (most recently updated first); the selected cards are
   appended to the target's end, keeping their relative feed order, in **one transaction** (all
   or none). The source feed drops them, and a snackbar offers to open the target. Back (or
@@ -155,7 +168,8 @@ deleted. Archiving takes it off the home timeline without losing anything.
   collection-edit page** to edit title, description, and add/replace/remove the cover image.
 
 ### 4.3 Card Edit (from the actions sheet)
-Edit text/content; manage that card's image and its links; a **Settled** toggle (§3.3).
+Edit text/content; manage that card's image and its links; **Settled** and
+**Emphasized** toggles (§3.3).
 
 ### 4.4 Connections view
 A card's links-out + linked-from (backlinks), each tappable to jump; breadcrumb back-stack
@@ -289,6 +303,7 @@ CREATE TABLE card (
   text              TEXT,               -- body, or caption for media/link cards
   attachment_id     TEXT,               -- "add image to card" or kind=image/audio
   settled_at        INTEGER,            -- nullable; when the card was settled (§3.3)
+  emphasized_at     INTEGER,            -- nullable; when the card was emphasized (§3.3)
   position          TEXT NOT NULL,      -- fractional-index string (compared lexicographically)
   position_ms       INTEGER NOT NULL,   -- SEPARATE reorder clock, physical
   position_counter  INTEGER NOT NULL    -- SEPARATE reorder clock, logical
@@ -587,18 +602,19 @@ string above.)
 `op:"delete"`, `op_id:"0192f1a2-3b4c-7def-8123-000000000001@1718107200000.0.<sig16>"`.
 
 **7.4.3 Card — put** (fields: `attachment_id, author, collection_id, created_at, created_by,
-deleted, hlc_counter, hlc_ms, id, kind, position, position_counter, position_ms, settled_at,
-t, text`). `settled_at` (§3.3) was added after v1: a payload from an older peer may omit it,
+deleted, emphasized_at, hlc_counter, hlc_ms, id, kind, position, position_counter,
+position_ms, settled_at, t, text`). `settled_at` and `emphasized_at` (§3.3) were added after
+v1: a payload from an older peer may omit them,
 which reads as null. Verification is over the received bytes (§7.0), so those ops still
 verify; the next local write of that card emits the full field set.
 ```
-{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":0,"hlc_counter":0,"hlc_ms":1718020860000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
+{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":0,"emphasized_at":null,"hlc_counter":0,"hlc_ms":1718020860000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
 ```
 
 **7.4.4 Card — delete** (`position`/`position_ms`/`position_counter` unchanged — a delete is
 not a reorder; content HLC bumps)
 ```
-{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":1,"hlc_counter":0,"hlc_ms":1718020980000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
+{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":1,"emphasized_at":null,"hlc_counter":0,"hlc_ms":1718020980000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
 ```
 
 **7.4.5 Link — put** (fields: `author, created_at, created_by, deleted, hlc_counter, hlc_ms,
@@ -763,6 +779,7 @@ The device clock advances on **every** local event; only the *target stamp* diff
 | Edit card text/image/kind | new stamp | **unchanged** |
 | Delete card (`deleted=1`) | new stamp | **unchanged** |
 | Settle / unsettle card (`settled_at`, §3.3) | new stamp | **unchanged** |
+| Emphasize / unemphasize card (`emphasized_at`, §3.3) | new stamp | **unchanged** |
 | Archive / unarchive collection (`archived_at`, §3.4) | new stamp | n/a |
 | Reorder card | **unchanged** | new stamp |
 | Move card to another collection | new stamp (`collection_id`) | new stamp (target position) |

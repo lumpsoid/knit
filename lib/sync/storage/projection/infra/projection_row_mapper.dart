@@ -37,6 +37,7 @@ abstract class ProjectionRowMapper {
         CardSchema.colText: c[CardSchema.colText],
         CardSchema.colAttachmentId: c[CardSchema.colAttachmentId],
         CardSchema.colSettledAt: c[CardSchema.colSettledAt],
+        CardSchema.colEmphasizedAt: c[CardSchema.colEmphasizedAt],
         CardSchema.colPosition: s.position,
         CardSchema.colPositionMs: s.placement!.ms,
         CardSchema.colPositionCounter: s.placement!.counter,
@@ -110,6 +111,7 @@ abstract class ProjectionRowMapper {
           CardSchema.colText: row[CardSchema.colText],
           CardSchema.colAttachmentId: row[CardSchema.colAttachmentId],
           CardSchema.colSettledAt: row[CardSchema.colSettledAt],
+          CardSchema.colEmphasizedAt: row[CardSchema.colEmphasizedAt],
         },
       ),
       EntityType.link => build(

@@ -113,12 +113,25 @@ List<Migration> knitMigrations() => [
       'DROP COLUMN ${CollectionSchema.colArchivedAt}',
     ),
   ),
+  // v7: when a card was emphasized (spec §3.3/§7.4.3); null when it is not.
+  Migration(
+    version: 7,
+    description: 'add card.emphasized_at (§3.3/§7.4.3)',
+    up: (db) => db.execute(
+      'ALTER TABLE ${CardSchema.table} '
+      'ADD COLUMN ${CardSchema.colEmphasizedAt} INTEGER',
+    ),
+    down: (db) => db.execute(
+      'ALTER TABLE ${CardSchema.table} '
+      'DROP COLUMN ${CardSchema.colEmphasizedAt}',
+    ),
+  ),
 ];
 
 /// The frozen v1 schema — literal DDL, the shape the first build shipped.
 /// `attachment.name` (v2), `collection.description` (v3), `card.settled_at`
-/// (v5) and `collection.archived_at` (v6) are intentionally absent; later
-/// migrations add them. Do not edit these strings.
+/// (v5), `collection.archived_at` (v6) and `card.emphasized_at` (v7) are
+/// intentionally absent; later migrations add them. Do not edit these strings.
 const List<String> _v1BaselineDdl = [
   '''
   CREATE TABLE IF NOT EXISTS collection (

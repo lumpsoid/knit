@@ -67,6 +67,9 @@ abstract class CardSchema {
 
   /// When the card was settled (§3.3) — ms, or null while it is live.
   static const String colSettledAt = 'settled_at';
+
+  /// When the card was emphasized (§3.3) — ms, or null when it is not.
+  static const String colEmphasizedAt = 'emphasized_at';
   static const String colPosition = 'position';
   static const String colPositionMs = 'position_ms';
   static const String colPositionCounter = 'position_counter';
@@ -80,6 +83,7 @@ abstract class CardSchema {
         $colText             TEXT,
         $colAttachmentId     TEXT,
         $colSettledAt        INTEGER,
+        $colEmphasizedAt     INTEGER,
         $colPosition         TEXT NOT NULL,
         $colPositionMs       INTEGER NOT NULL,
         $colPositionCounter  INTEGER NOT NULL

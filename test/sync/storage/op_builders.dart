@@ -101,6 +101,7 @@ Snapshot card({
   String text = '',
   String? attachmentId,
   int? settledAt,
+  int? emphasizedAt,
   String position = 'a0',
   bool deleted = false,
   String sig = 'sig',
@@ -121,5 +122,6 @@ Snapshot card({
     'text': text,
     'attachment_id': attachmentId,
     'settled_at': settledAt,
+    'emphasized_at': emphasizedAt,
   },
 );

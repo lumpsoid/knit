@@ -26,13 +26,13 @@ void main() {
     return rows.map((r) => r['name'] as String).toSet();
   }
 
-  test('fresh install applies the whole chain to v6 without error', () async {
+  test('fresh install applies the whole chain to v7 without error', () async {
     final db = await openDb();
     final migrator = migratorFor(db);
 
     await migrator.migrate();
 
-    expect(await migrator.currentVersion(), 6);
+    expect(await migrator.currentVersion(), 7);
     expect(
       await columnsOf(db, AttachmentSchema.table),
       contains(AttachmentSchema.colName),
@@ -48,6 +48,10 @@ void main() {
     expect(
       await columnsOf(db, CollectionSchema.table),
       contains(CollectionSchema.colArchivedAt),
+    );
+    expect(
+      await columnsOf(db, CardSchema.table),
+      contains(CardSchema.colEmphasizedAt),
     );
   });
 
@@ -73,6 +77,10 @@ void main() {
         await columnsOf(db, CollectionSchema.table),
         isNot(contains(CollectionSchema.colArchivedAt)),
       );
+      expect(
+        await columnsOf(db, CardSchema.table),
+        isNot(contains(CardSchema.colEmphasizedAt)),
+      );
     },
   );
 
@@ -83,7 +91,7 @@ void main() {
     await migrator.migrateTo(1); // a device created by the first build
     await migrator.migrate(); // ... later upgrades
 
-    expect(await migrator.currentVersion(), 6);
+    expect(await migrator.currentVersion(), 7);
     expect(
       await columnsOf(db, AttachmentSchema.table),
       contains(AttachmentSchema.colName),
@@ -113,7 +121,7 @@ void main() {
 
     await migrator.migrate();
     expect(await migrator.migrate(), isEmpty);
-    expect(await migrator.currentVersion(), 6);
+    expect(await migrator.currentVersion(), 7);
   });
 
   test('migrated schema converges to the live *Schema constants', () async {
