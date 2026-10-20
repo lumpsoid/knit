@@ -44,6 +44,7 @@ class CollectionSummary {
     required this.cardCount,
     required this.lastCard,
     required this.lastUpdated,
+    this.archived = false,
   });
 
   final String collectionId;
@@ -64,12 +65,17 @@ class CollectionSummary {
   /// `MAX(created_at)` over live cards, else the collection's own `created_at`
   /// (spec §8.6.3). Drives the home sort (`last_updated DESC`).
   final int lastUpdated;
+
+  /// Whether the collection is archived (spec §3.4): off the home timeline,
+  /// listed on the Archive page instead.
+  final bool archived;
 }
 
 /// Build the §8.6.3 home timeline from the full projection ([readAll] output):
 /// one [CollectionSummary] per live collection, sorted `last_updated DESC`
 /// (latest-updated first; ties broken by id for determinism). Tombstoned
-/// collections and cards are excluded.
+/// collections and cards are excluded. Archived collections (§3.4) are kept and
+/// flagged — the home screen sets them aside, other pickers still offer them.
 ///
 /// > Flagged limitation (spec §8.6.3): `last_updated` tracks card *adds*, not
 /// > edits — `created_at` is immutable and the HLC has no display duty, so
@@ -130,5 +136,6 @@ CollectionSummary _summarize(Snapshot collection, List<Snapshot> liveCards) {
     cardCount: liveCards.length,
     lastCard: lastCard == null ? null : CardPreview.of(lastCard),
     lastUpdated: lastUpdated,
+    archived: collection.content['archived_at'] != null,
   );
 }

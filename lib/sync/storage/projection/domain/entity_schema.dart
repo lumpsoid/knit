@@ -40,13 +40,18 @@ abstract class CollectionSchema {
   static const String colDescription = 'description';
   static const String colCoverAttachmentId = 'cover_attachment_id';
 
+  /// When the collection was archived (§3.4) — ms, or null while it is on the
+  /// home timeline.
+  static const String colArchivedAt = 'archived_at';
+
   static const String createTable =
       '''
       CREATE TABLE IF NOT EXISTS $table (
         ${EnvelopeColumns.ddl},
         $colTitle              TEXT NOT NULL,
         $colDescription        TEXT,
-        $colCoverAttachmentId  TEXT
+        $colCoverAttachmentId  TEXT,
+        $colArchivedAt         INTEGER
       )
       ''';
 }

@@ -459,6 +459,37 @@ class SyncStore {
     });
   }
 
+  /// Archive (or, with [archived] false, unarchive) a collection (§3.4) — a
+  /// content write that sets `archived_at` to the write's own stamp time, or
+  /// clears it. Its cards are untouched.
+  Future<PersistedOp> setCollectionArchived(
+    String collectionId, {
+    required bool archived,
+    int? physicalNowMs,
+  }) {
+    return _writeLocal(
+      type: EntityType.collection,
+      id: collectionId,
+      physicalNowMs: physicalNowMs,
+      build: (stamp, prior, author) {
+        final base = _require(
+          prior,
+          'archive',
+          EntityType.collection,
+          collectionId,
+        );
+        return base.copyWith(
+          author: author,
+          createdBy: base.createdBy, // preserve, never restamp (§6.2)
+          hlc: stamp,
+          deleted: false,
+          sig: '',
+          content: {...base.content, 'archived_at': archived ? stamp.ms : null},
+        );
+      },
+    );
+  }
+
   /// The shared one-transaction local write (spec §6.8 steps 1–3): one
   /// [_writeOne] plus the device-clock save, committed together.
   Future<PersistedOp> _writeLocal({
@@ -651,6 +682,7 @@ class SyncStore {
       EntityType.collection => const {
         'description': null,
         'cover_attachment_id': null,
+        'archived_at': null,
       },
       EntityType.card => const {
         'attachment_id': null,

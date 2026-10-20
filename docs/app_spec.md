@@ -88,6 +88,23 @@ history, so a card can instead be **settled**.
   clock like any edit (§8.4). It is synced and signed, so other devices and shared copies
   see it. Its value is the settling write's own stamp time.
 
+### 3.4 Archived collections
+
+A collection that is done for now, but worth keeping, can be **archived** instead of
+deleted. Archiving takes it off the home timeline without losing anything.
+
+- An archived collection **leaves the home list** (§4.1) and is listed on the **Archive**
+  page, reached from a hidden row at the top of Home. Its cards, links and title are
+  untouched, and it still opens, edits and accepts new cards as usual.
+- It **stays reachable everywhere else**: search, the link picker, Move to collection, share
+  capture and the home-screen widget picker still offer it.
+- New cards do **not** unarchive it, whether added here, captured, moved in or synced.
+  Unarchiving is always explicit.
+- Archiving a pinned collection also **unpins** it (pins are device-local, §4.1).
+- Data: one nullable `archived_at` on `collection` (ms; null = on Home), written on the
+  content clock like any edit (§8.4). It is synced and signed, so other devices see it. Its
+  value is the archiving write's own stamp time.
+
 ## 4. Screens & navigation
 
 ### 4.1 Home / Collections Timeline (root)
@@ -252,7 +269,8 @@ CREATE TABLE collection (
   -- envelope...
   title                TEXT NOT NULL,
   description          TEXT,            -- nullable; short blurb on the header card
-  cover_attachment_id  TEXT             -- nullable; image on the home timeline
+  cover_attachment_id  TEXT,            -- nullable; image on the home timeline
+  archived_at          INTEGER          -- nullable; when the collection was archived (§3.4)
 );
 
 -- one step/point/clip in a feed (a node)
@@ -527,8 +545,10 @@ creator, unchanged).
 Example identity: `mira#a4f9`, pubkey
 `9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08`.
 
-**7.4.1 Collection — put** (fields: `author, cover_attachment_id, created_at, created_by,
-deleted, description, hlc_counter, hlc_ms, id, t, title`)
+**7.4.1 Collection — put** (fields: `archived_at, author, cover_attachment_id, created_at,
+created_by, deleted, description, hlc_counter, hlc_ms, id, t, title`). `archived_at` (§3.4)
+was added after v1. As with a card's `settled_at` (§7.4.3), a payload from an older peer may
+omit it, which reads as null. The examples below show the v1 field set.
 ```
 {"author":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08","cover_attachment_id":null,"created_at":1718020800000,"created_by":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08","deleted":0,"description":null,"hlc_counter":0,"hlc_ms":1718020800000,"id":"0192f1a2-3b4c-7def-8123-000000000001","t":"collection","title":"Espresso dialing-in"}
 ```
@@ -735,6 +755,7 @@ The device clock advances on **every** local event; only the *target stamp* diff
 | Edit card text/image/kind | new stamp | **unchanged** |
 | Delete card (`deleted=1`) | new stamp | **unchanged** |
 | Settle / unsettle card (`settled_at`, §3.3) | new stamp | **unchanged** |
+| Archive / unarchive collection (`archived_at`, §3.4) | new stamp | n/a |
 | Reorder card | **unchanged** | new stamp |
 | Move card to another collection | new stamp (`collection_id`) | new stamp (target position) |
 | Any non-card entity write | new stamp | n/a |

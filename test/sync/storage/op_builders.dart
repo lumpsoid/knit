@@ -29,6 +29,7 @@ Snapshot collection({
   String title = 't',
   String? description,
   String? coverAttachmentId,
+  int? archivedAt,
 }) => Snapshot(
   type: EntityType.collection,
   id: id,
@@ -42,6 +43,7 @@ Snapshot collection({
     'title': title,
     'description': description,
     'cover_attachment_id': coverAttachmentId,
+    'archived_at': archivedAt,
   },
 );
 

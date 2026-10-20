@@ -24,11 +24,12 @@ void main() {
           'title': 'Espresso dialing-in',
           'description': null,
           'cover_attachment_id': null,
+          'archived_at': null,
         },
       );
 
       const expected =
-          '{"author":"$pub","cover_attachment_id":null,'
+          '{"archived_at":null,"author":"$pub","cover_attachment_id":null,'
           '"created_at":1718020800000,"created_by":"$pub","deleted":0,'
           '"description":null,'
           '"hlc_counter":0,"hlc_ms":1718020800000,'
@@ -177,6 +178,7 @@ void main() {
           'title': title,
           'description': null,
           'cover_attachment_id': null,
+          'archived_at': null,
         },
       );
       final out = CanonicalSerializer.string(s);
@@ -241,6 +243,7 @@ void main() {
           'title': 't',
           'description': null,
           'cover_attachment_id': null,
+          'archived_at': null,
         },
       );
       expect(

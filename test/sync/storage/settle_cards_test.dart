@@ -31,18 +31,22 @@ void main() {
     }
   });
 
-  test('a new card is live: settled_at is null in its signed payload', () async {
-    final c1 = (await store.get(EntityType.card, 'c1'))!;
-    expect(c1.content['settled_at'], isNull);
-    expect(CanonicalSerializer.string(c1), contains('"settled_at":null'));
-  });
+  test(
+    'a new card is live: settled_at is null in its signed payload',
+    () async {
+      final c1 = (await store.get(EntityType.card, 'c1'))!;
+      expect(c1.content['settled_at'], isNull);
+      expect(CanonicalSerializer.string(c1), contains('"settled_at":null'));
+    },
+  );
 
   test('settles cards on the content clock, placement frozen', () async {
     final created = (await store.get(EntityType.card, 'c1'))!;
-    final ops = await store.setCardsSettled([
-      'c1',
-      'c2',
-    ], settled: true, physicalNowMs: 5000);
+    final ops = await store.setCardsSettled(
+      ['c1', 'c2'],
+      settled: true,
+      physicalNowMs: 5000,
+    );
 
     expect(ops, hasLength(2));
     final c1 = (await store.get(EntityType.card, 'c1'))!;

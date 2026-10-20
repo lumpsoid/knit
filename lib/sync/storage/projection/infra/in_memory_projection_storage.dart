@@ -72,9 +72,7 @@ class InMemoryProjectionStorage implements ProjectionStorage {
     StorageContext? ctx,
   }) async {
     final table = _tables[type]!;
-    return [
-      for (final id in ids.toSet()) ?table[id],
-    ];
+    return [for (final id in ids.toSet()) ?table[id]];
   }
 
   @override

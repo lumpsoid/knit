@@ -20,6 +20,7 @@ abstract class CanonicalSerializer {
   // (it lives in the op envelope, never signed-over, §7.2); local-only fields
   // (`local_path`, `seq`, `acked`, `origin`) are excluded too (§7.1).
   static const Set<String> _collectionKeys = {
+    'archived_at',
     'author',
     'cover_attachment_id',
     'created_at',
