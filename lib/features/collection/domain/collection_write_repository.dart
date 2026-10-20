@@ -22,6 +22,10 @@ abstract interface class CollectionWriteRepository {
   /// Soft-delete a card (§6.1). Links to it become broken chips, never vanish.
   Future<Result<String, CollectionFailure>> deleteCard(String cardId);
 
+  /// Soft-delete [cardIds] in one transaction (all or none). Returns the first
+  /// card's id on success.
+  Future<Result<String, CollectionFailure>> deleteCards(List<String> cardIds);
+
   /// Move a card to [position] — a placement-only write (§8.4).
   Future<Result<String, CollectionFailure>> reorderCard(
     String cardId,

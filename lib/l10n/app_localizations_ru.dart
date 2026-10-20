@@ -988,6 +988,26 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionMoveTooltip => 'Переместить в коллекцию';
 
   @override
+  String get collectionDeleteSelectedTooltip => 'Удалить выбранные';
+
+  @override
+  String collectionDeleteSelectedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Удалить $count карточки?',
+      many: 'Удалить $count карточек?',
+      few: 'Удалить $count карточки?',
+      one: 'Удалить 1 карточку?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get collectionDeleteSelectedBody =>
+      'Ссылки на них станут недействительными.';
+
+  @override
   String get collectionMoveSheetTitle => 'Переместить в…';
 
   @override

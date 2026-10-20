@@ -1754,6 +1754,24 @@ abstract class AppLocalizations {
   /// **'Move to collection'**
   String get collectionMoveTooltip;
 
+  /// No description provided for @collectionDeleteSelectedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get collectionDeleteSelectedTooltip;
+
+  /// No description provided for @collectionDeleteSelectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Delete 1 card?} other{Delete {count} cards?}}'**
+  String collectionDeleteSelectedTitle(int count);
+
+  /// No description provided for @collectionDeleteSelectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Links to them will show as broken.'**
+  String get collectionDeleteSelectedBody;
+
   /// No description provided for @collectionMoveSheetTitle.
   ///
   /// In en, this message translates to:

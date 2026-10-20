@@ -121,6 +121,14 @@ class DeleteCardEffect extends CollectionEffect {
   final String? attachmentId;
 }
 
+/// Delete the selected [cardIds] in one transaction (§4.2). [attachmentIds]
+/// are their attachments, reclaimed once the cards are gone.
+class DeleteCardsEffect extends CollectionEffect {
+  const DeleteCardsEffect(this.cardIds, {this.attachmentIds = const []});
+  final List<String> cardIds;
+  final List<String> attachmentIds;
+}
+
 /// Share a card (§4.2). The updater resolves the card to its shareable content:
 /// [text] is the body/caption (null when blank); [attachmentId] is set for an
 /// image or file card (the shell loads its bytes). For a file card [fileName]

@@ -283,6 +283,22 @@ class CollectionUpdater
           ]),
         );
 
+      case SelectionDeleteRequested():
+        if (!state.selecting) return (state, null);
+        final selected = [
+          for (final c in state.cards)
+            if (state.selectedCardIds.contains(c.id)) c,
+        ];
+        return (
+          state.copyWith(selectedCardIds: const {}),
+          [
+            DeleteCardsEffect(
+              [for (final c in selected) c.id],
+              attachmentIds: [for (final c in selected) ?c.attachmentId],
+            ),
+          ],
+        );
+
       case SelectionCleared():
         return (state.copyWith(selectedCardIds: const {}), null);
 

@@ -412,6 +412,14 @@
   "collectionUnselectAll": "Снять выбор",
   "collectionClearSelectionTooltip": "Отменить выбор",
   "collectionMoveTooltip": "Переместить в коллекцию",
+  "collectionDeleteSelectedTooltip": "Удалить выбранные",
+  "collectionDeleteSelectedTitle": "{count, plural, =1{Удалить 1 карточку?} few{Удалить {count} карточки?} many{Удалить {count} карточек?} other{Удалить {count} карточки?}}",
+  "@collectionDeleteSelectedTitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "collectionDeleteSelectedBody": "Ссылки на них станут недействительными.",
   "collectionMoveSheetTitle": "Переместить в…",
   "collectionMoveNoTargets": "Других коллекций пока нет.",
   "collectionMoveTargetsError": "Не удалось загрузить коллекции.",

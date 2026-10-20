@@ -189,6 +189,18 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           onSuccess: () => _gcDeletedCardAttachment(attachmentId),
         );
 
+      case DeleteCardsEffect(:final cardIds, :final attachmentIds):
+        await _runWrite(
+          () => _write.deleteCards(cardIds),
+          'delete cards',
+          dispatch,
+          onSuccess: () async {
+            for (final id in attachmentIds) {
+              await _gcDeletedCardAttachment(id);
+            }
+          },
+        );
+
       case ShareCardEffect(
         :final text,
         :final attachmentId,

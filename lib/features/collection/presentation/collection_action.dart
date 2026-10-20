@@ -144,6 +144,12 @@ class SelectionSettleRequested extends CollectionAction {
   const SelectionSettleRequested();
 }
 
+/// The selection's Delete (confirmed by the user): delete the selected cards.
+/// Links to them become broken, not gone. Leaves selection mode.
+class SelectionDeleteRequested extends CollectionAction {
+  const SelectionDeleteRequested();
+}
+
 /// Leave multi-select mode (the app-bar "✕" or system back).
 class SelectionCleared extends CollectionAction {
   const SelectionCleared();

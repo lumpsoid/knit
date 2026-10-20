@@ -838,5 +838,33 @@ void main() {
       );
       expect(effects, isNull);
     });
+    group('delete selected cards', () {
+      test(
+        'deletes the selected cards with their attachments, then clears',
+        () {
+          final state = ready([
+            card('c1', 'a0'),
+            card('c2', 'a1'),
+            card('c3', 'a2'),
+          ]).copyWith(selectedCardIds: {'c3', 'c1'});
+
+          final (next, effects) = updater.update(
+            state,
+            const SelectionDeleteRequested(),
+          );
+          final effect = effects!.single as DeleteCardsEffect;
+          expect(effect.cardIds, ['c1', 'c3'], reason: 'feed order');
+          expect(next.selecting, isFalse);
+        },
+      );
+
+      test('outside selection mode it does nothing', () {
+        final (_, effects) = updater.update(
+          ready([card('c1', 'a0')]),
+          const SelectionDeleteRequested(),
+        );
+        expect(effects, isNull);
+      });
+    });
   });
 }

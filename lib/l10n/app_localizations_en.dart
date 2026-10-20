@@ -968,6 +968,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionMoveTooltip => 'Move to collection';
 
   @override
+  String get collectionDeleteSelectedTooltip => 'Delete selected';
+
+  @override
+  String collectionDeleteSelectedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count cards?',
+      one: 'Delete 1 card?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get collectionDeleteSelectedBody =>
+      'Links to them will show as broken.';
+
+  @override
   String get collectionMoveSheetTitle => 'Move to…';
 
   @override

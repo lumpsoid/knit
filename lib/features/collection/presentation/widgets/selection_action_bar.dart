@@ -13,6 +13,7 @@ class SelectionActionBar extends StatelessWidget {
     required this.allSettled,
     required this.onSettle,
     required this.onMove,
+    required this.onDelete,
   });
 
   /// Whether some cards are still unselected; once all are, the button flips
@@ -26,6 +27,7 @@ class SelectionActionBar extends StatelessWidget {
   final bool allSettled;
   final VoidCallback onSettle;
   final VoidCallback onMove;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +54,11 @@ class SelectionActionBar extends StatelessWidget {
                       onPressed: onUnselectAll,
                     ),
               const Spacer(),
+              IconButton(
+                tooltip: l10n.collectionDeleteSelectedTooltip,
+                icon: const Icon(Icons.delete_outline),
+                onPressed: onDelete,
+              ),
               IconButton(
                 tooltip: allSettled
                     ? l10n.collectionActionUnsettle

@@ -183,6 +183,41 @@ void main() {
     expect((await store.get(EntityType.card, cardId))!.deleted, isTrue);
   });
 
+  test(
+    'deleting selected cards deletes them all and reclaims attachments',
+    () async {
+      final colId = (await timelineWrite.createCollection('C')).getOrThrow();
+      final attId = (await attachmentWrite.createFromPicked(
+        png([4, 5, 6]),
+      )).getOrThrow();
+      final hash = await sha256Hex(Uint8List.fromList([4, 5, 6]));
+      final image = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.image,
+        position: 'a0',
+        attachmentId: attId,
+      )).getOrThrow();
+      final text = (await write.addCard(
+        collectionId: colId,
+        kind: CardKind.text,
+        position: 'a1',
+        text: 'note',
+      )).getOrThrow();
+      final actions = <CollectionAction>[];
+
+      await shell.run(
+        DeleteCardsEffect([image, text], attachmentIds: [attId]),
+        dispatch: actions.add,
+      );
+
+      expect(actions.single, isA<ReloadRequested>());
+      expect((await store.get(EntityType.card, image))!.deleted, isTrue);
+      expect((await store.get(EntityType.card, text))!.deleted, isTrue);
+      expect((await store.get(EntityType.attachment, attId))!.deleted, isTrue);
+      expect(await blobs.exists(hash), isFalse);
+    },
+  );
+
   group('move selected cards to another collection', () {
     test(
       'targets list every live collection; the tail is the last card',
@@ -268,36 +303,39 @@ void main() {
     });
   });
 
-  test('settling writes the cards, refreshes, and reads back settled', () async {
-    final col = (await timelineWrite.createCollection('Steps')).getOrThrow();
-    final a = (await write.addCard(
-      collectionId: col,
-      kind: CardKind.text,
-      position: 'a0',
-      text: 'a',
-    )).getOrThrow();
+  test(
+    'settling writes the cards, refreshes, and reads back settled',
+    () async {
+      final col = (await timelineWrite.createCollection('Steps')).getOrThrow();
+      final a = (await write.addCard(
+        collectionId: col,
+        kind: CardKind.text,
+        position: 'a0',
+        text: 'a',
+      )).getOrThrow();
 
-    final actions = <CollectionAction>[];
-    await shell.run(
-      SettleCardsEffect([a], settled: true),
-      dispatch: actions.add,
-    );
+      final actions = <CollectionAction>[];
+      await shell.run(
+        SettleCardsEffect([a], settled: true),
+        dispatch: actions.add,
+      );
 
-    expect(actions.single, isA<ReloadRequested>());
-    expect(timelineChannel.emits, 1);
-    final data = (await SyncStoreCollectionReadRepository(
-      graph: graph,
-    ).loadCollection(col)).getOrThrow();
-    expect(data.cards.single.settled, isTrue);
+      expect(actions.single, isA<ReloadRequested>());
+      expect(timelineChannel.emits, 1);
+      final data = (await SyncStoreCollectionReadRepository(
+        graph: graph,
+      ).loadCollection(col)).getOrThrow();
+      expect(data.cards.single.settled, isTrue);
 
-    actions.clear();
-    await shell.run(
-      SettleCardsEffect([a], settled: false),
-      dispatch: actions.add,
-    );
-    final after = (await SyncStoreCollectionReadRepository(
-      graph: graph,
-    ).loadCollection(col)).getOrThrow();
-    expect(after.cards.single.settled, isFalse);
-  });
+      actions.clear();
+      await shell.run(
+        SettleCardsEffect([a], settled: false),
+        dispatch: actions.add,
+      );
+      final after = (await SyncStoreCollectionReadRepository(
+        graph: graph,
+      ).loadCollection(col)).getOrThrow();
+      expect(after.cards.single.settled, isFalse);
+    },
+  );
 }

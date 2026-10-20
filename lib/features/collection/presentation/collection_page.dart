@@ -209,6 +209,30 @@ class _CollectionPageState extends State<CollectionPage> {
     }
   }
 
+  /// Ask before deleting the [count] selected cards, then delete them.
+  Future<void> _confirmDeleteSelection(int count) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.collectionDeleteSelectedTitle(count)),
+        content: Text(l10n.collectionDeleteSelectedBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    _controller.dispatch(const SelectionDeleteRequested());
+  }
+
   /// Open the move picker over the selection: load the targets, let the user
   /// choose one, then move the selected cards there.
   Future<void> _openMovePicker() async {
@@ -449,6 +473,9 @@ class _CollectionPageState extends State<CollectionPage> {
             onSettle: () =>
                 _controller.dispatch(const SelectionSettleRequested()),
             onMove: _openMovePicker,
+            onDelete: () => unawaited(
+              _confirmDeleteSelection(state.selectedCardIds.length),
+            ),
           )
         else if (!state.reordering)
           _composerPanel(),

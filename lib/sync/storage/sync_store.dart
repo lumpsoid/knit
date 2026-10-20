@@ -349,6 +349,42 @@ class SyncStore {
     );
   }
 
+  /// Soft-delete cards (§6.1) — a [delete] per card, all committed in **one**
+  /// transaction: either every card goes or none does. Placement is left
+  /// frozen (§8.4). Returns the ops in [cardIds] order.
+  Future<List<PersistedOp>> deleteCards(
+    Iterable<String> cardIds, {
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    return _unitOfWork.run((ctx) async {
+      final ops = <PersistedOp>[];
+      for (final cardId in cardIds) {
+        ops.add(
+          await _writeOne(
+            ctx: ctx,
+            identity: identity,
+            now: now,
+            type: EntityType.card,
+            id: cardId,
+            build: (stamp, prior, author) {
+              final base = _require(prior, 'delete', EntityType.card, cardId);
+              return base.copyWith(
+                author: author,
+                hlc: stamp, // content-dimension event (§6.9)
+                deleted: true,
+                sig: '',
+              );
+            },
+          ),
+        );
+      }
+      await deviceClock.save(_clock.now, ctx: ctx);
+      return ops;
+    });
+  }
+
   /// Reorder a card — fresh **placement** stamp, content `hlc_*` left frozen
   /// (§8.4, or a stale drag would clobber a concurrent edit). Distinct `op_id`
   /// from the edit it followed comes from the new `sig` (§7.3 case 2).
