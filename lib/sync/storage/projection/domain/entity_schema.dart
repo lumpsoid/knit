@@ -59,6 +59,9 @@ abstract class CardSchema {
   static const String colKind = 'kind';
   static const String colText = 'text';
   static const String colAttachmentId = 'attachment_id';
+
+  /// When the card was settled (§3.3) — ms, or null while it is live.
+  static const String colSettledAt = 'settled_at';
   static const String colPosition = 'position';
   static const String colPositionMs = 'position_ms';
   static const String colPositionCounter = 'position_counter';
@@ -71,6 +74,7 @@ abstract class CardSchema {
         $colKind             TEXT NOT NULL,
         $colText             TEXT,
         $colAttachmentId     TEXT,
+        $colSettledAt        INTEGER,
         $colPosition         TEXT NOT NULL,
         $colPositionMs       INTEGER NOT NULL,
         $colPositionCounter  INTEGER NOT NULL

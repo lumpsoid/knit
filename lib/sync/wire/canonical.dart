@@ -46,6 +46,7 @@ abstract class CanonicalSerializer {
     'position',
     'position_counter',
     'position_ms',
+    'settled_at',
     't',
     'text',
   };

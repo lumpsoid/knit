@@ -416,6 +416,49 @@ class SyncStore {
     });
   }
 
+  /// Settle (or, with [settled] false, unsettle) cards (§3.3) — a content
+  /// write per card that sets `settled_at` to the write's own stamp time, or
+  /// clears it. Placement is left frozen (§8.4). All the ops commit in **one**
+  /// transaction. Returns the ops in [cardIds] order.
+  Future<List<PersistedOp>> setCardsSettled(
+    Iterable<String> cardIds, {
+    required bool settled,
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    return _unitOfWork.run((ctx) async {
+      final ops = <PersistedOp>[];
+      for (final cardId in cardIds) {
+        ops.add(
+          await _writeOne(
+            ctx: ctx,
+            identity: identity,
+            now: now,
+            type: EntityType.card,
+            id: cardId,
+            build: (stamp, prior, author) {
+              final base = _require(prior, 'settle', EntityType.card, cardId);
+              return base.copyWith(
+                author: author,
+                createdBy: base.createdBy, // preserve, never restamp (§6.2)
+                hlc: stamp, // settled_at is content (§8.4)
+                deleted: false,
+                sig: '',
+                content: {
+                  ...base.content,
+                  'settled_at': settled ? stamp.ms : null,
+                },
+              );
+            },
+          ),
+        );
+      }
+      await deviceClock.save(_clock.now, ctx: ctx);
+      return ops;
+    });
+  }
+
   /// The shared one-transaction local write (spec §6.8 steps 1–3): one
   /// [_writeOne] plus the device-clock save, committed together.
   Future<PersistedOp> _writeLocal({
@@ -453,7 +496,12 @@ class SyncStore {
   }) async {
     final prior = await projection.get(type, id, ctx: ctx);
     final stamp = _clock.localTick(now); // exactly one tick per write (§8.2)
-    final unsigned = build(stamp, prior, identity.pubkey);
+    final built = build(stamp, prior, identity.pubkey);
+    // A prior from an older peer's payload may lack a later-added field
+    // (e.g. `settled_at`); fill it with null so the field set stays complete.
+    final unsigned = built.copyWith(
+      content: _withContentDefaults(type, built.content),
+    );
     final payload = CanonicalSerializer.string(unsigned);
     final sig = await signer.sign(identity.secret, utf8.encode(payload));
     final snap = unsigned.copyWith(sig: sig);
@@ -463,7 +511,10 @@ class SyncStore {
       payload: payload,
       origin: SyncOrigin.local, // acked defaults to false (§6.8 step 2)
     );
-    await projection.upsert(snap, ctx: ctx);
+    // Materialize through the merge-core, exactly as a rebuild would (§8.9):
+    // a reorder keeps the prior content stamp, so the content winner between
+    // it and the op it followed is settled by `sig` (§6.9), not by arrival.
+    await projection.upsert(merge(prior, snap), ctx: ctx);
     await changeLog.append(op, ctx: ctx);
     return op;
   }
@@ -601,7 +652,11 @@ class SyncStore {
         'description': null,
         'cover_attachment_id': null,
       },
-      EntityType.card => const {'attachment_id': null, 'text': null},
+      EntityType.card => const {
+        'attachment_id': null,
+        'text': null,
+        'settled_at': null,
+      },
       EntityType.link => const {'label': null},
       EntityType.profile => const {'nickname': null},
       EntityType.attachment => const {

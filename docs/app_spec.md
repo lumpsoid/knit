@@ -69,6 +69,24 @@ The data model enforces this: `collection` has `title` + optional `description` 
   search-as-you-type overlay. The app is shallow; search is a tool, not a place.
 - **Identity = an on-device cryptographic keypair**, not a server username (see §5).
 
+### 3.3 Settled cards
+
+Knit is not a task manager, but a card can stop being *current* while still being worth
+keeping: a finished step, an answered question, a price that changed. Deleting loses the
+history, so a card can instead be **settled**.
+
+- A settled card **stays where it is** in the feed, in search and in links. Nothing is
+  hidden or reordered. It is only drawn quieter: dimmed, with a warm autumn tint and faint
+  roots behind it. There is **no strikethrough and no checkbox**, so a collection never
+  reads as a to-do list.
+- **Settle / Unsettle** lives in the card actions sheet, in the multi-select bar (it
+  settles every selected card, or unsettles them all once all are settled), and as a toggle
+  on Card Edit.
+- If a collection's newest card is settled, the home row shows its preview muted.
+- Data: one nullable `settled_at` on `card` (ms; null = live), written on the **content**
+  clock like any edit (§8.4). It is synced and signed, so other devices and shared copies
+  see it. Its value is the settling write's own stamp time.
+
 ## 4. Screens & navigation
 
 ### 4.1 Home / Collections Timeline (root)
@@ -94,11 +112,13 @@ The data model enforces this: `collection` has `title` + optional `description` 
 - **"+" add-block menu** (bottom sheet, grid: link · photo · audio-later) → standalone card
   blocks. Selecting a type transforms the sheet into that block's sheet — "link" becomes a
   **finder sheet** (search cards / collections / existing link objects).
-- **Tap a card → actions sheet:** delete · edit · link · add image · start reorder.
+- **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle (§3.3) ·
+  delete.
 - **Reorder mode** — drag-to-reorder, a *state of this screen*, not a separate screen.
   **Reorder applies only to cards within this collection**; there is no reordering on Home.
 - **Multi-select mode** — long-press a card to select it; while selecting, a tap toggles a
-  card, the app bar shows the count with *select all* and **Move to collection**. Move opens a
+  card, the app bar shows the count, and the bottom bar offers *select all*, **Settle /
+  Unsettle** (§3.3) and **Move to collection**. Move opens a
   picker of the other live collections (most recently updated first); the selected cards are
   appended to the target's end, keeping their relative feed order, in **one transaction** (all
   or none). The source feed drops them, and a snackbar offers to open the target. Back (or
@@ -109,7 +129,7 @@ The data model enforces this: `collection` has `title` + optional `description` 
   collection-edit page** to edit title, description, and add/replace/remove the cover image.
 
 ### 4.3 Card Edit (from the actions sheet)
-Edit text/content; manage that card's image and its links.
+Edit text/content; manage that card's image and its links; a **Settled** toggle (§3.3).
 
 ### 4.4 Connections view
 A card's links-out + linked-from (backlinks), each tappable to jump; breadcrumb back-stack
@@ -241,6 +261,7 @@ CREATE TABLE card (
   kind              TEXT NOT NULL,      -- text | image | link | audio
   text              TEXT,               -- body, or caption for media/link cards
   attachment_id     TEXT,               -- "add image to card" or kind=image/audio
+  settled_at        INTEGER,            -- nullable; when the card was settled (§3.3)
   position          TEXT NOT NULL,      -- fractional-index string (compared lexicographically)
   position_ms       INTEGER NOT NULL,   -- SEPARATE reorder clock, physical
   position_counter  INTEGER NOT NULL    -- SEPARATE reorder clock, logical
@@ -537,15 +558,18 @@ string above.)
 `op:"delete"`, `op_id:"0192f1a2-3b4c-7def-8123-000000000001@1718107200000.0.<sig16>"`.
 
 **7.4.3 Card — put** (fields: `attachment_id, author, collection_id, created_at, created_by,
-deleted, hlc_counter, hlc_ms, id, kind, position, position_counter, position_ms, t, text`)
+deleted, hlc_counter, hlc_ms, id, kind, position, position_counter, position_ms, settled_at,
+t, text`). `settled_at` (§3.3) was added after v1: a payload from an older peer may omit it,
+which reads as null. Verification is over the received bytes (§7.0), so those ops still
+verify; the next local write of that card emits the full field set.
 ```
-{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":0,"hlc_counter":0,"hlc_ms":1718020860000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"t":"card","text":"Grind finer if the shot runs too fast."}
+{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":0,"hlc_counter":0,"hlc_ms":1718020860000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
 ```
 
 **7.4.4 Card — delete** (`position`/`position_ms`/`position_counter` unchanged — a delete is
 not a reorder; content HLC bumps)
 ```
-{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":1,"hlc_counter":0,"hlc_ms":1718020980000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"t":"card","text":"Grind finer if the shot runs too fast."}
+{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":1,"hlc_counter":0,"hlc_ms":1718020980000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
 ```
 
 **7.4.5 Link — put** (fields: `author, created_at, created_by, deleted, hlc_counter, hlc_ms,
@@ -709,6 +733,7 @@ The device clock advances on **every** local event; only the *target stamp* diff
 | Create card | new stamp | new stamp (initial placement) |
 | Edit card text/image/kind | new stamp | **unchanged** |
 | Delete card (`deleted=1`) | new stamp | **unchanged** |
+| Settle / unsettle card (`settled_at`, §3.3) | new stamp | **unchanged** |
 | Reorder card | **unchanged** | new stamp |
 | Move card to another collection | new stamp (`collection_id`) | new stamp (target position) |
 | Any non-card entity write | new stamp | n/a |

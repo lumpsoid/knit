@@ -86,11 +86,24 @@ List<Migration> knitMigrations() => [
       }
     },
   ),
+  // v5: when a card was settled (spec §3.3/§7.4.3); null while it is live.
+  Migration(
+    version: 5,
+    description: 'add card.settled_at (§3.3/§7.4.3)',
+    up: (db) => db.execute(
+      'ALTER TABLE ${CardSchema.table} '
+      'ADD COLUMN ${CardSchema.colSettledAt} INTEGER',
+    ),
+    down: (db) => db.execute(
+      'ALTER TABLE ${CardSchema.table} '
+      'DROP COLUMN ${CardSchema.colSettledAt}',
+    ),
+  ),
 ];
 
 /// The frozen v1 schema — literal DDL, the shape the first build shipped.
-/// `attachment.name` (v2) and `collection.description` (v3) are intentionally
-/// absent; later migrations add them. Do not edit these strings.
+/// `attachment.name` (v2), `collection.description` (v3) and `card.settled_at`
+/// (v5) are intentionally absent; later migrations add them. Do not edit these strings.
 const List<String> _v1BaselineDdl = [
   '''
   CREATE TABLE IF NOT EXISTS collection (

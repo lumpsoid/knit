@@ -98,6 +98,7 @@ Snapshot card({
   String kind = 'text',
   String text = '',
   String? attachmentId,
+  int? settledAt,
   String position = 'a0',
   bool deleted = false,
   String sig = 'sig',
@@ -117,5 +118,6 @@ Snapshot card({
     'kind': kind,
     'text': text,
     'attachment_id': attachmentId,
+    'settled_at': settledAt,
   },
 );
