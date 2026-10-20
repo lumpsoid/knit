@@ -484,9 +484,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionOrACardInIt => 'Или карточку в ней';
 
   @override
-  String get collectionAppBarTitle => 'Коллекция';
-
-  @override
   String get collectionDescriptionEmpty => 'Без описания';
 
   @override

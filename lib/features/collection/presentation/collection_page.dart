@@ -63,6 +63,13 @@ class _CollectionPageState extends State<CollectionPage> {
   /// feed reveals it when it first appears.
   late final String? _focusCardId = CollectionScope.routeArgs.focusCardId;
 
+  /// Marks the title card's name, which the feed follows as it scrolls.
+  final GlobalKey _titleKey = GlobalKey();
+
+  /// How much of the title card's name has scrolled out of view (0–1); the app
+  /// bar shows the name to the same degree, so it is always somewhere in sight.
+  final ValueNotifier<double> _titleHidden = ValueNotifier(0);
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +94,7 @@ class _CollectionPageState extends State<CollectionPage> {
       ..dispatch(const DeactivateFeature())
       ..dispose();
     _composer.dispose();
+    _titleHidden.dispose();
     super.dispose();
   }
 
@@ -176,10 +184,8 @@ class _CollectionPageState extends State<CollectionPage> {
     final copyText = card.text?.trim() ?? '';
     final action = await showModalBottomSheet<CardAction>(
       context: context,
-      builder: (_) => CardActionsSheet(
-        canCopy: copyText.isNotEmpty,
-        settled: card.settled,
-      ),
+      builder: (_) =>
+          CardActionsSheet(canCopy: copyText.isNotEmpty, settled: card.settled),
     );
     if (action == null || !mounted) return;
     switch (action) {
@@ -384,7 +390,7 @@ class _CollectionPageState extends State<CollectionPage> {
                     selectedCount: state.selectedCardIds.length,
                   )
                 : AppBar(
-                    title: Text(l10n.collectionAppBarTitle),
+                    title: _appBarTitle(state.collectionId),
                     actions: [
                       if (state.status == CollectionStatus.ready &&
                           state.canReorder)
@@ -496,6 +502,33 @@ class _CollectionPageState extends State<CollectionPage> {
     title: Text(l10n.collectionSelectedCount(selectedCount)),
   );
 
+  /// The collection's name in the app bar. It slides up and fades in as the
+  /// title card's name scrolls off the top of the feed, and out again as it
+  /// comes back, so the name never shows twice and is never lost.
+  Widget _appBarTitle(String collectionId) {
+    final details = CollectionScope.collectionDetails;
+    return ListenableBuilder(
+      listenable: Listenable.merge([details, _titleHidden]),
+      builder: (context, _) {
+        final hidden = _titleHidden.value;
+        final title = details.of(collectionId)?.title.trim() ?? '';
+        return Opacity(
+          opacity: hidden,
+          child: Transform.translate(
+            offset: Offset(0, (1 - hidden) * 12),
+            child: Text(
+              title.isEmpty
+                  ? AppLocalizations.of(context).labelUntitled
+                  : title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _body(CollectionState state) {
     switch (state.status) {
       case CollectionStatus.loading:
@@ -538,6 +571,8 @@ class _CollectionPageState extends State<CollectionPage> {
     onRefresh: () => _controller.dispatch(const ReloadRequested()),
     onReorder: (oldIndex, newIndex) =>
         _controller.dispatch(CardMoved(oldIndex, newIndex)),
+    headerTitleKey: _titleKey,
+    onHeaderTitleHidden: (hidden) => _titleHidden.value = hidden,
   );
 
   /// The title card heading the feed: the collection's header from the shared
@@ -558,6 +593,7 @@ class _CollectionPageState extends State<CollectionPage> {
             ? null
             : CollectionScope.images.of(coverId);
         return CollectionTitleCard(
+          titleKey: _titleKey,
           title: title,
           description: header?.description,
           hasCover: coverId != null,

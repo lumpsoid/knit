@@ -477,9 +477,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionOrACardInIt => 'Or a card in it';
 
   @override
-  String get collectionAppBarTitle => 'Collection';
-
-  @override
   String get collectionDescriptionEmpty => 'No description';
 
   @override

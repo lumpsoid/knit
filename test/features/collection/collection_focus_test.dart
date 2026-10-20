@@ -256,6 +256,47 @@ void main() {
     expect(find.text('card 0'), findsOneWidget);
   });
 
+  testWidgets('the collection name moves to the app bar once scrolled away', (
+    tester,
+  ) async {
+    await seed(tester);
+    routeArgs.open(routeArgs.collectionId);
+    await pumpPage(tester);
+    final appBarName = find.descendant(
+      of: find.byType(AppBar),
+      matching: find.byType(Opacity),
+    );
+    double nameOpacity() => tester.widget<Opacity>(appBarName).opacity;
+
+    // Opened on the newest cards: the title card isn't in sight, so the app
+    // bar carries the name.
+    expect(nameOpacity(), 1);
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Long')),
+      findsOneWidget,
+    );
+
+    // Back at the top, the title card shows it and the app bar steps aside.
+    for (var i = 0; i < 30 && nameOpacity() > 0; i++) {
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 600));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+    }
+    expect(nameOpacity(), 0);
+    expect(
+      find.descendant(
+        of: find.byType(CustomScrollView),
+        matching: find.text('Long'),
+      ),
+      findsOneWidget,
+    );
+
+    // Scrolling the title card away hands the name back to the app bar.
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(nameOpacity(), 1);
+  });
+
   testWidgets('long-press selects cards and moves them to another collection', (
     tester,
   ) async {

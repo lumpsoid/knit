@@ -24,11 +24,15 @@ class CollectionTitleCard extends StatelessWidget {
     required this.connectionCount,
     required this.onTap,
     required this.onConnectionsTap,
+    this.titleKey,
     this.onCoverTap,
   });
 
   final String title;
   final String? description;
+
+  /// Marks the title text, so the feed can follow it as it scrolls away.
+  final Key? titleKey;
 
   /// Whether a cover is set — drives the banner (a placeholder shows while its
   /// bytes load).
@@ -97,6 +101,7 @@ class CollectionTitleCard extends StatelessWidget {
                         children: [
                           Text(
                             name,
+                            key: titleKey,
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),

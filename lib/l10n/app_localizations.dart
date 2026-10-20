@@ -920,12 +920,6 @@ abstract class AppLocalizations {
   /// **'Or a card in it'**
   String get collectionOrACardInIt;
 
-  /// No description provided for @collectionAppBarTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Collection'**
-  String get collectionAppBarTitle;
-
   /// No description provided for @collectionDescriptionEmpty.
   ///
   /// In en, this message translates to:
