@@ -388,6 +388,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionActionShare => 'Поделиться';
 
   @override
+  String get collectionActionSettle => 'Приглушить';
+
+  @override
+  String get collectionActionUnsettle => 'Оживить';
+
+  @override
+  String get collectionCardSettled => 'Приглушена';
+
+  @override
   String get collectionActionDelete => 'Удалить';
 
   @override
@@ -583,6 +592,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get cardEditSaveFailed => 'Не удалось сохранить. Попробуйте ещё раз.';
+
+  @override
+  String get cardEditSettled => 'Приглушена';
+
+  @override
+  String get cardEditSettledSubtitle =>
+      'Остаётся в истории, но уже не актуальна';
 
   @override
   String get connectionsTitle => 'Связи';

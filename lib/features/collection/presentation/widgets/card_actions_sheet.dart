@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-enum CardAction { edit, delete, link, copy, share }
+enum CardAction { edit, delete, link, copy, share, settle }
 
 class CardActionsSheet extends StatelessWidget {
-  const CardActionsSheet({super.key, required this.canCopy});
+  const CardActionsSheet({
+    super.key,
+    required this.canCopy,
+    required this.settled,
+  });
 
   /// Whether the card has text to copy; hides the Copy entry otherwise.
   final bool canCopy;
+
+  /// Whether the card is settled (§3.3); the entry then reads "Unsettle".
+  final bool settled;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +43,15 @@ class CardActionsSheet extends StatelessWidget {
             leading: const Icon(Icons.ios_share),
             title: Text(l10n.collectionActionShare),
             onTap: () => Navigator.of(context).pop(CardAction.share),
+          ),
+          ListTile(
+            leading: Icon(settled ? Icons.eco : Icons.eco_outlined),
+            title: Text(
+              settled
+                  ? l10n.collectionActionUnsettle
+                  : l10n.collectionActionSettle,
+            ),
+            onTap: () => Navigator.of(context).pop(CardAction.settle),
           ),
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),

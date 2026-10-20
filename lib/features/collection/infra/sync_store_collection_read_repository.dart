@@ -178,6 +178,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
           : null,
       fileSize: withMeta ? att.content[AttachmentSchema.colSize] as int? : null,
       connectionCount: linkCount ?? 0,
+      settledAt: card.content[CardSchema.colSettledAt] as int?,
     );
   }
 

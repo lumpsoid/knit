@@ -176,7 +176,10 @@ class _CollectionPageState extends State<CollectionPage> {
     final copyText = card.text?.trim() ?? '';
     final action = await showModalBottomSheet<CardAction>(
       context: context,
-      builder: (_) => CardActionsSheet(canCopy: copyText.isNotEmpty),
+      builder: (_) => CardActionsSheet(
+        canCopy: copyText.isNotEmpty,
+        settled: card.settled,
+      ),
     );
     if (action == null || !mounted) return;
     switch (action) {
@@ -196,6 +199,8 @@ class _CollectionPageState extends State<CollectionPage> {
         );
       case CardAction.share:
         _controller.dispatch(CardShareRequested(card.id));
+      case CardAction.settle:
+        _controller.dispatch(CardSettleToggled(card.id));
     }
   }
 
@@ -425,6 +430,9 @@ class _CollectionPageState extends State<CollectionPage> {
                         _controller.dispatch(const AllCardsSelected()),
                     onUnselectAll: () =>
                         _controller.dispatch(const SelectionCleared()),
+                    allSettled: state.selectionAllSettled,
+                    onSettle: () =>
+                        _controller.dispatch(const SelectionSettleRequested()),
                     onMove: _openMovePicker,
                   )
                 else if (!state.reordering)
@@ -582,6 +590,7 @@ class _CollectionPageState extends State<CollectionPage> {
       fileName: card.fileName,
       fileSize: card.fileSize,
       imageBytes: bytes,
+      settled: card.settled,
       onTap: () => _openCardActions(card),
       onImageTap: bytes == null ? null : () => _openImagePreview(card),
       // Tapping a captioned file card shares it through the system sheet

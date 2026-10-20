@@ -63,6 +63,13 @@ class CollectionState {
   /// Whether multi-select mode is active.
   bool get selecting => selectedCardIds.isNotEmpty;
 
+  /// Whether every selected card is settled, so the selection's action reads
+  /// "Unsettle" (§3.3).
+  bool get selectionAllSettled => SettleChange.allSettled(_selectedCards);
+
+  Iterable<FeedCard> get _selectedCards =>
+      cards.where((c) => selectedCardIds.contains(c.id));
+
   /// Whether "select all" would add anything: some loaded card is unselected.
   bool get canSelectAll => selectedCardIds.length < cards.length;
 

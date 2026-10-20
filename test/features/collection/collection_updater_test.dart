@@ -757,4 +757,86 @@ void main() {
       expect(move.positions, {'c2': FractionalIndex.first()});
     });
   });
+
+  group('settle (§3.3)', () {
+    FeedCard settledCard(String id, String position) => FeedCard(
+      id: id,
+      kind: CardKind.text,
+      position: position,
+      text: id,
+      settledAt: 1000,
+    );
+
+    test('the actions sheet settles a live card', () {
+      final (next, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const CardSettleToggled('c1'),
+      );
+      final effect = effects!.single as SettleCardsEffect;
+      expect(effect.cardIds, ['c1']);
+      expect(effect.settled, isTrue);
+      expect(next.cards.single.settled, isFalse, reason: 'no optimism');
+    });
+
+    test('the actions sheet unsettles a settled card', () {
+      final (_, effects) = updater.update(
+        ready([settledCard('c1', 'a0')]),
+        const CardSettleToggled('c1'),
+      );
+      final effect = effects!.single as SettleCardsEffect;
+      expect(effect.cardIds, ['c1']);
+      expect(effect.settled, isFalse);
+    });
+
+    test('an unknown card is a no-op', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const CardSettleToggled('gone'),
+      );
+      expect(effects, isNull);
+    });
+
+    test('a mixed selection settles only its live cards, then clears', () {
+      final state = ready([
+        settledCard('c1', 'a0'),
+        card('c2', 'a1'),
+        card('c3', 'a2'),
+      ]).copyWith(selectedCardIds: {'c1', 'c2'});
+      expect(state.selectionAllSettled, isFalse);
+
+      final (next, effects) = updater.update(
+        state,
+        const SelectionSettleRequested(),
+      );
+      final effect = effects!.single as SettleCardsEffect;
+      expect(effect.cardIds, ['c2']);
+      expect(effect.settled, isTrue);
+      expect(next.selecting, isFalse);
+    });
+
+    test('an all-settled selection unsettles them all', () {
+      final state = ready([
+        settledCard('c1', 'a0'),
+        settledCard('c2', 'a1'),
+        card('c3', 'a2'),
+      ]).copyWith(selectedCardIds: {'c1', 'c2'});
+      expect(state.selectionAllSettled, isTrue);
+
+      final (_, effects) = updater.update(
+        state,
+        const SelectionSettleRequested(),
+      );
+      final effect = effects!.single as SettleCardsEffect;
+      expect(effect.cardIds, ['c1', 'c2']);
+      expect(effect.settled, isFalse);
+    });
+
+    test('outside selection mode it does nothing', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const SelectionSettleRequested(),
+      );
+      expect(effects, isNull);
+    });
+  });
 }

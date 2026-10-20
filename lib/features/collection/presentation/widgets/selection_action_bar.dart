@@ -10,6 +10,8 @@ class SelectionActionBar extends StatelessWidget {
     required this.canSelectAll,
     required this.onSelectAll,
     required this.onUnselectAll,
+    required this.allSettled,
+    required this.onSettle,
     required this.onMove,
   });
 
@@ -18,6 +20,11 @@ class SelectionActionBar extends StatelessWidget {
   final bool canSelectAll;
   final VoidCallback onSelectAll;
   final VoidCallback onUnselectAll;
+
+  /// Whether every selected card is settled (§3.3); the settle button then
+  /// unsettles them.
+  final bool allSettled;
+  final VoidCallback onSettle;
   final VoidCallback onMove;
 
   @override
@@ -45,6 +52,14 @@ class SelectionActionBar extends StatelessWidget {
                       onPressed: onUnselectAll,
                     ),
               const Spacer(),
+              IconButton(
+                tooltip: allSettled
+                    ? l10n.collectionActionUnsettle
+                    : l10n.collectionActionSettle,
+                icon: Icon(allSettled ? Icons.eco : Icons.eco_outlined),
+                onPressed: onSettle,
+              ),
+              const SizedBox(width: 4),
               FilledButton.tonalIcon(
                 icon: const Icon(Icons.drive_file_move_outline),
                 label: Text(l10n.collectionMoveTooltip),

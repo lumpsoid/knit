@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/presentation/widgets/settled_roots.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// The shared [Hero] tag tying a card's feed thumbnail to its full-screen
@@ -21,6 +22,7 @@ class CardBubble extends StatelessWidget {
     required this.fileSize,
     required this.imageBytes,
     required this.onTap,
+    this.settled = false,
     this.onImageTap,
     this.onFileTap,
     this.onLinkTap,
@@ -40,6 +42,10 @@ class CardBubble extends StatelessWidget {
   /// Decoded bytes for an image card; null while loading or missing.
   final Uint8List? imageBytes;
   final VoidCallback onTap;
+
+  /// Whether the card is settled (§3.3): drawn in the autumn palette with
+  /// roots behind it. Flipping it animates the change.
+  final bool settled;
 
   /// Opens the full-screen image preview; null when the image hasn't loaded yet
   /// (a tap then falls through to [onTap], the card-actions sheet).
@@ -67,23 +73,55 @@ class CardBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return Align(
+    final scheme = theme.colorScheme;
+    final base = scheme.surfaceContainerHighest;
+    final bubble = Align(
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 64, 4),
-        child: Material(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
+        // Settling fades the card into autumn and grows its roots; a card
+        // that is already settled when it appears shows them straight away.
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(end: settled ? 1 : 0),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOutCubic,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: _content(theme, l10n),
+          ),
+          builder: (context, t, content) => Material(
+            color: Color.lerp(
+              base,
+              SettledPalette.background(scheme, base),
+              t,
+            ),
             borderRadius: BorderRadius.circular(16),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: _content(theme, l10n),
+            clipBehavior: Clip.antiAlias,
+            child: CustomPaint(
+              painter: t == 0
+                  ? null
+                  : SettledRootsPainter(
+                      seed: cardId,
+                      progress: t,
+                      color: SettledPalette.roots(scheme),
+                    ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: onTap,
+                child: Opacity(
+                  opacity: 1 - SettledPalette.contentFade * t,
+                  child: content,
+                ),
+              ),
             ),
           ),
         ),
       ),
+    );
+    // Always wrapped, so settling keeps the subtree (and runs the animation).
+    return Semantics(
+      label: settled ? l10n.collectionCardSettled : null,
+      child: bubble,
     );
   }
 

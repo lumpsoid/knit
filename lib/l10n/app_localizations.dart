@@ -758,6 +758,24 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get collectionActionShare;
 
+  /// No description provided for @collectionActionSettle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle'**
+  String get collectionActionSettle;
+
+  /// No description provided for @collectionActionUnsettle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsettle'**
+  String get collectionActionUnsettle;
+
+  /// No description provided for @collectionCardSettled.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled'**
+  String get collectionCardSettled;
+
   /// No description provided for @collectionActionDelete.
   ///
   /// In en, this message translates to:
@@ -1063,6 +1081,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That didn\'t save. Please try again.'**
   String get cardEditSaveFailed;
+
+  /// No description provided for @cardEditSettled.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled'**
+  String get cardEditSettled;
+
+  /// No description provided for @cardEditSettledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept for history, no longer current'**
+  String get cardEditSettledSubtitle;
 
   /// No description provided for @connectionsTitle.
   ///

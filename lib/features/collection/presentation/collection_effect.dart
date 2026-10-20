@@ -147,6 +147,14 @@ class OpenLinkEffect extends CollectionEffect {
   final String url;
 }
 
+/// Settle (or, with [settled] false, unsettle) [cardIds] in one transaction
+/// (§3.3).
+class SettleCardsEffect extends CollectionEffect {
+  const SettleCardsEffect(this.cardIds, {required this.settled});
+  final List<String> cardIds;
+  final bool settled;
+}
+
 class ReorderCardEffect extends CollectionEffect {
   const ReorderCardEffect(this.cardId, this.position);
   final String cardId;

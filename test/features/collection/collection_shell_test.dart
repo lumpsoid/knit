@@ -267,4 +267,37 @@ void main() {
       );
     });
   });
+
+  test('settling writes the cards, refreshes, and reads back settled', () async {
+    final col = (await timelineWrite.createCollection('Steps')).getOrThrow();
+    final a = (await write.addCard(
+      collectionId: col,
+      kind: CardKind.text,
+      position: 'a0',
+      text: 'a',
+    )).getOrThrow();
+
+    final actions = <CollectionAction>[];
+    await shell.run(
+      SettleCardsEffect([a], settled: true),
+      dispatch: actions.add,
+    );
+
+    expect(actions.single, isA<ReloadRequested>());
+    expect(timelineChannel.emits, 1);
+    final data = (await SyncStoreCollectionReadRepository(
+      graph: graph,
+    ).loadCollection(col)).getOrThrow();
+    expect(data.cards.single.settled, isTrue);
+
+    actions.clear();
+    await shell.run(
+      SettleCardsEffect([a], settled: false),
+      dispatch: actions.add,
+    );
+    final after = (await SyncStoreCollectionReadRepository(
+      graph: graph,
+    ).loadCollection(col)).getOrThrow();
+    expect(after.cards.single.settled, isFalse);
+  });
 }

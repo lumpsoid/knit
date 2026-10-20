@@ -156,6 +156,9 @@
   "collectionActionCopy": "Копировать",
   "collectionCopied": "Скопировано в буфер обмена",
   "collectionActionShare": "Поделиться",
+  "collectionActionSettle": "Приглушить",
+  "collectionActionUnsettle": "Оживить",
+  "collectionCardSettled": "Приглушена",
   "collectionActionDelete": "Удалить",
   "collectionCardLink": "Ссылка",
   "collectionCardPhoto": "Фото",
@@ -235,6 +238,8 @@
   "cardEditBrokenLink": "Битая связь",
   "cardEditBrokenLinkSubtitle": "Связанный элемент был удалён",
   "cardEditSaveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+  "cardEditSettled": "Приглушена",
+  "cardEditSettledSubtitle": "Остаётся в истории, но уже не актуальна",
 
   "connectionsTitle": "Связи",
   "connectionsClearTitle": "Очистить эту связь?",

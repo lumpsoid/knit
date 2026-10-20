@@ -56,6 +56,7 @@ class FeedCard {
     this.fileName,
     this.fileSize,
     this.connectionCount = 0,
+    this.settledAt,
   });
 
   final String id;
@@ -86,6 +87,12 @@ class FeedCard {
   /// double-counted. Zero ⇒ no badge is shown.
   final int connectionCount;
 
+  /// When the card was settled (§3.3), in ms; null while it is live. A settled
+  /// card stays in the feed, drawn quieter.
+  final int? settledAt;
+
+  bool get settled => settledAt != null;
+
   /// The card's capture time, decoded from the millisecond timestamp in the
   /// leading 48 bits of its UUIDv7 [id] (§6.1) — every minted card id is v7, so
   /// this resolves for real cards. Null when [id] isn't a v7 uuid, so callers
@@ -108,7 +115,36 @@ class FeedCard {
     fileName: fileName,
     fileSize: fileSize,
     connectionCount: connectionCount,
+    settledAt: settledAt,
   );
+}
+
+/// What a Settle / Unsettle over some cards does (§3.3): when every card is
+/// already settled it unsettles them all; otherwise it settles the live ones.
+/// [cardIds] holds only the cards whose state actually changes.
+@immutable
+class SettleChange {
+  const SettleChange({required this.cardIds, required this.settled});
+
+  /// The change for [cards]; empty [cardIds] when there are no cards.
+  factory SettleChange.of(Iterable<FeedCard> cards) {
+    final settled = !allSettled(cards);
+    return SettleChange(
+      cardIds: [
+        for (final c in cards)
+          if (c.settled != settled) c.id,
+      ],
+      settled: settled,
+    );
+  }
+
+  /// Whether [cards] is non-empty and every one is settled — so the action
+  /// reads "Unsettle".
+  static bool allSettled(Iterable<FeedCard> cards) =>
+      cards.isNotEmpty && cards.every((c) => c.settled);
+
+  final List<String> cardIds;
+  final bool settled;
 }
 
 /// The Collection screen payload — header + ordered feed.

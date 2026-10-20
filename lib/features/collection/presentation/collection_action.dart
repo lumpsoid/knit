@@ -83,6 +83,12 @@ class CardShareRequested extends CollectionAction {
   final String cardId;
 }
 
+/// Actions sheet → settle [cardId], or unsettle it when it is settled (§3.3).
+class CardSettleToggled extends CollectionAction {
+  const CardSettleToggled(this.cardId);
+  final String cardId;
+}
+
 /// Tapped a link card's URL → open it in the system browser (§4.2). The updater
 /// resolves the card to its stored link text and emits the open effect; the
 /// launch itself lives behind the LinkLauncher port.
@@ -130,6 +136,12 @@ class CardSelectionToggled extends CollectionAction {
 /// Select every loaded card.
 class AllCardsSelected extends CollectionAction {
   const AllCardsSelected();
+}
+
+/// The selection's Settle / Unsettle (§3.3): settle the selected cards, or
+/// unsettle them all once every one is settled. Leaves selection mode.
+class SelectionSettleRequested extends CollectionAction {
+  const SelectionSettleRequested();
 }
 
 /// Leave multi-select mode (the app-bar "✕" or system back).

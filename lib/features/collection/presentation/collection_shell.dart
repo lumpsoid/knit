@@ -200,6 +200,13 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       case OpenLinkEffect(:final url):
         await _openLink(url);
 
+      case SettleCardsEffect(:final cardIds, :final settled):
+        await _runWrite(
+          () => _write.setCardsSettled(cardIds, settled: settled),
+          settled ? 'settle cards' : 'unsettle cards',
+          dispatch,
+        );
+
       case ReorderCardEffect(:final cardId, :final position):
         await _runWrite(
           () => _write.reorderCard(cardId, position),

@@ -225,6 +225,11 @@ class CollectionUpdater
       case CardShareRequested(:final cardId):
         return _shareCard(state, cardId);
 
+      case CardSettleToggled(:final cardId):
+        final card = _cardById(state.cards, cardId);
+        if (card == null) return (state, null);
+        return (state, _settle([card]));
+
       case LinkCardOpened(:final cardId):
         return _openLink(state, cardId);
 
@@ -266,6 +271,16 @@ class CollectionUpdater
         return (
           state.copyWith(selectedCardIds: {for (final c in state.cards) c.id}),
           null,
+        );
+
+      case SelectionSettleRequested():
+        if (!state.selecting) return (state, null);
+        return (
+          state.copyWith(selectedCardIds: const {}),
+          _settle([
+            for (final c in state.cards)
+              if (state.selectedCardIds.contains(c.id)) c,
+          ]),
         );
 
       case SelectionCleared():
@@ -359,6 +374,14 @@ class CollectionUpdater
     final url = card?.text?.trim();
     if (url == null || url.isEmpty) return (state, null);
     return (state, [OpenLinkEffect(url)]);
+  }
+
+  /// The settle write for [cards] (§3.3), as the domain decides it; null when
+  /// nothing would change.
+  static List<CollectionEffect>? _settle(List<FeedCard> cards) {
+    final change = SettleChange.of(cards);
+    if (change.cardIds.isEmpty) return null;
+    return [SettleCardsEffect(change.cardIds, settled: change.settled)];
   }
 
   static FeedCard? _cardById(List<FeedCard> cards, String id) {

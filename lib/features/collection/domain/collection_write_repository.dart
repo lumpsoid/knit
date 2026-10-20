@@ -28,6 +28,14 @@ abstract interface class CollectionWriteRepository {
     String position,
   );
 
+  /// Settle (or, with [settled] false, unsettle) [cardIds] in one transaction
+  /// (§3.3) — a content write per card, placement frozen. Returns the first
+  /// card's id on success.
+  Future<Result<String, CollectionFailure>> setCardsSettled(
+    List<String> cardIds, {
+    required bool settled,
+  });
+
   /// Move cards into [collectionId] in one transaction (all or none):
   /// [positions] maps each card id to its pre-computed position in the target
   /// (§8.7). Returns the target collection id on success.

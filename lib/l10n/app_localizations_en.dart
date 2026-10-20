@@ -384,6 +384,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionActionShare => 'Share';
 
   @override
+  String get collectionActionSettle => 'Settle';
+
+  @override
+  String get collectionActionUnsettle => 'Unsettle';
+
+  @override
+  String get collectionCardSettled => 'Settled';
+
+  @override
   String get collectionActionDelete => 'Delete';
 
   @override
@@ -570,6 +579,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardEditSaveFailed => 'That didn\'t save. Please try again.';
+
+  @override
+  String get cardEditSettled => 'Settled';
+
+  @override
+  String get cardEditSettledSubtitle => 'Kept for history, no longer current';
 
   @override
   String get connectionsTitle => 'Connections';

@@ -159,6 +159,9 @@
   "collectionActionCopy": "Copy",
   "collectionCopied": "Copied to clipboard",
   "collectionActionShare": "Share",
+  "collectionActionSettle": "Settle",
+  "collectionActionUnsettle": "Unsettle",
+  "collectionCardSettled": "Settled",
   "collectionActionDelete": "Delete",
   "collectionCardLink": "Link",
   "collectionCardPhoto": "Photo",
@@ -238,6 +241,8 @@
   "cardEditBrokenLink": "Broken link",
   "cardEditBrokenLinkSubtitle": "The linked item was deleted",
   "cardEditSaveFailed": "That didn't save. Please try again.",
+  "cardEditSettled": "Settled",
+  "cardEditSettledSubtitle": "Kept for history, no longer current",
 
   "connectionsTitle": "Connections",
   "connectionsClearTitle": "Clear this link?",
