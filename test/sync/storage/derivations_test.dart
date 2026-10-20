@@ -184,8 +184,26 @@ void main() {
             );
             final row = (await build()).single;
             expect(row.lastCard!.kind, 'image');
+            expect(row.lastCard!.settled, isFalse);
           },
         );
+
+        test('a settled last_card preview says so (spec §3.3)', () async {
+          await store.upsert(collection(id: 'col-1', hlcMs: 1));
+          await store.upsert(
+            card(
+              id: 'done',
+              collectionId: 'col-1',
+              hlcMs: 1,
+              createdAt: 100,
+              text: 'pulled the shot',
+              settledAt: 5000,
+            ),
+          );
+          final row = (await build()).single;
+          expect(row.lastCard!.settled, isTrue);
+          expect(row.lastCard!.text, 'pulled the shot');
+        });
       });
     });
   }

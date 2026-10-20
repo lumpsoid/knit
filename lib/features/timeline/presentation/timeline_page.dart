@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
+import 'package:knit/core/settled/settled_palette.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/collection_widget/presentation/collection_widget_gate.dart';
@@ -361,9 +362,21 @@ class _CollectionTile extends StatelessWidget {
       onLongPress: onLongPress,
       leading: _leading(title),
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(
-        '${_preview(l10n, summary.lastCard)} · '
-        '${l10n.timelineCardCount(summary.cardCount)}',
+      subtitle: Text.rich(
+        TextSpan(
+          children: [
+            // A settled newest card (§3.3) previews muted, like its bubble.
+            TextSpan(
+              text: _preview(l10n, summary.lastCard),
+              style: summary.lastCard?.settled == true
+                  ? TextStyle(
+                      color: SettledPalette.previewText(theme.colorScheme),
+                    )
+                  : null,
+            ),
+            TextSpan(text: ' · ${l10n.timelineCardCount(summary.cardCount)}'),
+          ],
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

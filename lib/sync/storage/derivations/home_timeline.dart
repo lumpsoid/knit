@@ -15,7 +15,7 @@ import 'package:knit/sync/snapshot.dart';
 /// §8.6.3). Carries the card [kind] and (for text cards) its [text]; the UI maps
 /// a non-text kind to a summary like "Photo"/"Audio"/"Link".
 class CardPreview {
-  const CardPreview({required this.kind, this.text});
+  const CardPreview({required this.kind, this.text, this.settled = false});
 
   /// `kind` — `text` | `image` | `audio` | `link` | … (spec §6.4).
   final String kind;
@@ -23,9 +23,13 @@ class CardPreview {
   /// `text` — the card body for a text card; null/absent for other kinds.
   final String? text;
 
+  /// Whether the card is settled (spec §3.3); the row then shows it muted.
+  final bool settled;
+
   factory CardPreview.of(Snapshot card) => CardPreview(
     kind: card.content['kind'] as String,
     text: card.content['text'] as String?,
+    settled: card.content['settled_at'] != null,
   );
 }
 

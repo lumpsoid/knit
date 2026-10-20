@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/core/settled/settled_palette.dart';
 import 'package:knit/features/collection/presentation/widgets/settled_roots.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
