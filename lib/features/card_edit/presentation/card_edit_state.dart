@@ -24,6 +24,8 @@ class CardEditState {
     this.attachmentBusy = false,
     this.settled = false,
     this.settledBusy = false,
+    this.emphasized = false,
+    this.emphasizedBusy = false,
     this.isTimelinePreview = true,
   });
 
@@ -57,6 +59,17 @@ class CardEditState {
   /// A settle write is in flight — gates the toggle.
   final bool settledBusy;
 
+  /// Whether the card is emphasized (§3.3). Settled and emphasized are
+  /// exclusive: setting one clears the other.
+  final bool emphasized;
+
+  /// An emphasis write is in flight — gates the toggle.
+  final bool emphasizedBusy;
+
+  /// A settle or emphasis write is in flight; both toggles wait for it, as
+  /// each write can clear the other mark.
+  bool get markBusy => settledBusy || emphasizedBusy;
+
   /// The card is its collection's home-timeline preview (§8.6.3), so a text or
   /// attachment edit must refresh the Timeline. True until the read says
   /// otherwise: an extra refresh is harmless, a missed one leaves a stale row.
@@ -79,6 +92,8 @@ class CardEditState {
     bool? attachmentBusy,
     bool? settled,
     bool? settledBusy,
+    bool? emphasized,
+    bool? emphasizedBusy,
     bool? isTimelinePreview,
   }) => CardEditState(
     status: status ?? this.status,
@@ -101,6 +116,8 @@ class CardEditState {
     attachmentBusy: attachmentBusy ?? this.attachmentBusy,
     settled: settled ?? this.settled,
     settledBusy: settledBusy ?? this.settledBusy,
+    emphasized: emphasized ?? this.emphasized,
+    emphasizedBusy: emphasizedBusy ?? this.emphasizedBusy,
     isTimelinePreview: isTimelinePreview ?? this.isTimelinePreview,
   );
 }

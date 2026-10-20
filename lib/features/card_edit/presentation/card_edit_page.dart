@@ -48,6 +48,7 @@ class _CardEditPageState extends State<CardEditPage> {
           initialFileName: args.initialFileName,
           initialFileSize: args.initialFileSize,
           initialSettled: args.initialSettled,
+          initialEmphasized: args.initialEmphasized,
         ),
       );
   }
@@ -160,15 +161,27 @@ class _CardEditPageState extends State<CardEditPage> {
               const SizedBox(height: 16),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                secondary: Icon(
-                  state.settled ? Icons.eco : Icons.eco_outlined,
-                ),
+                secondary: Icon(state.settled ? Icons.eco : Icons.eco_outlined),
                 title: Text(l10n.cardEditSettled),
                 subtitle: Text(l10n.cardEditSettledSubtitle),
                 value: state.settled,
-                onChanged: state.settledBusy
+                onChanged: state.markBusy
                     ? null
                     : (v) => _controller.dispatch(SettledToggled(v)),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: Icon(
+                  state.emphasized
+                      ? Icons.auto_awesome
+                      : Icons.auto_awesome_outlined,
+                ),
+                title: Text(l10n.cardEditEmphasized),
+                subtitle: Text(l10n.cardEditEmphasizedSubtitle),
+                value: state.emphasized,
+                onChanged: state.markBusy
+                    ? null
+                    : (v) => _controller.dispatch(EmphasizedToggled(v)),
               ),
             ],
           ),

@@ -270,6 +270,7 @@ class _CollectionPageState extends State<CollectionPage> {
       initialFileName: card.fileName,
       initialFileSize: card.fileSize,
       initialSettled: card.settled,
+      initialEmphasized: card.emphasized,
     );
     await Navigator.of(context).push(CardEditPage.route());
     if (mounted) _controller.dispatch(const ReloadRequested());

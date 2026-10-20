@@ -98,6 +98,25 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
           dispatch(const SettledEditFailed());
         });
 
+      case SetEmphasizedEffect(:final cardId, :final emphasized):
+        final result = await _write.setCardEmphasized(
+          cardId: cardId,
+          emphasized: emphasized,
+        );
+        result.onTap((_) => dispatch(EmphasizedResolved(emphasized)), (
+          failure,
+        ) {
+          _log.severe(
+            'Card emphasis failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          _effectEmitter.push(
+            const CardEditShowMessageUiEffect(CardEditMessage.saveFailed),
+          );
+          dispatch(const EmphasizedEditFailed());
+        });
+
       // --- timeline -------------------------------------------------------
 
       case LoadTimelinePreviewEffect(:final cardId, :final collectionId):

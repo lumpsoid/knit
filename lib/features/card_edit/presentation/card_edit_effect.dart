@@ -19,6 +19,13 @@ class SetSettledEffect extends CardEditEffect {
   final bool settled;
 }
 
+/// Emphasize (or, with [emphasized] false, unemphasize) [cardId] (§3.3).
+class SetEmphasizedEffect extends CardEditEffect {
+  const SetEmphasizedEffect(this.cardId, {required this.emphasized});
+  final String cardId;
+  final bool emphasized;
+}
+
 /// Find out whether [cardId] is [collectionId]'s home-timeline preview card.
 class LoadTimelinePreviewEffect extends CardEditEffect {
   const LoadTimelinePreviewEffect({

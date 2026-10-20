@@ -264,6 +264,13 @@ the `lib/sync/` core below.
   receded toward the page, greyed and faded, no tint, with faint
   `SettledRootsPainter` roots seeded by the card id. There is no
   strikethrough. The Timeline mutes a settled newest card's preview.
+- Emphasized cards (§3.3) are settled's opposite: a nullable, synced
+  `card.emphasized_at` (v7 migration), written by `SyncStore.setCardsEmphasized`.
+  The two marks are exclusive: each write nulls the other in the same op. The
+  domain's `EmphasisChange` follows the `SettleChange` rule. Same three entry
+  points as settle; the bubble gets a warm-amber frame and glow from
+  `EmphasizedPalette` (`lib/core/emphasized/`). Feed only: home and search
+  ignore it.
 - `search` (§3.2/§4.1) is the first **lightweight** feature (controller +
   `SearchState` ChangeNotifier + page). The Timeline app bar opens it; it
   runs on submit. `SearchReadRepository` flattens live collections and cards into

@@ -385,4 +385,85 @@ void main() {
       expect(effects, isNull);
     });
   });
+
+  group('emphasized (§3.3)', () {
+    test('ViewAttached seeds the toggle from the carrier', () {
+      final (next, _) = updater.update(
+        const CardEditState(),
+        const ViewAttached(
+          cardId: 'c1',
+          collectionId: 'col-1',
+          initialText: '',
+          initialAttachmentId: null,
+          initialEmphasized: true,
+        ),
+      );
+      expect(next.emphasized, isTrue);
+      expect(next.emphasizedBusy, isFalse);
+    });
+
+    test('flipping the toggle writes and marks busy', () {
+      final (next, effects) = updater.update(
+        const CardEditState(cardId: 'c1'),
+        const EmphasizedToggled(true),
+      );
+      expect(next.emphasizedBusy, isTrue);
+      expect(next.emphasized, isFalse, reason: 'flips once the write lands');
+      final effect = effects!.single as SetEmphasizedEffect;
+      expect(effect.cardId, 'c1');
+      expect(effect.emphasized, isTrue);
+    });
+
+    test('either toggle waits while a settle or emphasis write runs', () {
+      final (_, a) = updater.update(
+        const CardEditState(cardId: 'c1', settledBusy: true),
+        const EmphasizedToggled(true),
+      );
+      final (_, b) = updater.update(
+        const CardEditState(cardId: 'c1', emphasizedBusy: true),
+        const SettledToggled(true),
+      );
+      expect(a, isNull);
+      expect(b, isNull);
+    });
+
+    test('emphasizing a settled card unsettles it and refreshes home', () {
+      final (next, effects) = updater.update(
+        const CardEditState(cardId: 'c1', settled: true, emphasizedBusy: true),
+        const EmphasizedResolved(true),
+      );
+      expect(next.emphasized, isTrue);
+      expect(next.settled, isFalse);
+      expect(effects!.single, isA<RefreshTimelineEffect>());
+    });
+
+    test('emphasizing a live card leaves home alone', () {
+      final (next, effects) = updater.update(
+        const CardEditState(cardId: 'c1', emphasizedBusy: true),
+        const EmphasizedResolved(true),
+      );
+      expect(next.emphasized, isTrue);
+      expect(next.emphasizedBusy, isFalse);
+      expect(effects, isNull);
+    });
+
+    test('settling an emphasized card clears the emphasis', () {
+      final (next, _) = updater.update(
+        const CardEditState(cardId: 'c1', emphasized: true, settledBusy: true),
+        const SettledResolved(true),
+      );
+      expect(next.settled, isTrue);
+      expect(next.emphasized, isFalse);
+    });
+
+    test('a failed write drops busy and keeps the toggle', () {
+      final (next, effects) = updater.update(
+        const CardEditState(cardId: 'c1', emphasizedBusy: true),
+        const EmphasizedEditFailed(),
+      );
+      expect(next.emphasizedBusy, isFalse);
+      expect(next.emphasized, isFalse);
+      expect(effects, isNull);
+    });
+  });
 }

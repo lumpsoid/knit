@@ -27,6 +27,7 @@ class CardEditUpdater
         :final initialFileName,
         :final initialFileSize,
         :final initialSettled,
+        :final initialEmphasized,
       ):
         // An image attachment shows through the shared image cache; audio/file
         // render straight from the metadata the carrier passed.
@@ -44,6 +45,8 @@ class CardEditUpdater
             attachmentBusy: false,
             settled: initialSettled,
             settledBusy: false,
+            emphasized: initialEmphasized && !initialSettled,
+            emphasizedBusy: false,
           ),
           [
             LoadLinksEffect(cardId),
@@ -162,7 +165,7 @@ class CardEditUpdater
       // --- settled ----------------------------------------------------------
 
       case SettledToggled(:final settled):
-        if (state.settledBusy || settled == state.settled) return (state, null);
+        if (state.markBusy || settled == state.settled) return (state, null);
         return (
           state.copyWith(settledBusy: true),
           [SetSettledEffect(state.cardId, settled: settled)],
@@ -170,12 +173,44 @@ class CardEditUpdater
 
       case SettledResolved(:final settled):
         return (
-          state.copyWith(settled: settled, settledBusy: false),
+          state.copyWith(
+            settled: settled,
+            settledBusy: false,
+            // Settling clears the emphasis (§3.3).
+            emphasized: settled ? false : state.emphasized,
+          ),
           _refreshTimeline(state),
         );
 
       case SettledEditFailed():
         return (state.copyWith(settledBusy: false), null);
+
+      // --- emphasized -------------------------------------------------------
+
+      case EmphasizedToggled(:final emphasized):
+        if (state.markBusy || emphasized == state.emphasized) {
+          return (state, null);
+        }
+        return (
+          state.copyWith(emphasizedBusy: true),
+          [SetEmphasizedEffect(state.cardId, emphasized: emphasized)],
+        );
+
+      case EmphasizedResolved(:final emphasized):
+        // Emphasizing unsettles (§3.3); only that reaches the Timeline, whose
+        // row mutes a settled preview.
+        final unsettled = emphasized && state.settled;
+        return (
+          state.copyWith(
+            emphasized: emphasized,
+            emphasizedBusy: false,
+            settled: unsettled ? false : state.settled,
+          ),
+          unsettled ? _refreshTimeline(state) : null,
+        );
+
+      case EmphasizedEditFailed():
+        return (state.copyWith(emphasizedBusy: false), null);
 
       case DeactivateFeature():
         return (state, const [ReleaseImageEffect()]);

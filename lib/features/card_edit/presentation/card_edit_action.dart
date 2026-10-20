@@ -21,6 +21,7 @@ class ViewAttached extends CardEditAction {
     this.initialFileName,
     this.initialFileSize,
     this.initialSettled = false,
+    this.initialEmphasized = false,
   });
   final String cardId;
   final String collectionId;
@@ -30,6 +31,7 @@ class ViewAttached extends CardEditAction {
   final String? initialFileName;
   final int? initialFileSize;
   final bool initialSettled;
+  final bool initialEmphasized;
 }
 
 /// Whether the card is its collection's home-timeline preview (§8.6.3).
@@ -144,6 +146,25 @@ class SettledResolved extends CardEditAction {
 /// The settle write failed; the toggle stays where it was.
 class SettledEditFailed extends CardEditAction {
   const SettledEditFailed();
+}
+
+// --- emphasized (§3.3) -------------------------------------------------------
+
+/// The Emphasized toggle flipped to [emphasized].
+class EmphasizedToggled extends CardEditAction {
+  const EmphasizedToggled(this.emphasized);
+  final bool emphasized;
+}
+
+/// The emphasis write committed: the card is now [emphasized].
+class EmphasizedResolved extends CardEditAction {
+  const EmphasizedResolved(this.emphasized);
+  final bool emphasized;
+}
+
+/// The emphasis write failed; the toggle stays where it was.
+class EmphasizedEditFailed extends CardEditAction {
+  const EmphasizedEditFailed();
 }
 
 class DeactivateFeature extends CardEditAction {

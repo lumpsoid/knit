@@ -47,6 +47,15 @@ class SyncStoreCardEditWriteRepository implements CardEditWriteRepository {
   });
 
   @override
+  Future<Result<String, CardEditFailure>> setCardEmphasized({
+    required String cardId,
+    required bool emphasized,
+  }) => _write(() async {
+    await _graph.store.setCardsEmphasized([cardId], emphasized: emphasized);
+    return cardId;
+  });
+
+  @override
   Future<Result<String, CardEditFailure>> removeCardAttachment({
     required String cardId,
   }) => _write(() async {

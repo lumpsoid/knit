@@ -30,6 +30,13 @@ abstract interface class CardEditWriteRepository {
     required bool settled,
   });
 
+  /// Emphasize (or, with [emphasized] false, unemphasize) the card (§3.3) —
+  /// a content write, placement frozen; emphasizing unsettles.
+  Future<Result<String, CardEditFailure>> setCardEmphasized({
+    required String cardId,
+    required bool emphasized,
+  });
+
   /// Remove the card's attachment: clear `attachment_id` and flip `kind` back to
   /// `text`. The `attachment` record itself is GC'd separately (ref-counted).
   Future<Result<String, CardEditFailure>> removeCardAttachment({

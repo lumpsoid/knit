@@ -34,6 +34,9 @@ abstract interface class CardEditRouteArgs {
 
   /// Whether the card is settled (§3.3), seeding the Settled toggle.
   bool get initialSettled;
+
+  /// Whether the card is emphasized (§3.3), seeding the Emphasized toggle.
+  bool get initialEmphasized;
 }
 
 /// Write side — what an origin screen (Collection) sets before navigating.
@@ -47,6 +50,7 @@ abstract interface class CardEditRouteArgsWriter {
     String? initialFileName,
     int? initialFileSize,
     bool initialSettled,
+    bool initialEmphasized,
   });
 }
 
@@ -65,6 +69,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   String? _initialFileName;
   int? _initialFileSize;
   bool _initialSettled = false;
+  bool _initialEmphasized = false;
 
   @override
   String get cardId => _cardId;
@@ -91,6 +96,9 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   bool get initialSettled => _initialSettled;
 
   @override
+  bool get initialEmphasized => _initialEmphasized;
+
+  @override
   void open({
     required String cardId,
     required String collectionId,
@@ -100,6 +108,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     String? initialFileName,
     int? initialFileSize,
     bool initialSettled = false,
+    bool initialEmphasized = false,
   }) {
     _cardId = cardId;
     _collectionId = collectionId;
@@ -109,5 +118,6 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     _initialFileName = initialFileName;
     _initialFileSize = initialFileSize;
     _initialSettled = initialSettled;
+    _initialEmphasized = initialEmphasized;
   }
 }
