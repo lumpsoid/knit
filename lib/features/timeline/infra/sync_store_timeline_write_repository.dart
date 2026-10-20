@@ -43,4 +43,20 @@ class SyncStoreTimelineWriteRepository implements TimelineWriteRepository {
       return Failure(TimelineWriteFailure(e, st));
     }
   }
+
+  @override
+  Future<Result<String, TimelineFailure>> setArchived(
+    String collectionId, {
+    required bool archived,
+  }) async {
+    try {
+      await _graph.store.setCollectionArchived(
+        collectionId,
+        archived: archived,
+      );
+      return Ok(collectionId);
+    } catch (e, st) {
+      return Failure(TimelineWriteFailure(e, st));
+    }
+  }
 }

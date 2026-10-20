@@ -57,6 +57,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionUnpin => 'Unpin';
 
   @override
+  String get actionArchive => 'Archive';
+
+  @override
+  String get actionUnarchive => 'Unarchive';
+
+  @override
   String get labelUntitled => 'Untitled';
 
   @override
@@ -236,6 +242,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timelinePinFailed => 'Couldn\'t update the pin. Please try again.';
+
+  @override
+  String get timelineArchiveFailed =>
+      'Couldn\'t update the archive. Please try again.';
+
+  @override
+  String get timelineArchiveRow => 'Archive';
+
+  @override
+  String timelineArchiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count collections',
+      one: '1 collection',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get archiveTitle => 'Archive';
+
+  @override
+  String get archiveEmpty => 'No archived collections';
 
   @override
   String get timelineNoCardsYet => 'No cards yet';

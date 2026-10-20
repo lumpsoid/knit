@@ -8,13 +8,18 @@ import 'package:knit/sync/sync.dart';
 void main() {
   const updater = TimelineUpdater();
 
-  CollectionSummary summary(String id, {String? cover}) => CollectionSummary(
+  CollectionSummary summary(
+    String id, {
+    String? cover,
+    bool archived = false,
+  }) => CollectionSummary(
     collectionId: id,
     title: id,
     coverAttachmentId: cover,
     cardCount: 0,
     lastCard: null,
     lastUpdated: 1,
+    archived: archived,
   );
 
   test('ViewAttached loads', () {
@@ -186,5 +191,95 @@ void main() {
     final unpin = effects.last as SetPinnedEffect;
     expect(unpin.collectionId, 'a');
     expect(unpin.pinned, isFalse);
+  });
+
+  group('archive (§3.4)', () {
+    test('ArchiveToggled emits a SetArchivedEffect for a real change', () {
+      final (next, effects) = updater.update(
+        TimelineState(
+          status: TimelineStatus.ready,
+          collections: [summary('a')],
+        ),
+        const ArchiveToggled('a', archived: true),
+      );
+      expect(next.status, TimelineStatus.ready);
+      final archive = effects!.single as SetArchivedEffect;
+      expect(archive.collectionId, 'a');
+      expect(archive.archived, isTrue);
+    });
+
+    test('ArchiveToggled to the current state is a no-op', () {
+      final ready = TimelineState(
+        status: TimelineStatus.ready,
+        collections: [summary('a', archived: true)],
+      );
+      final (next, effects) = updater.update(
+        ready,
+        const ArchiveToggled('a', archived: true),
+      );
+      expect(next, same(ready));
+      expect(effects, isNull);
+    });
+
+    test('unarchive emits a SetArchivedEffect', () {
+      final (_, effects) = updater.update(
+        TimelineState(
+          status: TimelineStatus.ready,
+          collections: [summary('a', archived: true)],
+        ),
+        const ArchiveToggled('a', archived: false),
+      );
+      expect((effects!.single as SetArchivedEffect).archived, isFalse);
+    });
+
+    test('CollectionArchiveChanged reloads the home feed', () {
+      final (next, effects) = updater.update(
+        TimelineState(
+          status: TimelineStatus.ready,
+          collections: [summary('a')],
+        ),
+        const CollectionArchiveChanged('a', archived: true),
+      );
+      expect(next.status, TimelineStatus.loading);
+      expect(effects, const [LoadTimelineEffect()]);
+    });
+
+    test('archiving a pinned collection also unpins it', () {
+      final (_, effects) = updater.update(
+        TimelineState(
+          status: TimelineStatus.ready,
+          collections: [summary('a')],
+          pinnedIds: const {'a'},
+        ),
+        const CollectionArchiveChanged('a', archived: true),
+      );
+      expect(effects, hasLength(2));
+      expect(effects!.first, isA<LoadTimelineEffect>());
+      final unpin = effects.last as SetPinnedEffect;
+      expect(unpin.collectionId, 'a');
+      expect(unpin.pinned, isFalse);
+    });
+
+    test('unarchiving leaves the pins alone', () {
+      final (_, effects) = updater.update(
+        TimelineState(
+          status: TimelineStatus.ready,
+          collections: [summary('a', archived: true)],
+          pinnedIds: const {'a'},
+        ),
+        const CollectionArchiveChanged('a', archived: false),
+      );
+      expect(effects, const [LoadTimelineEffect()]);
+    });
+
+    test('ArchiveUpdateFailed keeps state and emits no effects', () {
+      const ready = TimelineState(status: TimelineStatus.ready);
+      final (next, effects) = updater.update(
+        ready,
+        const ArchiveUpdateFailed(),
+      );
+      expect(next, same(ready));
+      expect(effects, isNull);
+    });
   });
 }

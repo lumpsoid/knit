@@ -69,6 +69,23 @@ class TimelineUpdater
       case PinUpdateFailed():
         // The shell surfaces a message; nothing changes in state.
         return (state, null);
+      case ArchiveToggled(:final collectionId, :final archived):
+        if (state.isArchived(collectionId) == archived) return (state, null);
+        return (state, [SetArchivedEffect(collectionId, archived: archived)]);
+      case CollectionArchiveChanged(:final collectionId, :final archived):
+        // Re-read the home feed so the row moves to (or back from) the
+        // Archive; archiving also drops the device-local pin (§3.4).
+        return (
+          state.copyWith(status: TimelineStatus.loading),
+          [
+            const LoadTimelineEffect(),
+            if (archived && state.isPinned(collectionId))
+              SetPinnedEffect(collectionId, pinned: false),
+          ],
+        );
+      case ArchiveUpdateFailed():
+        // The shell surfaces a message; nothing changes in state.
+        return (state, null);
       case DeactivateFeature():
         return (state, const [ReleaseCoversEffect()]);
     }

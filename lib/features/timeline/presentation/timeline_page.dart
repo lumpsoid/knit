@@ -1,8 +1,4 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:knit/core/attachments/presentation/attachment_image.dart';
-import 'package:knit/core/settled/settled_palette.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/collection_widget/presentation/collection_widget_gate.dart';
@@ -12,15 +8,22 @@ import 'package:knit/features/settings/presentation/settings_page.dart';
 import 'package:knit/features/share_capture/presentation/incoming_share_gate.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_indicator.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
+import 'package:knit/features/timeline/presentation/timeline_archive_page.dart';
 import 'package:knit/features/timeline/presentation/timeline_controller.dart';
 import 'package:knit/features/timeline/presentation/timeline_scope.dart';
 import 'package:knit/features/timeline/presentation/timeline_state.dart';
 import 'package:knit/features/timeline/presentation/timeline_ui_effect.dart';
+import 'package:knit/features/timeline/presentation/widgets/timeline_archive_row.dart';
+import 'package:knit/features/timeline/presentation/widgets/timeline_collection_actions.dart';
+import 'package:knit/features/timeline/presentation/widgets/timeline_collection_tile.dart';
+import 'package:knit/features/timeline/presentation/widgets/pull_reveal_list.dart';
 import 'package:knit/sync/sync.dart';
 
 /// The Home / collections timeline (§4.1) — newest-updated first, not
 /// reorderable. Rows show title · last-card preview · count · last-updated.
 /// Collections pinned on this device sit in a "Pinned" section above the rest.
+/// Archived collections (§3.4) leave the list; pulling it down reveals an
+/// Archive row that opens them.
 class TimelinePage extends StatefulWidget {
   const TimelinePage({super.key});
 
@@ -63,6 +66,7 @@ class _TimelinePageState extends State<TimelinePage> {
           TimelineMessage.createFailed => l10n.timelineCreateFailed,
           TimelineMessage.deleteFailed => l10n.timelineDeleteFailed,
           TimelineMessage.pinFailed => l10n.timelinePinFailed,
+          TimelineMessage.archiveFailed => l10n.timelineArchiveFailed,
         };
         ScaffoldMessenger.of(
           context,
@@ -70,60 +74,22 @@ class _TimelinePageState extends State<TimelinePage> {
     }
   }
 
-  /// Long-press a row → actions sheet (§4.1): Pin / Unpin, and Delete (guarded
-  /// by a confirmation dialog since it's destructive).
+  /// Long-press a row → actions sheet (§4.1): Pin / Unpin, Archive (§3.4), and
+  /// Delete (guarded by a confirmation dialog since it's destructive).
   Future<void> _openCollectionActions(
     CollectionSummary summary, {
     required bool isPinned,
   }) async {
-    final action = await showModalBottomSheet<_CollectionAction>(
-      context: context,
-      builder: (_) => _CollectionActionsSheet(isPinned: isPinned),
+    final action = await showTimelineCollectionActions(
+      context,
+      title:
+          TimelineScope.collectionDetails.of(summary.collectionId)?.title ??
+          summary.title,
+      isPinned: isPinned,
+      isArchived: false,
     );
     if (action == null || !mounted) return;
-    switch (action) {
-      case _CollectionAction.pin:
-      case _CollectionAction.unpin:
-        _controller.dispatch(
-          PinToggled(
-            summary.collectionId,
-            pinned: action == _CollectionAction.pin,
-          ),
-        );
-      case _CollectionAction.delete:
-        await _confirmDelete(summary);
-    }
-  }
-
-  /// [summary]'s current title — the shared collection details' copy when
-  /// known, else the summary's own.
-  static String _titleOf(CollectionSummary summary) =>
-      TimelineScope.collectionDetails.of(summary.collectionId)?.title ??
-      summary.title;
-
-  Future<void> _confirmDelete(CollectionSummary summary) async {
-    final l10n = AppLocalizations.of(context);
-    final name = _titleOf(summary);
-    final title = name.trim().isEmpty ? l10n.labelUntitled : name;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.timelineDeleteTitle),
-        content: Text(l10n.timelineDeleteBody(title)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.actionDelete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    _controller.dispatch(DeleteCollectionRequested(summary.collectionId));
+    _controller.dispatch(action.toAction(summary.collectionId));
   }
 
   /// Inline collection creation (§4.1): a title/theme line → create → open.
@@ -213,45 +179,45 @@ class _TimelinePageState extends State<TimelinePage> {
     // Section headers only appear once something is pinned; with no pins the
     // feed is the plain recency list.
     final rows = <Widget>[
+      if (sections.homeIsEmpty) const _EmptyView(),
       if (sections.hasPinned) ...[
         _SectionHeader(
           label: l10n.timelinePinnedSection,
           icon: Icons.push_pin_outlined,
         ),
-        ..._tiles(state, sections.pinned, isPinned: true),
+        ..._tiles(sections.pinned, isPinned: true),
         if (sections.others.isNotEmpty)
           _SectionHeader(label: l10n.timelineRecentSection),
       ],
-      ..._tiles(state, sections.others, isPinned: false),
+      ..._tiles(sections.others, isPinned: false),
     ];
-    return RefreshIndicator(
+    // The Archive row (§3.4) hides above the list until a pull reveals it.
+    // With everything archived Home has no rows, so it shows outright.
+    return PullRevealList(
+      header: sections.hasArchived
+          ? TimelineArchiveRow(
+              count: sections.archived.length,
+              onTap: () =>
+                  Navigator.of(context).push(TimelineArchivePage.route()),
+            )
+          : null,
+      headerHeight: TimelineArchiveRow.height,
+      alwaysShowHeader: sections.homeIsEmpty,
       onRefresh: () async => _controller.dispatch(const RefreshRequested()),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: rows,
-      ),
+      children: rows,
     );
   }
 
   Iterable<Widget> _tiles(
-    TimelineState state,
     List<CollectionSummary> collections, {
     required bool isPinned,
   }) sync* {
     for (var i = 0; i < collections.length; i++) {
       final summary = collections[i];
-      // The header comes from the shared collection details (kept fresh by
-      // every read and edit); the summary is the fallback before it lands.
-      final header = TimelineScope.collectionDetails.of(summary.collectionId);
-      final coverId = header == null
-          ? summary.coverAttachmentId
-          : header.coverAttachmentId;
       if (i > 0) yield const Divider(height: 1);
-      yield _CollectionTile(
+      yield TimelineCollectionTile.fromScope(
         key: ValueKey(summary.collectionId),
         summary: summary,
-        title: header?.title ?? summary.title,
-        coverBytes: coverId == null ? null : TimelineScope.images.of(coverId),
         onTap: () =>
             _controller.dispatch(CollectionTapped(summary.collectionId)),
         onLongPress: () => _openCollectionActions(summary, isPinned: isPinned),
@@ -326,161 +292,6 @@ class _SectionHeader extends StatelessWidget {
             const SizedBox(width: 6),
           ],
           Text(label, style: style),
-        ],
-      ),
-    );
-  }
-}
-
-class _CollectionTile extends StatelessWidget {
-  const _CollectionTile({
-    super.key,
-    required this.summary,
-    required this.title,
-    required this.coverBytes,
-    required this.onTap,
-    required this.onLongPress,
-  });
-  final CollectionSummary summary;
-
-  /// The collection's current title (blank ⇒ shown as untitled).
-  final String title;
-
-  /// Decoded cover bytes, or null when the collection has no cover or its bytes
-  /// haven't loaded — in which case the lettered-avatar placeholder is shown.
-  final Uint8List? coverBytes;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final title = this.title.trim().isEmpty ? l10n.labelUntitled : this.title;
-    return ListTile(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      leading: _leading(title),
-      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text.rich(
-        TextSpan(
-          children: [
-            // A settled newest card (§3.3) previews muted, like its bubble.
-            TextSpan(
-              text: _preview(l10n, summary.lastCard),
-              style: summary.lastCard?.settled == true
-                  ? TextStyle(
-                      color: SettledPalette.previewText(theme.colorScheme),
-                    )
-                  : null,
-            ),
-            TextSpan(text: ' · ${l10n.timelineCardCount(summary.cardCount)}'),
-          ],
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: Text(
-        _relative(l10n, summary.lastUpdated),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-
-  /// A collection row's leading glyph: its cover image (clipped to the avatar
-  /// circle) when its bytes are loaded, otherwise the lettered-avatar
-  /// placeholder tinted from the collection id.
-  Widget _leading(String title) {
-    final bytes = coverBytes;
-    if (bytes != null) {
-      return ClipOval(
-        child: AttachmentImage(
-          bytes: bytes,
-          width: 40,
-          height: 40,
-          placeholder: _letterAvatar(title),
-        ),
-      );
-    }
-    return _letterAvatar(title);
-  }
-
-  Widget _letterAvatar(String title) => CircleAvatar(
-    backgroundColor: _tint(summary.collectionId),
-    child: Text(
-      title.substring(0, 1).toUpperCase(),
-      style: const TextStyle(color: Colors.white),
-    ),
-  );
-
-  Color _tint(String seed) {
-    final h = seed.codeUnits.fold<int>(0, (a, c) => (a * 31 + c) & 0xFFFF);
-    return HSLColor.fromAHSL(1, (h % 360).toDouble(), 0.5, 0.5).toColor();
-  }
-
-  String _preview(AppLocalizations l10n, CardPreview? card) {
-    if (card == null) return l10n.timelineNoCardsYet;
-    switch (card.kind) {
-      case 'text':
-        final t = card.text?.trim() ?? '';
-        return t.isEmpty ? l10n.labelEmptyNote : t;
-      case 'image':
-        return l10n.timelinePreviewPhoto;
-      case 'audio':
-        return l10n.timelinePreviewAudio;
-      case 'link':
-        return l10n.timelinePreviewLink;
-      default:
-        return card.kind;
-    }
-  }
-
-  String _relative(AppLocalizations l10n, int ms) {
-    final delta = DateTime.now().difference(
-      DateTime.fromMillisecondsSinceEpoch(ms),
-    );
-    if (delta.inMinutes < 1) return l10n.timeNow;
-    if (delta.inHours < 1) return l10n.timeMinutesShort(delta.inMinutes);
-    if (delta.inDays < 1) return l10n.timeHoursShort(delta.inHours);
-    if (delta.inDays < 7) return l10n.timeDaysShort(delta.inDays);
-    final d = DateTime.fromMillisecondsSinceEpoch(ms);
-    return '${d.day}/${d.month}';
-  }
-}
-
-enum _CollectionAction { pin, unpin, delete }
-
-/// Long-press actions sheet for a collection row (§4.1).
-class _CollectionActionsSheet extends StatelessWidget {
-  const _CollectionActionsSheet({required this.isPinned});
-
-  /// Whether the row is pinned — offers Unpin instead of Pin.
-  final bool isPinned;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: Wrap(
-        children: [
-          ListTile(
-            leading: Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-            title: Text(isPinned ? l10n.actionUnpin : l10n.actionPin),
-            onTap: () => Navigator.of(
-              context,
-            ).pop(isPinned ? _CollectionAction.unpin : _CollectionAction.pin),
-          ),
-          ListTile(
-            leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            title: Text(
-              l10n.actionDelete,
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
-            onTap: () => Navigator.of(context).pop(_CollectionAction.delete),
-          ),
         ],
       ),
     );

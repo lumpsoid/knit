@@ -194,6 +194,18 @@ abstract class AppLocalizations {
   /// **'Unpin'**
   String get actionUnpin;
 
+  /// No description provided for @actionArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get actionArchive;
+
+  /// No description provided for @actionUnarchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Unarchive'**
+  String get actionUnarchive;
+
   /// No description provided for @labelUntitled.
   ///
   /// In en, this message translates to:
@@ -499,6 +511,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update the pin. Please try again.'**
   String get timelinePinFailed;
+
+  /// No description provided for @timelineArchiveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the archive. Please try again.'**
+  String get timelineArchiveFailed;
+
+  /// No description provided for @timelineArchiveRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get timelineArchiveRow;
+
+  /// No description provided for @timelineArchiveCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 collection} other{{count} collections}}'**
+  String timelineArchiveCount(int count);
+
+  /// No description provided for @archiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archiveTitle;
+
+  /// No description provided for @archiveEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived collections'**
+  String get archiveEmpty;
 
   /// No description provided for @timelineNoCardsYet.
   ///

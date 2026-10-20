@@ -46,3 +46,10 @@ class SetPinnedEffect extends TimelineEffect {
   final String collectionId;
   final bool pinned;
 }
+
+/// Archive or unarchive a collection (§3.4), then reload the home feed.
+class SetArchivedEffect extends TimelineEffect {
+  const SetArchivedEffect(this.collectionId, {required this.archived});
+  final String collectionId;
+  final bool archived;
+}

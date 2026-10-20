@@ -83,6 +83,26 @@ class PinUpdateFailed extends TimelineAction {
   const PinUpdateFailed();
 }
 
+/// Long-press → Archive / Unarchive on a collection row (§3.4, synced).
+class ArchiveToggled extends TimelineAction {
+  const ArchiveToggled(this.collectionId, {required this.archived});
+  final String collectionId;
+
+  /// The desired state: true archives, false unarchives.
+  final bool archived;
+}
+
+/// A collection was archived or unarchived → the home feed re-reads itself.
+class CollectionArchiveChanged extends TimelineAction {
+  const CollectionArchiveChanged(this.collectionId, {required this.archived});
+  final String collectionId;
+  final bool archived;
+}
+
+class ArchiveUpdateFailed extends TimelineAction {
+  const ArchiveUpdateFailed();
+}
+
 class DeactivateFeature extends TimelineAction {
   const DeactivateFeature();
 }

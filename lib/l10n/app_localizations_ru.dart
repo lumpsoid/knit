@@ -57,6 +57,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionUnpin => 'Открепить';
 
   @override
+  String get actionArchive => 'В архив';
+
+  @override
+  String get actionUnarchive => 'Вернуть из архива';
+
+  @override
   String get labelUntitled => 'Без названия';
 
   @override
@@ -239,6 +245,32 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get timelinePinFailed =>
       'Не удалось изменить закрепление. Попробуйте ещё раз.';
+
+  @override
+  String get timelineArchiveFailed =>
+      'Не удалось обновить архив. Попробуйте ещё раз.';
+
+  @override
+  String get timelineArchiveRow => 'Архив';
+
+  @override
+  String timelineArchiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count коллекции',
+      many: '$count коллекций',
+      few: '$count коллекции',
+      one: '1 коллекция',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get archiveTitle => 'Архив';
+
+  @override
+  String get archiveEmpty => 'В архиве пусто';
 
   @override
   String get timelineNoCardsYet => 'Пока нет карточек';

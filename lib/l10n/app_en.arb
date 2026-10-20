@@ -21,6 +21,8 @@
   "actionClose": "Close",
   "actionPin": "Pin",
   "actionUnpin": "Unpin",
+  "actionArchive": "Archive",
+  "actionUnarchive": "Unarchive",
 
   "labelUntitled": "Untitled",
   "labelEmptyNote": "Empty note",
@@ -96,6 +98,16 @@
   "timelinePinnedSection": "Pinned",
   "timelineRecentSection": "Recent",
   "timelinePinFailed": "Couldn't update the pin. Please try again.",
+  "timelineArchiveFailed": "Couldn't update the archive. Please try again.",
+  "timelineArchiveRow": "Archive",
+  "timelineArchiveCount": "{count, plural, =1{1 collection} other{{count} collections}}",
+  "@timelineArchiveCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "archiveTitle": "Archive",
+  "archiveEmpty": "No archived collections",
   "timelineNoCardsYet": "No cards yet",
   "timelinePreviewPhoto": "📷 Photo",
   "timelinePreviewAudio": "🎙 Audio",

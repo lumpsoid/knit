@@ -118,6 +118,26 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
           dispatch(const CollectionDeleteFailed());
         });
 
+      case SetArchivedEffect(:final collectionId, :final archived):
+        final result = await _write.setArchived(
+          collectionId,
+          archived: archived,
+        );
+        result.onTap(
+          (id) => dispatch(CollectionArchiveChanged(id, archived: archived)),
+          (failure) {
+            _log.severe(
+              'Archive update failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            _effectEmitter.push(
+              const TimelineShowMessageUiEffect(TimelineMessage.archiveFailed),
+            );
+            dispatch(const ArchiveUpdateFailed());
+          },
+        );
+
       case SetPinnedEffect(:final collectionId, :final pinned):
         final result = await _pinWrite.setPinned(collectionId, pinned: pinned);
         result.onTap((ids) => dispatch(PinsChanged(ids)), (failure) {

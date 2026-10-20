@@ -295,6 +295,15 @@ the `lib/sync/` core below.
   their nickname to confirm) and replace both go through `DeviceEraser`
   (`lib/app/`), which runs `SyncStore.resetDevice` and deletes the blobs.
   Onboarding offers "Restore from backup" on its welcome step.
+- Archived collections (§3.4): a nullable, synced `collection.archived_at` (v6
+  migration), written by `SyncStore.setCollectionArchived` on the content
+  clock. `homeTimeline()` keeps archived collections, flagged by
+  `CollectionSummary.archived`, so the move, share-capture and widget pickers
+  still offer them. The Timeline's `TimelineSections` sets them aside, and
+  archiving unpins. Home's `PullRevealList` hides the `TimelineArchiveRow` until
+  a pull, and the row opens `TimelineArchivePage`, a view over the Timeline's
+  own state. Archive and Unarchive live in the shared long-press sheet
+  (`widgets/timeline_collection_actions.dart`).
 - `card_links` is the shared owner of card links (§4.4): `CardLinksController`
   + `CardLinksState` + the one `LinkPickerSheet` (lazy two-level picker).
   Collection and Card Edit open the picker and add links through it; Card Edit

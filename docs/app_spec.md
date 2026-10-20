@@ -120,6 +120,13 @@ deleted. Archiving takes it off the home timeline without losing anything.
   recency order, with no cap on pins. Headers appear only once something is pinned. Pins are a
   **device-local view preference**: not synced, not signed, not part of the §6.4 schema.
   Deleting a collection drops its pin.
+- **Archive** (§3.4): the same long-press sheet offers **Archive**, which takes the collection
+  off Home. An **Archive** row (with the archived count) hides above the first row: a short
+  pull down at the top reveals it and it stays, a longer pull also refreshes, and scrolling it
+  out of view hides it again. A mouse wheel scrolled up at the top reveals it on desktop. The
+  row exists only while something is archived. If everything is archived, it shows without a
+  pull. Tapping it opens the **Archive** page: the archived collections in the same recency
+  order, where long-press offers **Unarchive** and Delete.
 
 ### 4.2 Collection Screen (a collection's card feed)
 - Chat-style feed of **cards**, **chronological ascending by default** (step 1 → 2 → 3,

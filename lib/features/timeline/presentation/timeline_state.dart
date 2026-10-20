@@ -32,6 +32,9 @@ class TimelineState {
 
   bool isPinned(String collectionId) => pinnedIds.contains(collectionId);
 
+  bool isArchived(String collectionId) =>
+      collections.any((c) => c.collectionId == collectionId && c.archived);
+
   TimelineState copyWith({
     TimelineStatus? status,
     List<CollectionSummary>? collections,

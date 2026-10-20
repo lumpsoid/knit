@@ -18,6 +18,8 @@
   "actionClose": "Закрыть",
   "actionPin": "Закрепить",
   "actionUnpin": "Открепить",
+  "actionArchive": "В архив",
+  "actionUnarchive": "Вернуть из архива",
 
   "labelUntitled": "Без названия",
   "labelEmptyNote": "Пустая заметка",
@@ -93,6 +95,16 @@
   "timelinePinnedSection": "Закреплённые",
   "timelineRecentSection": "Недавние",
   "timelinePinFailed": "Не удалось изменить закрепление. Попробуйте ещё раз.",
+  "timelineArchiveFailed": "Не удалось обновить архив. Попробуйте ещё раз.",
+  "timelineArchiveRow": "Архив",
+  "timelineArchiveCount": "{count, plural, =1{1 коллекция} few{{count} коллекции} many{{count} коллекций} other{{count} коллекции}}",
+  "@timelineArchiveCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "archiveTitle": "Архив",
+  "archiveEmpty": "В архиве пусто",
   "timelineNoCardsYet": "Пока нет карточек",
   "timelinePreviewPhoto": "📷 Фото",
   "timelinePreviewAudio": "🎙 Аудио",
