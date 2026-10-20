@@ -268,7 +268,7 @@ the `lib/sync/` core below.
   `card.emphasized_at` (v7 migration), written by `SyncStore.setCardsEmphasized`.
   The two marks are exclusive: each write nulls the other in the same op. The
   domain's `EmphasisChange` follows the `SettleChange` rule. Same three entry
-  points as settle; the bubble gets a warm-amber frame and glow from
+  points as settle; the bubble gets a warm-amber frame and a blur-free halo from
   `EmphasizedPalette` (`lib/core/emphasized/`). Feed only: home and search
   ignore it.
 - `search` (§3.2/§4.1) is the first **lightweight** feature (controller +

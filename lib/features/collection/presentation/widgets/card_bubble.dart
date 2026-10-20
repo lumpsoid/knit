@@ -50,8 +50,8 @@ class CardBubble extends StatelessWidget {
   /// faint roots behind it. Flipping it animates the change.
   final bool settled;
 
-  /// Whether the card is emphasized (§3.3): a bright warm frame with a soft
-  /// glow. Flipping it animates the change.
+  /// Whether the card is emphasized (§3.3): a bright warm frame with a faint
+  /// halo. Flipping it animates the change.
   final bool emphasized;
 
   /// Opens the full-screen image preview; null when the image hasn't loaded yet
@@ -100,7 +100,7 @@ class CardBubble extends StatelessWidget {
     );
   }
 
-  /// Emphasis lights a warm frame and glow around [bubble]; a card that is
+  /// Emphasis lights a warm frame and halo around [bubble]; a card that is
   /// already emphasized when it appears starts there.
   Widget _emphasisFrame(ThemeData theme, Widget bubble) {
     final frame = EmphasizedPalette.frame(theme.brightness);
@@ -110,7 +110,7 @@ class CardBubble extends StatelessWidget {
       curve: Curves.easeOutCubic,
       child: bubble,
       // Always wrapped, so a flip keeps the bubble's subtree (and its settle
-      // animation); a live card paints no frame and no glow.
+      // animation); a live card paints no frame and no halo.
       builder: (context, e, bubble) => DecoratedBox(
         position: DecorationPosition.foreground,
         decoration: BoxDecoration(
@@ -127,7 +127,7 @@ class CardBubble extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: e == 0
                 ? null
-                : EmphasizedPalette.glow(theme.brightness, e),
+                : EmphasizedPalette.halo(theme.brightness, e),
           ),
           child: bubble,
         ),

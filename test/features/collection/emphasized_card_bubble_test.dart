@@ -5,7 +5,7 @@ import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/widgets/card_bubble.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-/// An emphasized card (§3.3) gets a bright frame and a glow; emphasizing
+/// An emphasized card (§3.3) gets a bright frame and a halo; emphasizing
 /// animates them in.
 void main() {
   Widget bubble({required bool emphasized}) => MaterialApp(

@@ -92,7 +92,7 @@ history, so a card can instead be **settled**.
 (a key decision, the one number to remember) can be **emphasized**.
 
 - An emphasized card also **stays where it is**. It is drawn louder: a bright warm-amber
-  frame with a soft glow around the bubble. Only the Collection feed shows it; home and
+  frame with a faint halo ring around the bubble. Only the Collection feed shows it; home and
   search are unchanged.
 - A card is live, settled **or** emphasized, never both: emphasizing a settled card
   unsettles it, and settling an emphasized card clears the emphasis.
