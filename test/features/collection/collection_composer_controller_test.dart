@@ -25,6 +25,23 @@ class _FakeImagePicker implements ImagePickerPort {
   }
 }
 
+class _FakeOptimizer implements ImageOptimizerPort {
+  PickedImage? next;
+  Object? error;
+  Completer<PickedImage?>? gate;
+  final seen = <PickedImage>[];
+
+  @override
+  Future<PickedImage?> optimize(PickedImage image) async {
+    seen.add(image);
+    final error = this.error;
+    if (error != null) throw error;
+    final gate = this.gate;
+    if (gate != null) return gate.future;
+    return next;
+  }
+}
+
 class _FakeFilePicker implements FilePickerPort {
   PickedFile? next;
 
@@ -75,7 +92,13 @@ void main() {
     name: 'report.pdf',
   );
 
+  final smaller = PickedImage(
+    bytes: Uint8List.fromList([1]),
+    mime: 'image/jpeg',
+  );
+
   late _FakeImagePicker imagePicker;
+  late _FakeOptimizer optimizer;
   late _FakeFilePicker filePicker;
   late _FakeRecorder recorder;
   late List<ComposerSubmitted> sent;
@@ -85,6 +108,7 @@ void main() {
 
   setUp(() {
     imagePicker = _FakeImagePicker();
+    optimizer = _FakeOptimizer();
     filePicker = _FakeFilePicker();
     recorder = _FakeRecorder();
     sent = [];
@@ -92,6 +116,7 @@ void main() {
     disposed = false;
     composer = CollectionComposerController(
       imagePicker: imagePicker,
+      imageOptimizer: optimizer,
       audioRecorder: recorder,
       filePicker: filePicker,
       onSend: sent.add,
@@ -209,6 +234,113 @@ void main() {
       disposed = true;
       gate.complete(image);
       await expectLater(pick, completes);
+    });
+  });
+
+  group('optimize size', () {
+    Future<void> stage(PickedImage picked) async {
+      imagePicker.next = picked;
+      await composer.pickImage(ImagePickerSource.gallery);
+    }
+
+    test('off by default: the original is sent untouched', () async {
+      optimizer.next = smaller;
+      await stage(image);
+      expect(optimizer.seen, isEmpty);
+      composer.submit('');
+      expect(sent.single.image, same(image));
+    });
+
+    test(
+      'turning it on optimizes the staged photo and sends the copy',
+      () async {
+        optimizer.next = smaller;
+        await stage(image);
+        await composer.setOptimizeImages(true);
+        expect(state().optimizedImage, same(smaller));
+        composer.submit('caption');
+        expect(sent.single.image, same(smaller));
+        expect(sent.single.text, 'caption');
+      },
+    );
+
+    test('turning it back off sends the original', () async {
+      optimizer.next = smaller;
+      await stage(image);
+      await composer.setOptimizeImages(true);
+      await composer.setOptimizeImages(false);
+      composer.submit('');
+      expect(sent.single.image, same(image));
+    });
+
+    test('the choice carries over to the next photo', () async {
+      optimizer.next = smaller;
+      await stage(image);
+      await composer.setOptimizeImages(true);
+      composer.submit('');
+      final next = PickedImage(
+        bytes: Uint8List.fromList([9, 9]),
+        mime: 'image/jpeg',
+      );
+      await stage(next);
+      expect(optimizer.seen, [image, next]);
+      expect(state().optimizeImages, isTrue);
+    });
+
+    test('a send waits while optimizing', () async {
+      final gate = Completer<PickedImage?>();
+      optimizer.gate = gate;
+      await stage(image);
+      final running = composer.setOptimizeImages(true);
+      expect(state().optimizingImage, isTrue);
+      expect(composer.submit('hi'), isFalse);
+      gate.complete(smaller);
+      await running;
+      expect(composer.submit('hi'), isTrue);
+      expect(sent.single.image, same(smaller));
+    });
+
+    test('nothing to gain keeps the original and says so', () async {
+      optimizer.next = null;
+      await stage(image);
+      await composer.setOptimizeImages(true);
+      expect(state().imageAlreadySmall, isTrue);
+      composer.submit('');
+      expect(sent.single.image, same(image));
+    });
+
+    test('an optimizer error keeps the original', () async {
+      optimizer.error = StateError('boom');
+      await stage(image);
+      await composer.setOptimizeImages(true);
+      expect(state().optimizingImage, isFalse);
+      composer.submit('');
+      expect(sent.single.image, same(image));
+    });
+
+    test('a format it cannot read is left alone', () async {
+      final gif = PickedImage(
+        bytes: Uint8List.fromList([1]),
+        mime: 'image/gif',
+      );
+      await stage(gif);
+      expect(state().canOptimizePendingImage, isFalse);
+      await composer.setOptimizeImages(true);
+      expect(optimizer.seen, isEmpty);
+      composer.submit('');
+      expect(sent.single.image, same(gif));
+    });
+
+    test('a result for a photo that was replaced is dropped', () async {
+      final gate = Completer<PickedImage?>();
+      optimizer.gate = gate;
+      await stage(image);
+      final running = composer.setOptimizeImages(true);
+      composer.clearImage();
+      gate.complete(smaller);
+      await running;
+      expect(state().optimizedImage, isNull);
+      expect(state().optimizingImage, isFalse);
     });
   });
 

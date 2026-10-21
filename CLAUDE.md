@@ -243,6 +243,11 @@ the `lib/sync/` core below.
   hold the staged attachments, the recording and the inline panel.
   `CollectionController.composer` exposes it. A send reaches the loop as
   `ComposerSubmitted(text, image/file/audio)`.
+- `collection` composer "Optimize size" (§4.2, opt-in per staged photo): the
+  pure `ImageOptimization` rules (`lib/core/attachments/domain/`) and the
+  `ImageOptimizerPort`, realized by `PackageImageOptimizer` (pure-Dart
+  `package:image` on a background isolate). The composer optimizes when the chip
+  turns on, so the preview shows the saving, and sends the smaller copy.
 - `collection` app bar: `CollectionHeaderBar` is the title card, docked. A
   `TitleMorphLink` (`widgets/title_morph.dart`) ties the card's name
   (`TitleMorphSource`) to the bar's slot (`TitleMorphTarget`). The

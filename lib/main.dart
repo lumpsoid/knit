@@ -326,6 +326,7 @@ void bootstrap(AppConfig config) {
       ),
       imageCache: imageCache,
       imagePicker: ImagePickerAdapter(),
+      imageOptimizer: const PackageImageOptimizer(),
       audioRecorder: RecordAudioRecorder(),
       filePicker: const FilePickerAdapter(),
       shareRepository: const SharePlusCardShareRepository(),

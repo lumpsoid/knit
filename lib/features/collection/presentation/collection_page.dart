@@ -592,6 +592,13 @@ class _CollectionPageState extends State<CollectionPage> {
           controller: _composer,
           autofocus: _quickInput,
           pendingImageBytes: composer.pendingImage?.bytes,
+          optimizeImage: composer.optimizeImages,
+          optimizedImageSize: composer.optimizedImage?.bytes.length,
+          optimizingImage: composer.optimizingImage,
+          imageAlreadySmall: composer.imageAlreadySmall,
+          onOptimizeImageChanged: composer.canOptimizePendingImage
+              ? (optimize) => unawaited(input.setOptimizeImages(optimize))
+              : null,
           pendingFileName: composer.pendingFile?.name,
           showPhotoSources: composer.showPhotoSources,
           hasPendingAudio: composer.pendingAudio != null,

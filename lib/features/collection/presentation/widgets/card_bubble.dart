@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:knit/core/attachments/presentation/byte_size.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/core/emphasized/emphasized_palette.dart';
 import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
@@ -455,7 +456,7 @@ class FileCardChip extends StatelessWidget {
                 ),
                 if (size != null)
                   Text(
-                    _formatBytes(size),
+                    formatByteSize(size),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -469,20 +470,4 @@ class FileCardChip extends StatelessWidget {
     if (onTap == null) return chip;
     return GestureDetector(onTap: onTap, child: chip);
   }
-}
-
-/// A compact, human-readable byte size (e.g. `1.2 MB`). Decimal units, pure.
-String _formatBytes(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  var value = bytes / 1024;
-  var unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit++;
-  }
-  final text = value >= 10
-      ? value.toStringAsFixed(0)
-      : value.toStringAsFixed(1);
-  return '$text ${units[unit]}';
 }

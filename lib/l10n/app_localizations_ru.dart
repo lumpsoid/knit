@@ -414,6 +414,20 @@ class AppLocalizationsRu extends AppLocalizations {
       'Для записи аудио нужен доступ к микрофону.';
 
   @override
+  String get collectionImageOptimize => 'Уменьшить размер';
+
+  @override
+  String get collectionImageOptimizing => 'Уменьшаем…';
+
+  @override
+  String get collectionImageAlreadySmall => 'Уже компактное';
+
+  @override
+  String collectionImageSizeSaved(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
   String get collectionActionEdit => 'Изменить';
 
   @override

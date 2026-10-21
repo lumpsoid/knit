@@ -408,6 +408,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Microphone access is needed to record audio.';
 
   @override
+  String get collectionImageOptimize => 'Optimize size';
+
+  @override
+  String get collectionImageOptimizing => 'Optimizing…';
+
+  @override
+  String get collectionImageAlreadySmall => 'Already small';
+
+  @override
+  String collectionImageSizeSaved(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
   String get collectionActionEdit => 'Edit';
 
   @override

@@ -11,6 +11,11 @@ class CollectionComposer extends StatelessWidget {
     required this.controller,
     this.autofocus = false,
     required this.pendingImageBytes,
+    this.optimizeImage = false,
+    this.optimizedImageSize,
+    this.optimizingImage = false,
+    this.imageAlreadySmall = false,
+    this.onOptimizeImageChanged,
     required this.pendingFileName,
     required this.showPhotoSources,
     required this.hasPendingAudio,
@@ -37,6 +42,14 @@ class CollectionComposer extends StatelessWidget {
 
   /// Bytes of an image the user picked but hasn't sent yet; null ⇒ no preview.
   final Uint8List? pendingImageBytes;
+
+  /// The staged image's "Optimize size" state (see [PendingImagePreview]);
+  /// [onOptimizeImageChanged] is null when its format can't be optimized.
+  final bool optimizeImage;
+  final int? optimizedImageSize;
+  final bool optimizingImage;
+  final bool imageAlreadySmall;
+  final ValueChanged<bool>? onOptimizeImageChanged;
 
   /// Name of a file the user picked but hasn't sent yet; null ⇒ no preview.
   final String? pendingFileName;
@@ -89,7 +102,15 @@ class CollectionComposer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (bytes != null)
-              PendingImagePreview(bytes: bytes, onClear: onClearImage),
+              PendingImagePreview(
+                bytes: bytes,
+                onClear: onClearImage,
+                optimize: optimizeImage,
+                optimizedSize: optimizedImageSize,
+                optimizing: optimizingImage,
+                alreadySmall: imageAlreadySmall,
+                onOptimizeChanged: onOptimizeImageChanged,
+              ),
             if (hasPendingAudio) PendingAudioPreview(onClear: onClearAudio),
             if (pendingFileName != null)
               PendingFilePreview(name: pendingFileName!, onClear: onClearFile),

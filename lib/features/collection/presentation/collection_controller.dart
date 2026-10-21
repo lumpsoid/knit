@@ -6,6 +6,7 @@ import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/audio_recorder_port.dart';
 import 'package:knit/core/attachments/domain/file_picker_port.dart';
+import 'package:knit/core/attachments/domain/image_optimizer_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
@@ -43,6 +44,7 @@ class CollectionController {
     required AttachmentWriteRepository attachmentWriteRepository,
     required AttachmentImageCache imageCache,
     required ImagePickerPort imagePicker,
+    required ImageOptimizerPort imageOptimizer,
     required AudioRecorderPort audioRecorder,
     required FilePickerPort filePicker,
     required CardShareRepository shareRepository,
@@ -86,6 +88,7 @@ class CollectionController {
     // a send to the loop; its messages go out through the same effect seam.
     composer = CollectionComposerController(
       imagePicker: imagePicker,
+      imageOptimizer: imageOptimizer,
       audioRecorder: audioRecorder,
       filePicker: filePicker,
       onSend: sink.dispatch,

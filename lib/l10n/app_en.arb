@@ -169,6 +169,17 @@
   "collectionAudioNowPlaying": "Now playing",
   "collectionAudioMessage": "Audio message",
   "collectionAudioPermissionDenied": "Microphone access is needed to record audio.",
+  "collectionImageOptimize": "Optimize size",
+  "collectionImageOptimizing": "Optimizing…",
+  "collectionImageAlreadySmall": "Already small",
+  "collectionImageSizeSaved": "{from} → {to}",
+  "@collectionImageSizeSaved": {
+    "description": "A photo's size before and after optimizing, e.g. 4.2 MB → 380 KB.",
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
   "collectionActionEdit": "Edit",
   "collectionActionMakeLink": "Make a link",
   "collectionActionCopy": "Copy",

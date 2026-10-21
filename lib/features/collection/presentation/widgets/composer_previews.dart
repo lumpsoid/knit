@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:knit/core/attachments/presentation/byte_size.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// The inline photo-source options shown above the composer when the user
@@ -48,52 +49,120 @@ class PhotoSourceOptions extends StatelessWidget {
 
 /// The picked-but-unsent image shown above the composer (§4.2). Tapping ✕ drops
 /// it via [onClear]; the user keeps composing text or picks another from "+".
+///
+/// Beside it sits the photo's size and the opt-in "Optimize size" chip: when it
+/// is on, the size shows what the smaller copy saves. [onOptimizeChanged] is
+/// null for a format that can't be optimized, which hides the chip.
 class PendingImagePreview extends StatelessWidget {
   const PendingImagePreview({
     super.key,
     required this.bytes,
     required this.onClear,
+    this.optimize = false,
+    this.optimizedSize,
+    this.optimizing = false,
+    this.alreadySmall = false,
+    this.onOptimizeChanged,
   });
   final Uint8List bytes;
   final VoidCallback onClear;
 
+  /// Whether "Optimize size" is on.
+  final bool optimize;
+
+  /// The optimized copy's byte size, once it is ready.
+  final int? optimizedSize;
+  final bool optimizing;
+
+  /// Optimizing found nothing worth saving; the original is sent.
+  final bool alreadySmall;
+  final ValueChanged<bool>? onOptimizeChanged;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final onOptimizeChanged = this.onOptimizeChanged;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-      child: Stack(
+      child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.memory(
-              bytes,
-              width: 96,
-              height: 96,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned(
-            top: 2,
-            right: 2,
-            child: Material(
-              color: theme.colorScheme.surface.withValues(alpha: 0.8),
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: onClear,
-                child: Tooltip(
-                  message: AppLocalizations.of(context).actionRemove,
-                  child: const Padding(
-                    padding: EdgeInsets.all(2),
-                    child: Icon(Icons.close, size: 18),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  bytes,
+                  width: 96,
+                  height: 96,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                top: 2,
+                right: 2,
+                child: Material(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.8),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: onClear,
+                    child: Tooltip(
+                      message: l10n.actionRemove,
+                      child: const Padding(
+                        padding: EdgeInsets.all(2),
+                        child: Icon(Icons.close, size: 18),
+                      ),
+                    ),
                   ),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _sizeLabel(l10n),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (onOptimizeChanged != null) ...[
+                  const SizedBox(height: 4),
+                  FilterChip(
+                    label: Text(l10n.collectionImageOptimize),
+                    selected: optimize,
+                    onSelected: optimizing ? null : onOptimizeChanged,
+                    avatar: optimizing
+                        ? const SizedBox.square(
+                            dimension: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : null,
+                  ),
+                ],
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  String _sizeLabel(AppLocalizations l10n) {
+    final original = formatByteSize(bytes.length);
+    if (!optimize) return original;
+    if (optimizing) return '$original · ${l10n.collectionImageOptimizing}';
+    if (alreadySmall) return '$original · ${l10n.collectionImageAlreadySmall}';
+    final optimizedSize = this.optimizedSize;
+    if (optimizedSize == null) return original;
+    return l10n.collectionImageSizeSaved(
+      original,
+      formatByteSize(optimizedSize),
     );
   }
 }

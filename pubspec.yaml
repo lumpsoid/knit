@@ -90,6 +90,9 @@ dependencies:
   record: ^7.1.0
   audioplayers: ^6.1.0
   file_picker: ^12.0.0-beta.7
+  # Pure-Dart decode/resize/re-encode behind the ImageOptimizerPort (the opt-in
+  # "Optimise size" for a photo added to a card).
+  image: ^4.11.0
 
   # Device-local preference persistence (theme + language). These are this
   # device's UI settings, not synced graph data — so they live in

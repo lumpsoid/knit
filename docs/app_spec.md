@@ -151,6 +151,13 @@ deleted. Archiving takes it off the home timeline without losing anything.
 - **"+" add-block menu** (bottom sheet, grid: link · photo · audio-later) → standalone card
   blocks. Selecting a type transforms the sheet into that block's sheet — "link" becomes a
   **finder sheet** (search cards / collections / existing link objects).
+- **Optimize size** (opt-in): a staged photo shows its size and an *Optimize size* chip.
+  On, the photo is scaled to fit 2048 px on its long side and re-encoded (JPEG, or PNG
+  when it has transparency), with its orientation baked in and its metadata dropped; the
+  preview shows the saving and the smaller copy is what gets stored. If it would not save
+  at least a tenth, the original is kept ("Already small"). GIF and HEIC are left as they
+  are. The choice carries over to the next photo on that page; it is device-local UI,
+  never synced.
 - **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle · emphasize/unemphasize (§3.3) ·
   delete.
 - **⋮ menu** in the app bar opens a sheet with **Present** (§4.9) and **Reorder**.

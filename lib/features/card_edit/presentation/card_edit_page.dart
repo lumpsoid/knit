@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:knit/core/attachments/presentation/byte_size.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -311,7 +312,7 @@ class _AttachmentPreview extends StatelessWidget {
         return _AttachmentChip(
           icon: Icons.insert_drive_file_outlined,
           label: name == null || name.isEmpty ? l10n.collectionCardFile : name,
-          sublabel: size == null ? null : _formatBytes(size),
+          sublabel: size == null ? null : formatByteSize(size),
         );
       case CardKind.text:
       case CardKind.link:
@@ -378,21 +379,6 @@ class _AttachmentChip extends StatelessWidget {
   }
 }
 
-/// A compact, human-readable byte size (e.g. `1.2 MB`). Decimal units, pure.
-String _formatBytes(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  var value = bytes / 1024;
-  var unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit++;
-  }
-  final text = value >= 10
-      ? value.toStringAsFixed(0)
-      : value.toStringAsFixed(1);
-  return '$text ${units[unit]}';
-}
 
 // --- links section ----------------------------------------------------------
 

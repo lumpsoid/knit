@@ -788,6 +788,30 @@ abstract class AppLocalizations {
   /// **'Microphone access is needed to record audio.'**
   String get collectionAudioPermissionDenied;
 
+  /// No description provided for @collectionImageOptimize.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimize size'**
+  String get collectionImageOptimize;
+
+  /// No description provided for @collectionImageOptimizing.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimizing…'**
+  String get collectionImageOptimizing;
+
+  /// No description provided for @collectionImageAlreadySmall.
+  ///
+  /// In en, this message translates to:
+  /// **'Already small'**
+  String get collectionImageAlreadySmall;
+
+  /// A photo's size before and after optimizing, e.g. 4.2 MB → 380 KB.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} → {to}'**
+  String collectionImageSizeSaved(String from, String to);
+
   /// No description provided for @collectionActionEdit.
   ///
   /// In en, this message translates to:

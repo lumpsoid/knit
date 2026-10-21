@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:knit/core/attachments/domain/audio_recorder_port.dart';
 import 'package:knit/core/attachments/domain/file_picker_port.dart';
+import 'package:knit/core/attachments/domain/image_optimizer_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
+import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_composer_state.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
@@ -18,12 +20,14 @@ import 'package:knit/features/collection/presentation/collection_ui_effect.dart'
 class CollectionComposerController {
   CollectionComposerController({
     required ImagePickerPort imagePicker,
+    required ImageOptimizerPort imageOptimizer,
     required AudioRecorderPort audioRecorder,
     required FilePickerPort filePicker,
     required void Function(ComposerSubmitted send) onSend,
     required void Function(CollectionMessage message) onMessage,
     Logger? logger,
   }) : _imagePicker = imagePicker,
+       _imageOptimizer = imageOptimizer,
        _recorder = audioRecorder,
        _filePicker = filePicker,
        _onSend = onSend,
@@ -31,6 +35,7 @@ class CollectionComposerController {
        _log = logger ?? Logger('knit.collection');
 
   final ImagePickerPort _imagePicker;
+  final ImageOptimizerPort _imageOptimizer;
   final AudioRecorderPort _recorder;
   final FilePickerPort _filePicker;
   final void Function(ComposerSubmitted send) _onSend;
@@ -66,9 +71,33 @@ class CollectionComposerController {
     final picked = await _imagePicker.pickImage(source: source);
     if (_disposed || picked == null) return;
     state.stageImage(picked);
+    await _optimizePendingImage();
   }
 
   void clearImage() => state.clearImage();
+
+  /// The "Optimise size" toggle on the staged photo. Turning it on shrinks the
+  /// photo now, so the preview can show what it saves; the choice carries over
+  /// to the next photo.
+  Future<void> setOptimizeImages(bool optimize) async {
+    state.setOptimizeImages(optimize);
+    await _optimizePendingImage();
+  }
+
+  Future<void> _optimizePendingImage() async {
+    final image = state.pendingImage;
+    if (image == null || !state.needsOptimizing) return;
+    state.startOptimizing();
+    PickedImage? optimized;
+    try {
+      optimized = await _imageOptimizer.optimize(image);
+    } catch (e, s) {
+      _log.severe('Optimise image failed', e, s);
+      optimized = null;
+    }
+    if (_disposed) return;
+    state.finishOptimizing(image, optimized);
+  }
 
   // --- file ------------------------------------------------------------------
 

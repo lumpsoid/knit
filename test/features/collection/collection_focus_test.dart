@@ -168,6 +168,7 @@ void main() {
         ),
         imageCache: images,
         imagePicker: _UnusedImagePicker(),
+        imageOptimizer: const PackageImageOptimizer(),
         audioRecorder: _UnusedAudioRecorder(),
         filePicker: _UnusedFilePicker(),
         shareRepository: _UnusedShare(),
