@@ -259,6 +259,17 @@ the `lib/sync/` core below.
   hold the staged attachments, the recording and the inline panel.
   `CollectionController.composer` exposes it. A send reaches the loop as
   `ComposerSubmitted(text, image/file/audio)`.
+- Several images on one card (§4.2): a nullable, synced
+  `card.more_attachment_ids` (v8 migration) holds an image card's further
+  images after `attachment_id`, joined by "," (signed payloads carry strings
+  and ints only). `CardSchema.attachmentIdsOf` lists every attachment a card
+  points at; share scope, purge, fork and delete-GC all go through it.
+  The composer stages several photos (`ImagePickerPort.pickImages`, the camera
+  adds one) as `StagedImage`s and sends them as one image card.
+  `FeedCard.imageIds` feeds `CardImageGrid` (2 / 3 / 2×2 with "+N") and the
+  viewer. Card Edit adds photos (`setCardImages`) and removes any one
+  (`RemoveImageRequested`); the media overview (`MediaPhoto`) and slides
+  show each image. The relay web snapshot still publishes the first image.
 - `collection` composer "Optimize size" (§4.2, opt-in per staged photo): the
   pure `ImageOptimization` rules (`lib/core/attachments/domain/`) and the
   `ImageOptimizerPort`, realized by `PackageImageOptimizer` (pure-Dart
