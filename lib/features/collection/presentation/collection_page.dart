@@ -204,8 +204,6 @@ class _CollectionPageState extends State<CollectionPage> {
     switch (action) {
       case CardAction.edit:
         await _openCardEdit(card);
-      case CardAction.delete:
-        _controller.dispatch(CardDeleteRequested(card.id));
       case CardAction.link:
         await _openLinkFinder(card);
       case CardAction.copy:
