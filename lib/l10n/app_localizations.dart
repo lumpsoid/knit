@@ -2269,6 +2269,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'from {handle}'**
   String timelineFromHandle(String handle);
+
+  /// No description provided for @collectionMenuSaveCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a copy'**
+  String get collectionMenuSaveCopy;
+
+  /// No description provided for @collectionMenuRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from this device'**
+  String get collectionMenuRemove;
+
+  /// No description provided for @collectionCopySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved your own copy'**
+  String get collectionCopySaved;
+
+  /// No description provided for @collectionCopyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save a copy. Please try again.'**
+  String get collectionCopyFailed;
+
+  /// No description provided for @collectionRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this collection?'**
+  String get collectionRemoveTitle;
+
+  /// No description provided for @collectionRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” and its media leave this device. Importing the file again brings it back.'**
+  String collectionRemoveBody(String title);
+
+  /// No description provided for @collectionRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get collectionRemoveAction;
+
+  /// No description provided for @collectionRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t remove the collection. Please try again.'**
+  String get collectionRemoveFailed;
 }
 
 class _AppLocalizationsDelegate

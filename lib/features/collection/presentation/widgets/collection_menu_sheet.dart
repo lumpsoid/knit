@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-enum CollectionMenuAction { present, reorder, shareFile, delete }
+enum CollectionMenuAction {
+  present,
+  reorder,
+  shareFile,
+  delete,
+  saveCopy,
+  remove,
+}
 
 /// The Collection app bar's ⋮ sheet: Present (§4.9), Reorder (§4.2), Share
-/// as file (docs/collection_share.md) and Delete.
+/// as file (docs/collection_share.md) and Delete. An imported collection
+/// offers Present, Save a copy, Share as file (re-shared verbatim) and
+/// Remove instead.
 class CollectionMenuSheet extends StatelessWidget {
   const CollectionMenuSheet({
     super.key,
@@ -14,7 +23,8 @@ class CollectionMenuSheet extends StatelessWidget {
   });
 
   /// Whether the collection is this identity's own; an imported one
-  /// (docs/collection_share.md) offers no Reorder or Delete.
+  /// (docs/collection_share.md) swaps Reorder and Delete for Save a copy and
+  /// Remove.
   final bool canEdit;
 
   /// Whether there are cards to present; the entry is disabled otherwise.
@@ -44,6 +54,13 @@ class CollectionMenuSheet extends StatelessWidget {
               onTap: () =>
                   Navigator.of(context).pop(CollectionMenuAction.reorder),
             ),
+          if (!canEdit)
+            ListTile(
+              leading: const Icon(Icons.library_add_outlined),
+              title: Text(l10n.collectionMenuSaveCopy),
+              onTap: () =>
+                  Navigator.of(context).pop(CollectionMenuAction.saveCopy),
+            ),
           ListTile(
             leading: const Icon(Icons.ios_share),
             title: Text(l10n.collectionMenuShareFile),
@@ -62,6 +79,19 @@ class CollectionMenuSheet extends StatelessWidget {
               ),
               onTap: () =>
                   Navigator.of(context).pop(CollectionMenuAction.delete),
+            ),
+          if (!canEdit)
+            ListTile(
+              leading: Icon(
+                Icons.remove_circle_outline,
+                color: theme.colorScheme.error,
+              ),
+              title: Text(
+                l10n.collectionMenuRemove,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              onTap: () =>
+                  Navigator.of(context).pop(CollectionMenuAction.remove),
             ),
         ],
       ),

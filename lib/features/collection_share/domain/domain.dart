@@ -6,3 +6,4 @@ export 'collection_share_import_repository.dart';
 export 'collection_share_models.dart';
 export 'fork_planner.dart';
 export 'local_archive_repository.dart';
+export 'collection_copy_repositories.dart';

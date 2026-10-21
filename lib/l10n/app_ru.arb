@@ -519,5 +519,13 @@
   "collectionActionLinkFromMine": "Связать со своей карточкой…",
   "collectionLinkFromMineTitle": "С какой вашей карточкой связать?",
   "collectionReadOnlyFrom": "Только чтение · от {handle}",
-  "timelineFromHandle": "от {handle}"
+  "timelineFromHandle": "от {handle}",
+  "collectionMenuSaveCopy": "Сохранить копию",
+  "collectionMenuRemove": "Удалить с устройства",
+  "collectionCopySaved": "Ваша копия сохранена",
+  "collectionCopyFailed": "Не удалось сохранить копию. Попробуйте ещё раз.",
+  "collectionRemoveTitle": "Удалить эту коллекцию?",
+  "collectionRemoveBody": "«{title}» и её медиафайлы будут удалены с устройства. Повторный импорт файла вернёт её.",
+  "collectionRemoveAction": "Удалить",
+  "collectionRemoveFailed": "Не удалось удалить коллекцию. Попробуйте ещё раз."
 }

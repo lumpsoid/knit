@@ -261,6 +261,64 @@ class _CollectionPageState extends State<CollectionPage> {
         await _openShareFile(state.collectionId);
       case CollectionMenuAction.delete:
         await _confirmDeleteCollection(state.collectionId);
+      case CollectionMenuAction.saveCopy:
+        await _saveCopy(state.collectionId);
+      case CollectionMenuAction.remove:
+        await _confirmRemove(state.collectionId);
+    }
+  }
+
+  /// "Save a copy" of an imported collection (§10.5 fork): the copy opens in
+  /// place of this page; the imported one stays.
+  Future<void> _saveCopy(String collectionId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final l10n = AppLocalizations.of(context);
+    final copyId = await CollectionScope.importedActions.saveCopy(collectionId);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          copyId == null ? l10n.collectionCopyFailed : l10n.collectionCopySaved,
+        ),
+      ),
+    );
+    if (copyId == null || !mounted) return;
+    await navigator.pushReplacement(CollectionPage.route());
+  }
+
+  /// Ask before removing an imported collection from this device, then purge
+  /// it and leave the page.
+  Future<void> _confirmRemove(String collectionId) async {
+    final l10n = AppLocalizations.of(context);
+    final title = _displayTitle(
+      CollectionScope.collectionDetails.of(collectionId)?.title,
+    );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.collectionRemoveTitle),
+        content: Text(l10n.collectionRemoveBody(title)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.collectionRemoveAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    if (await CollectionScope.importedActions.remove(collectionId)) {
+      navigator.pop();
+    } else {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.collectionRemoveFailed)),
+      );
     }
   }
 

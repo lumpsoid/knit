@@ -7,6 +7,7 @@ import 'package:knit/features/collection/presentation/collection_route_args.dart
 import 'package:knit/features/collection_details/presentation/collection_details_state.dart';
 import 'package:knit/features/collection_present/presentation/present_controller.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
+import 'package:knit/features/collection_share/presentation/imported_collection_controller.dart';
 import 'package:knit/features/collection_present/presentation/present_route_args.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
@@ -35,6 +36,7 @@ abstract final class CollectionScope {
   static PresentRouteArgsWriter? _presentWriter;
   static CollectionShareExportController Function(String collectionId)?
   _shareExportFactory;
+  static ImportedCollectionController? _importedActions;
 
   static void setFactory(CollectionController Function() factory) =>
       _factory = factory;
@@ -49,6 +51,8 @@ abstract final class CollectionScope {
   static void setCardLinks(CardLinksController links) => _cardLinks = links;
   static void setPresentFactory(PresentController Function() factory) =>
       _presentFactory = factory;
+  static void setImportedActions(ImportedCollectionController controller) =>
+      _importedActions = controller;
   static void setShareExportFactory(
     CollectionShareExportController Function(String collectionId) factory,
   ) => _shareExportFactory = factory;
@@ -215,6 +219,18 @@ abstract final class CollectionScope {
       );
     }
     return factory(collectionId);
+  }
+
+  /// Save a copy / Remove for an imported collection (app-wide).
+  static ImportedCollectionController get importedActions {
+    final controller = _importedActions;
+    if (controller == null) {
+      throw StateError(
+        'CollectionScope.importedActions is not initialized.\n'
+        'Call CollectionScope.setImportedActions() during composition.',
+      );
+    }
+    return controller;
   }
 
   /// The write side of the presentation carrier — the collection to present.

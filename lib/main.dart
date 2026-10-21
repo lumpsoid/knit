@@ -51,7 +51,9 @@ import 'package:knit/features/collection_share/infra/shared_preferences_local_ar
 import 'package:knit/features/collection_share/infra/sync_store_collection_share_import_repository.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_import_controller.dart';
+import 'package:knit/features/collection_share/infra/sync_store_collection_copy_repositories.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_scope.dart';
+import 'package:knit/features/collection_share/presentation/imported_collection_controller.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_module.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_route_args.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_scope.dart';
@@ -396,6 +398,17 @@ void bootstrap(AppConfig config) {
       exportRepository: SyncStoreCollectionShareExportRepository(graph: graph),
       deliveryPort: const SharePlusFileDeliveryPort(),
       savePort: const FilePickerFileSavePort(),
+    ),
+  );
+  // An imported collection's ⋮ sheet: Save a copy (§10.5 fork) and Remove
+  // (the local purge, blobs included).
+  CollectionScope.setImportedActions(
+    ImportedCollectionController(
+      forkRepository: SyncStoreCollectionForkRepository(graph: graph, ids: ids),
+      purgeRepository: SyncStoreCollectionPurgeRepository(graph: graph),
+      localArchive: localArchive,
+      collectionRouteArgs: routeArgs,
+      timelineChannel: timelineChannel,
     ),
   );
   ConnectionsScope.setFactory(

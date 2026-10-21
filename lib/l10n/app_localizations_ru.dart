@@ -1346,4 +1346,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String timelineFromHandle(String handle) {
     return 'от $handle';
   }
+
+  @override
+  String get collectionMenuSaveCopy => 'Сохранить копию';
+
+  @override
+  String get collectionMenuRemove => 'Удалить с устройства';
+
+  @override
+  String get collectionCopySaved => 'Ваша копия сохранена';
+
+  @override
+  String get collectionCopyFailed =>
+      'Не удалось сохранить копию. Попробуйте ещё раз.';
+
+  @override
+  String get collectionRemoveTitle => 'Удалить эту коллекцию?';
+
+  @override
+  String collectionRemoveBody(String title) {
+    return '«$title» и её медиафайлы будут удалены с устройства. Повторный импорт файла вернёт её.';
+  }
+
+  @override
+  String get collectionRemoveAction => 'Удалить';
+
+  @override
+  String get collectionRemoveFailed =>
+      'Не удалось удалить коллекцию. Попробуйте ещё раз.';
 }

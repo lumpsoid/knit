@@ -1313,4 +1313,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String timelineFromHandle(String handle) {
     return 'from $handle';
   }
+
+  @override
+  String get collectionMenuSaveCopy => 'Save a copy';
+
+  @override
+  String get collectionMenuRemove => 'Remove from this device';
+
+  @override
+  String get collectionCopySaved => 'Saved your own copy';
+
+  @override
+  String get collectionCopyFailed => 'Couldn\'t save a copy. Please try again.';
+
+  @override
+  String get collectionRemoveTitle => 'Remove this collection?';
+
+  @override
+  String collectionRemoveBody(String title) {
+    return '“$title” and its media leave this device. Importing the file again brings it back.';
+  }
+
+  @override
+  String get collectionRemoveAction => 'Remove';
+
+  @override
+  String get collectionRemoveFailed =>
+      'Couldn\'t remove the collection. Please try again.';
 }

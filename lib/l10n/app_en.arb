@@ -589,5 +589,18 @@
     "placeholders": {
       "handle": { "type": "String" }
     }
-  }
+  },
+  "collectionMenuSaveCopy": "Save a copy",
+  "collectionMenuRemove": "Remove from this device",
+  "collectionCopySaved": "Saved your own copy",
+  "collectionCopyFailed": "Couldn't save a copy. Please try again.",
+  "collectionRemoveTitle": "Remove this collection?",
+  "collectionRemoveBody": "“{title}” and its media leave this device. Importing the file again brings it back.",
+  "@collectionRemoveBody": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "collectionRemoveAction": "Remove",
+  "collectionRemoveFailed": "Couldn't remove the collection. Please try again."
 }
