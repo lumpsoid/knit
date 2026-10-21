@@ -109,6 +109,9 @@ dependencies:
   url_launcher: ^6.3.0
   receive_sharing_intent: ^1.9.0
 
+  # Keep the screen on while a collection is presented (§4.9).
+  wakelock_plus: ^1.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
