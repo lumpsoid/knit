@@ -12,6 +12,7 @@ import 'package:knit/sync/storage/derivations/derivations.dart';
 import 'package:knit/sync/storage/device_clock/device_clock.dart';
 import 'package:knit/sync/storage/projection/projection.dart';
 import 'package:knit/sync/storage/quarantine/quarantine.dart';
+import 'package:knit/sync/storage/share/share.dart';
 import 'package:knit/sync/wire/wire.dart';
 
 /// The persistent apply + write orchestrator — ties the durable
@@ -281,24 +282,35 @@ class SyncStore {
       (type == EntityType.card) == (position != null),
       'cards need a position; non-cards must not pass one',
     );
-    final filled = _withContentDefaults(type, content);
     return _writeLocal(
       type: type,
       id: id,
       physicalNowMs: physicalNowMs,
-      build: (stamp, prior, author) => Snapshot(
-        type: type,
-        id: id,
-        author: author,
-        createdBy: author, // §6.2: creator stamps created_by on create
-        createdAt: stamp.ms,
-        hlc: stamp,
-        deleted: false,
-        sig: '',
-        placement: type == EntityType.card ? stamp : null,
-        position: type == EntityType.card ? position : null,
-        content: filled,
-      ),
+      build: _creation(type, id, content, position),
+    );
+  }
+
+  /// The [_writeOne] builder of a fresh entity: this device is both `author`
+  /// and `created_by` (§6.2), and a card's placement takes the same stamp.
+  static Snapshot Function(Hlc stamp, Snapshot? prior, String author) _creation(
+    EntityType type,
+    String id,
+    Map<String, Object?> content,
+    String? position,
+  ) {
+    final filled = _withContentDefaults(type, content);
+    return (stamp, prior, author) => Snapshot(
+      type: type,
+      id: id,
+      author: author,
+      createdBy: author, // §6.2: creator stamps created_by on create
+      createdAt: stamp.ms,
+      hlc: stamp,
+      deleted: false,
+      sig: '',
+      placement: type == EntityType.card ? stamp : null,
+      position: type == EntityType.card ? position : null,
+      content: filled,
     );
   }
 
@@ -620,6 +632,144 @@ class SyncStore {
     await projection.upsert(merge(prior, snap), ctx: ctx);
     await changeLog.append(op, ctx: ctx);
     return op;
+  }
+
+  // --- Collection share by file (docs/collection_share.md) -----------------
+
+  /// The signed ops that share [collectionId] (docs/collection_share.md "The
+  /// share set"): per entity of its [ShareScope] the winning op(s), picked by
+  /// [ShareSetSelector], plus the winning `profile` op of every author and
+  /// creator among them, so nicknames resolve. Ops are verbatim, never
+  /// re-signed. Throws [StateError] for an unknown collection.
+  Future<ShareSet> shareSet(String collectionId) async {
+    final rows = await projection.readAll();
+    final collection =
+        rows
+            .where(
+              (s) => s.type == EntityType.collection && s.id == collectionId,
+            )
+            .firstOrNull ??
+        (throw StateError('share of missing collection $collectionId'));
+    final scope = ShareScope.of(collectionId, rows);
+    const selector = ShareSetSelector();
+    final ops = selector.winners(
+      await changeLog.readForEntities(scope.entityIds),
+    );
+    final people = {
+      for (final op in ops) ...[
+        op.toSnapshot().author,
+        op.toSnapshot().createdBy,
+      ],
+    };
+    final profiles = selector
+        .winners(await changeLog.readForEntities(people))
+        .where((op) => op.entityType == EntityType.profile.name);
+    return ShareSet(
+      collection: collection,
+      liveCardCount: scope.liveCardIds.length,
+      ops: [...profiles, ...ops],
+      media: {
+        for (final s in rows)
+          if (s.type == EntityType.attachment &&
+              !s.deleted &&
+              scope.attachmentIds.contains(s.id))
+            if (s.content[AttachmentSchema.colContentHash] case final String h)
+              h: (s.content[AttachmentSchema.colSize] as num?)?.toInt(),
+      },
+    );
+  }
+
+  /// Remove an imported collection from this device (docs/collection_share.md
+  /// "Remove"): in one transaction, the projection rows of its [ShareScope]
+  /// *and* their ops in `change_log` go, so rebuild-from-log (§8.9) stays
+  /// identical. Nothing is signed; importing the file again restores it. An
+  /// attachment still referenced from outside the collection is kept. Links
+  /// from other cards into it survive as broken chips (§8.6.1).
+  ///
+  /// Returns the content hashes no remaining attachment references; the caller
+  /// deletes those blobs. Refuses (throws [StateError]) this device's own
+  /// collection — that path is the signed delete. An unknown id is a no-op.
+  Future<Set<String>> purgeCollection(String collectionId) async {
+    final me = await authorPubkey();
+    return _unitOfWork.run((ctx) async {
+      final rows = await projection.readAll(ctx: ctx);
+      final collection = rows
+          .where((s) => s.type == EntityType.collection && s.id == collectionId)
+          .firstOrNull;
+      if (collection == null) return const <String>{};
+      if (collection.createdBy == me) {
+        throw StateError('purge of own collection $collectionId');
+      }
+      final scope = ShareScope.of(collectionId, rows);
+      final inScope = scope.entityIds;
+      final referencedOutside = {
+        for (final s in rows)
+          if (!inScope.contains(s.id))
+            ?(s.content[CardSchema.colAttachmentId] ??
+                    s.content[CollectionSchema.colCoverAttachmentId])
+                as String?,
+      };
+      final attachmentIds = scope.attachmentIds.difference(referencedOutside);
+      final purged = <String>{};
+      final kept = <String>{};
+      for (final s in rows) {
+        if (s.type != EntityType.attachment) continue;
+        final hash = s.content[AttachmentSchema.colContentHash] as String?;
+        if (hash == null) continue;
+        (attachmentIds.contains(s.id) ? purged : kept).add(hash);
+      }
+
+      await projection.deleteMany(EntityType.collection, [
+        collectionId,
+      ], ctx: ctx);
+      await projection.deleteMany(EntityType.card, scope.cardIds, ctx: ctx);
+      await projection.deleteMany(EntityType.link, scope.linkIds, ctx: ctx);
+      await projection.deleteMany(
+        EntityType.attachment,
+        attachmentIds,
+        ctx: ctx,
+      );
+      await changeLog.deleteForEntities({
+        collectionId,
+        ...scope.cardIds,
+        ...scope.linkIds,
+        ...attachmentIds,
+      }, ctx: ctx);
+      return purged.difference(kept);
+    });
+  }
+
+  /// Write a fork (§10.5 "Save a copy"): every entity of [plan] is created
+  /// as this device's own — fresh ids, `created_by`, `created_at` and stamps —
+  /// in **one** transaction. Returns the ops in plan order.
+  Future<List<PersistedOp>> forkCollection(
+    ForkPlan plan, {
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    return _unitOfWork.run((ctx) async {
+      final ops = <PersistedOp>[];
+      for (final entity in plan.entities) {
+        ops.add(
+          await _writeOne(
+            ctx: ctx,
+            identity: identity,
+            now: now,
+            type: entity.type,
+            id: entity.id,
+            build: _creation(
+              entity.type,
+              entity.id,
+              entity.content,
+              entity.position,
+            ),
+          ),
+        );
+      }
+      await deviceClock.save(_clock.now, ctx: ctx);
+      return ops;
+    });
   }
 
   // --- Rebuild (spec §8.9) ---------------------------------------------------

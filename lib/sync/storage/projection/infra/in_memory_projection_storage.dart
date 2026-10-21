@@ -76,6 +76,16 @@ class InMemoryProjectionStorage implements ProjectionStorage {
   }
 
   @override
+  Future<void> deleteMany(
+    EntityType type,
+    Iterable<String> ids, {
+    StorageContext? ctx,
+  }) async {
+    final table = _tables[type]!;
+    ids.forEach(table.remove);
+  }
+
+  @override
   Future<Map<String, int>> linkCounts(
     Iterable<String> entityIds, {
     StorageContext? ctx,

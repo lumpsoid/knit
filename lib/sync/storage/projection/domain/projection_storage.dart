@@ -53,6 +53,14 @@ abstract class ProjectionStorage {
     StorageContext? ctx,
   });
 
+  /// Delete the rows of [type] whose id is in [ids] — the local purge of an
+  /// imported collection. Missing ids are ignored.
+  Future<void> deleteMany(
+    EntityType type,
+    Iterable<String> ids, {
+    StorageContext? ctx,
+  });
+
   /// For each of [entityIds], how many live links it takes part in — links-out
   /// plus backlinks, i.e. `linksOut(id).length + backlinks(id).length` — in one
   /// batched read. Ids with no live link are absent (read as zero).

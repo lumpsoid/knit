@@ -76,6 +76,24 @@ void main() {
         expect(snap.position, 'a3');
       });
 
+      test(
+        'readForEntities keeps seq order; deleteForEntities drops them',
+        () async {
+          await store.append(opOf(collection(hlcMs: 100)));
+          await store.append(opOf(card(hlcMs: 101)));
+          await store.append(opOf(collection(id: 'col-2', hlcMs: 102)));
+          await store.append(opOf(card(hlcMs: 103, text: 'edit')));
+
+          final picked = await store.readForEntities(['card-1', 'col-1']);
+          expect(picked.map((o) => o.entityId), ['col-1', 'card-1', 'card-1']);
+          expect(picked.map((o) => o.hlcMs), [100, 101, 103]);
+
+          await store.deleteForEntities(['card-1', 'col-1']);
+          expect((await store.readOrdered()).map((o) => o.entityId), ['col-2']);
+          expect(await store.readForEntities(['card-1']), isEmpty);
+        },
+      );
+
       test('clear empties the log', () async {
         await store.append(opOf(collection(hlcMs: 100)));
         await store.clear();

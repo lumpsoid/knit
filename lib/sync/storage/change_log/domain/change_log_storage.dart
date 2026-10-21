@@ -19,6 +19,20 @@ abstract class ChangeLogStorage {
   /// All ops in `seq ASC` — the replay order for rebuild-from-log (spec §8.9).
   Future<List<PersistedOp>> readOrdered({StorageContext? ctx});
 
+  /// Every op of the entities in [entityIds], in `seq ASC` — the history a
+  /// collection share picks its winners from.
+  Future<List<PersistedOp>> readForEntities(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  });
+
+  /// Delete every op of the entities in [entityIds] — the local purge of an
+  /// imported collection, so rebuild-from-log (§8.9) no longer brings it back.
+  Future<void> deleteForEntities(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  });
+
   /// Local ops not yet acked by the relay, in push order (`seq ASC`).
   Future<List<PersistedOp>> readPending({StorageContext? ctx});
 

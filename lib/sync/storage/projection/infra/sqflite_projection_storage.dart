@@ -136,6 +136,22 @@ class SqfliteProjectionStorage implements ProjectionStorage {
   }
 
   @override
+  Future<void> deleteMany(
+    EntityType type,
+    Iterable<String> ids, {
+    StorageContext? ctx,
+  }) async {
+    final db = _exec(ctx);
+    for (final chunk in _chunks(ids.toSet().toList(), _maxInArgs)) {
+      await db.delete(
+        ProjectionTables.of(type),
+        where: '${EnvelopeColumns.colId} IN (${_marks(chunk.length)})',
+        whereArgs: chunk,
+      );
+    }
+  }
+
+  @override
   Future<Map<String, int>> linkCounts(
     Iterable<String> entityIds, {
     StorageContext? ctx,

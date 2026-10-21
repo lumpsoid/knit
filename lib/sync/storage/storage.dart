@@ -4,3 +4,4 @@ export 'projection/projection.dart';
 export 'derivations/derivations.dart';
 export 'quarantine/quarantine.dart';
 export 'sync_store.dart';
+export 'share/share.dart';

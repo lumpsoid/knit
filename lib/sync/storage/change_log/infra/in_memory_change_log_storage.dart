@@ -28,6 +28,26 @@ class InMemoryChangeLogStorage implements ChangeLogStorage {
       List.unmodifiable(_ops); // already appended in seq order
 
   @override
+  Future<List<PersistedOp>> readForEntities(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  }) async {
+    final wanted = entityIds.toSet();
+    return _ops
+        .where((o) => wanted.contains(o.entityId))
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> deleteForEntities(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  }) async {
+    final doomed = entityIds.toSet();
+    _ops.removeWhere((o) => doomed.contains(o.entityId));
+  }
+
+  @override
   Future<List<PersistedOp>> readPending({StorageContext? ctx}) async => _ops
       .where((o) => o.origin == SyncOrigin.local && !o.acked)
       .toList(growable: false);

@@ -49,6 +49,52 @@ class SqfliteChangeLogStorage implements ChangeLogStorage {
   }
 
   @override
+  Future<List<PersistedOp>> readForEntities(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  }) async {
+    final db = _exec(ctx);
+    final out = <PersistedOp>[];
+    for (final chunk in _chunks(entityIds.toSet().toList(), _maxInArgs)) {
+      final rows = await db.query(
+        ChangeLogSchema.table,
+        where: '${ChangeLogSchema.colEntityId} IN (${_marks(chunk.length)})',
+        whereArgs: chunk,
+      );
+      out.addAll(rows.map(PersistedOp.fromDb));
+    }
+    // Chunks each come back in seq order; merge them into one.
+    return out..sort((a, b) => a.seq!.compareTo(b.seq!));
+  }
+
+  @override
+  Future<void> deleteForEntities(
+    Iterable<String> entityIds, {
+    StorageContext? ctx,
+  }) async {
+    final db = _exec(ctx);
+    for (final chunk in _chunks(entityIds.toSet().toList(), _maxInArgs)) {
+      await db.delete(
+        ChangeLogSchema.table,
+        where: '${ChangeLogSchema.colEntityId} IN (${_marks(chunk.length)})',
+        whereArgs: chunk,
+      );
+    }
+  }
+
+  /// Bound-parameter budget per `IN (…)` query — under SQLite's historic
+  /// 999-variable limit, which older Android builds still enforce.
+  static const int _maxInArgs = 800;
+
+  static String _marks(int n) => List.filled(n, '?').join(', ');
+
+  static Iterable<List<T>> _chunks<T>(List<T> items, int size) sync* {
+    for (var i = 0; i < items.length; i += size) {
+      yield items.sublist(i, i + size > items.length ? items.length : i + size);
+    }
+  }
+
+  @override
   Future<List<PersistedOp>> readPending({StorageContext? ctx}) async {
     final rows = await _exec(ctx).query(
       ChangeLogSchema.table,

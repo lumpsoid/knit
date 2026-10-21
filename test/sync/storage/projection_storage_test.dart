@@ -55,6 +55,19 @@ void main() {
         },
       );
 
+      test('deleteMany removes only the given ids of one type', () async {
+        await store.upsert(collection(hlcMs: 100));
+        await store.upsert(card(hlcMs: 100));
+        await store.upsert(card(id: 'card-2', hlcMs: 100, deleted: true));
+        await store.upsert(card(id: 'card-3', hlcMs: 100));
+
+        await store.deleteMany(EntityType.card, ['card-1', 'card-2', 'nope']);
+        expect((await store.readAll()).map((s) => s.id).toSet(), {
+          'col-1',
+          'card-3',
+        });
+      });
+
       test('upsert replaces an existing row by id', () async {
         await store.upsert(collection(hlcMs: 100, title: 'old'));
         await store.upsert(collection(hlcMs: 200, title: 'new'));
