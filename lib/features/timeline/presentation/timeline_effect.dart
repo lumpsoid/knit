@@ -53,3 +53,11 @@ class SetArchivedEffect extends TimelineEffect {
   final String collectionId;
   final bool archived;
 }
+
+/// Archive (or unarchive) an imported collection with the device-local flag
+/// — it can't take a signed `archived_at` (docs/collection_share.md).
+class SetLocalArchivedEffect extends TimelineEffect {
+  const SetLocalArchivedEffect(this.collectionId, {required this.archived});
+  final String collectionId;
+  final bool archived;
+}

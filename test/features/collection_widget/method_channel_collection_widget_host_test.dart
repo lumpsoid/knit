@@ -85,8 +85,8 @@ void main() {
       'title': 'Coffee',
     });
     expect(calls[1].arguments, [
-      {'widgetId': 1, 'title': 'Coffee', 'removed': false},
-      {'widgetId': 2, 'title': null, 'removed': true},
+      {'widgetId': 1, 'title': 'Coffee', 'removed': false, 'quickInput': true},
+      {'widgetId': 2, 'title': null, 'removed': true, 'quickInput': false},
     ]);
   });
 

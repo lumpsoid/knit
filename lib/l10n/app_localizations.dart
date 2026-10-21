@@ -2239,6 +2239,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open a .knitc file someone shared with you'**
   String get settingsImportCollectionSubtitle;
+
+  /// No description provided for @collectionActionConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get collectionActionConnections;
+
+  /// No description provided for @collectionActionLinkFromMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Link from my card…'**
+  String get collectionActionLinkFromMine;
+
+  /// No description provided for @collectionLinkFromMineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link from which of your cards?'**
+  String get collectionLinkFromMineTitle;
+
+  /// No description provided for @collectionReadOnlyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only · from {handle}'**
+  String collectionReadOnlyFrom(String handle);
+
+  /// No description provided for @timelineFromHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'from {handle}'**
+  String timelineFromHandle(String handle);
 }
 
 class _AppLocalizationsDelegate

@@ -1327,4 +1327,23 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get settingsImportCollectionSubtitle =>
       'Открыть файл .knitc, которым с вами поделились';
+
+  @override
+  String get collectionActionConnections => 'Связи';
+
+  @override
+  String get collectionActionLinkFromMine => 'Связать со своей карточкой…';
+
+  @override
+  String get collectionLinkFromMineTitle => 'С какой вашей карточкой связать?';
+
+  @override
+  String collectionReadOnlyFrom(String handle) {
+    return 'Только чтение · от $handle';
+  }
+
+  @override
+  String timelineFromHandle(String handle) {
+    return 'от $handle';
+  }
 }

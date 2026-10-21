@@ -35,7 +35,7 @@ class CardLinksController {
 
   /// Open the picker for [source]: start a fresh session and load the
   /// collections level. A failed read shows an empty list.
-  Future<void> openPicker(LinkSource source) async {
+  Future<void> openPicker(LinkPick source) async {
     final session = ++_session;
     state.startPicking(source);
     final result = await _read.loadCollections();

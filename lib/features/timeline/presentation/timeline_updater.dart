@@ -1,3 +1,4 @@
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_effect.dart';
@@ -21,7 +22,12 @@ class TimelineUpdater
           state.copyWith(status: TimelineStatus.loading),
           const [LoadTimelineEffect()],
         );
-      case CollectionsLoaded(:final collections, :final pinnedIds):
+      case CollectionsLoaded(
+        :final collections,
+        :final pinnedIds,
+        :final importedOwners,
+        :final localArchivedIds,
+      ):
         // The covers load through the shared image cache (it skips the ones
         // it already holds).
         return (
@@ -29,6 +35,8 @@ class TimelineUpdater
             status: TimelineStatus.ready,
             collections: collections,
             pinnedIds: pinnedIds ?? state.pinnedIds,
+            importedOwners: importedOwners,
+            localArchivedIds: localArchivedIds ?? state.localArchivedIds,
           ),
           [ShowCoversEffect(_covers(collections))],
         );
@@ -76,7 +84,21 @@ class TimelineUpdater
         return (state, null);
       case ArchiveToggled(:final collectionId, :final archived):
         if (state.isArchived(collectionId) == archived) return (state, null);
-        return (state, [SetArchivedEffect(collectionId, archived: archived)]);
+        return (
+          state,
+          [
+            switch (ArchiveTarget.of(state.ownershipOf(collectionId))) {
+              ArchiveTarget.signed => SetArchivedEffect(
+                collectionId,
+                archived: archived,
+              ),
+              ArchiveTarget.local => SetLocalArchivedEffect(
+                collectionId,
+                archived: archived,
+              ),
+            },
+          ],
+        );
       case CollectionArchiveChanged(:final collectionId, :final archived):
         // Re-read the home feed so the row moves to (or back from) the
         // Archive; archiving also drops the device-local pin (§3.4).

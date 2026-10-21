@@ -99,7 +99,9 @@ class CollectionWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(R.id.collection_widget_title, store.title(widgetId) ?: "")
                     views.setViewVisibility(R.id.collection_widget_subtitle, View.GONE)
                     tap = openIntent(context, collectionId)
-                    quickInput = quickInputIntent(context, collectionId)
+                    if (store.hasQuickInput(widgetId)) {
+                        quickInput = quickInputIntent(context, collectionId)
+                    }
                 }
             }
             views.setOnClickPendingIntent(R.id.collection_widget_root, pending(context, widgetId, tap))

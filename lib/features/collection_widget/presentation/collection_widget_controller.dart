@@ -118,7 +118,12 @@ class CollectionWidgetController {
       Failure(:final error) => _logFailure('reading the bound titles', error),
     };
     if (titles == null) return;
-    final tiles = _planner.plan(bindings, titles);
+    final readOnly = switch (await _read.readOnlyIds(titles.keys.toSet())) {
+      Ok(:final value) => value,
+      Failure(:final error) => _logFailure('reading the bound owners', error),
+    };
+    if (readOnly == null) return;
+    final tiles = _planner.plan(bindings, titles, readOnlyIds: readOnly);
     if (listEquals(tiles, _published)) return;
     switch (await _host.publish(tiles)) {
       case Ok():

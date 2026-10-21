@@ -5,6 +5,8 @@ import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
+import 'package:knit/features/collection_share/domain/local_archive_repository.dart';
+import 'package:knit/features/timeline/domain/timeline_owner_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_write_repository.dart';
@@ -25,6 +27,9 @@ class TimelineModule {
     required TimelineWriteRepository writeRepository,
     required TimelinePinReadRepository pinReadRepository,
     required TimelinePinWriteRepository pinWriteRepository,
+    required TimelineOwnerReadRepository ownerReadRepository,
+    required LocalArchiveReadRepository localArchiveReadRepository,
+    required LocalArchiveWriteRepository localArchiveWriteRepository,
     required AttachmentImageCache imageCache,
     required CollectionDetailsController collectionDetails,
     required TimelineChannelReader channelReader,
@@ -39,6 +44,9 @@ class TimelineModule {
       writeRepository: writeRepository,
       pinReadRepository: pinReadRepository,
       pinWriteRepository: pinWriteRepository,
+      ownerReadRepository: ownerReadRepository,
+      localArchiveReadRepository: localArchiveReadRepository,
+      localArchiveWriteRepository: localArchiveWriteRepository,
       imageCache: imageCache,
       collectionDetails: collectionDetails,
       effectEmitter: effectEmitter,

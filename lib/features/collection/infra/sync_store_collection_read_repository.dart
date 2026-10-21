@@ -1,4 +1,5 @@
 import 'package:knit/app/app_graph.dart';
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
@@ -25,6 +26,10 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         return const Failure(CollectionLoadFailure('collection not found'));
       }
 
+      final ownership = CollectionOwnership.of(
+        header.createdBy,
+        await store.authorPubkey(),
+      );
       final (rows, boundary) = await _readWindow(store, id, window);
       // One batched link-count read covers every card *and* the collection
       // itself (§4.4) — no per-card query, however large the window.
@@ -39,6 +44,10 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
           cards: cards,
           olderBoundary: boundary,
           connectionCount: counts[id] ?? 0,
+          ownership: ownership,
+          ownerHandle: ownership.canEdit
+              ? null
+              : await _handleOf(store, header.createdBy),
         ),
       );
     } catch (e, st) {
@@ -181,6 +190,14 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       settledAt: card.content[CardSchema.colSettledAt] as int?,
       emphasizedAt: card.content[CardSchema.colEmphasizedAt] as int?,
     );
+  }
+
+  /// `nickname#fingerprint` of [pubkey]; the nickname is blank when its
+  /// profile never arrived.
+  static Future<String> _handleOf(SyncStore store, String pubkey) async {
+    final profile = await store.get(EntityType.profile, pubkey);
+    final nickname = profile?.content[ProfileSchema.colNickname] as String?;
+    return '${nickname ?? ''}#${await store.signer.fingerprintOf(pubkey)}';
   }
 
   static FeedCursor _cursor(Snapshot card) =>

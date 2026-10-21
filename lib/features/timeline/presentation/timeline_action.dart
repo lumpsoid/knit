@@ -17,9 +17,20 @@ class RefreshRequested extends TimelineAction {
 /// section renders in the same frame as the list. [pinnedIds] is null when the
 /// pin store couldn't be read — the previously known pins are kept.
 class CollectionsLoaded extends TimelineAction {
-  const CollectionsLoaded(this.collections, {this.pinnedIds});
+  const CollectionsLoaded(
+    this.collections, {
+    this.pinnedIds,
+    this.importedOwners = const {},
+    this.localArchivedIds,
+  });
   final List<CollectionSummary> collections;
   final Set<String>? pinnedIds;
+
+  /// The imported collections' creator handles, by collection id.
+  final Map<String, String> importedOwners;
+
+  /// The locally archived (imported) collections; null keeps the last known.
+  final Set<String>? localArchivedIds;
 }
 
 class TimelineLoadFailed extends TimelineAction {

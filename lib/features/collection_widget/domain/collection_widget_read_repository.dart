@@ -13,4 +13,10 @@ abstract interface class CollectionWidgetReadRepository {
   Future<Result<Map<String, String>, CollectionWidgetFailure>> liveTitles(
     Set<String> collectionIds,
   );
+
+  /// Of [collectionIds], the imported, read-only collections — no card can
+  /// be added there, so their tiles offer no quick input.
+  Future<Result<Set<String>, CollectionWidgetFailure>> readOnlyIds(
+    Set<String> collectionIds,
+  );
 }

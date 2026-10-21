@@ -30,6 +30,9 @@ class TimelineArchivePage extends StatelessWidget {
           summary.title,
       isPinned: false,
       isArchived: true,
+      canDelete: _controller.stateHolder.value
+          .ownershipOf(summary.collectionId)
+          .canEdit,
     );
     if (action == null) return;
     _controller.dispatch(action.toAction(summary.collectionId));
@@ -61,6 +64,10 @@ class TimelineArchivePage extends StatelessWidget {
                   CollectionTapped(summary.collectionId),
                 ),
                 onLongPress: () => _openActions(context, summary),
+                fromHandle: _controller
+                    .stateHolder
+                    .value
+                    .importedOwners[summary.collectionId],
               );
             },
           );

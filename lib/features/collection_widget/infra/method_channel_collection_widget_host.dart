@@ -72,7 +72,12 @@ class MethodChannelCollectionWidgetHost
     List<CollectionWidgetTile> tiles,
   ) => _invoke('publish', [
     for (final t in tiles)
-      {'widgetId': t.widgetId, 'title': t.title, 'removed': t.removed},
+      {
+        'widgetId': t.widgetId,
+        'title': t.title,
+        'removed': t.removed,
+        'quickInput': t.quickInput,
+      },
   ]);
 
   @override

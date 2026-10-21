@@ -57,7 +57,7 @@ class CollectionTitleCard extends StatelessWidget {
   /// How many links the collection itself takes part in (§4.4); a number rides
   /// next to the Connections icon when > 0.
   final int connectionCount;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// Open the collection's Connections view (§4.4).
   final VoidCallback onConnectionsTap;

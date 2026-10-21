@@ -29,11 +29,15 @@ Future<TimelineCollectionAction?> showTimelineCollectionActions(
   required String title,
   required bool isPinned,
   required bool isArchived,
+  bool canDelete = true,
 }) async {
   final action = await showModalBottomSheet<TimelineCollectionAction>(
     context: context,
-    builder: (_) =>
-        _CollectionActionsSheet(isPinned: isPinned, isArchived: isArchived),
+    builder: (_) => _CollectionActionsSheet(
+      isPinned: isPinned,
+      isArchived: isArchived,
+      canDelete: canDelete,
+    ),
   );
   if (action != TimelineCollectionAction.delete || !context.mounted) {
     return action;
@@ -69,7 +73,12 @@ class _CollectionActionsSheet extends StatelessWidget {
   const _CollectionActionsSheet({
     required this.isPinned,
     required this.isArchived,
+    required this.canDelete,
   });
+
+  /// Whether Delete is offered: an imported collection is not this
+  /// identity's to delete (docs/collection_share.md).
+  final bool canDelete;
 
   /// Whether the row is pinned — offers Unpin instead of Pin.
   final bool isPinned;
@@ -108,15 +117,19 @@ class _CollectionActionsSheet extends StatelessWidget {
                   : TimelineCollectionAction.archive,
             ),
           ),
-          ListTile(
-            leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            title: Text(
-              l10n.actionDelete,
-              style: TextStyle(color: theme.colorScheme.error),
+          if (canDelete)
+            ListTile(
+              leading: Icon(
+                Icons.delete_outline,
+                color: theme.colorScheme.error,
+              ),
+              title: Text(
+                l10n.actionDelete,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              onTap: () =>
+                  Navigator.of(context).pop(TimelineCollectionAction.delete),
             ),
-            onTap: () =>
-                Navigator.of(context).pop(TimelineCollectionAction.delete),
-          ),
         ],
       ),
     );

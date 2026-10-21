@@ -44,7 +44,7 @@ class CollectionHeaderBar extends StatelessWidget
   final int connectionCount;
 
   /// Tapping the docked name does what tapping the card does.
-  final VoidCallback onTitleTap;
+  final VoidCallback? onTitleTap;
 
   /// Open the collection's Connections view (§4.4).
   final VoidCallback onConnectionsTap;

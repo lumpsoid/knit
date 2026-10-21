@@ -10,7 +10,12 @@ class CollectionMenuSheet extends StatelessWidget {
     super.key,
     required this.canPresent,
     required this.canReorder,
+    this.canEdit = true,
   });
+
+  /// Whether the collection is this identity's own; an imported one
+  /// (docs/collection_share.md) offers no Reorder or Delete.
+  final bool canEdit;
 
   /// Whether there are cards to present; the entry is disabled otherwise.
   final bool canPresent;
@@ -45,14 +50,19 @@ class CollectionMenuSheet extends StatelessWidget {
             onTap: () =>
                 Navigator.of(context).pop(CollectionMenuAction.shareFile),
           ),
-          ListTile(
-            leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            title: Text(
-              l10n.collectionMenuDelete,
-              style: TextStyle(color: theme.colorScheme.error),
+          if (canEdit)
+            ListTile(
+              leading: Icon(
+                Icons.delete_outline,
+                color: theme.colorScheme.error,
+              ),
+              title: Text(
+                l10n.collectionMenuDelete,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              onTap: () =>
+                  Navigator.of(context).pop(CollectionMenuAction.delete),
             ),
-            onTap: () => Navigator.of(context).pop(CollectionMenuAction.delete),
-          ),
         ],
       ),
     );

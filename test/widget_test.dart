@@ -26,6 +26,8 @@ import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository
 import 'package:knit/features/settings/presentation/settings_module.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
 import 'package:knit/features/timeline/infra/shared_preferences_timeline_pin_repository.dart';
+import 'package:knit/features/collection_share/infra/shared_preferences_local_archive_repository.dart';
+import 'package:knit/features/timeline/infra/sync_store_timeline_owner_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/features/timeline/infra/timeline_channel_notifier.dart';
@@ -77,6 +79,9 @@ void main() {
         ),
         pinReadRepository: const SharedPreferencesTimelinePinRepository(),
         pinWriteRepository: const SharedPreferencesTimelinePinRepository(),
+        ownerReadRepository: SyncStoreTimelineOwnerRepository(graph: graph),
+        localArchiveReadRepository: InMemoryLocalArchiveRepository(),
+        localArchiveWriteRepository: InMemoryLocalArchiveRepository(),
         imageCache: AttachmentImageCache(
           attachmentReadRepository: SyncStoreAttachmentReadRepository(
             graph: graph,

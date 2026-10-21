@@ -72,7 +72,11 @@ class CollectionWidgetChannel(
                     if (map["removed"] == true) {
                         store.showRemoved(widgetId)
                     } else {
-                        store.showLive(widgetId, map["title"] as? String ?: "")
+                        store.showLive(
+                            widgetId,
+                            map["title"] as? String ?: "",
+                            map["quickInput"] != false,
+                        )
                     }
                     redrawn += widgetId
                 }

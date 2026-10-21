@@ -1,4 +1,5 @@
 import 'package:knit/app/app_graph.dart';
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection_widget/domain/collection_widget_failure.dart';
 import 'package:knit/features/collection_widget/domain/collection_widget_models.dart';
 import 'package:knit/features/collection_widget/domain/collection_widget_read_repository.dart';
@@ -42,6 +43,26 @@ class SyncStoreCollectionWidgetReadRepository
       return Ok({
         for (final row in rows)
           if (!row.deleted) row.id: (row.content['title'] as String?) ?? '',
+      });
+    } catch (e, st) {
+      return Failure(CollectionWidgetLoadFailure(e, st));
+    }
+  }
+
+  @override
+  Future<Result<Set<String>, CollectionWidgetFailure>> readOnlyIds(
+    Set<String> collectionIds,
+  ) async {
+    if (collectionIds.isEmpty) return const Ok({});
+    try {
+      final store = _graph.store;
+      final me = await store.authorPubkey();
+      return Ok({
+        for (final row in await store.getMany(
+          EntityType.collection,
+          collectionIds,
+        ))
+          if (!CollectionOwnership.of(row.createdBy, me).canEdit) row.id,
       });
     } catch (e, st) {
       return Failure(CollectionWidgetLoadFailure(e, st));

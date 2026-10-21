@@ -91,6 +91,9 @@ class _TimelinePageState extends State<TimelinePage> {
           summary.title,
       isPinned: isPinned,
       isArchived: false,
+      canDelete: _controller.stateHolder.value
+          .ownershipOf(summary.collectionId)
+          .canEdit,
     );
     if (action == null || !mounted) return;
     _controller.dispatch(action.toAction(summary.collectionId));
@@ -255,6 +258,8 @@ class _TimelinePageState extends State<TimelinePage> {
         onTap: () =>
             _controller.dispatch(CollectionTapped(summary.collectionId)),
         onLongPress: () => _openCollectionActions(summary, isPinned: isPinned),
+        fromHandle:
+            _controller.stateHolder.value.importedOwners[summary.collectionId],
       );
     }
   }

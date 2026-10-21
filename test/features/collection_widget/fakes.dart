@@ -73,4 +73,12 @@ class FakeRead implements CollectionWidgetReadRepository {
   Future<Result<Map<String, String>, CollectionWidgetFailure>> liveTitles(
     Set<String> collectionIds,
   ) async => Ok({for (final id in collectionIds) id: ?live[id]});
+
+  /// The imported collections among [live].
+  Set<String> readOnly = {};
+
+  @override
+  Future<Result<Set<String>, CollectionWidgetFailure>> readOnlyIds(
+    Set<String> collectionIds,
+  ) async => Ok(collectionIds.intersection(readOnly));
 }

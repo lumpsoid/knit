@@ -1,9 +1,12 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
+import 'package:result_dart/result_dart.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/features/collection_details/domain/collection_details.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
+import 'package:knit/features/collection_share/domain/local_archive_repository.dart';
+import 'package:knit/features/timeline/domain/timeline_owner_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_write_repository.dart';
@@ -21,6 +24,9 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
     required TimelineWriteRepository writeRepository,
     required TimelinePinReadRepository pinReadRepository,
     required TimelinePinWriteRepository pinWriteRepository,
+    required TimelineOwnerReadRepository ownerReadRepository,
+    required LocalArchiveReadRepository localArchiveReadRepository,
+    required LocalArchiveWriteRepository localArchiveWriteRepository,
     required AttachmentImageCache imageCache,
     required CollectionDetailsController collectionDetails,
     required EffectEmitter<TimelineUiEffect> effectEmitter,
@@ -29,6 +35,9 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
        _write = writeRepository,
        _pinRead = pinReadRepository,
        _pinWrite = pinWriteRepository,
+       _ownerRead = ownerReadRepository,
+       _localArchiveRead = localArchiveReadRepository,
+       _localArchiveWrite = localArchiveWriteRepository,
        _images = imageCache,
        _details = collectionDetails,
        _effectEmitter = effectEmitter,
@@ -38,6 +47,9 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
   final TimelineWriteRepository _write;
   final TimelinePinReadRepository _pinRead;
   final TimelinePinWriteRepository _pinWrite;
+  final TimelineOwnerReadRepository _ownerRead;
+  final LocalArchiveReadRepository _localArchiveRead;
+  final LocalArchiveWriteRepository _localArchiveWrite;
   final AttachmentImageCache _images;
   final CollectionDetailsController _details;
   final EffectEmitter<TimelineUiEffect> _effectEmitter;
@@ -58,6 +70,24 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
           _log.warning('Pinned collections load failed', failure.error);
           return null;
         });
+        // Like pins, the local archive flag is a view preference: an
+        // unreadable store keeps the last known set.
+        final localArchived = (await _localArchiveRead.loadArchived())
+            .fold<Set<String>?>((ids) => ids, (failure) {
+              _log.warning('Local archive load failed', failure.error);
+              return null;
+            });
+        final owners = switch (result) {
+          Ok(value: final collections) =>
+            (await _ownerRead.loadImportedOwners(collections)).fold(
+              (owners) => owners,
+              (failure) {
+                _log.warning('Collection owners load failed', failure.error);
+                return const <String, String>{};
+              },
+            ),
+          Failure() => const <String, String>{},
+        };
         result.onTap(
           (collections) {
             _details.rememberAll([
@@ -69,7 +99,14 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
                   coverAttachmentId: c.coverAttachmentId,
                 ),
             ]);
-            dispatch(CollectionsLoaded(collections, pinnedIds: pinnedIds));
+            dispatch(
+              CollectionsLoaded(
+                collections,
+                pinnedIds: pinnedIds,
+                importedOwners: owners,
+                localArchivedIds: localArchived,
+              ),
+            );
           },
           (failure) {
             _log.severe(
@@ -128,6 +165,28 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
           (failure) {
             _log.severe(
               'Archive update failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            _effectEmitter.push(
+              const TimelineShowMessageUiEffect(TimelineMessage.archiveFailed),
+            );
+            dispatch(const ArchiveUpdateFailed());
+          },
+        );
+
+      case SetLocalArchivedEffect(:final collectionId, :final archived):
+        final result = await _localArchiveWrite.setArchived(
+          collectionId,
+          archived: archived,
+        );
+        result.onTap(
+          (_) => dispatch(
+            CollectionArchiveChanged(collectionId, archived: archived),
+          ),
+          (failure) {
+            _log.severe(
+              'Local archive update failed',
               failure.error,
               failure.stackTrace,
             );

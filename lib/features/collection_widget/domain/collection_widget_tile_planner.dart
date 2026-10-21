@@ -12,17 +12,20 @@ class CollectionWidgetTilePlanner {
     for (final b in bindings) ?b.collectionId,
   };
 
-  /// One tile per bound widget, given the [liveTitles] of its collections.
+  /// One tile per bound widget, given the [liveTitles] of its collections;
+  /// a [readOnlyIds] collection's tile offers no quick input.
   List<CollectionWidgetTile> plan(
     List<CollectionWidgetBinding> bindings,
-    Map<String, String> liveTitles,
-  ) => [
+    Map<String, String> liveTitles, {
+    Set<String> readOnlyIds = const {},
+  }) => [
     for (final b in bindings)
       if (b.collectionId case final id?)
         switch (liveTitles[id]) {
           final title? => CollectionWidgetTile.live(
             widgetId: b.widgetId,
             title: title,
+            quickInput: !readOnlyIds.contains(id),
           ),
           null => CollectionWidgetTile.removed(widgetId: b.widgetId),
         },

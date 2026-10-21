@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-enum CardAction { edit, delete, link, copy, share, settle, emphasize }
+enum CardAction {
+  edit,
+  delete,
+  link,
+  copy,
+  share,
+  settle,
+  emphasize,
+  connections,
+  linkFromMine,
+}
 
 class CardActionsSheet extends StatelessWidget {
   const CardActionsSheet({
@@ -9,7 +19,12 @@ class CardActionsSheet extends StatelessWidget {
     required this.canCopy,
     required this.settled,
     required this.emphasized,
+    this.readOnly = false,
   });
+
+  /// A card of an imported collection (docs/collection_share.md): only
+  /// Connections, Copy and "Link from my card…" are offered.
+  final bool readOnly;
 
   /// Whether the card has text to copy; hides the Copy entry otherwise.
   final bool canCopy;
@@ -25,6 +40,7 @@ class CardActionsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    if (readOnly) return _readOnly(context, l10n);
     return SafeArea(
       child: Wrap(
         children: [
@@ -81,4 +97,27 @@ class CardActionsSheet extends StatelessWidget {
       ),
     );
   }
+
+  Widget _readOnly(BuildContext context, AppLocalizations l10n) => SafeArea(
+    child: Wrap(
+      children: [
+        ListTile(
+          leading: const Icon(Icons.hub_outlined),
+          title: Text(l10n.collectionActionConnections),
+          onTap: () => Navigator.of(context).pop(CardAction.connections),
+        ),
+        if (canCopy)
+          ListTile(
+            leading: const Icon(Icons.copy),
+            title: Text(l10n.collectionActionCopy),
+            onTap: () => Navigator.of(context).pop(CardAction.copy),
+          ),
+        ListTile(
+          leading: const Icon(Icons.add_link),
+          title: Text(l10n.collectionActionLinkFromMine),
+          onTap: () => Navigator.of(context).pop(CardAction.linkFromMine),
+        ),
+      ],
+    ),
+  );
 }

@@ -18,6 +18,7 @@ class TimelineCollectionTile extends StatelessWidget {
     required this.coverBytes,
     required this.onTap,
     required this.onLongPress,
+    this.fromHandle,
   });
 
   /// A row for [summary] whose header comes from the shared collection details
@@ -28,6 +29,7 @@ class TimelineCollectionTile extends StatelessWidget {
     required CollectionSummary summary,
     required VoidCallback onTap,
     required VoidCallback onLongPress,
+    String? fromHandle,
   }) {
     final header = TimelineScope.collectionDetails.of(summary.collectionId);
     final coverId = header == null
@@ -40,6 +42,7 @@ class TimelineCollectionTile extends StatelessWidget {
       coverBytes: coverId == null ? null : TimelineScope.images.of(coverId),
       onTap: onTap,
       onLongPress: onLongPress,
+      fromHandle: fromHandle,
     );
   }
 
@@ -54,34 +57,52 @@ class TimelineCollectionTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
+  /// The creator's `nickname#fingerprint` of an imported, read-only
+  /// collection (docs/collection_share.md), shown as a "from" line.
+  final String? fromHandle;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final title = this.title.trim().isEmpty ? l10n.labelUntitled : this.title;
+    final preview = Text.rich(
+      TextSpan(
+        children: [
+          // A settled newest card (§3.3) previews muted, like its bubble.
+          TextSpan(
+            text: _preview(l10n, summary.lastCard),
+            style: summary.lastCard?.settled == true
+                ? TextStyle(
+                    color: SettledPalette.previewText(theme.colorScheme),
+                  )
+                : null,
+          ),
+          TextSpan(text: ' · ${l10n.timelineCardCount(summary.cardCount)}'),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
       leading: _leading(title),
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text.rich(
-        TextSpan(
-          children: [
-            // A settled newest card (§3.3) previews muted, like its bubble.
-            TextSpan(
-              text: _preview(l10n, summary.lastCard),
-              style: summary.lastCard?.settled == true
-                  ? TextStyle(
-                      color: SettledPalette.previewText(theme.colorScheme),
-                    )
-                  : null,
+      subtitle: fromHandle == null
+          ? preview
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                preview,
+                Text(
+                  l10n.timelineFromHandle(fromHandle!),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            TextSpan(text: ' · ${l10n.timelineCardCount(summary.cardCount)}'),
-          ],
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
       trailing: Text(
         _relative(l10n, summary.lastUpdated),
         style: theme.textTheme.labelSmall?.copyWith(

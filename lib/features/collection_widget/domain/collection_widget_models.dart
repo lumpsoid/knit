@@ -11,29 +11,37 @@ class CollectionWidgetBinding {
 }
 
 /// What one bound widget shows: its collection's current [title], or — when
-/// the collection was deleted — the [removed] state (no title).
+/// the collection was deleted — the [removed] state (no title). A live tile
+/// offers the ✎ [quickInput] unless its collection is an imported, read-only
+/// one (docs/collection_share.md).
 @immutable
 class CollectionWidgetTile {
-  const CollectionWidgetTile.live({required this.widgetId, required this.title})
-    : removed = false;
+  const CollectionWidgetTile.live({
+    required this.widgetId,
+    required this.title,
+    this.quickInput = true,
+  }) : removed = false;
 
   const CollectionWidgetTile.removed({required this.widgetId})
     : title = null,
-      removed = true;
+      removed = true,
+      quickInput = false;
 
   final int widgetId;
   final String? title;
   final bool removed;
+  final bool quickInput;
 
   @override
   bool operator ==(Object other) =>
       other is CollectionWidgetTile &&
       other.widgetId == widgetId &&
       other.title == title &&
-      other.removed == removed;
+      other.removed == removed &&
+      other.quickInput == quickInput;
 
   @override
-  int get hashCode => Object.hash(widgetId, title, removed);
+  int get hashCode => Object.hash(widgetId, title, removed, quickInput);
 }
 
 /// A collection a widget can be bound to — a row of the picker.

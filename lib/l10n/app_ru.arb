@@ -514,5 +514,10 @@
   "shareImportRefused": "Файл не прошёл проверку, поэтому ничего не импортировано.",
   "shareImportFailed": "Импорт прервался. Импортируйте файл ещё раз, чтобы завершить его.",
   "settingsImportCollection": "Импорт коллекции",
-  "settingsImportCollectionSubtitle": "Открыть файл .knitc, которым с вами поделились"
+  "settingsImportCollectionSubtitle": "Открыть файл .knitc, которым с вами поделились",
+  "collectionActionConnections": "Связи",
+  "collectionActionLinkFromMine": "Связать со своей карточкой…",
+  "collectionLinkFromMineTitle": "С какой вашей карточкой связать?",
+  "collectionReadOnlyFrom": "Только чтение · от {handle}",
+  "timelineFromHandle": "от {handle}"
 }

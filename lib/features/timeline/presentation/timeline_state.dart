@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/timeline/domain/timeline_sections.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -10,6 +11,8 @@ class TimelineState {
     this.status = TimelineStatus.loading,
     this.collections = const [],
     this.pinnedIds = const {},
+    this.importedOwners = const {},
+    this.localArchivedIds = const {},
   });
 
   final TimelineStatus status;
@@ -24,24 +27,47 @@ class TimelineState {
   /// May hold stale ids of deleted collections — [sections] ignores them.
   final Set<String> pinnedIds;
 
+  /// The imported, read-only collections (docs/collection_share.md): their
+  /// creator's `nickname#fingerprint`, by collection id.
+  final Map<String, String> importedOwners;
+
+  /// Imported collections archived on this device only (never synced).
+  final Set<String> localArchivedIds;
+
   bool get isEmpty => collections.isEmpty;
 
   /// The feed split into the Pinned section and the rest (§4.1).
-  TimelineSections get sections =>
-      TimelineSections.split(collections, pinnedIds);
+  TimelineSections get sections => TimelineSections.split(
+    collections,
+    pinnedIds,
+    localArchivedIds: localArchivedIds,
+  );
 
   bool isPinned(String collectionId) => pinnedIds.contains(collectionId);
 
-  bool isArchived(String collectionId) =>
-      collections.any((c) => c.collectionId == collectionId && c.archived);
+  bool isArchived(String collectionId) => collections.any(
+    (c) =>
+        c.collectionId == collectionId &&
+        TimelineSections.isArchived(c, localArchivedIds),
+  );
+
+  /// Whose [collectionId] is.
+  CollectionOwnership ownershipOf(String collectionId) =>
+      importedOwners.containsKey(collectionId)
+      ? CollectionOwnership.imported
+      : CollectionOwnership.own;
 
   TimelineState copyWith({
     TimelineStatus? status,
     List<CollectionSummary>? collections,
     Set<String>? pinnedIds,
+    Map<String, String>? importedOwners,
+    Set<String>? localArchivedIds,
   }) => TimelineState(
     status: status ?? this.status,
     collections: collections ?? this.collections,
     pinnedIds: pinnedIds ?? this.pinnedIds,
+    importedOwners: importedOwners ?? this.importedOwners,
+    localArchivedIds: localArchivedIds ?? this.localArchivedIds,
   );
 }

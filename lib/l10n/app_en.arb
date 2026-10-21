@@ -574,5 +574,20 @@
   "shareImportRefused": "This file failed its safety checks, so nothing was imported.",
   "shareImportFailed": "The import stopped part-way. Import the file again to finish it.",
   "settingsImportCollection": "Import collection",
-  "settingsImportCollectionSubtitle": "Open a .knitc file someone shared with you"
+  "settingsImportCollectionSubtitle": "Open a .knitc file someone shared with you",
+  "collectionActionConnections": "Connections",
+  "collectionActionLinkFromMine": "Link from my card…",
+  "collectionLinkFromMineTitle": "Link from which of your cards?",
+  "collectionReadOnlyFrom": "Read-only · from {handle}",
+  "@collectionReadOnlyFrom": {
+    "placeholders": {
+      "handle": { "type": "String" }
+    }
+  },
+  "timelineFromHandle": "from {handle}",
+  "@timelineFromHandle": {
+    "placeholders": {
+      "handle": { "type": "String" }
+    }
+  }
 }

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/core/files/infra/log_archive.dart';
 import 'package:knit/core/ids/id_generator.dart';
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection_share/domain/domain.dart';
 import 'package:knit/features/collection_share/infra/infra.dart';
 import 'package:knit/sync/sync.dart';

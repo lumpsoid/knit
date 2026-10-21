@@ -3,6 +3,7 @@
 /// presentation layer and shared widgets never reach into the merge core.
 library;
 
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:flutter/foundation.dart';
 
 /// A card's `kind` (spec §6.4). `text` is the everyday quick-capture; `link` is
@@ -223,10 +224,19 @@ class CollectionData {
     required this.cards,
     this.olderBoundary,
     this.connectionCount = 0,
+    this.ownership = CollectionOwnership.own,
+    this.ownerHandle,
   });
 
   final String collectionId;
   final String title;
+
+  /// Whose the collection is: an imported one is read-only
+  /// (docs/collection_share.md).
+  final CollectionOwnership ownership;
+
+  /// The creator's `nickname#fingerprint` — set for an imported collection.
+  final String? ownerHandle;
 
   /// The collection's optional free-text blurb (spec §3.1); null/empty when unset.
   final String? description;

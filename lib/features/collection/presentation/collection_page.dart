@@ -29,6 +29,7 @@ import 'package:knit/features/collection/presentation/widgets/collection_error_v
 import 'package:knit/features/collection/presentation/widgets/collection_feed.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_header_bar.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_menu_sheet.dart';
+import 'package:knit/features/collection/presentation/widgets/read_only_footer.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_title_card.dart';
 import 'package:knit/features/collection/presentation/widgets/move_target_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/selectable_card_row.dart';
@@ -203,6 +204,7 @@ class _CollectionPageState extends State<CollectionPage> {
         canCopy: copyText.isNotEmpty,
         settled: card.settled,
         emphasized: card.emphasized,
+        readOnly: !_controller.stateHolder.value.canEdit,
       ),
     );
     if (action == null || !mounted) return;
@@ -227,6 +229,14 @@ class _CollectionPageState extends State<CollectionPage> {
         _controller.dispatch(CardSettleToggled(card.id));
       case CardAction.emphasize:
         _controller.dispatch(CardEmphasisToggled(card.id));
+      case CardAction.connections:
+        await _openConnections(
+          kind: ConnectedEntityKind.card,
+          id: card.id,
+          title: _cardLabel(AppLocalizations.of(context), card),
+        );
+      case CardAction.linkFromMine:
+        await _linkFromMine(card);
     }
   }
 
@@ -238,6 +248,7 @@ class _CollectionPageState extends State<CollectionPage> {
       builder: (_) => CollectionMenuSheet(
         canPresent: state.cards.isNotEmpty,
         canReorder: state.canReorder,
+        canEdit: state.canEdit,
       ),
     );
     if (action == null || !mounted) return;
@@ -482,6 +493,24 @@ class _CollectionPageState extends State<CollectionPage> {
 
   /// Open the shared link picker for [card]: link directly to a collection or
   /// drill in to pick any card (§4.4); each level loads lazily.
+  /// "Link from my card…" on an imported card: pick one of the user's own
+  /// cards and link it to [card] — the link is their own signed op.
+  Future<void> _linkFromMine(FeedCard card) async {
+    final picked = await LinkPickerSheet.show(
+      context,
+      links: CollectionScope.cardLinks,
+      source: LinkFromMine(targetCardId: card.id),
+    );
+    if (picked == null || !mounted) return;
+    _controller.dispatch(
+      LinkRequested(
+        cardId: picked.id,
+        targetKind: ConnectedEntityKind.card,
+        targetId: card.id,
+      ),
+    );
+  }
+
   Future<void> _openLinkFinder(FeedCard card) async {
     final picked = await LinkPickerSheet.show(
       context,
@@ -624,8 +653,12 @@ class _CollectionPageState extends State<CollectionPage> {
               _confirmDeleteSelection(state.selectedCardIds.length),
             ),
           )
-        else if (!state.reordering)
-          _composerPanel(),
+        else if (!state.reordering && state.canEdit)
+          _composerPanel()
+        else if (!state.canEdit)
+          ReadOnlyFooter(
+            label: l10n.collectionReadOnlyFrom(state.ownerHandle ?? ''),
+          ),
       ],
     ),
   );
@@ -711,7 +744,9 @@ class _CollectionPageState extends State<CollectionPage> {
                 ? null
                 : CollectionScope.images.of(coverId),
             connectionCount: state.connectionCount,
-            onTitleTap: () => _openCollectionEdit(collectionId),
+            onTitleTap: state.canEdit
+                ? () => _openCollectionEdit(collectionId)
+                : null,
             onConnectionsTap: () => _openConnections(
               kind: ConnectedEntityKind.collection,
               id: collectionId,
@@ -777,6 +812,7 @@ class _CollectionPageState extends State<CollectionPage> {
     header: _titleCard(
       collectionId: state.collectionId,
       connectionCount: state.connectionCount,
+      canEdit: state.canEdit,
     ),
     cardBuilder: (card) => _cardRow(card, selection: state.selectedCardIds),
     reorderRowBuilder: (card, index) => CardReorderRow(
@@ -800,6 +836,7 @@ class _CollectionPageState extends State<CollectionPage> {
   Widget _titleCard({
     required String collectionId,
     required int connectionCount,
+    required bool canEdit,
   }) {
     final details = CollectionScope.collectionDetails;
     return ListenableBuilder(
@@ -819,7 +856,7 @@ class _CollectionPageState extends State<CollectionPage> {
           coverBytes: coverBytes,
           coverHeroTag: coverHeroTag(collectionId),
           connectionCount: connectionCount,
-          onTap: () => _openCollectionEdit(collectionId),
+          onTap: canEdit ? () => _openCollectionEdit(collectionId) : null,
           onCoverTap: coverBytes == null
               ? null
               : () => _openCoverPreview(collectionId, coverBytes),
@@ -912,7 +949,8 @@ class _CollectionPageState extends State<CollectionPage> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _openCardActions(card),
-      onLongPress: toggle,
+      // An imported collection has no multi-select: every bulk action writes.
+      onLongPress: _controller.stateHolder.value.canEdit ? toggle : null,
       child: item,
     );
   }

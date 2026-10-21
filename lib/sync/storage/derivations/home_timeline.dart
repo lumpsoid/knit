@@ -45,6 +45,7 @@ class CollectionSummary {
     required this.lastCard,
     required this.lastUpdated,
     this.archived = false,
+    this.createdBy = '',
   });
 
   final String collectionId;
@@ -69,6 +70,10 @@ class CollectionSummary {
   /// Whether the collection is archived (spec §3.4): off the home timeline,
   /// listed on the Archive page instead.
   final bool archived;
+
+  /// `created_by` — the creator's pubkey; another identity's collection is an
+  /// imported, read-only one (docs/collection_share.md).
+  final String createdBy;
 }
 
 /// Build the §8.6.3 home timeline from the full projection ([readAll] output):
@@ -137,5 +142,6 @@ CollectionSummary _summarize(Snapshot collection, List<Snapshot> liveCards) {
     lastCard: lastCard == null ? null : CardPreview.of(lastCard),
     lastUpdated: lastUpdated,
     archived: collection.content['archived_at'] != null,
+    createdBy: collection.createdBy,
   );
 }

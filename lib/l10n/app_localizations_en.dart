@@ -1294,4 +1294,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsImportCollectionSubtitle =>
       'Open a .knitc file someone shared with you';
+
+  @override
+  String get collectionActionConnections => 'Connections';
+
+  @override
+  String get collectionActionLinkFromMine => 'Link from my card…';
+
+  @override
+  String get collectionLinkFromMineTitle => 'Link from which of your cards?';
+
+  @override
+  String collectionReadOnlyFrom(String handle) {
+    return 'Read-only · from $handle';
+  }
+
+  @override
+  String timelineFromHandle(String handle) {
+    return 'from $handle';
+  }
 }

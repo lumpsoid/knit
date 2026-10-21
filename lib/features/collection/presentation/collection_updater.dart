@@ -26,6 +26,9 @@ class CollectionUpdater
     CollectionState state,
     CollectionAction action,
   ) {
+    // An imported collection is read-only (docs/collection_share.md): every
+    // write to it stops here, whatever the view offered.
+    if (!state.canEdit && _writesHere(action)) return (state, null);
     switch (action) {
       case ViewAttached(
         :final collectionId,
@@ -71,13 +74,18 @@ class CollectionUpdater
             connectionCount: data.connectionCount,
             // Stay in reorder mode only while it remains reorderable (2+ cards),
             // so a feed that shrinks under it can't strand the user with no Done.
-            reordering: state.reordering && data.cards.length > 1,
+            reordering:
+                state.reordering &&
+                data.ownership.canEdit &&
+                data.cards.length > 1,
             // Keep the selection across a resync, minus any card that left
             // the feed (deleted or moved elsewhere meanwhile).
             selectedCardIds: _keepLoaded(state.selectedCardIds, data.cards),
             moveTargetsStatus: state.moveTargetsStatus,
             moveTargets: state.moveTargets,
             quickInput: state.quickInput,
+            ownership: data.ownership,
+            ownerHandle: data.ownerHandle,
           ),
           [
             ShowFeedImagesEffect(_imageAttachments(data.cards)),
@@ -553,4 +561,26 @@ class CollectionUpdater
       [ReorderCardEffect(moved.id, position)],
     );
   }
+
+  /// Whether [action] writes to this collection — its cards, their placement,
+  /// its header or its existence. A link *from* another card into it does not.
+  static bool _writesHere(CollectionAction action) => switch (action) {
+    ComposerSubmitted() ||
+    LinkCardSubmitted() ||
+    CardDeleteRequested() ||
+    CollectionDeleteRequested() ||
+    CardSettleToggled() ||
+    CardEmphasisToggled() ||
+    StartReorder() ||
+    CardMoved() ||
+    CardSelectionToggled() ||
+    AllCardsSelected() ||
+    SelectionSettleRequested() ||
+    SelectionDeleteRequested() ||
+    SelectionEmphasisRequested() ||
+    MoveTargetsRequested() ||
+    MoveTargetChosen() ||
+    MoveToNewCollectionChosen() => true,
+    _ => false,
+  };
 }

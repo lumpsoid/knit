@@ -3,18 +3,26 @@ import 'package:knit/features/card_links/domain/card_links_models.dart';
 
 /// The link picker's state (§4.4) — a [ChangeNotifier] the shared
 /// [CardLinksController] owns and mutates, and the picker sheet listens to.
-/// One picking session at a time: the [source] card, the collections level and
+/// One picking session at a time: the [source] pick, the collections level and
 /// each drilled collection's cards, loaded lazily and cached for the session.
 class CardLinksState extends ChangeNotifier {
-  LinkSource? _source;
+  LinkPick? _source;
   List<LinkTarget>? _collections;
   final Map<String, List<LinkTarget>> _cards = {};
 
-  /// The card being linked; null before a picker has opened.
-  LinkSource? get source => _source;
+  /// What the session picks; null before a picker has opened.
+  LinkPick? get source => _source;
 
-  /// The device's collections; null while loading.
-  List<LinkTarget>? get collections => _collections;
+  /// The device's collections the [source] lists; null while loading.
+  List<LinkTarget>? get collections {
+    final collections = _collections;
+    final source = _source;
+    if (collections == null || source == null) return collections;
+    return [
+      for (final c in collections)
+        if (source.lists(c)) c,
+    ];
+  }
 
   /// The collection [id] among [collections], or null.
   LinkTarget? collection(String id) {
@@ -44,7 +52,7 @@ class CardLinksState extends ChangeNotifier {
 
   /// Start a fresh session for [source]: a write since the last one may have
   /// changed the targets, so nothing carries over.
-  void startPicking(LinkSource source) {
+  void startPicking(LinkPick source) {
     _source = source;
     _collections = null;
     _cards.clear();

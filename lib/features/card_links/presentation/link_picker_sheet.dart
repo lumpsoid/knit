@@ -25,7 +25,7 @@ class LinkPickerSheet extends StatefulWidget {
   static Future<LinkTarget?> show(
     BuildContext context, {
     required CardLinksController links,
-    required LinkSource source,
+    required LinkPick source,
   }) {
     unawaited(links.openPicker(source));
     return showModalBottomSheet<LinkTarget>(
@@ -84,7 +84,11 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
     return ListView(
       shrinkWrap: true,
       children: [
-        _SheetHeader(l10n.collectionLinkFinderTitle),
+        _SheetHeader(
+          state.source is LinkFromMine
+              ? l10n.collectionLinkFromMineTitle
+              : l10n.collectionLinkFinderTitle,
+        ),
         for (final c in collections)
           ListTile(
             leading: const Icon(Icons.workspaces_outline),

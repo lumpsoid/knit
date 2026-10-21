@@ -47,6 +47,7 @@ import 'package:knit/features/collection_present/infra/wakelock_plus_screen_awak
 import 'package:knit/features/collection_present/presentation/present_controller.dart';
 import 'package:knit/features/collection_present/presentation/present_route_args.dart';
 import 'package:knit/features/collection_share/infra/sync_store_collection_share_export_repository.dart';
+import 'package:knit/features/collection_share/infra/shared_preferences_local_archive_repository.dart';
 import 'package:knit/features/collection_share/infra/sync_store_collection_share_import_repository.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_import_controller.dart';
@@ -88,6 +89,7 @@ import 'package:knit/features/sync_status/infra/sync_store_sync_status_read_repo
 import 'package:knit/features/sync_status/presentation/sync_status_module.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
 import 'package:knit/features/timeline/infra/shared_preferences_timeline_pin_repository.dart';
+import 'package:knit/features/timeline/infra/sync_store_timeline_owner_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
 import 'package:knit/features/timeline/infra/timeline_channel_notifier.dart';
@@ -313,12 +315,18 @@ void bootstrap(AppConfig config) {
   // Pinned collections (§4.1): a device-local view preference, persisted in
   // shared_preferences like Settings — never synced or signed.
   const timelinePins = SharedPreferencesTimelinePinRepository();
+  // An imported collection is archived with a device-local flag, like a pin
+  // (docs/collection_share.md); its row names who it is from.
+  const localArchive = SharedPreferencesLocalArchiveRepository();
   TimelineScope.setFactory(
     () => TimelineModule(
       readRepository: SyncStoreTimelineRepository(graph: graph),
       writeRepository: SyncStoreTimelineWriteRepository(graph: graph, ids: ids),
       pinReadRepository: timelinePins,
       pinWriteRepository: timelinePins,
+      ownerReadRepository: SyncStoreTimelineOwnerRepository(graph: graph),
+      localArchiveReadRepository: localArchive,
+      localArchiveWriteRepository: localArchive,
       imageCache: imageCache,
       collectionDetails: collectionDetails,
       channelReader: timelineChannel,

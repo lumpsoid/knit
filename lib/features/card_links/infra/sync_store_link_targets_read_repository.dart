@@ -1,4 +1,5 @@
 import 'package:knit/app/app_graph.dart';
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/card_links/domain/card_links_failure.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/domain/link_targets_read_repository.dart';
@@ -18,13 +19,16 @@ class SyncStoreLinkTargetsReadRepository implements LinkTargetsReadRepository {
   @override
   Future<Result<List<LinkTarget>, CardLinksFailure>> loadCollections() =>
       _read(() async {
+        final store = _graph.store;
+        final me = await store.authorPubkey();
         return [
-          for (final col in await _graph.store.readAll(EntityType.collection))
+          for (final col in await store.readAll(EntityType.collection))
             if (!col.deleted)
               LinkTarget(
                 kind: ConnectedEntityKind.collection,
                 id: col.id,
                 label: endpointLabel(col),
+                own: CollectionOwnership.of(col.createdBy, me).canEdit,
               ),
         ];
       });

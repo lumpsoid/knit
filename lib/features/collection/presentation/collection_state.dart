@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 
 enum CollectionStatus { loading, ready, failed }
@@ -28,6 +29,8 @@ class CollectionState {
     this.moveTargetsStatus = MoveTargetsStatus.idle,
     this.moveTargets = const [],
     this.quickInput = false,
+    this.ownership = CollectionOwnership.own,
+    this.ownerHandle,
   });
 
   final CollectionStatus status;
@@ -65,6 +68,16 @@ class CollectionState {
   /// bare URL becomes a link card, and the page leaves once the card is saved.
   final bool quickInput;
 
+  /// Whose the collection is. An imported one is read-only: no composer,
+  /// reorder, selection or header edit (docs/collection_share.md).
+  final CollectionOwnership ownership;
+
+  /// The creator's `nickname#fingerprint` when [ownership] is imported.
+  final String? ownerHandle;
+
+  /// Whether cards and the header may be written here.
+  bool get canEdit => ownership.canEdit;
+
   /// Whether multi-select mode is active.
   bool get selecting => selectedCardIds.isNotEmpty;
 
@@ -92,7 +105,7 @@ class CollectionState {
   /// Whether older cards exist beyond the loaded window.
   bool get hasOlder => olderBoundary != null;
 
-  bool get canReorder => cards.length > 1;
+  bool get canReorder => canEdit && cards.length > 1;
 
   CollectionState copyWith({
     CollectionStatus? status,
@@ -107,6 +120,8 @@ class CollectionState {
     MoveTargetsStatus? moveTargetsStatus,
     List<MoveTarget>? moveTargets,
     bool? quickInput,
+    CollectionOwnership? ownership,
+    String? ownerHandle,
   }) => CollectionState(
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
@@ -121,5 +136,7 @@ class CollectionState {
     moveTargetsStatus: moveTargetsStatus ?? this.moveTargetsStatus,
     moveTargets: moveTargets ?? this.moveTargets,
     quickInput: quickInput ?? this.quickInput,
+    ownership: ownership ?? this.ownership,
+    ownerHandle: ownerHandle ?? this.ownerHandle,
   );
 }
