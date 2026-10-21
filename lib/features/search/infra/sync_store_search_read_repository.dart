@@ -83,6 +83,7 @@ class SyncStoreSearchReadRepository implements SearchReadRepository {
             ],
             updatedAtMs: card.hlc.ms,
             cardKind: card.content['kind'] as String?,
+            settled: card.content[CardSchema.colSettledAt] != null,
             archived: _isArchived(col),
           ),
         );

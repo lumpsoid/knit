@@ -1,22 +1,30 @@
 import 'package:flutter/material.dart' hide SearchController;
 import 'package:knit/features/collection/presentation/collection_page.dart';
+import 'package:knit/features/search/domain/search_filter.dart';
 import 'package:knit/features/search/domain/search_models.dart';
 import 'package:knit/features/search/presentation/search_controller.dart';
 import 'package:knit/features/search/presentation/search_state.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// Full-screen search (§3.2/§4.1): type a query, submit it from the keyboard,
-/// and get every matching collection and card ranked most relevant first.
+/// and get every matching collection and card ranked most relevant first,
+/// narrowed by the filter chips (kind, settled, archived). Opened from a
+/// collection (§4.2) it searches only that collection's cards, under an
+/// "In: <title>" chip whose ✕ widens it to everything.
+///
 /// Tapping a hit opens its collection (scrolled to the card for a card hit);
-/// Back returns here with the results intact. Takes ownership of [controller]
-/// and disposes it with the page.
+/// Back returns here with the results intact. A hit inside the collection the
+/// search was opened from pops back to it instead, with the card to reveal as
+/// the route's result. Takes ownership of [controller] and disposes it with
+/// the page.
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key, required this.controller});
 
   final SearchController controller;
 
-  static Route<void> route(SearchController controller) =>
-      MaterialPageRoute<void>(
+  /// Pops with the card to reveal when a hit returns to the origin collection.
+  static Route<String> route(SearchController controller) =>
+      MaterialPageRoute<String>(
         builder: (_) => SearchPage(controller: controller),
       );
 
@@ -42,42 +50,70 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _open(SearchHit hit) {
-    _controller.open(hit);
-    Navigator.of(context).push(CollectionPage.route());
+    switch (_controller.open(hit)) {
+      case ReturnToOrigin(:final focusCardId):
+        Navigator.of(context).pop(focusCardId);
+      case OpenCollection():
+        Navigator.of(context).push(CollectionPage.route());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: TextField(
-          controller: _field,
-          autofocus: true,
-          textInputAction: TextInputAction.search,
-          onSubmitted: _controller.submit,
-          decoration: InputDecoration(
-            hintText: l10n.searchHint,
-            border: InputBorder.none,
-          ),
-        ),
-        actions: [
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: _field,
-            builder: (context, value, _) => value.text.isEmpty
-                ? const SizedBox.shrink()
-                : IconButton(
-                    tooltip: l10n.actionClear,
-                    icon: const Icon(Icons.close),
-                    onPressed: _clear,
+    final state = _controller.state;
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        final scope = state.scope;
+        return Scaffold(
+          appBar: AppBar(
+            title: TextField(
+              controller: _field,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              onSubmitted: _controller.submit,
+              decoration: InputDecoration(
+                hintText: scope == null
+                    ? l10n.searchHint
+                    : l10n.searchHintScoped,
+                border: InputBorder.none,
+              ),
+            ),
+            actions: [
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _field,
+                builder: (context, value, _) => value.text.isEmpty
+                    ? const SizedBox.shrink()
+                    : IconButton(
+                        tooltip: l10n.actionClear,
+                        icon: const Icon(Icons.close),
+                        onPressed: _clear,
+                      ),
+              ),
+            ],
+            bottom: scope == null
+                ? null
+                : _ScopeChip(
+                    title: scope.title,
+                    onClear: _controller.clearScope,
                   ),
           ),
-        ],
-      ),
-      body: ListenableBuilder(
-        listenable: _controller.state,
-        builder: (context, _) => _body(l10n, _controller.state),
-      ),
+          body: Column(
+            children: [
+              _FilterBar(
+                filter: state.filter,
+                scoped: scope != null,
+                onResultType: _controller.setResultType,
+                onKind: _controller.toggleKind,
+                onSettled: _controller.cycleSettled,
+                onArchived: _controller.setIncludeArchived,
+              ),
+              Expanded(child: _body(l10n, state)),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -97,59 +133,153 @@ class _SearchPageState extends State<SearchPage> {
           ),
         );
       case SearchStatus.ready:
-        final hits = state.visibleHits;
-        return Column(
-          children: [
-            _FilterChips(
-              selected: state.filter,
-              onSelected: _controller.setFilter,
-            ),
-            Expanded(
-              child: hits.isEmpty
-                  ? _Message(
-                      icon: Icons.search_off,
-                      text: l10n.searchNoResults(state.query),
-                    )
-                  : ListView.builder(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      itemCount: hits.length,
-                      itemBuilder: (context, i) =>
-                          _HitTile(hit: hits[i], onTap: () => _open(hits[i])),
-                    ),
-            ),
-          ],
-        );
+        final hits = state.hits;
+        return hits.isEmpty
+            ? _Message(
+                icon: Icons.search_off,
+                text: l10n.searchNoResults(state.query),
+              )
+            : ListView.builder(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                itemCount: hits.length,
+                itemBuilder: (context, i) =>
+                    _HitTile(hit: hits[i], onTap: () => _open(hits[i])),
+              );
     }
   }
 }
 
-class _FilterChips extends StatelessWidget {
-  const _FilterChips({required this.selected, required this.onSelected});
+/// The "In: <title>" chip under the search field (§4.2); its ✕ widens the
+/// search to everything.
+class _ScopeChip extends StatelessWidget implements PreferredSizeWidget {
+  const _ScopeChip({required this.title, required this.onClear});
 
-  final SearchFilter selected;
-  final ValueChanged<SearchFilter> onSelected;
+  final String title;
+  final VoidCallback onClear;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(48);
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Wrap(
-        spacing: 8,
-        children: [
-          for (final filter in SearchFilter.values)
-            ChoiceChip(
-              label: Text(switch (filter) {
-                SearchFilter.all => l10n.searchFilterAll,
-                SearchFilter.collections => l10n.searchFilterCollections,
-                SearchFilter.cards => l10n.searchFilterCards,
-              }),
-              selected: filter == selected,
-              onSelected: (_) => onSelected(filter),
-            ),
-        ],
+    final name = title.trim().isEmpty ? l10n.labelUntitled : title;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
+        child: InputChip(
+          avatar: const Icon(Icons.folder_outlined, size: 18),
+          label: Text(
+            l10n.searchScopeChip(name),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          onDeleted: onClear,
+          deleteButtonTooltipMessage: l10n.searchScopeClear,
+        ),
       ),
+    );
+  }
+}
+
+/// The filter chips (§3.2/§4.1). A global search first picks the result type
+/// (all · collections · cards); then, in one scrolling row, the card kinds
+/// (none on = every kind), the cycling Settled chip and — globally — whether
+/// archived collections are included.
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.filter,
+    required this.scoped,
+    required this.onResultType,
+    required this.onKind,
+    required this.onSettled,
+    required this.onArchived,
+  });
+
+  final SearchFilter filter;
+
+  /// A scoped search has no collection hits and one collection, so it shows
+  /// neither the result-type nor the archived chip.
+  final bool scoped;
+  final ValueChanged<SearchResultType> onResultType;
+  final ValueChanged<SearchCardKind> onKind;
+  final VoidCallback onSettled;
+  final ValueChanged<bool> onArchived;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!scoped)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Wrap(
+              spacing: 8,
+              children: [
+                for (final type in SearchResultType.values)
+                  ChoiceChip(
+                    label: Text(switch (type) {
+                      SearchResultType.all => l10n.searchFilterAll,
+                      SearchResultType.collections =>
+                        l10n.searchFilterCollections,
+                      SearchResultType.cards => l10n.searchFilterCards,
+                    }),
+                    selected: type == filter.type,
+                    onSelected: (_) => onResultType(type),
+                  ),
+              ],
+            ),
+          ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Row(
+            children: [
+              for (final kind in SearchCardKind.values) ...[
+                FilterChip(
+                  avatar: Icon(_HitTile.iconForKind(kind.tag), size: 18),
+                  showCheckmark: false,
+                  label: Text(switch (kind) {
+                    SearchCardKind.text => l10n.searchKindText,
+                    SearchCardKind.image => l10n.searchKindImage,
+                    SearchCardKind.link => l10n.searchKindLink,
+                    SearchCardKind.file => l10n.searchKindFile,
+                    SearchCardKind.audio => l10n.searchKindAudio,
+                  }),
+                  selected: filter.kinds.contains(kind),
+                  onSelected: (_) => onKind(kind),
+                ),
+                const SizedBox(width: 8),
+              ],
+              FilterChip(
+                avatar: const Icon(Icons.spa_outlined, size: 18),
+                showCheckmark: false,
+                label: Text(switch (filter.settled) {
+                  SettledFilter.any => l10n.searchSettledAny,
+                  SettledFilter.live => l10n.searchSettledLive,
+                  SettledFilter.settled => l10n.searchSettledOnly,
+                }),
+                selected: filter.settled != SettledFilter.any,
+                onSelected: (_) => onSettled(),
+              ),
+              if (!scoped) ...[
+                const SizedBox(width: 8),
+                FilterChip(
+                  avatar: const Icon(Icons.archive_outlined, size: 18),
+                  showCheckmark: false,
+                  label: Text(l10n.searchIncludeArchived),
+                  selected: filter.includeArchived,
+                  onSelected: onArchived,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -191,16 +321,19 @@ class _HitTile extends StatelessWidget {
     );
   }
 
-  static IconData _iconFor(SearchHit hit) {
-    if (hit.kind == SearchHitKind.collection) return Icons.folder_outlined;
-    return switch (hit.cardKind) {
-      'image' => Icons.image_outlined,
-      'audio' => Icons.mic_none,
-      'file' => Icons.insert_drive_file_outlined,
-      'link' => Icons.link,
-      _ => Icons.notes,
-    };
-  }
+  static IconData _iconFor(SearchHit hit) =>
+      hit.kind == SearchHitKind.collection
+      ? Icons.folder_outlined
+      : iconForKind(hit.cardKind);
+
+  /// A card kind's icon, shared with the Kind chips.
+  static IconData iconForKind(String? cardKind) => switch (cardKind) {
+    'image' => Icons.image_outlined,
+    'audio' => Icons.mic_none,
+    'file' => Icons.insert_drive_file_outlined,
+    'link' => Icons.link,
+    _ => Icons.notes,
+  };
 }
 
 /// A small "Archived" label on a hit in an archived collection (§3.4).

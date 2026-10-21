@@ -427,7 +427,7 @@ class CollectionUpdater
       case OutlineLoadFailed():
         return (state.copyWith(outlineStatus: OutlineStatus.failed), null);
 
-      case OutlineEntryChosen(:final cardId):
+      case CardRevealRequested(:final cardId):
         final focused = state.copyWith(focus: _nextFocus(state, cardId));
         if (_cardById(state.cards, cardId) != null) return (focused, null);
         // Not loaded yet: widen the window down to the card (the search-hit

@@ -1024,6 +1024,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchFilterCards => 'Cards';
 
   @override
+  String get searchHintScoped => 'Search cards in this collection';
+
+  @override
+  String searchScopeChip(String title) {
+    return 'In: $title';
+  }
+
+  @override
+  String get searchScopeClear => 'Search everywhere';
+
+  @override
+  String get searchKindText => 'Text';
+
+  @override
+  String get searchKindImage => 'Photos';
+
+  @override
+  String get searchKindLink => 'Links';
+
+  @override
+  String get searchKindFile => 'Files';
+
+  @override
+  String get searchKindAudio => 'Audio';
+
+  @override
+  String get searchSettledAny => 'Settled: any';
+
+  @override
+  String get searchSettledLive => 'Live only';
+
+  @override
+  String get searchSettledOnly => 'Settled only';
+
+  @override
+  String get searchIncludeArchived => 'Archived';
+
+  @override
   String searchInCollection(String title) {
     return 'in $title';
   }
@@ -1173,6 +1211,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collectionMenuOutline => 'Outline';
+
+  @override
+  String get collectionMenuSearch => 'Search in collection';
 
   @override
   String get collectionOutlineTitle => 'Outline';

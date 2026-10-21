@@ -11,6 +11,8 @@ import 'package:knit/features/collection_share/presentation/imported_collection_
 import 'package:knit/features/collection_present/presentation/present_route_args.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
+import 'package:knit/features/search/domain/search_filter.dart';
+import 'package:knit/features/search/presentation/search_controller.dart';
 
 /// Composition cell for the Collection screen (fcis.md §4). Provides a
 /// page-scoped [CollectionController] (built fresh per page via [create], owned
@@ -33,6 +35,7 @@ abstract final class CollectionScope {
   static AttachmentImageCacheState? _images;
   static CardLinksController? _cardLinks;
   static PresentController Function()? _presentFactory;
+  static SearchController Function(SearchScope scope)? _searchFactory;
   static PresentRouteArgsWriter? _presentWriter;
   static CollectionShareExportController Function(String collectionId)?
   _shareExportFactory;
@@ -51,6 +54,9 @@ abstract final class CollectionScope {
   static void setCardLinks(CardLinksController links) => _cardLinks = links;
   static void setPresentFactory(PresentController Function() factory) =>
       _presentFactory = factory;
+  static void setSearchFactory(
+    SearchController Function(SearchScope scope) factory,
+  ) => _searchFactory = factory;
   static void setImportedActions(ImportedCollectionController controller) =>
       _importedActions = controller;
   static void setShareExportFactory(
@@ -203,6 +209,19 @@ abstract final class CollectionScope {
       );
     }
     return factory();
+  }
+
+  /// A new Search controller narrowed to [scope] — the ⋮ menu's search in
+  /// this collection (§4.2); the Search page owns and disposes it.
+  static SearchController createSearch(SearchScope scope) {
+    final factory = _searchFactory;
+    if (factory == null) {
+      throw StateError(
+        'CollectionScope is not initialized.\n'
+        'Call CollectionScope.setSearchFactory() before createSearch().',
+      );
+    }
+    return factory(scope);
   }
 
   /// Build the "Share as file" controller for [collectionId]; the sheet owns

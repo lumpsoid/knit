@@ -131,4 +131,16 @@ void main() {
       expect(docs['card-live']!.archived, isFalse);
     },
   );
+
+  test('settled cards are flagged', () async {
+    await addCollection('col', 'Garden');
+    await addCard('c1', 'col', text: 'old note');
+    await addCard('c2', 'col', text: 'new note');
+    await store.setCardsSettled(['c1'], settled: true);
+
+    final docs = await load();
+    expect(docs['c1']!.settled, isTrue);
+    expect(docs['c2']!.settled, isFalse);
+    expect(docs['col']!.settled, isFalse);
+  });
 }

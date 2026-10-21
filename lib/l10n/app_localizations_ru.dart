@@ -1043,6 +1043,44 @@ class AppLocalizationsRu extends AppLocalizations {
   String get searchFilterCards => 'Карточки';
 
   @override
+  String get searchHintScoped => 'Поиск по карточкам коллекции';
+
+  @override
+  String searchScopeChip(String title) {
+    return 'В: $title';
+  }
+
+  @override
+  String get searchScopeClear => 'Искать везде';
+
+  @override
+  String get searchKindText => 'Текст';
+
+  @override
+  String get searchKindImage => 'Фото';
+
+  @override
+  String get searchKindLink => 'Ссылки';
+
+  @override
+  String get searchKindFile => 'Файлы';
+
+  @override
+  String get searchKindAudio => 'Аудио';
+
+  @override
+  String get searchSettledAny => 'Приглушённые: все';
+
+  @override
+  String get searchSettledLive => 'Только живые';
+
+  @override
+  String get searchSettledOnly => 'Только приглушённые';
+
+  @override
+  String get searchIncludeArchived => 'В архиве';
+
+  @override
   String searchInCollection(String title) {
     return 'в «$title»';
   }
@@ -1200,6 +1238,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get collectionMenuOutline => 'Оглавление';
+
+  @override
+  String get collectionMenuSearch => 'Поиск в коллекции';
 
   @override
   String get collectionOutlineTitle => 'Оглавление';

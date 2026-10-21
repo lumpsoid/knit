@@ -1856,6 +1856,78 @@ abstract class AppLocalizations {
   /// **'Cards'**
   String get searchFilterCards;
 
+  /// No description provided for @searchHintScoped.
+  ///
+  /// In en, this message translates to:
+  /// **'Search cards in this collection'**
+  String get searchHintScoped;
+
+  /// No description provided for @searchScopeChip.
+  ///
+  /// In en, this message translates to:
+  /// **'In: {title}'**
+  String searchScopeChip(String title);
+
+  /// No description provided for @searchScopeClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Search everywhere'**
+  String get searchScopeClear;
+
+  /// No description provided for @searchKindText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get searchKindText;
+
+  /// No description provided for @searchKindImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get searchKindImage;
+
+  /// No description provided for @searchKindLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get searchKindLink;
+
+  /// No description provided for @searchKindFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get searchKindFile;
+
+  /// No description provided for @searchKindAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get searchKindAudio;
+
+  /// No description provided for @searchSettledAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled: any'**
+  String get searchSettledAny;
+
+  /// No description provided for @searchSettledLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live only'**
+  String get searchSettledLive;
+
+  /// No description provided for @searchSettledOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled only'**
+  String get searchSettledOnly;
+
+  /// No description provided for @searchIncludeArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get searchIncludeArchived;
+
   /// No description provided for @searchInCollection.
   ///
   /// In en, this message translates to:
@@ -2071,6 +2143,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Outline'**
   String get collectionMenuOutline;
+
+  /// No description provided for @collectionMenuSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search in collection'**
+  String get collectionMenuSearch;
 
   /// No description provided for @collectionOutlineTitle.
   ///

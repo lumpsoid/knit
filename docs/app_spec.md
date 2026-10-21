@@ -143,6 +143,13 @@ deleted. Archiving takes it off the home timeline without losing anything.
   opens the new Collection Screen with the card composer ready. ("Title/theme" is one input
   — there is **no** separate theme field.)
 - **Search icon** → full-screen search-as-you-type overlay.
+- **Search filters:** chips narrow the ranked hits, for one search session only (never
+  persisted): result type (all · collections · cards), **Kind** (text · photos · links ·
+  files · audio, several at once, none on = every kind), **Settled** (one chip cycling
+  any → live only → settled only, §3.3) and **Archived** (archived collections included, on by
+  default, §3.4). Collection hits obey only the type and Archived chips, and hide while any
+  Kind chip is on. Changing a chip re-filters the last submitted query at once, without a new
+  submit.
 - **Pinned collections:** long-press a row → actions sheet → **Pin / Unpin**. Pinned
   collections sit in a **"Pinned"** section above a **"Recent"** section; both keep the
   recency order, with no cap on pins. Headers appear only once something is pinned. Pins are a
@@ -195,8 +202,12 @@ deleted. Archiving takes it off the home timeline without losing anything.
   settle/unsettle · emphasize/unemphasize (§3.3) · delete. **Move to collection…** runs the
   multi-select Move below for that one card, without entering selection mode. An imported
   (read-only) collection's sheet doesn't offer it.
-- **⋮ menu** in the app bar opens a sheet with **Present** (§4.9), **Outline** and
-  **Reorder**. **Outline** lists every emphasized card of the collection (§3.3), not just
+- **⋮ menu** in the app bar opens a sheet with **Search in collection**, **Present** (§4.9),
+  **Outline** and **Reorder**. **Search in collection** opens the same search (§4.1) narrowed
+  to this collection: an "In: <title>" chip under the field, only its cards ranked (no
+  collection hits), the Kind and Settled chips. The chip's ✕ widens it to everything. A hit in
+  this collection goes back to this screen and reveals the card like an Outline entry; a hit
+  elsewhere opens its collection as usual. Imported collections offer it too. **Outline** lists every emphasized card of the collection (§3.3), not just
   the loaded pages, in feed order, one line each: the first line of its text, else its file
   name or kind. With none it explains that emphasized cards appear there as headings. A tap
   closes the sheet and scrolls the feed to that card with the search-hit reveal and

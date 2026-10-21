@@ -42,6 +42,7 @@ class SearchDocument {
     required this.texts,
     required this.updatedAtMs,
     this.cardKind,
+    this.settled = false,
     this.archived = false,
   });
 
@@ -57,6 +58,9 @@ class SearchDocument {
   /// The card's `kind` tag (text · image · audio · file · link), for its icon.
   /// Null for a collection.
   final String? cardKind;
+
+  /// Whether the card is settled (§3.3). Always false for a collection.
+  final bool settled;
 
   /// Whether the collection the hit opens is archived (§3.4). Archived
   /// collections stay searchable; the row just says so.
@@ -110,18 +114,4 @@ class SearchHit {
   /// The card to reveal when this hit opens its collection; null for a
   /// collection hit (it opens the feed at its normal position).
   String? get focusCardId => kind == SearchHitKind.card ? id : null;
-}
-
-/// The result-type chips: everything, only collections, or only cards.
-enum SearchFilter {
-  all,
-  collections,
-  cards;
-
-  /// Whether a hit of [kind] shows under this filter.
-  bool admits(SearchHitKind kind) => switch (this) {
-    SearchFilter.all => true,
-    SearchFilter.collections => kind == SearchHitKind.collection,
-    SearchFilter.cards => kind == SearchHitKind.card,
-  };
 }

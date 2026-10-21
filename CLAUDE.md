@@ -351,6 +351,14 @@ the `lib/sync/` core below.
   some words, then title > card text > description/label/file name, then
   word-start, then recency. A tapped hit writes `CollectionRouteArgs` with an
   optional `focusCardId`, which the Collection page scrolls to and highlights.
+  Filter chips (type, kind, settled, archived) are a pure `SearchFilter`
+  (`domain/search_filter.dart`) that narrows the documents before ranking; a
+  chip change re-ranks the documents the controller holds, no reload. The
+  Collection ⋮ sheet's "Search in collection" builds the controller with a
+  `SearchScope` (`CollectionScope.createSearch`): "In: <title>" chip, only
+  that collection's cards, ✕ widens. `SearchDestination` decides a tap: a hit
+  in the origin collection pops back with the card id and the page dispatches
+  `CardRevealRequested` (the Outline's reveal); any other opens its collection.
 - `new_collection` (§4.1) is the shared inline-create line, not a page.
   `showNewCollectionBar` grows the tapped button (the Timeline FAB, or share
   capture's "New collection" row) into a composer-style title line docked

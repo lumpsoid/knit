@@ -249,10 +249,11 @@ class OutlineLoadFailed extends CollectionAction {
   const OutlineLoadFailed();
 }
 
-/// An Outline row was tapped: reveal and highlight [cardId] in the feed,
-/// first loading the feed down to it when it isn't loaded yet.
-class OutlineEntryChosen extends CollectionAction {
-  const OutlineEntryChosen(this.cardId);
+/// An Outline row or an in-collection search hit (§4.2) was chosen: reveal and
+/// highlight [cardId] in the feed, first loading the feed down to it when it
+/// isn't loaded yet.
+class CardRevealRequested extends CollectionAction {
+  const CardRevealRequested(this.cardId);
   final String cardId;
 }
 

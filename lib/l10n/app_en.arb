@@ -450,6 +450,23 @@
   "searchFilterAll": "All",
   "searchFilterCollections": "Collections",
   "searchFilterCards": "Cards",
+  "searchHintScoped": "Search cards in this collection",
+  "searchScopeChip": "In: {title}",
+  "@searchScopeChip": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "searchScopeClear": "Search everywhere",
+  "searchKindText": "Text",
+  "searchKindImage": "Photos",
+  "searchKindLink": "Links",
+  "searchKindFile": "Files",
+  "searchKindAudio": "Audio",
+  "searchSettledAny": "Settled: any",
+  "searchSettledLive": "Live only",
+  "searchSettledOnly": "Settled only",
+  "searchIncludeArchived": "Archived",
   "searchInCollection": "in {title}",
   "@searchInCollection": {
     "placeholders": {
@@ -518,6 +535,7 @@
   "collectionMoreTooltip": "More",
   "collectionMenuPresent": "Present",
   "collectionMenuOutline": "Outline",
+  "collectionMenuSearch": "Search in collection",
   "collectionOutlineTitle": "Outline",
   "collectionOutlineEmpty": "No headings yet. Emphasize a card to make it a heading: it shows up here, and opens a slide when you present.",
   "collectionOutlineError": "Couldn't load the outline.",

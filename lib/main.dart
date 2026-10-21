@@ -73,6 +73,7 @@ import 'package:knit/features/onboard/infra/sync_store_onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_module.dart';
 import 'package:knit/features/onboard/presentation/onboard_scope.dart';
 import 'package:knit/features/profile/infra/sync_store_profile_read_repository.dart';
+import 'package:knit/features/search/domain/search_filter.dart';
 import 'package:knit/features/search/infra/sync_store_search_read_repository.dart';
 import 'package:knit/features/search/presentation/search_controller.dart';
 import 'package:knit/features/profile/infra/sync_store_profile_write_repository.dart';
@@ -242,14 +243,16 @@ void bootstrap(AppConfig config) {
   CollectionScope.setRouteArgs(routeArgs);
   // ...and writes it itself to open the collection a selection moved into.
   CollectionScope.setCollectionRouteArgsWriter(routeArgs);
-  // Search (§3.2/§4.1), opened from the Timeline app bar: a fresh controller
-  // per page; a tapped hit writes the same carrier (with the card to reveal).
-  TimelineScope.setSearchFactory(
-    () => SearchController(
-      readRepository: SyncStoreSearchReadRepository(graph: graph),
-      collectionRouteArgs: routeArgs,
-    ),
+  // Search (§3.2/§4.1), opened from the Timeline app bar, or from a
+  // collection's ⋮ menu narrowed to it (§4.2): a fresh controller per page; a
+  // tapped hit writes the same carrier (with the card to reveal).
+  SearchController newSearch({SearchScope? scope}) => SearchController(
+    readRepository: SyncStoreSearchReadRepository(graph: graph),
+    collectionRouteArgs: routeArgs,
+    scope: scope,
   );
+  TimelineScope.setSearchFactory(newSearch);
+  CollectionScope.setSearchFactory((scope) => newSearch(scope: scope));
   // The Connections view writes the same carrier to open a connected item
   // inside its collection (§4.2/§4.4) before navigating to the Collection page.
   ConnectionsScope.setCollectionRouteArgsWriter(routeArgs);

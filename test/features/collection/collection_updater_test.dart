@@ -1339,7 +1339,7 @@ void main() {
       expect(effects!.single, isA<LoadOutlineEffect>());
       final (jumped, _) = updater.update(
         opened,
-        const OutlineEntryChosen('c1'),
+        const CardRevealRequested('c1'),
       );
       expect(jumped.focus?.cardId, 'c1');
     });
@@ -1347,7 +1347,7 @@ void main() {
     test('choosing a loaded card focuses it without a load', () {
       final (next, effects) = updater.update(
         ready([card('c1', 'a1'), card('c2', 'a2')]),
-        const OutlineEntryChosen('c1'),
+        const CardRevealRequested('c1'),
       );
       expect(effects, isNull);
       expect(next.focus?.cardId, 'c1');
@@ -1356,9 +1356,12 @@ void main() {
     test('choosing the same card again is a new request', () {
       final (first, _) = updater.update(
         ready([card('c1', 'a1')]),
-        const OutlineEntryChosen('c1'),
+        const CardRevealRequested('c1'),
       );
-      final (second, _) = updater.update(first, const OutlineEntryChosen('c1'));
+      final (second, _) = updater.update(
+        first,
+        const CardRevealRequested('c1'),
+      );
       expect(second.focus, isNot(first.focus));
       expect(second.focus?.cardId, 'c1');
     });
@@ -1368,7 +1371,7 @@ void main() {
         ready([
           card('c9', 'a9'),
         ]).copyWith(olderBoundary: const FeedCursor('a8', 'c8')),
-        const OutlineEntryChosen('c1'),
+        const CardRevealRequested('c1'),
       );
       expect(next.focus?.cardId, 'c1');
       final load = effects!.single as LoadCollectionEffect;
@@ -1381,7 +1384,7 @@ void main() {
     test('the focus survives the load that brings its card', () {
       final (chosen, _) = updater.update(
         ready([card('c9', 'a9')]),
-        const OutlineEntryChosen('c1'),
+        const CardRevealRequested('c1'),
       );
       final (loaded, _) = updater.update(
         chosen,

@@ -35,6 +35,8 @@ import 'package:knit/features/collection/presentation/widgets/collection_header_
 import 'package:knit/features/collection/presentation/widgets/collection_link_tile_view.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_menu_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_outline_sheet.dart';
+import 'package:knit/features/search/domain/search_filter.dart';
+import 'package:knit/features/search/presentation/search_page.dart';
 import 'package:knit/features/collection/presentation/widgets/read_only_footer.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_title_card.dart';
 import 'package:knit/features/collection/presentation/widgets/move_target_sheet.dart';
@@ -244,8 +246,8 @@ class _CollectionPageState extends State<CollectionPage> {
     }
   }
 
-  /// The app bar's ⋮ sheet: present the collection (§4.9), open its outline,
-  /// reorder or delete it.
+  /// The app bar's ⋮ sheet: search in the collection, present it (§4.9), open
+  /// its outline, reorder or delete it.
   Future<void> _openMenu(CollectionState state) async {
     final action = await showModalBottomSheet<CollectionMenuAction>(
       context: context,
@@ -257,6 +259,8 @@ class _CollectionPageState extends State<CollectionPage> {
     );
     if (action == null || !mounted) return;
     switch (action) {
+      case CollectionMenuAction.search:
+        await _openSearch(state.collectionId);
       case CollectionMenuAction.present:
         await _openPresent(state.collectionId);
       case CollectionMenuAction.outline:
@@ -290,7 +294,22 @@ class _CollectionPageState extends State<CollectionPage> {
       ),
     );
     if (cardId == null || !mounted) return;
-    _controller.dispatch(OutlineEntryChosen(cardId));
+    _controller.dispatch(CardRevealRequested(cardId));
+  }
+
+  /// Search this collection's cards (§4.2). A hit in it pops back here with
+  /// the card to reveal; a hit elsewhere (once the scope is widened) opens its
+  /// own collection from the Search page.
+  Future<void> _openSearch(String collectionId) async {
+    final scope = SearchScope(
+      collectionId: collectionId,
+      title: CollectionScope.collectionDetails.of(collectionId)?.title ?? '',
+    );
+    final cardId = await Navigator.of(
+      context,
+    ).push(SearchPage.route(CollectionScope.createSearch(scope)));
+    if (cardId == null || !mounted) return;
+    _controller.dispatch(CardRevealRequested(cardId));
   }
 
   /// "Save a copy" of an imported collection (§10.5 fork): the copy opens in
