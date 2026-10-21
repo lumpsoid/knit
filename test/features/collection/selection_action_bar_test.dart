@@ -26,6 +26,7 @@ void main() {
               onSettle: () {},
               allEmphasized: false,
               onEmphasize: () {},
+              onCopy: () {},
               onMove: () {},
               onDelete: () {},
             ),

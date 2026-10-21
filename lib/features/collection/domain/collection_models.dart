@@ -202,6 +202,17 @@ class EmphasisChange {
   final bool emphasized;
 }
 
+/// The text a Copy over some cards puts on the clipboard: each card's trimmed
+/// text in the order given (feed order), one per line. Cards without text
+/// (an image, audio or file without a caption) are skipped; empty when none
+/// has text.
+abstract final class CardsCopyText {
+  static String of(Iterable<FeedCard> cards) => [
+    for (final c in cards)
+      if (c.text?.trim() case final text? when text.isNotEmpty) text,
+  ].join('\n');
+}
+
 /// The Collection screen payload — header + ordered feed.
 class CollectionData {
   const CollectionData({

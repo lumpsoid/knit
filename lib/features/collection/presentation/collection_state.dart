@@ -77,6 +77,10 @@ class CollectionState {
   bool get selectionAllEmphasized =>
       EmphasisChange.allEmphasized(_selectedCards);
 
+  /// What copying the selection puts on the clipboard: the selected cards'
+  /// texts in feed order, one per line; empty when none has text.
+  String get selectionCopyText => CardsCopyText.of(_selectedCards);
+
   Iterable<FeedCard> get _selectedCards =>
       cards.where((c) => selectedCardIds.contains(c.id));
 

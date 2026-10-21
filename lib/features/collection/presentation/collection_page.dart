@@ -223,6 +223,17 @@ class _CollectionPageState extends State<CollectionPage> {
     }
   }
 
+  /// Put the selection's [text] on the clipboard, leave selection mode and
+  /// confirm with a snackbar.
+  Future<void> _copySelection(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    _controller.dispatch(const SelectionCleared());
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).collectionCopied)),
+    );
+  }
+
   /// Ask before deleting the [count] selected cards, then delete them.
   Future<void> _confirmDeleteSelection(int count) async {
     final l10n = AppLocalizations.of(context);
@@ -527,6 +538,9 @@ class _CollectionPageState extends State<CollectionPage> {
             allEmphasized: state.selectionAllEmphasized,
             onEmphasize: () =>
                 _controller.dispatch(const SelectionEmphasisRequested()),
+            onCopy: state.selectionCopyText.isEmpty
+                ? null
+                : () => unawaited(_copySelection(state.selectionCopyText)),
             onMove: _openMovePicker,
             onDelete: () => unawaited(
               _confirmDeleteSelection(state.selectedCardIds.length),

@@ -14,6 +14,7 @@ class SelectionActionBar extends StatelessWidget {
     required this.onSettle,
     required this.allEmphasized,
     required this.onEmphasize,
+    required this.onCopy,
     required this.onMove,
     required this.onDelete,
   });
@@ -33,6 +34,9 @@ class SelectionActionBar extends StatelessWidget {
   /// then unemphasizes them.
   final bool allEmphasized;
   final VoidCallback onEmphasize;
+
+  /// Copies the selected cards' texts; null (disabled) when none has text.
+  final VoidCallback? onCopy;
   final VoidCallback onMove;
   final VoidCallback onDelete;
 
@@ -73,6 +77,11 @@ class SelectionActionBar extends StatelessWidget {
                       onPressed: onDelete,
                     ),
                     IconButton(
+                      tooltip: l10n.collectionActionCopy,
+                      icon: const Icon(Icons.copy),
+                      onPressed: onCopy,
+                    ),
+                    IconButton(
                       tooltip: allSettled
                           ? l10n.collectionActionUnsettle
                           : l10n.collectionActionSettle,
@@ -95,6 +104,11 @@ class SelectionActionBar extends StatelessWidget {
                       child: Tooltip(
                         message: l10n.collectionMoveTooltip,
                         child: FilledButton.tonalIcon(
+                          // Tighter than the default so six actions still fit
+                          // a 320px phone.
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
                           icon: const Icon(Icons.drive_file_move_outline),
                           label: Text(
                             l10n.collectionMoveShort,

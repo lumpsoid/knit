@@ -1044,4 +1044,42 @@ void main() {
       expect(effects, isNull);
     });
   });
+
+  group('selection copy text', () {
+    test('joins the selected texts in feed order, one per line', () {
+      final state = ready([
+        card('c1', 'a0'),
+        card('c2', 'a1'),
+        card('c3', 'a2'),
+      ]).copyWith(selectedCardIds: {'c3', 'c1'});
+      expect(state.selectionCopyText, 'c1\nc3');
+    });
+
+    test('trims texts and skips cards without text', () {
+      final state = ready([
+        const FeedCard(
+          id: 'c1',
+          kind: CardKind.text,
+          position: 'a0',
+          text: '  first  ',
+        ),
+        const FeedCard(id: 'c2', kind: CardKind.image, position: 'a1'),
+        const FeedCard(
+          id: 'c3',
+          kind: CardKind.text,
+          position: 'a2',
+          text: ' ',
+        ),
+        card('c4', 'a3'),
+      ]).copyWith(selectedCardIds: {'c1', 'c2', 'c3', 'c4'});
+      expect(state.selectionCopyText, 'first\nc4');
+    });
+
+    test('is empty when no selected card has text', () {
+      final state = ready([
+        const FeedCard(id: 'c1', kind: CardKind.image, position: 'a0'),
+      ]).copyWith(selectedCardIds: {'c1'});
+      expect(state.selectionCopyText, isEmpty);
+    });
+  });
 }
