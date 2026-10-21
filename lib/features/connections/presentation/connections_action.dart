@@ -1,4 +1,5 @@
 import 'package:knit/features/connections/domain/connections_models.dart';
+import 'package:knit/features/connections/domain/unlinked_mentions.dart';
 
 /// Intents + async-result deliveries for the Connections view (fcis.md §6.4).
 /// All payloads are scalars / feature-local view-models (no sync-core types).
@@ -54,6 +55,20 @@ class BackRequested extends ConnectionsAction {
 class ClearLinkRequested extends ConnectionsAction {
   const ClearLinkRequested(this.linkId);
   final String linkId;
+}
+
+/// The "Mentioned in" rows (§4.4, §8.6.5) for the collection [collectionId],
+/// read after its links. Dropped when the focus has moved on since.
+class MentionsLoaded extends ConnectionsAction {
+  const MentionsLoaded({required this.collectionId, required this.mentions});
+  final String collectionId;
+  final UnlinkedMentions mentions;
+}
+
+/// "Link" on a mention row → link that card to the focused collection.
+class LinkMentionRequested extends ConnectionsAction {
+  const LinkMentionRequested(this.cardId);
+  final String cardId;
 }
 
 class DeactivateFeature extends ConnectionsAction {

@@ -296,6 +296,9 @@
   "connectionsEmptyBody": "Свяжите карточку с коллекцией, и она появится здесь.",
   "connectionsLoadError": "Не удалось загрузить связи.",
   "connectionsClearFailed": "Не удалось очистить. Попробуйте ещё раз.",
+  "connectionsMentionedIn": "Упоминается в",
+  "connectionsMentionsMore": "ещё {count}",
+  "connectionsLinkFailed": "Не удалось связать. Попробуйте ещё раз.",
 
   "profileTitle": "Профиль",
   "profileNicknameLabel": "Никнейм",

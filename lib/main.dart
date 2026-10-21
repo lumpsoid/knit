@@ -63,6 +63,7 @@ import 'package:knit/features/collection_widget/presentation/collection_widget_c
 import 'package:knit/features/collection_widget/presentation/collection_widget_picker_controller.dart';
 import 'package:knit/features/collection_widget/presentation/collection_widget_scope.dart';
 import 'package:knit/features/connections/infra/sync_store_connections_read_repository.dart';
+import 'package:knit/features/connections/infra/sync_store_mention_read_repository.dart';
 import 'package:knit/features/connections/presentation/connections_controller.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_scope.dart';
@@ -420,6 +421,7 @@ void bootstrap(AppConfig config) {
   ConnectionsScope.setFactory(
     () => ConnectionsController(
       readRepository: SyncStoreConnectionsReadRepository(graph: graph),
+      mentionRepository: SyncStoreMentionReadRepository(graph: graph),
       cardLinks: cardLinks,
     ),
   );

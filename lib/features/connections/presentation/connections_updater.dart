@@ -8,6 +8,9 @@ import 'package:knit/features/connections/presentation/connections_state.dart';
 /// breadcrumb back-stack: a jump pushes the far endpoint as a new crumb, a crumb
 /// tap (or a back) truncates the stack, and each move re-loads the focus. The
 /// loaded payload refines the current crumb's title to the entity's real label.
+/// A collection focus then loads its "Mentioned in" list (§8.6.5) as a second
+/// step; a Link takes the row out at once and re-reads, so it reappears as a
+/// backlink.
 class ConnectionsUpdater
     implements Updater<ConnectionsState, ConnectionsAction, ConnectionsEffect> {
   const ConnectionsUpdater();
@@ -24,6 +27,7 @@ class ConnectionsUpdater
           state.copyWith(
             status: ConnectionsStatus.loading,
             breadcrumb: [crumb],
+            clearMentions: true,
           ),
           [LoadConnectionsEffect(kind: kind, id: id)],
         );
@@ -34,13 +38,38 @@ class ConnectionsUpdater
         return (state, [LoadConnectionsEffect(kind: focus.kind, id: focus.id)]);
 
       case ConnectionsLoaded(:final data):
+        final isCollection = data.focusKind == ConnectedEntityKind.collection;
         return (
           ConnectionsState(
             status: ConnectionsStatus.ready,
             breadcrumb: _retitleLast(state.breadcrumb, data.focusTitle),
             data: data,
+            // A reload of the same focus keeps its rows until the fresh ones.
+            mentions: state.data?.focusId == data.focusId
+                ? state.mentions
+                : null,
           ),
-          null,
+          isCollection
+              ? [
+                  LoadMentionsEffect(
+                    collectionId: data.focusId,
+                    title: data.focusTitle,
+                  ),
+                ]
+              : null,
+        );
+
+      case MentionsLoaded(:final collectionId, :final mentions):
+        if (_focusCollectionId(state) != collectionId) return (state, null);
+        return (state.copyWith(mentions: mentions), null);
+
+      case LinkMentionRequested(:final cardId):
+        final collectionId = _focusCollectionId(state);
+        final mentions = state.mentions;
+        if (collectionId == null || mentions == null) return (state, null);
+        return (
+          state.copyWith(mentions: mentions.without(cardId)),
+          [LinkMentionEffect(cardId: cardId, collectionId: collectionId)],
         );
 
       case LoadFailed():
@@ -57,6 +86,7 @@ class ConnectionsUpdater
           state.copyWith(
             status: ConnectionsStatus.loading,
             breadcrumb: [...state.breadcrumb, crumb],
+            clearMentions: true,
           ),
           [LoadConnectionsEffect(kind: item.otherKind, id: item.otherId)],
         );
@@ -86,9 +116,20 @@ class ConnectionsUpdater
     final trimmed = state.breadcrumb.sublist(0, index + 1);
     final focus = trimmed.last;
     return (
-      state.copyWith(status: ConnectionsStatus.loading, breadcrumb: trimmed),
+      state.copyWith(
+        status: ConnectionsStatus.loading,
+        breadcrumb: trimmed,
+        clearMentions: true,
+      ),
       [LoadConnectionsEffect(kind: focus.kind, id: focus.id)],
     );
+  }
+
+  /// The focused collection's id, or null when the focus is not a collection.
+  static String? _focusCollectionId(ConnectionsState state) {
+    if (state.breadcrumb.isEmpty) return null;
+    final focus = state.breadcrumb.last;
+    return focus.kind == ConnectedEntityKind.collection ? focus.id : null;
   }
 
   /// Replace the last crumb's title with the entity's real label once loaded

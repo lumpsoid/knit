@@ -250,7 +250,11 @@ the `lib/sync/` core below.
   `connections` (§4.4) adds a second carrier the Collection page writes (card or
   collection focus) and the Connections page reads, renders links-out +
   backlinks with the §8.6.1 broken-link chip, and keeps an in-state breadcrumb
-  back-stack. `sync_status` (§4.8/§6.6) is a read-only feature with **no page**:
+  back-stack. A collection focus then loads "Mentioned in" (§8.6.5) as a
+  second step: the narrow `MentionReadRepository` reads the corpus (like
+  Search), the pure `UnlinkedMentionFinder` picks the own cards elsewhere
+  naming the title without linking, and Link writes through `CardLinksController`.
+  `sync_status` (§4.8/§6.6) is a read-only feature with **no page**:
   its view is `SyncStatusIndicator`, an app-bar marker over one app-wide
   `SyncStatusScope` controller reading `pendingCount()`. Only the Timeline app
   bar embeds it today, and it reads the count when it mounts — writes do not

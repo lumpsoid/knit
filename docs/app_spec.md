@@ -229,6 +229,12 @@ smaller, leaving them as they are.
 ### 4.4 Connections view
 A card's links-out + linked-from (backlinks), each tappable to jump; breadcrumb back-stack
 so deep wandering doesn't lose you. Can later grow into a graph view (read-side only).
+A collection's view adds **Mentioned in** below links-out and backlinks: live cards in other
+(own) collections whose text names the collection's title but don't link to it yet (§8.6.5),
+newest first, at most 20 with a "+N more". Each row shows the card's text around the mention
+and its collection; **Link** writes the card→collection link (a signed link create, so the
+row moves into backlinks), and a tap opens the card in its collection, focused. It loads
+after the links, so it never holds them up. A card's view has no such section.
 
 ### 4.5 Settings
 - **Sync / Relay** (subpage): relay ip/domain field + "Check connectivity" button; shows
@@ -961,6 +967,16 @@ for the whole home list: the backlinks of every row, then their source cards and
 ```sql
 SELECT * FROM link WHERE target_id IN (:ids) AND deleted=0;  -- then resolve each source
 ```
+
+**8.6.5 Unlinked mentions (per collection).** A live card *mentions* collection `C` when its
+text, folded like search (case, accents, `ё`→`е`) with whitespace runs as one space, contains
+`C`'s folded title as a whole phrase: a title edge that is a letter or digit may not touch
+another letter or digit. A title under 3 folded characters, or a single very common word
+(a short fixed list: "the", "notes", "это", …), mentions nothing. Listed are only cards a
+link may come from: live, in a live collection other than `C`, owned by this identity (an
+imported collection is read-only, docs/collection_share.md), and not already the source of a
+live link to `C`. Newest content write first, capped at 20 (the rest counted). Read as
+Search reads: every live card, then `C`'s backlinks; the rule is pure and client-local.
 
 ### 8.7 Feed order (cards within a collection)
 Concurrent inserts into the same gap can mint identical `position` strings on **different**

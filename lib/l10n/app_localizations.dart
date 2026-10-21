@@ -1334,6 +1334,24 @@ abstract class AppLocalizations {
   /// **'That didn\'t clear. Please try again.'**
   String get connectionsClearFailed;
 
+  /// No description provided for @connectionsMentionedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Mentioned in'**
+  String get connectionsMentionedIn;
+
+  /// No description provided for @connectionsMentionsMore.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String connectionsMentionsMore(int count);
+
+  /// No description provided for @connectionsLinkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t link. Please try again.'**
+  String get connectionsLinkFailed;
+
   /// No description provided for @profileTitle.
   ///
   /// In en, this message translates to:

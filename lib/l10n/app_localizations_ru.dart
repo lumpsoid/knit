@@ -744,6 +744,17 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось очистить. Попробуйте ещё раз.';
 
   @override
+  String get connectionsMentionedIn => 'Упоминается в';
+
+  @override
+  String connectionsMentionsMore(int count) {
+    return 'ещё $count';
+  }
+
+  @override
+  String get connectionsLinkFailed => 'Не удалось связать. Попробуйте ещё раз.';
+
+  @override
   String get profileTitle => 'Профиль';
 
   @override

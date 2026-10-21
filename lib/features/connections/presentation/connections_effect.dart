@@ -18,3 +18,19 @@ class ClearLinkEffect extends ConnectionsEffect {
   const ClearLinkEffect(this.linkId);
   final String linkId;
 }
+
+/// Find the unlinked mentions of the collection [collectionId] titled [title]
+/// (§8.6.5) — a separate step, after its links have rendered.
+class LoadMentionsEffect extends ConnectionsEffect {
+  const LoadMentionsEffect({required this.collectionId, required this.title});
+  final String collectionId;
+  final String title;
+}
+
+/// Link the card [cardId] to the collection [collectionId] (a signed link
+/// create, §4.4).
+class LinkMentionEffect extends ConnectionsEffect {
+  const LinkMentionEffect({required this.cardId, required this.collectionId});
+  final String cardId;
+  final String collectionId;
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
+import 'package:knit/features/connections/domain/unlinked_mentions.dart';
 import 'package:knit/features/connections/presentation/connections_action.dart';
 import 'package:knit/features/connections/presentation/connections_controller.dart';
 import 'package:knit/features/connections/presentation/connections_scope.dart';
@@ -11,6 +12,8 @@ import 'package:knit/features/connections/presentation/connections_ui_effect.dar
 /// The Connections view (§4.4) — an entity's links-out + linked-from
 /// (backlinks), each live one tappable to jump (pushing a breadcrumb), each
 /// broken one rendered as a §8.6.1 chip that offers "clear" but never vanishes.
+/// A collection focus adds "Mentioned in" (§8.6.5): cards elsewhere that name
+/// it without linking, each with a Link button.
 class ConnectionsPage extends StatefulWidget {
   const ConnectionsPage({super.key});
 
@@ -60,6 +63,9 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
           ConnectionsMessage.clearFailed => AppLocalizations.of(
             context,
           ).connectionsClearFailed,
+          ConnectionsMessage.linkFailed => AppLocalizations.of(
+            context,
+          ).connectionsLinkFailed,
         };
         ScaffoldMessenger.of(
           context,
@@ -100,6 +106,16 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
     final collectionId = item.openCollectionId;
     if (collectionId == null || collectionId.isEmpty) return;
     ConnectionsScope.collectionRouteArgsWriter.open(collectionId);
+    Navigator.of(context).push(CollectionPage.route());
+  }
+
+  /// Open a mention's card inside its collection, scrolled to and highlighted
+  /// (the Collection carrier's `focusCardId`, §4.2).
+  void _openMention(UnlinkedMention mention) {
+    ConnectionsScope.collectionRouteArgsWriter.open(
+      mention.collectionId,
+      focusCardId: mention.cardId,
+    );
     Navigator.of(context).push(CollectionPage.route());
   }
 
@@ -158,6 +174,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
 
   Widget _list(ConnectionsState state) {
     final data = state.data!;
+    final mentions = state.mentions;
     return RefreshIndicator(
       onRefresh: () async => _controller.dispatch(const ReloadRequested()),
       child: ListView(
@@ -186,6 +203,29 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
                 onOpen: item.openCollectionId == null
                     ? null
                     : () => _openInCollection(item),
+              ),
+          ],
+          if (mentions != null && !mentions.isEmpty) ...[
+            _SectionHeader(AppLocalizations.of(context).connectionsMentionedIn),
+            for (final mention in mentions.items)
+              _MentionTile(
+                preview: mention.preview,
+                collectionTitle: mention.collectionTitle,
+                onOpen: () => _openMention(mention),
+                onLink: () =>
+                    _controller.dispatch(LinkMentionRequested(mention.cardId)),
+              ),
+            if (mentions.more > 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  AppLocalizations.of(
+                    context,
+                  ).connectionsMentionsMore(mentions.more),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
           ],
         ],
@@ -351,6 +391,40 @@ class _ConnectionTile extends StatelessWidget {
     ConnectedEntityKind.card => Icons.sticky_note_2_outlined,
     ConnectedEntityKind.unknown => Icons.help_outline,
   };
+}
+
+/// One "Mentioned in" row: the card's text around the mention and its
+/// collection's title. A tap opens the card in its collection; Link makes the
+/// card→collection link.
+class _MentionTile extends StatelessWidget {
+  const _MentionTile({
+    required this.preview,
+    required this.collectionTitle,
+    required this.onOpen,
+    required this.onLink,
+  });
+
+  final String preview;
+  final String collectionTitle;
+  final VoidCallback onOpen;
+  final VoidCallback onLink;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final title = collectionTitle.trim();
+    return ListTile(
+      leading: const Icon(Icons.format_quote_outlined),
+      title: Text(preview, maxLines: 2, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        title.isEmpty ? l10n.labelUntitled : title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: TextButton(onPressed: onLink, child: Text(l10n.actionLink)),
+      onTap: onOpen,
+    );
+  }
 }
 
 class _EmptyView extends StatelessWidget {

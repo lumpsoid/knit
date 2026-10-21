@@ -312,6 +312,14 @@
   "connectionsEmptyBody": "Link a card to a collection and it will show up here.",
   "connectionsLoadError": "Could not load connections.",
   "connectionsClearFailed": "That didn't clear. Please try again.",
+  "connectionsMentionedIn": "Mentioned in",
+  "connectionsMentionsMore": "+{count} more",
+  "@connectionsMentionsMore": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionsLinkFailed": "That didn't link. Please try again.",
 
   "profileTitle": "Profile",
   "profileNicknameLabel": "Nickname",

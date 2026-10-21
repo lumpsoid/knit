@@ -5,6 +5,7 @@ import 'package:logging/logging.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/connections/domain/connections_read_repository.dart';
+import 'package:knit/features/connections/domain/mention_read_repository.dart';
 import 'package:knit/features/connections/presentation/connections_action.dart';
 import 'package:knit/features/connections/presentation/connections_effect.dart';
 import 'package:knit/features/connections/presentation/connections_loop.dart';
@@ -23,6 +24,7 @@ import 'package:knit/features/connections/presentation/connections_updater.dart'
 class ConnectionsController {
   ConnectionsController({
     required ConnectionsReadRepository readRepository,
+    required MentionReadRepository mentionRepository,
     required CardLinksController cardLinks,
     Logger? logger,
   }) {
@@ -32,6 +34,7 @@ class ConnectionsController {
     final effectEmitter = EffectEmitter<ConnectionsUiEffect>();
     final shell = ConnectionsShell(
       readRepository: readRepository,
+      mentionRepository: mentionRepository,
       cardLinks: cardLinks,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.connections'),

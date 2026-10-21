@@ -728,6 +728,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionsClearFailed => 'That didn\'t clear. Please try again.';
 
   @override
+  String get connectionsMentionedIn => 'Mentioned in';
+
+  @override
+  String connectionsMentionsMore(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String get connectionsLinkFailed => 'That didn\'t link. Please try again.';
+
+  @override
   String get profileTitle => 'Profile';
 
   @override

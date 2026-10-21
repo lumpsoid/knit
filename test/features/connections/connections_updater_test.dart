@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
+import 'package:knit/features/connections/domain/unlinked_mentions.dart';
 import 'package:knit/features/connections/presentation/connections_action.dart';
 import 'package:knit/features/connections/presentation/connections_effect.dart';
 import 'package:knit/features/connections/presentation/connections_state.dart';
@@ -71,7 +72,10 @@ void main() {
     );
     expect(next.status, ConnectionsStatus.ready);
     expect(next.breadcrumb.single.title, 'Recipes');
-    expect(effects, isNull);
+    // A collection focus then looks for its unlinked mentions (§8.6.5).
+    final mentions = effects!.single as LoadMentionsEffect;
+    expect(mentions.collectionId, 'root');
+    expect(mentions.title, 'Recipes');
   });
 
   test('tapping a live connection pushes a crumb and loads the far end', () {
@@ -189,5 +193,105 @@ void main() {
       const ClearLinkRequested('l1'),
     );
     expect((effects!.single as ClearLinkEffect).linkId, 'l1');
+  });
+
+  group('Mentioned in (§8.6.5)', () {
+    const rootCrumb = ConnectionCrumb(
+      kind: ConnectedEntityKind.collection,
+      id: 'root',
+      title: 'Root',
+    );
+    const mentions = UnlinkedMentions(
+      items: [
+        UnlinkedMention(
+          cardId: 'm1',
+          collectionId: 'c1',
+          collectionTitle: 'C1',
+          preview: 'about root',
+        ),
+        UnlinkedMention(
+          cardId: 'm2',
+          collectionId: 'c2',
+          collectionTitle: 'C2',
+          preview: 'root again',
+        ),
+      ],
+      more: 4,
+    );
+    final ready = ConnectionsState(
+      status: ConnectionsStatus.ready,
+      breadcrumb: const [rootCrumb],
+      data: data(),
+      mentions: mentions,
+    );
+
+    test('a card focus loads no mentions', () {
+      final (_, effects) = updater.update(
+        const ConnectionsState(),
+        const ConnectionsLoaded(
+          ConnectionsData(
+            focusKind: ConnectedEntityKind.card,
+            focusId: 'card',
+            focusTitle: 'A card',
+            outgoing: [],
+            incoming: [],
+          ),
+        ),
+      );
+      expect(effects, isNull);
+    });
+
+    test('MentionsLoaded lands only on the collection still in focus', () {
+      final seeded = ready.copyWith(clearMentions: true);
+      final (next, _) = updater.update(
+        seeded,
+        const MentionsLoaded(collectionId: 'root', mentions: mentions),
+      );
+      expect(next.mentions!.items, hasLength(2));
+      expect(next.mentions!.more, 4);
+
+      final (stale, _) = updater.update(
+        seeded,
+        const MentionsLoaded(collectionId: 'elsewhere', mentions: mentions),
+      );
+      expect(stale.mentions, isNull);
+    });
+
+    test('a reload of the same focus keeps the rows until fresh ones', () {
+      final (next, _) = updater.update(ready, ConnectionsLoaded(data()));
+      expect(next.mentions, same(mentions));
+      final (moved, _) = updater.update(
+        ready,
+        ConnectionsLoaded(data(focusId: 'other')),
+      );
+      expect(moved.mentions, isNull);
+    });
+
+    test('jumping away drops the rows', () {
+      final (next, _) = updater.update(
+        ready,
+        ConnectionTapped(
+          item('l1', direction: ConnectionDirection.outgoing, otherId: 'x'),
+        ),
+      );
+      expect(next.mentions, isNull);
+    });
+
+    test('mentions alone keep the page from the empty view', () {
+      expect(ready.isEmpty, isFalse);
+      expect(ready.copyWith(clearMentions: true).isEmpty, isTrue);
+    });
+
+    test('Link takes the row out and links it to the focus', () {
+      final (next, effects) = updater.update(
+        ready,
+        const LinkMentionRequested('m1'),
+      );
+      expect(next.mentions!.items.map((m) => m.cardId), ['m2']);
+      expect(next.mentions!.more, 4);
+      final link = effects!.single as LinkMentionEffect;
+      expect(link.cardId, 'm1');
+      expect(link.collectionId, 'root');
+    });
   });
 }
