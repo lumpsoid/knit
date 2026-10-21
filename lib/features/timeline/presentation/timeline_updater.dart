@@ -41,7 +41,12 @@ class TimelineUpdater
         if (trimmed.isEmpty) return (state, null);
         return (state, [CreateCollectionEffect(trimmed)]);
       case CollectionCreated(:final collectionId):
-        return (state, [OpenCollectionEffect(collectionId)]);
+        // Re-read the home feed so the new row is there on the way back; the
+        // list stays as it is (no loading flash) under the opening page.
+        return (
+          state,
+          [const LoadTimelineEffect(), OpenCollectionEffect(collectionId)],
+        );
       case CollectionCreateFailed():
         // The shell surfaces a message; nothing changes in state.
         return (state, null);

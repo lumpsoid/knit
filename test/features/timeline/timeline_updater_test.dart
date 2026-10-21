@@ -101,6 +101,18 @@ void main() {
     expect(effects, const [LoadTimelineEffect()]);
   });
 
+  test('CollectionCreated reloads the home feed and opens the new one', () {
+    final state = TimelineState(
+      status: TimelineStatus.ready,
+      collections: [summary('a')],
+    );
+    final (next, effects) = updater.update(state, const CollectionCreated('b'));
+    expect(next, state);
+    expect(effects, hasLength(2));
+    expect(effects![0], isA<LoadTimelineEffect>());
+    expect((effects[1] as OpenCollectionEffect).collectionId, 'b');
+  });
+
   test('CollectionDeleteFailed keeps state and emits no effects', () {
     final ready = TimelineState(
       status: TimelineStatus.ready,
