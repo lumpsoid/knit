@@ -152,12 +152,6 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get actionDone;
 
-  /// No description provided for @actionAdd.
-  ///
-  /// In en, this message translates to:
-  /// **'Add'**
-  String get actionAdd;
-
   /// No description provided for @actionLink.
   ///
   /// In en, this message translates to:
@@ -614,18 +608,6 @@ abstract class AppLocalizations {
   /// **'{count}d'**
   String timeDaysShort(int count);
 
-  /// No description provided for @collectionAddLinkTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a link'**
-  String get collectionAddLinkTitle;
-
-  /// No description provided for @collectionAddLinkHint.
-  ///
-  /// In en, this message translates to:
-  /// **'https://…'**
-  String get collectionAddLinkHint;
-
   /// No description provided for @collectionLinkOpenFailed.
   ///
   /// In en, this message translates to:
@@ -686,17 +668,17 @@ abstract class AppLocalizations {
   /// **'Audio cards'**
   String get collectionAudioCards;
 
-  /// No description provided for @collectionBlockLink.
+  /// No description provided for @collectionBlockConnection.
   ///
   /// In en, this message translates to:
-  /// **'Link'**
-  String get collectionBlockLink;
+  /// **'Connection'**
+  String get collectionBlockConnection;
 
-  /// No description provided for @collectionBlockLinkSubtitle.
+  /// No description provided for @collectionBlockConnectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'A standalone link card'**
-  String get collectionBlockLinkSubtitle;
+  /// **'Link to another collection'**
+  String get collectionBlockConnectionSubtitle;
 
   /// No description provided for @collectionBlockPhoto.
   ///
@@ -961,6 +943,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Make a link'**
   String get collectionLinkFinderTitle;
+
+  /// No description provided for @collectionConnectionPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to a collection'**
+  String get collectionConnectionPickerTitle;
 
   /// No description provided for @collectionNothingToLink.
   ///

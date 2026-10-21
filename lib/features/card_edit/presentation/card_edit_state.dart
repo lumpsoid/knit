@@ -15,6 +15,7 @@ class CardEditState {
     this.status = CardEditStatus.editing,
     this.cardId = '',
     this.initialText = '',
+    this.kind = CardKind.text,
     this.links = const [],
     this.linksLoading = false,
     this.attachmentId,
@@ -34,6 +35,9 @@ class CardEditState {
   final CardEditStatus status;
   final String cardId;
   final String initialText;
+
+  /// The card's kind, kept current as attachments change.
+  final CardKind kind;
 
   /// The card's outgoing links (subtask 3). Reuses the §4.4 view-models.
   final List<ConnectionItem> links;
@@ -101,6 +105,7 @@ class CardEditState {
     CardEditStatus? status,
     String? cardId,
     String? initialText,
+    CardKind? kind,
     List<ConnectionItem>? links,
     bool? linksLoading,
     Object? attachmentId = _unset,
@@ -119,6 +124,7 @@ class CardEditState {
     status: status ?? this.status,
     cardId: cardId ?? this.cardId,
     initialText: initialText ?? this.initialText,
+    kind: kind ?? this.kind,
     links: links ?? this.links,
     linksLoading: linksLoading ?? this.linksLoading,
     attachmentId: attachmentId == _unset

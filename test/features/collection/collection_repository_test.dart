@@ -162,6 +162,24 @@ void main() {
       );
     });
 
+    test('a Connection card is one write and renders as the tile', () async {
+      final index = await createCollection('Index');
+      final trips = await createCollection('Trips');
+      final cardId = (await write.addConnectionCard(
+        collectionId: index,
+        position: 'a0',
+        targetCollectionId: trips,
+      )).getOrThrow();
+
+      final card = (await load(index)).cards.single;
+      expect(card.id, cardId);
+      expect(card.kind, CardKind.link);
+      expect(card.text, isNull);
+      expect(card.collectionLink?.collectionId, trips);
+      expect(card.collectionLink?.caption, isNull);
+      expect(card.connectionCount, 1);
+    });
+
     test('a deleted target keeps the plain bubble (broken link)', () async {
       final index = await createCollection('Index');
       final trips = await createCollection('Trips');

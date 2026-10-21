@@ -44,7 +44,8 @@ can be exported. Search, links, and ownership are solved structurally, not bolte
   mostly of links to others works like an index or folder. That is only a way of reading
   links: there is **no hierarchy** in the model (no parent, no nesting, no new field). The UI
   makes it visible read-side: the feed draws such a link as a tile (§4.2) and Home names the
-  collections that link to a row (§4.1, derived in §8.6.4).
+  collections that link to a row (§4.1, derived in §8.6.4). The "+" sheet's Connection block
+  makes such a card in one step (§4.2).
 
 ### 3.1 Node affordances (the collection-vs-card line)
 
@@ -67,8 +68,9 @@ The data model enforces this: `collection` has `title` + optional `description` 
 
 ### 3.2 Locked model decisions
 
-- **Links are a minimum block, not inline in text.** Created via a "+" add-block menu as
-  standalone card blocks.
+- **Links are a minimum block, not inline in text.** A link to another collection is
+  created via the "+" add-block menu as a standalone **Connection** card (§4.2); a web link
+  is a card of its own, made by sending a bare URL.
 - **Typed links (source/part-of/next) dropped** — sugar, hard to present generally. Base is
   one neutral link with an **optional free-text `label`** (the "later if wanted" hook).
   Backlinks stay (not sugar).
@@ -167,11 +169,17 @@ deleted. Archiving takes it off the home timeline without losing anything.
 - Chat-style feed of **cards**, **chronological ascending by default** (step 1 → 2 → 3,
   oldest at top). Feed order key = `position ASC, id ASC` (§8.7).
 - **Bottom composer:** quick text → card. Behaves like a messenger — quick text goes in
-  fast; pasting a URL can fire an async metadata/thumbnail fetch that fills the card a moment
-  later.
-- **"+" add-block menu** (bottom sheet, grid: link · photo · audio-later) → standalone card
-  blocks. Selecting a type transforms the sheet into that block's sheet — "link" becomes a
-  **finder sheet** (search cards / collections / existing link objects).
+  fast. A send that is nothing but one http(s) URL makes a **link card** (`kind=link`, the
+  URL as its text) that opens in the browser; pasting a URL can fire an async
+  metadata/thumbnail fetch that fills the card a moment later.
+- **"+" add-block menu** (bottom sheet: Connection · photo · audio · file). **Connection**
+  opens the link picker (§4.4) at its collections level, with its "Recent" row:
+  collections only, no drilling into cards, never this collection; imported collections
+  are valid targets. Picking one appends a **Connection card** at the feed tail: a
+  `kind=link` card with no text plus its one `link` to that collection, written in one
+  transaction (§6.4 link block), drawn as the collection-link tile below. The target is
+  remembered for the Recent row. Photo, audio and file stage an attachment for the
+  composer. An imported (read-only) collection has no composer, so no "+".
 - **Optimize size** (opt-in): a staged photo shows its size and an *Optimize size* chip.
   On, the photo is scaled to fit 1600×1200 (1200×1600 for a portrait photo) and re-encoded
   (JPEG, or PNG when it has transparency), with its orientation baked in. Its metadata
@@ -194,7 +202,9 @@ deleted. Archiving takes it off the home timeline without losing anything.
   card count and its newest card's one-line preview (muted when settled, like Home). Such a
   card has no attachment and exactly one link out, to a collection, and its text is blank or
   one short line (a label, up to 80 characters); a `kind=link` card qualifies only without a
-  URL. The card's text shows above the tile unless it just repeats the title. A tap on the
+  URL. The card's text shows above the tile unless it just repeats the title. Card Edit
+  (§4.3) gives such a card a label: the label makes it a text card (a bare URL, a link
+  card), and an emptied label is allowed and makes it a text-less `kind=link` card again. A tap on the
   tile opens that collection over this one; a tap beside it still opens the actions sheet.
   If the target is deleted, the card keeps its plain bubble and the broken-link chip (§8.6.1).
   The tiles of a loaded page are read in batches (one links-out read, one summary read).
@@ -233,7 +243,9 @@ deleted. Archiving takes it off the home timeline without losing anything.
 
 ### 4.3 Card Edit (from the actions sheet)
 Edit text/content; manage that card's images and its links; **Settled** and
-**Emphasized** toggles (§3.3). *Add photos* picks several from the gallery: on an image card
+**Emphasized** toggles (§3.3). Saving blank text is refused, except on a Connection card
+(no attachment, one link out to a collection, §4.2): its text is a label, so it may be
+emptied. *Add photos* picks several from the gallery: on an image card
 they join its images, after the ones it has; on a text card they make it an image card.
 With several images the section shows them as a grid, each with a ✕ that removes just that
 one (removing the last leaves a text card); *Remove all* drops them together, and *Replace*
@@ -451,8 +463,10 @@ CREATE TABLE attachment (
 );
 ```
 
-**Link-cards reconcile cleanly.** A "link block" in the feed is a `card` with `kind='link'`;
-the edge lives in `link` with `source` = that card. The "link" action on an existing content
+**Link-cards reconcile cleanly.** A "link block" in the feed is a `card` with `kind='link'`
+and no text (the "+" sheet's Connection card, §4.2); the edge lives in `link` with
+`source` = that card, and the card and its link are created in one transaction. (A
+`kind='link'` card *with* text is a web link: its text is the URL, and it has no edge.) The "link" action on an existing content
 card creates a `link` with `source` = that card and **no new card**. Both paths, one edge
 table — which is also why deleting a card yields an orphan marker for free (the `link` row
 survives pointing at a tombstoned node; detected at read time).
@@ -1037,7 +1051,7 @@ regardless of arrival order — that property *is* local-first.
 
 ### 9.1 First vertical slice (no relay) — the local-first gate
 Flow: create collection → add text cards → reorder a card → add a link (card→collection and a
-"+"-block link card) → delete a card that is a link endpoint.
+"+"-block Connection card) → delete a card that is a link endpoint.
 
 Gates (all must hold):
 1. Every mutation is one transaction: entity row + signed `change_log` op (`origin='local'`,

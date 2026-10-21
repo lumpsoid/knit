@@ -71,6 +71,30 @@ void main() {
     expect(data.cards.single.text, 'first (edited)');
   });
 
+  test('a Connection card takes a label and gives it back', () async {
+    final index = (await timelineWrite.createCollection('Index')).getOrThrow();
+    final trips = (await timelineWrite.createCollection('Trips')).getOrThrow();
+    final cardId = (await collectionWrite.addConnectionCard(
+      collectionId: index,
+      position: 'a0',
+      targetCollectionId: trips,
+    )).getOrThrow();
+
+    await cardEditWrite.editCard(
+      cardId: cardId,
+      text: 'Next summer',
+      kind: CardKind.text,
+    );
+    var card = (await read.loadCollection(index)).getOrThrow().cards.single;
+    expect((card.kind, card.text), (CardKind.text, 'Next summer'));
+    expect(card.collectionLink?.caption, 'Next summer');
+
+    await cardEditWrite.editCard(cardId: cardId, kind: CardKind.link);
+    card = (await read.loadCollection(index)).getOrThrow().cards.single;
+    expect((card.kind, card.text), (CardKind.link, null));
+    expect(card.collectionLink?.collectionId, trips);
+  });
+
   test('setCardSettled settles and unsettles, keeping the text', () async {
     final colId = (await timelineWrite.createCollection(
       'Espresso',

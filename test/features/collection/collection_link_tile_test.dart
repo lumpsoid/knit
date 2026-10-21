@@ -32,7 +32,9 @@ void main() {
     });
 
     test('a link card qualifies only without a URL', () {
+      // The Connection block's shape (§6.4): no text, one edge out.
       expect(targetOf(kind: CardKind.link, text: null), 'trips');
+      expect(targetOf(kind: CardKind.link, text: '  '), 'trips');
       expect(targetOf(kind: CardKind.link, text: 'https://x.org'), isNull);
     });
 

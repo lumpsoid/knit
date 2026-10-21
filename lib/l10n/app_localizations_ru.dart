@@ -36,9 +36,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionDone => 'Готово';
 
   @override
-  String get actionAdd => 'Добавить';
-
-  @override
   String get actionLink => 'Связать';
 
   @override
@@ -315,12 +312,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get collectionAddLinkTitle => 'Добавить ссылку';
-
-  @override
-  String get collectionAddLinkHint => 'https://…';
-
-  @override
   String get collectionLinkOpenFailed => 'Не удалось открыть ссылку';
 
   @override
@@ -362,10 +353,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionAudioCards => 'Аудиокарточки';
 
   @override
-  String get collectionBlockLink => 'Ссылка';
+  String get collectionBlockConnection => 'Связь';
 
   @override
-  String get collectionBlockLinkSubtitle => 'Отдельная карточка-ссылка';
+  String get collectionBlockConnectionSubtitle => 'Ссылка на другую коллекцию';
 
   @override
   String get collectionBlockPhoto => 'Фото';
@@ -504,6 +495,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get collectionLinkFinderTitle => 'Создать связь';
+
+  @override
+  String get collectionConnectionPickerTitle => 'Связать с коллекцией';
 
   @override
   String get collectionNothingToLink => 'Пока не с чем связывать.';

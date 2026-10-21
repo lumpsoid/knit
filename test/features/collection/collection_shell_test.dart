@@ -363,6 +363,39 @@ void main() {
     });
   });
 
+  test(
+    'a Connection card writes card + link, then remembers the target',
+    () async {
+      final index = (await timelineWrite.createCollection(
+        'Index',
+      )).getOrThrow();
+      final trips = (await timelineWrite.createCollection(
+        'Trips',
+      )).getOrThrow();
+      final actions = <CollectionAction>[];
+      await shell.run(
+        AddConnectionCardEffect(
+          collectionId: index,
+          position: 'a0',
+          targetCollectionId: trips,
+        ),
+        dispatch: actions.add,
+      );
+
+      final card = (await store.feed(index)).single;
+      expect(card.content['kind'], 'link');
+      expect(card.content['text'], isNull);
+      final link = (await store.linksOut(card.id)).single;
+      expect(link.content['target_id'], trips);
+      expect(actions.single, isA<ReloadRequested>());
+      expect(uiEffects, isEmpty);
+      // Remembered for the link picker's "Recent" row.
+      expect((await recents.load(RecentPurpose.link)).getOrThrow().ids, [
+        trips,
+      ]);
+    },
+  );
+
   group('quick input', () {
     test('a saved quick card asks the page to close, then resyncs', () async {
       final col = (await timelineWrite.createCollection('Inbox')).getOrThrow();

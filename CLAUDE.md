@@ -21,7 +21,7 @@ resolver), the **Onboard** identity ceremony (welcome → nickname → explain +
 Generate → generating → reveal `nickname#fingerprint`, writing the signed
 `profile` record), the **Timeline** (§4.1 home over `homeTimeline()`, with
 inline collection create + open), the **Collection** screen (§4.2 —
-chat-style feed, composer, "+"-block link card, per-card actions sheet, reorder
+chat-style feed, composer, "+"-block Connection card, per-card actions sheet, reorder
 mode, long-press multi-select + move to another collection, header rename),
 the **Connections** view (§4.4 — an entity's
 links-out + backlinks over `linksOut`/`backlinks`, a breadcrumb back-stack, and
@@ -329,6 +329,17 @@ the `lib/sync/` core below.
   `TimelineState.hubs`; the row's "in:" line is `TimelineHubLine` (two names,
   then "+N"). `CardPreviewLabel` (`lib/core/previews/`) is the shared
   newest-card preview text.
+- Connection card (§4.2/§6.4): the "+" sheet (`AddBlockSheet` → `AddBlock`)
+  has no URL link block; a bare http(s) URL sent from any composer becomes a
+  link card (`CardKind.forText`). Its **Connection** block opens
+  `LinkPickerSheet` with card_links' `NewConnection` pick (collections only, no
+  drilling, never this one) → `ConnectionCardRequested` →
+  `AddConnectionCardEffect` → `CollectionWriteRepository.addConnectionCard` →
+  `SyncStore.createLinkedCard` (text-less `kind=link` card + its `link`, one
+  transaction); the shell then records the link recent. Card Edit carries the
+  card kind (`CardEditRouteArgs.initialKind`), and the pure `CardTextEdit`
+  lets a Connection card save a blank label (→ `kind=link`, no text) and turns
+  a label into a text card.
 - Settled cards (§3.3): a nullable, synced `card.settled_at` (v5 migration),
   written by `SyncStore.setCardsSettled` on the content clock. The domain's
   `SettleChange` decides settle vs unsettle (all settled → unsettle). The

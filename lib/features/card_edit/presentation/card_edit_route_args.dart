@@ -18,6 +18,9 @@ abstract interface class CardEditRouteArgs {
   /// The card's current body text, used to seed the editor field.
   String get initialText;
 
+  /// The card's [CardKind]: a Connection card may save a blank label.
+  CardKind get initialKind;
+
   /// The card's current attachment id (§7.4.3), or null if it has none. Seeds
   /// the attachment section without a second read.
   String? get initialAttachmentId;
@@ -49,6 +52,7 @@ abstract interface class CardEditRouteArgsWriter {
     required String cardId,
     required String collectionId,
     required String initialText,
+    CardKind initialKind,
     String? initialAttachmentId,
     List<String> initialMoreAttachmentIds,
     CardKind? initialAttachmentKind,
@@ -69,6 +73,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   String _cardId = '';
   String _collectionId = '';
   String _initialText = '';
+  CardKind _initialKind = CardKind.text;
   String? _initialAttachmentId;
   List<String> _initialMoreAttachmentIds = const [];
   CardKind? _initialAttachmentKind;
@@ -85,6 +90,9 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
 
   @override
   String get initialText => _initialText;
+
+  @override
+  CardKind get initialKind => _initialKind;
 
   @override
   String? get initialAttachmentId => _initialAttachmentId;
@@ -112,6 +120,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     required String cardId,
     required String collectionId,
     required String initialText,
+    CardKind initialKind = CardKind.text,
     String? initialAttachmentId,
     List<String> initialMoreAttachmentIds = const [],
     CardKind? initialAttachmentKind,
@@ -123,6 +132,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     _cardId = cardId;
     _collectionId = collectionId;
     _initialText = initialText;
+    _initialKind = initialKind;
     _initialAttachmentId = initialAttachmentId;
     _initialMoreAttachmentIds = initialMoreAttachmentIds;
     _initialAttachmentKind = initialAttachmentKind;

@@ -16,6 +16,7 @@ class ViewAttached extends CardEditAction {
     required this.cardId,
     required this.collectionId,
     required this.initialText,
+    this.initialKind = CardKind.text,
     required this.initialAttachmentId,
     this.initialMoreAttachmentIds = const [],
     this.initialAttachmentKind,
@@ -27,6 +28,7 @@ class ViewAttached extends CardEditAction {
   final String cardId;
   final String collectionId;
   final String initialText;
+  final CardKind initialKind;
   final String? initialAttachmentId;
   final List<String> initialMoreAttachmentIds;
   final CardKind? initialAttachmentKind;

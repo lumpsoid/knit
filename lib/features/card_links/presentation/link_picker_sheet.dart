@@ -9,7 +9,8 @@ import 'package:knit/l10n/app_localizations.dart';
 
 /// The one link picker (§4.4) the Collection screen and the Card Edit page both
 /// open: browse the collections, link to one directly (the "Recent" row offers
-/// the ones last linked to), or drill into one to pick a card in it. Renders the shared [CardLinksState]; drilling asks for a
+/// the ones last linked to), or drill into one to pick a card in it (unless
+/// the [LinkPick] picks collections only, as a new Connection card does). Renders the shared [CardLinksState]; drilling asks for a
 /// collection's cards through [onOpenCollection]. Pops the picked
 /// [LinkTarget] (null when dismissed).
 class LinkPickerSheet extends StatefulWidget {
@@ -83,14 +84,15 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
         child: Text(l10n.collectionNothingToLink),
       );
     }
+    final drills = state.source?.drills ?? true;
     return ListView(
       shrinkWrap: true,
       children: [
-        _SheetHeader(
-          state.source is LinkFromMine
-              ? l10n.collectionLinkFromMineTitle
-              : l10n.collectionLinkFinderTitle,
-        ),
+        _SheetHeader(switch (state.source) {
+          LinkFromMine() => l10n.collectionLinkFromMineTitle,
+          NewConnection() => l10n.collectionConnectionPickerTitle,
+          _ => l10n.collectionLinkFinderTitle,
+        }),
         RecentTargetsRow(
           labels: [for (final c in recents) _collectionLabel(l10n, c)],
           onSelected: (i) => Navigator.of(context).pop(recents[i]),
@@ -103,22 +105,27 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (state.canLinkToCollection(c.id))
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(c),
-                    child: Text(l10n.actionLink),
-                  ),
-                IconButton(
-                  tooltip: l10n.actionOpen,
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () => _drill(c),
-                ),
-              ],
-            ),
-            onTap: () => _drill(c),
+            // Collections only (a new Connection): the whole row picks.
+            trailing: drills
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (state.canLinkToCollection(c.id))
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(c),
+                          child: Text(l10n.actionLink),
+                        ),
+                      IconButton(
+                        tooltip: l10n.actionOpen,
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () => _drill(c),
+                      ),
+                    ],
+                  )
+                : null,
+            onTap: drills
+                ? () => _drill(c)
+                : () => Navigator.of(context).pop(c),
           ),
       ],
     );

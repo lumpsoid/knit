@@ -44,6 +44,7 @@ class _CardEditPageState extends State<CardEditPage> {
           cardId: args.cardId,
           collectionId: args.collectionId,
           initialText: args.initialText,
+          initialKind: args.initialKind,
           initialAttachmentId: args.initialAttachmentId,
           initialMoreAttachmentIds: args.initialMoreAttachmentIds,
           initialAttachmentKind: args.initialAttachmentKind,

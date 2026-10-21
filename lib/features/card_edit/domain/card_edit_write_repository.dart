@@ -6,11 +6,13 @@ import 'package:result_dart/result_dart.dart';
 /// is one signed local write through the §6.8 path — content stamp bumps,
 /// placement frozen (§8.4). Returns the affected card id on success.
 abstract interface class CardEditWriteRepository {
-  /// Edit a card's body text (§4.3). Named (vs a positional arg) so the call
-  /// site stays stable.
+  /// Edit a card's body text (§4.3), and its `kind` when [kind] is given (a
+  /// Connection card's label, `CardTextEdit`). Named (vs a positional arg) so
+  /// the call site stays stable.
   Future<Result<String, CardEditFailure>> editCard({
     required String cardId,
     String? text,
+    CardKind? kind,
   });
 
   /// Attach (or replace) the card's attachment (§7.4.3): set `attachment_id` and

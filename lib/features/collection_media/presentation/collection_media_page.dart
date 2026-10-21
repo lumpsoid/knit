@@ -77,6 +77,7 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
       cardId: item.cardId,
       collectionId: CollectionMediaScope.routeArgs.collectionId,
       initialText: item.text ?? '',
+      initialKind: item.kind.cardKind,
       initialAttachmentId: item.attachmentId,
       initialMoreAttachmentIds: item.moreAttachmentIds,
       initialAttachmentKind: item.attachmentId == null

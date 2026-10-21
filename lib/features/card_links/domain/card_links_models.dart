@@ -29,6 +29,9 @@ sealed class LinkPick {
   /// Whether [collection] is listed at all.
   bool lists(LinkTarget collection) => true;
 
+  /// Whether a listed collection can be opened to pick a card in it.
+  bool get drills => true;
+
   /// Whether the collection [id] itself may be picked.
   bool canLinkToCollection(String id);
 
@@ -74,4 +77,28 @@ class LinkFromMine extends LinkPick {
 
   @override
   bool canLinkToCard(String id) => id != targetCardId;
+}
+
+/// The "+" sheet's Connection block (§4.2): pick the collection a new
+/// Connection card in [collectionId] will point at. Collections only — no
+/// drilling into cards — and never [collectionId] itself (the [LinkSource]
+/// rule). Imported collections are offered: the link is the linker's own op.
+@immutable
+class NewConnection extends LinkPick {
+  const NewConnection({required this.collectionId});
+
+  /// The collection the new card goes into.
+  final String collectionId;
+
+  @override
+  bool lists(LinkTarget collection) => collection.id != collectionId;
+
+  @override
+  bool get drills => false;
+
+  @override
+  bool canLinkToCollection(String id) => id != collectionId;
+
+  @override
+  bool canLinkToCard(String id) => false;
 }

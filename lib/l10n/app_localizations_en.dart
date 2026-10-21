@@ -36,9 +36,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionDone => 'Done';
 
   @override
-  String get actionAdd => 'Add';
-
-  @override
   String get actionLink => 'Link';
 
   @override
@@ -310,12 +307,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get collectionAddLinkTitle => 'Add a link';
-
-  @override
-  String get collectionAddLinkHint => 'https://…';
-
-  @override
   String get collectionLinkOpenFailed => 'Couldn\'t open this link';
 
   @override
@@ -356,10 +347,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionAudioCards => 'Audio cards';
 
   @override
-  String get collectionBlockLink => 'Link';
+  String get collectionBlockConnection => 'Connection';
 
   @override
-  String get collectionBlockLinkSubtitle => 'A standalone link card';
+  String get collectionBlockConnectionSubtitle => 'Link to another collection';
 
   @override
   String get collectionBlockPhoto => 'Photo';
@@ -497,6 +488,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collectionLinkFinderTitle => 'Make a link';
+
+  @override
+  String get collectionConnectionPickerTitle => 'Connect to a collection';
 
   @override
   String get collectionNothingToLink => 'Nothing to link to yet.';

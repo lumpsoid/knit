@@ -74,6 +74,20 @@ class AddCardEffect extends CollectionEffect {
   final bool closesQuickInput;
 }
 
+/// Append a Connection card at [position] (§4.2): a text-less link block
+/// whose one link out points at [targetCollectionId] (§6.4), card and link in
+/// one write.
+class AddConnectionCardEffect extends CollectionEffect {
+  const AddConnectionCardEffect({
+    required this.collectionId,
+    required this.position,
+    required this.targetCollectionId,
+  });
+  final String collectionId;
+  final String position;
+  final String targetCollectionId;
+}
+
 /// Store the already-picked [images] (§7.4.8), then append one image card at
 /// [position] holding them all in order (§4.2) and carrying [caption] (the
 /// composer text, already trimmed; null when blank). The attachment ids are

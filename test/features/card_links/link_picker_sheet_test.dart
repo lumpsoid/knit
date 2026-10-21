@@ -56,6 +56,7 @@ void main() {
   Future<List<LinkTarget?>> pumpPicker(
     WidgetTester tester, {
     InMemoryRecentTargetsRepository? recents,
+    LinkPick source = const LinkSource(cardId: 'self', collectionId: 'own'),
   }) async {
     final store = recents ?? InMemoryRecentTargetsRepository();
     final links = CardLinksController(
@@ -77,11 +78,7 @@ void main() {
         home: Builder(
           builder: (context) => TextButton(
             onPressed: () async => picked.add(
-              await LinkPickerSheet.show(
-                context,
-                links: links,
-                source: const LinkSource(cardId: 'self', collectionId: 'own'),
-              ),
+              await LinkPickerSheet.show(context, links: links, source: source),
             ),
             child: const Text('open'),
           ),
@@ -125,6 +122,28 @@ void main() {
     expect(find.widgetWithText(ActionChip, 'Own'), findsNothing);
 
     await tester.tap(chip);
+    await tester.pumpAndSettle();
+    expect(picked.single?.id, 'other');
+  });
+
+  testWidgets('a new Connection picks a collection, never its own', (
+    tester,
+  ) async {
+    final recents = InMemoryRecentTargetsRepository({
+      RecentPurpose.link: ['own', 'other'],
+    });
+    final picked = await pumpPicker(
+      tester,
+      recents: recents,
+      source: const NewConnection(collectionId: 'own'),
+    );
+
+    expect(find.text('Connect to a collection'), findsOneWidget);
+    expect(find.text('Own'), findsNothing);
+    expect(find.byIcon(Icons.chevron_right), findsNothing, reason: 'no drill');
+    expect(find.widgetWithText(ActionChip, 'Other'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ListTile, 'Other'));
     await tester.pumpAndSettle();
     expect(picked.single?.id, 'other');
   });

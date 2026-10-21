@@ -178,6 +178,23 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           onSuccess: _quickInputCloser(closesQuickInput),
         );
 
+      case AddConnectionCardEffect(
+        :final collectionId,
+        :final position,
+        :final targetCollectionId,
+      ):
+        await _runWrite(
+          () => _write.addConnectionCard(
+            collectionId: collectionId,
+            position: position,
+            targetCollectionId: targetCollectionId,
+          ),
+          'add connection card',
+          dispatch,
+          onSuccess: () =>
+              _recordRecent(RecentPurpose.link, targetCollectionId),
+        );
+
       case AddPhotoCardEffect(
         :final collectionId,
         :final position,
@@ -384,7 +401,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           'move cards',
           dispatch,
           onSuccess: () async {
-            await _recordMoveTarget(target.collectionId);
+            await _recordRecent(RecentPurpose.move, target.collectionId);
             _effectEmitter.push(
               CollectionCardsMovedUiEffect(
                 count: positions.length,
@@ -626,12 +643,15 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     });
   }
 
-  /// Remember [collectionId] as moved into. Non-fatal: the move is done.
-  Future<void> _recordMoveTarget(String collectionId) async {
-    final result = await _recentsWrite.record(RecentPurpose.move, collectionId);
+  /// Remember [collectionId] as a recent [purpose] target (moved into, or
+  /// linked to). Non-fatal: the write is done.
+  Future<void> _recordRecent(RecentPurpose purpose, String collectionId) async {
+    final result = await _recentsWrite.record(purpose, collectionId);
     result.onFailure(
-      (failure) =>
-          _log.warning('Recent move target save failed', failure.error),
+      (failure) => _log.warning(
+        'Recent ${purpose.name} target save failed',
+        failure.error,
+      ),
     );
   }
 

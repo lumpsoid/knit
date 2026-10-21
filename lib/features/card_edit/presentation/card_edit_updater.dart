@@ -1,11 +1,14 @@
 import 'package:fcis_core/fcis_core.dart';
+import 'package:knit/features/card_edit/domain/card_text_edit.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_action.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_effect.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_state.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// Pure reducer for the Card Edit page (fcis.md §6.1). Text saves on demand (a
-/// blank/whitespace-only body is dropped, matching the Collection screen);
+/// blank/whitespace-only body is dropped, matching the Collection screen,
+/// except on a Connection card — [CardTextEdit] decides);
 /// links and the image are managed in place — each intent emits one write effect
 /// and the result reloads the affected section.
 class CardEditUpdater
@@ -22,6 +25,7 @@ class CardEditUpdater
         :final cardId,
         :final collectionId,
         :final initialText,
+        :final initialKind,
         :final initialAttachmentId,
         :final initialMoreAttachmentIds,
         :final initialAttachmentKind,
@@ -36,6 +40,7 @@ class CardEditUpdater
           status: CardEditStatus.editing,
           cardId: cardId,
           initialText: initialText,
+          kind: initialKind,
           linksLoading: true,
           attachmentId: initialAttachmentId,
           moreAttachmentIds: initialMoreAttachmentIds,
@@ -64,11 +69,20 @@ class CardEditUpdater
         return (state.copyWith(isTimelinePreview: isTimelinePreview), null);
 
       case SaveRequested(:final text):
-        final body = text.trim();
-        if (body.isEmpty) return (state, null);
+        final edit = CardTextEdit.of(
+          kind: state.kind,
+          text: text,
+          attachmentIds: state.attachmentIds,
+          linksOut: [
+            for (final link in state.links)
+              if (link.direction == ConnectionDirection.outgoing)
+                (targetKind: link.otherKind, targetId: link.otherId),
+          ],
+        );
+        if (edit == null) return (state, null);
         return (
           state.copyWith(status: CardEditStatus.saving),
-          [SaveCardEffect(state.cardId, body)],
+          [SaveCardEffect(state.cardId, edit.text, kind: edit.kind)],
         );
 
       case SaveSucceeded():
@@ -186,6 +200,8 @@ class CardEditUpdater
           attachmentId: attachmentId,
           moreAttachmentIds: moreAttachmentIds,
           attachmentKind: kind,
+          // Attaching takes the attachment's kind; removing makes a text card.
+          kind: kind ?? CardKind.text,
           attachmentName: name,
           attachmentSize: size,
           attachmentBusy: false,

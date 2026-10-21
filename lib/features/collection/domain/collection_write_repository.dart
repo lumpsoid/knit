@@ -22,6 +22,15 @@ abstract interface class CollectionWriteRepository {
     List<String> moreAttachmentIds = const [],
   });
 
+  /// Append a Connection card at [position] (§4.2): a `link`-kind card with
+  /// no text and one link out to [targetCollectionId] (the §6.4 link block),
+  /// written together in one transaction. Returns the new card id.
+  Future<Result<String, CollectionFailure>> addConnectionCard({
+    required String collectionId,
+    required String position,
+    required String targetCollectionId,
+  });
+
   /// Soft-delete a card (§6.1). Links to it become broken chips, never vanish.
   Future<Result<String, CollectionFailure>> deleteCard(String cardId);
 

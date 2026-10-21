@@ -77,8 +77,12 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     required void Function(CardEditAction) dispatch,
   }) async {
     switch (effect) {
-      case SaveCardEffect(:final cardId, :final text):
-        final result = await _write.editCard(cardId: cardId, text: text);
+      case SaveCardEffect(:final cardId, :final text, :final kind):
+        final result = await _write.editCard(
+          cardId: cardId,
+          text: text,
+          kind: kind,
+        );
         result.onTap(
           (_) {
             dispatch(const SaveSucceeded());

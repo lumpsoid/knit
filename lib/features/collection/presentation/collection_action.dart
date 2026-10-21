@@ -77,10 +77,11 @@ class ComposerSubmitted extends CollectionAction {
   final PickedAudio? audio;
 }
 
-/// The "+" add-block finder submitted a standalone link card (§4.2).
-class LinkCardSubmitted extends CollectionAction {
-  const LinkCardSubmitted(this.url);
-  final String url;
+/// The "+" sheet's Connection block picked [targetCollectionId] (§4.2):
+/// append a Connection card pointing at it.
+class ConnectionCardRequested extends CollectionAction {
+  const ConnectionCardRequested(this.targetCollectionId);
+  final String targetCollectionId;
 }
 
 /// Actions sheet → delete a card (§4.2). Links to it become broken, not gone.

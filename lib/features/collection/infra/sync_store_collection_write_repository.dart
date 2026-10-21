@@ -45,6 +45,28 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
   });
 
   @override
+  Future<Result<String, CollectionFailure>> addConnectionCard({
+    required String collectionId,
+    required String position,
+    required String targetCollectionId,
+  }) => _write(() async {
+    final id = _ids.newId();
+    await _graph.store.createLinkedCard(
+      cardId: id,
+      content: {
+        'collection_id': collectionId,
+        'kind': CardKind.link.tag,
+        'text': null,
+      },
+      position: position,
+      linkId: _ids.newId(),
+      targetType: EntityType.collection,
+      targetId: targetCollectionId,
+    );
+    return id;
+  });
+
+  @override
   Future<Result<String, CollectionFailure>> deleteCard(String cardId) =>
       _write(() async {
         await _graph.store.delete(EntityType.card, cardId);

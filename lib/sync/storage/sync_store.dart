@@ -514,6 +514,50 @@ class SyncStore {
     });
   }
 
+  /// Create a card and the one link out of it (§6.4 "link block") in **one**
+  /// transaction: the card [cardId] at [position] with [content], then the
+  /// `link` record [linkId] from it to the [targetType] entity [targetId].
+  /// Either both land or neither does, so no half-made block is ever seen or
+  /// synced. Returns the ops in that order (card, link).
+  Future<List<PersistedOp>> createLinkedCard({
+    required String cardId,
+    required Map<String, Object?> content,
+    required String position,
+    required String linkId,
+    required EntityType targetType,
+    required String targetId,
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    return _unitOfWork.run((ctx) async {
+      final card = await _writeOne(
+        ctx: ctx,
+        identity: identity,
+        now: now,
+        type: EntityType.card,
+        id: cardId,
+        build: _creation(EntityType.card, cardId, content, position),
+      );
+      final link = await _writeOne(
+        ctx: ctx,
+        identity: identity,
+        now: now,
+        type: EntityType.link,
+        id: linkId,
+        build: _creation(EntityType.link, linkId, {
+          'source_type': EntityType.card.name,
+          'source_id': cardId,
+          'target_type': targetType.name,
+          'target_id': targetId,
+          'label': null,
+        }, null),
+      );
+      await deviceClock.save(_clock.now, ctx: ctx);
+      return [card, link];
+    });
+  }
+
   /// Settle (or, with [settled] false, unsettle) cards (§3.3) — a content
   /// write per card that sets `settled_at` to the write's own stamp time, or
   /// clears it. Settling also clears `emphasized_at`: a card is live, settled

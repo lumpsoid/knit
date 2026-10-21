@@ -119,6 +119,58 @@ void main() {
       expect(effects, isNull);
     });
 
+    test('a Connection card saves a blank label as the link block', () {
+      final connection = const CardEditState(
+        cardId: 'c1',
+        kind: CardKind.text,
+        initialText: 'Trips',
+      ).copyWith(links: [link('a')]);
+      final (next, effects) = updater.update(
+        connection,
+        const SaveRequested('   '),
+      );
+      expect(next.status, CardEditStatus.saving);
+      final effect = effects!.single as SaveCardEffect;
+      expect((effect.text, effect.kind), (null, CardKind.link));
+    });
+
+    test('a label on a link-block card makes it a text card', () {
+      final block = const CardEditState(
+        cardId: 'c1',
+        kind: CardKind.link,
+      ).copyWith(links: [link('a')]);
+      final (_, effects) = updater.update(
+        block,
+        const SaveRequested(' Trips '),
+      );
+      final effect = effects!.single as SaveCardEffect;
+      expect((effect.text, effect.kind), ('Trips', CardKind.text));
+    });
+
+    test('ViewAttached seeds the card kind; attachments keep it current', () {
+      final (attached, _) = updater.update(
+        const CardEditState(),
+        const ViewAttached(
+          cardId: 'c1',
+          collectionId: 'col-1',
+          initialText: '',
+          initialKind: CardKind.link,
+          initialAttachmentId: null,
+        ),
+      );
+      expect(attached.kind, CardKind.link);
+      final (withFile, _) = updater.update(
+        attached,
+        const AttachmentResolved(attachmentId: 'f', kind: CardKind.file),
+      );
+      expect(withFile.kind, CardKind.file);
+      final (removed, _) = updater.update(
+        withFile,
+        const AttachmentResolved(attachmentId: null, kind: null),
+      );
+      expect(removed.kind, CardKind.text);
+    });
+
     test('SaveFailed marks the page failed', () {
       final saving = attached().copyWith(status: CardEditStatus.saving);
       final (next, effects) = updater.update(saving, const SaveFailed());

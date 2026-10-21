@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/l10n/app_localizations.dart';
+
+/// What the "+" sheet adds (§4.2): a Connection card to another collection, or
+/// a staged photo, audio clip or file for the composer.
+enum AddBlock { connection, photo, audio, file }
 
 class AddBlockSheet extends StatelessWidget {
   const AddBlockSheet({super.key});
@@ -12,25 +15,25 @@ class AddBlockSheet extends StatelessWidget {
       child: Wrap(
         children: [
           ListTile(
-            leading: const Icon(Icons.link),
-            title: Text(l10n.collectionBlockLink),
-            subtitle: Text(l10n.collectionBlockLinkSubtitle),
-            onTap: () => Navigator.of(context).pop(CardKind.link),
+            leading: const Icon(Icons.hub_outlined),
+            title: Text(l10n.collectionBlockConnection),
+            subtitle: Text(l10n.collectionBlockConnectionSubtitle),
+            onTap: () => Navigator.of(context).pop(AddBlock.connection),
           ),
           ListTile(
             leading: const Icon(Icons.image_outlined),
             title: Text(l10n.collectionBlockPhoto),
-            onTap: () => Navigator.of(context).pop(CardKind.image),
+            onTap: () => Navigator.of(context).pop(AddBlock.photo),
           ),
           ListTile(
             leading: const Icon(Icons.mic_none),
             title: Text(l10n.collectionBlockAudio),
-            onTap: () => Navigator.of(context).pop(CardKind.audio),
+            onTap: () => Navigator.of(context).pop(AddBlock.audio),
           ),
           ListTile(
             leading: const Icon(Icons.attach_file),
             title: Text(l10n.collectionBlockFile),
-            onTap: () => Navigator.of(context).pop(CardKind.file),
+            onTap: () => Navigator.of(context).pop(AddBlock.file),
           ),
         ],
       ),

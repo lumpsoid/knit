@@ -316,14 +316,21 @@ void main() {
       expect(effects, isNull);
     });
 
-    test('the full composer keeps a bare URL as a text card', () {
+    test('the full composer sends a bare URL as a link card', () {
       final (_, effects) = updater.update(
         ready(const []),
-        const ComposerSubmitted('https://x.y'),
+        const ComposerSubmitted('  https://x.y  '),
       );
       final effect = effects!.single as AddCardEffect;
-      expect(effect.kind, CardKind.text);
+      expect(effect.kind, CardKind.link);
+      expect(effect.text, 'https://x.y');
       expect(effect.closesQuickInput, isFalse);
+
+      final (_, textEffects) = updater.update(
+        ready(const []),
+        const ComposerSubmitted('see https://x.y'),
+      );
+      expect((textEffects!.single as AddCardEffect).kind, CardKind.text);
     });
 
     test('quick input sends a bare URL as a link card and closes after', () {
@@ -373,14 +380,32 @@ void main() {
       expect(loaded.quickInput, isTrue);
     });
 
-    test('link block appends a link-kind card', () {
+    test('a picked Connection appends a Connection card at the tail', () {
+      final (next, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const ConnectionCardRequested('trips'),
+      );
+      final effect = effects!.single as AddConnectionCardEffect;
+      expect(effect.collectionId, 'col');
+      expect(effect.targetCollectionId, 'trips');
+      expect(effect.position.compareTo('a0') > 0, isTrue);
+      expect(next.cards, hasLength(1), reason: 'the feed waits for the resync');
+    });
+
+    test('a Connection never points at its own collection', () {
       final (_, effects) = updater.update(
         ready(const []),
-        const LinkCardSubmitted('https://x.y'),
+        const ConnectionCardRequested('col'),
       );
-      final effect = effects!.single as AddCardEffect;
-      expect(effect.kind, CardKind.link);
-      expect(effect.text, 'https://x.y');
+      expect(effects, isNull);
+    });
+
+    test('no Connection card in an imported (read-only) collection', () {
+      final (_, effects) = updater.update(
+        ready(const []).copyWith(ownership: CollectionOwnership.imported),
+        const ConnectionCardRequested('trips'),
+      );
+      expect(effects, isNull);
     });
 
     test('sending an image emits a photo card with the trimmed caption', () {

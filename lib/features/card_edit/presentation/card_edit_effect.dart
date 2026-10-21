@@ -1,3 +1,4 @@
+import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// Async-work descriptors for the Card Edit page (fcis.md §6.4).
@@ -7,9 +8,14 @@ sealed class CardEditEffect {
 
 /// Persist the card's edited text (§4.3). [text] is the trimmed body.
 class SaveCardEffect extends CardEditEffect {
-  const SaveCardEffect(this.cardId, this.text);
+  const SaveCardEffect(this.cardId, this.text, {this.kind});
   final String cardId;
-  final String text;
+
+  /// The new text; null clears it (a Connection card's blank label).
+  final String? text;
+
+  /// The card's new kind, when the edit changes it ([CardTextEdit]).
+  final CardKind? kind;
 }
 
 /// Settle (or, with [settled] false, unsettle) [cardId] (§3.3).

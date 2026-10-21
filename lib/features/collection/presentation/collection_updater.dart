@@ -214,14 +214,13 @@ class CollectionUpdater
           );
         }
         if (body.isEmpty) return (state, null);
-        // Quick input is a one-line capture: a pasted link becomes a link card
-        // (the share-capture rule). The full composer has "+" → Link for that.
+        // A pasted bare link becomes a link card (the share-capture rule).
         return (
           state,
           [
             AddCardEffect(
               collectionId: state.collectionId,
-              kind: state.quickInput ? CardKind.forText(body) : CardKind.text,
+              kind: CardKind.forText(body),
               position: position,
               text: body,
               closesQuickInput: state.quickInput,
@@ -229,17 +228,16 @@ class CollectionUpdater
           ],
         );
 
-      case LinkCardSubmitted(:final url):
-        final body = url.trim();
-        if (body.isEmpty) return (state, null);
+      case ConnectionCardRequested(:final targetCollectionId):
+        // The picker never offers this collection itself (LinkSource rule).
+        if (targetCollectionId == state.collectionId) return (state, null);
         return (
           state,
           [
-            AddCardEffect(
+            AddConnectionCardEffect(
               collectionId: state.collectionId,
-              kind: CardKind.link,
               position: _appendPosition(state.cards),
-              text: body,
+              targetCollectionId: targetCollectionId,
             ),
           ],
         );
@@ -655,7 +653,7 @@ class CollectionUpdater
   /// its header or its existence. A link *from* another card into it does not.
   static bool _writesHere(CollectionAction action) => switch (action) {
     ComposerSubmitted() ||
-    LinkCardSubmitted() ||
+    ConnectionCardRequested() ||
     CardDeleteRequested() ||
     CollectionDeleteRequested() ||
     CardSettleToggled() ||

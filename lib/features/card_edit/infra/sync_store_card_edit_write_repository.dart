@@ -19,8 +19,12 @@ class SyncStoreCardEditWriteRepository implements CardEditWriteRepository {
   Future<Result<String, CardEditFailure>> editCard({
     required String cardId,
     String? text,
+    CardKind? kind,
   }) => _write(() async {
-    await _graph.store.edit(EntityType.card, cardId, {'text': text});
+    await _graph.store.edit(EntityType.card, cardId, {
+      'text': text,
+      'kind': ?kind?.tag,
+    });
     return cardId;
   });
 

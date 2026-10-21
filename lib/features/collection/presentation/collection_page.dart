@@ -42,7 +42,6 @@ import 'package:knit/features/collection/presentation/widgets/collection_title_c
 import 'package:knit/features/collection/presentation/widgets/move_target_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/selectable_card_row.dart';
 import 'package:knit/features/collection/presentation/widgets/selection_action_bar.dart';
-import 'package:knit/features/collection/presentation/widgets/text_prompt_dialog.dart';
 import 'package:knit/features/collection/presentation/widgets/title_morph.dart';
 import 'package:knit/features/collection_present/presentation/present_page.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
@@ -167,37 +166,42 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   Future<void> _openAddBlock() async {
-    final kind = await showModalBottomSheet<CardKind>(
+    final block = await showModalBottomSheet<AddBlock>(
       context: context,
       builder: (_) => const AddBlockSheet(),
     );
-    if (kind == null || !mounted) return;
-    final l10n = AppLocalizations.of(context);
-    switch (kind) {
-      case CardKind.link:
-        final url = await _promptText(
-          title: l10n.collectionAddLinkTitle,
-          hint: l10n.collectionAddLinkHint,
-          action: l10n.actionAdd,
-        );
-        if (url != null) _controller.dispatch(LinkCardSubmitted(url));
-      case CardKind.image:
+    if (block == null || !mounted) return;
+    switch (block) {
+      case AddBlock.connection:
+        await _pickConnection();
+      case AddBlock.photo:
         // Reveal the inline gallery/camera options above the composer; choosing
         // one opens the picker. The photo only becomes a card when the user
         // sends, so they can add a caption, clear it, or repick first.
         _composerInput.showPhotoSources();
-      case CardKind.audio:
+      case AddBlock.audio:
         // Reveal the inline recording bar above the composer; the user records,
         // optionally adds a caption, and sends — mirroring the photo flow.
         _composerInput.showAudioBar();
-      case CardKind.file:
+      case AddBlock.file:
         // Open the platform picker straight away; the chosen file becomes a
         // pending preview above the composer (the user can caption it, then send).
         unawaited(_composerInput.pickFile());
-      case CardKind.text:
-      case CardKind.unknown:
-        break;
     }
+  }
+
+  /// The Connection block (§4.2): pick another collection, then append a card
+  /// pointing at it.
+  Future<void> _pickConnection() async {
+    final picked = await LinkPickerSheet.show(
+      context,
+      links: CollectionScope.cardLinks,
+      source: NewConnection(
+        collectionId: _controller.stateHolder.value.collectionId,
+      ),
+    );
+    if (picked == null || !mounted) return;
+    _controller.dispatch(ConnectionCardRequested(picked.id));
   }
 
   Future<void> _openCardActions(FeedCard card) async {
@@ -520,6 +524,7 @@ class _CollectionPageState extends State<CollectionPage> {
       cardId: card.id,
       collectionId: _controller.stateHolder.value.collectionId,
       initialText: card.text ?? '',
+      initialKind: card.kind,
       initialAttachmentId: card.attachmentId,
       initialMoreAttachmentIds: card.moreAttachmentIds,
       initialAttachmentKind: card.attachmentId == null ? null : card.kind,
@@ -651,21 +656,6 @@ class _CollectionPageState extends State<CollectionPage> {
     );
     await Navigator.of(context).push(CollectionEditPage.route());
     if (mounted) _controller.dispatch(const ReloadRequested());
-  }
-
-  /// A simple single-field text prompt; returns null on cancel/empty.
-  Future<String?> _promptText({
-    required String title,
-    required String action,
-    String? hint,
-  }) async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (_) =>
-          TextPromptDialog(title: title, action: action, hint: hint),
-    );
-    final trimmed = result?.trim() ?? '';
-    return trimmed.isEmpty ? null : trimmed;
   }
 
   // --- build -----------------------------------------------------------------
