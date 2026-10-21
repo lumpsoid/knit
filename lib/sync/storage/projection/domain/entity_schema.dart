@@ -65,6 +65,16 @@ abstract class CardSchema {
   static const String colText = 'text';
   static const String colAttachmentId = 'attachment_id';
 
+  /// An image card's further images after [colAttachmentId], in order: their
+  /// attachment ids joined by [moreAttachmentIdsSeparator]; null when the card
+  /// has one image or none. Signed payloads carry strings and integers only
+  /// (§7.1), so the list travels as one string.
+  static const String colMoreAttachmentIds = 'more_attachment_ids';
+
+  /// Joins the ids of [colMoreAttachmentIds]. Attachment ids are uuids, so it
+  /// never occurs inside one.
+  static const String moreAttachmentIdsSeparator = ',';
+
   /// When the card was settled (§3.3) — ms, or null while it is live.
   static const String colSettledAt = 'settled_at';
 
@@ -82,6 +92,7 @@ abstract class CardSchema {
         $colKind             TEXT NOT NULL,
         $colText             TEXT,
         $colAttachmentId     TEXT,
+        $colMoreAttachmentIds TEXT,
         $colSettledAt        INTEGER,
         $colEmphasizedAt     INTEGER,
         $colPosition         TEXT NOT NULL,
@@ -89,6 +100,23 @@ abstract class CardSchema {
         $colPositionCounter  INTEGER NOT NULL
       )
       ''';
+
+  /// The ids a [colMoreAttachmentIds] value holds, in order; empty for null.
+  static List<String> decodeMoreAttachmentIds(Object? value) =>
+      value is String && value.isNotEmpty
+      ? value.split(moreAttachmentIdsSeparator)
+      : const [];
+
+  /// The [colMoreAttachmentIds] value for [ids]; null when there are none.
+  static String? encodeMoreAttachmentIds(Iterable<String> ids) =>
+      ids.isEmpty ? null : ids.join(moreAttachmentIdsSeparator);
+
+  /// Every attachment a card's [content] points at: [colAttachmentId], then
+  /// the [colMoreAttachmentIds] after it.
+  static List<String> attachmentIdsOf(Map<String, Object?> content) => [
+    ?content[colAttachmentId] as String?,
+    ...decodeMoreAttachmentIds(content[colMoreAttachmentIds]),
+  ];
 }
 
 /// The one neutral edge primitive (spec §6.4): any node -> any node.

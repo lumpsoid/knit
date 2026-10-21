@@ -51,8 +51,7 @@ class ShareScope {
       },
       attachmentIds: {
         ?cover,
-        for (final c in cards)
-          ?c.content[CardSchema.colAttachmentId] as String?,
+        for (final c in cards) ...CardSchema.attachmentIdsOf(c.content),
       },
     );
   }

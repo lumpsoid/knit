@@ -69,6 +69,13 @@ class ForkPlanner {
               CardSchema.colAttachmentId: mapped(
                 c.content[CardSchema.colAttachmentId],
               ),
+              CardSchema.colMoreAttachmentIds:
+                  CardSchema.encodeMoreAttachmentIds([
+                    for (final id in CardSchema.decodeMoreAttachmentIds(
+                      c.content[CardSchema.colMoreAttachmentIds],
+                    ))
+                      ?mapped(id),
+                  ]),
             },
           ),
         for (final l in source.links)

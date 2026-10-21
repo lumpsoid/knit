@@ -45,6 +45,7 @@ abstract class CanonicalSerializer {
     'hlc_ms',
     'id',
     'kind',
+    'more_attachment_ids',
     'position',
     'position_counter',
     'position_ms',

@@ -705,9 +705,10 @@ class SyncStore {
       final referencedOutside = {
         for (final s in rows)
           if (!inScope.contains(s.id))
-            ?(s.content[CardSchema.colAttachmentId] ??
-                    s.content[CollectionSchema.colCoverAttachmentId])
-                as String?,
+            if (s.type == EntityType.card)
+              ...CardSchema.attachmentIdsOf(s.content)
+            else
+              ?s.content[CollectionSchema.colCoverAttachmentId] as String?,
       };
       final attachmentIds = scope.attachmentIds.difference(referencedOutside);
       final purged = <String>{};
@@ -908,6 +909,7 @@ class SyncStore {
       },
       EntityType.card => const {
         'attachment_id': null,
+        'more_attachment_ids': null,
         'text': null,
         'settled_at': null,
         'emphasized_at': null,

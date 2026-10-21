@@ -58,6 +58,7 @@ void main() {
             'kind': 'text',
             'text': 'Grind finer if the shot runs too fast.',
             'attachment_id': null,
+            'more_attachment_ids': null,
             'settled_at': null,
             'emphasized_at': null,
           },
@@ -70,6 +71,7 @@ void main() {
             '"emphasized_at":null,'
             '"hlc_counter":0,"hlc_ms":1718020860000,'
             '"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text",'
+            '"more_attachment_ids":null,'
             '"position":"a0","position_counter":0,"position_ms":1718020860000,'
             '"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}';
 
@@ -94,6 +96,7 @@ void main() {
           'kind': 'text',
           'text': 'Grind finer if the shot runs too fast.',
           'attachment_id': null,
+          'more_attachment_ids': null,
           'settled_at': null,
           'emphasized_at': null,
         },
@@ -145,6 +148,7 @@ void main() {
           'kind': 'text',
           'text': 'hi',
           'attachment_id': null,
+          'more_attachment_ids': null,
           'settled_at': null,
           'emphasized_at': null,
         },

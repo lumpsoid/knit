@@ -214,7 +214,11 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       // readAll, not feed: a card in *any* collection counts as a referent.
       final referenced = (await _graph.store.readAll(
         EntityType.card,
-      )).any((c) => !c.deleted && c.content['attachment_id'] == attachmentId);
+      )).any(
+        (c) =>
+            !c.deleted &&
+            CardSchema.attachmentIdsOf(c.content).contains(attachmentId),
+      );
       return Ok(referenced);
     } catch (e, st) {
       return Failure(CollectionLoadFailure(e, st));

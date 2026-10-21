@@ -36,6 +36,7 @@ abstract class ProjectionRowMapper {
         CardSchema.colKind: c[CardSchema.colKind],
         CardSchema.colText: c[CardSchema.colText],
         CardSchema.colAttachmentId: c[CardSchema.colAttachmentId],
+        CardSchema.colMoreAttachmentIds: c[CardSchema.colMoreAttachmentIds],
         CardSchema.colSettledAt: c[CardSchema.colSettledAt],
         CardSchema.colEmphasizedAt: c[CardSchema.colEmphasizedAt],
         CardSchema.colPosition: s.position,
@@ -110,6 +111,8 @@ abstract class ProjectionRowMapper {
           CardSchema.colKind: row[CardSchema.colKind],
           CardSchema.colText: row[CardSchema.colText],
           CardSchema.colAttachmentId: row[CardSchema.colAttachmentId],
+          CardSchema.colMoreAttachmentIds:
+              row[CardSchema.colMoreAttachmentIds],
           CardSchema.colSettledAt: row[CardSchema.colSettledAt],
           CardSchema.colEmphasizedAt: row[CardSchema.colEmphasizedAt],
         },

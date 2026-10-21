@@ -100,6 +100,7 @@ Snapshot card({
   String kind = 'text',
   String text = '',
   String? attachmentId,
+  List<String> moreAttachmentIds = const [],
   int? settledAt,
   int? emphasizedAt,
   String position = 'a0',
@@ -121,6 +122,9 @@ Snapshot card({
     'kind': kind,
     'text': text,
     'attachment_id': attachmentId,
+    'more_attachment_ids': CardSchema.encodeMoreAttachmentIds(
+      moreAttachmentIds,
+    ),
     'settled_at': settledAt,
     'emphasized_at': emphasizedAt,
   },

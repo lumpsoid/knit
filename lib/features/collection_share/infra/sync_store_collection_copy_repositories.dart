@@ -38,8 +38,7 @@ class SyncStoreCollectionForkRepository implements CollectionForkRepository {
       ];
       final attachmentIds = {
         ?collection.content[CollectionSchema.colCoverAttachmentId] as String?,
-        for (final c in cards)
-          ?c.content[CardSchema.colAttachmentId] as String?,
+        for (final c in cards) ...CardSchema.attachmentIdsOf(c.content),
       };
       final attachments = [
         for (final a in await store.getMany(

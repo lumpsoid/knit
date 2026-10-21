@@ -51,6 +51,8 @@ affordance:
   its header card. **No audio.** Its only media is the cover image (edited from the header
   card). The description is a short free-text blurb about the collection — not feed content.
 - **Card** = `kind ∈ {text, image, link, audio, file}`, with body text and one attachment.
+  An **image** card may hold **several images** (§4.2): the first is its `attachment_id`,
+  the rest follow in order in `more_attachment_ids`.
   **Audio exists only as a card** inside a collection — never on a collection header.
   A **file** card carries an arbitrary attachment (any mime), labelled by the
   attachment's original `name`.
@@ -162,6 +164,12 @@ deleted. Archiving takes it off the home timeline without losing anything.
   not save at least a tenth, the original is kept ("Already small"). GIF and HEIC are left
   as they are. The choice carries over to the next photo on that page; it is device-local
   UI, never synced.
+- **Several images on one card:** the composer's gallery pick takes several photos at once,
+  and the camera adds one more to those staged. They show as a row of thumbnails, each with
+  its own ✕, and one send makes **one image card** holding them all in pick order. Card Edit
+  adds more photos to an image card and removes any one of them (§4.3). The bubble lays them
+  out as a grid (one wide, two side by side, three as one big and two small, four or more as
+  a 2×2 grid with a "+N" on the last tile); a tap opens the full-screen viewer on that image.
 - **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle · emphasize/unemphasize (§3.3) ·
   delete.
 - **⋮ menu** in the app bar opens a sheet with **Present** (§4.9) and **Reorder**.
@@ -353,6 +361,7 @@ CREATE TABLE card (
   kind              TEXT NOT NULL,      -- text | image | link | audio
   text              TEXT,               -- body, or caption for media/link cards
   attachment_id     TEXT,               -- "add image to card" or kind=image/audio
+  more_attachment_ids TEXT,             -- nullable; an image card's further images, ids joined by ","
   settled_at        INTEGER,            -- nullable; when the card was settled (§3.3)
   emphasized_at     INTEGER,            -- nullable; when the card was emphasized (§3.3)
   position          TEXT NOT NULL,      -- fractional-index string (compared lexicographically)
@@ -653,19 +662,20 @@ string above.)
 `op:"delete"`, `op_id:"0192f1a2-3b4c-7def-8123-000000000001@1718107200000.0.<sig16>"`.
 
 **7.4.3 Card — put** (fields: `attachment_id, author, collection_id, created_at, created_by,
-deleted, emphasized_at, hlc_counter, hlc_ms, id, kind, position, position_counter,
-position_ms, settled_at, t, text`). `settled_at` and `emphasized_at` (§3.3) were added after
-v1: a payload from an older peer may omit them,
+deleted, emphasized_at, hlc_counter, hlc_ms, id, kind, more_attachment_ids, position,
+position_counter, position_ms, settled_at, t, text`). `settled_at`, `emphasized_at` (§3.3)
+and `more_attachment_ids` (§4.2) were added after v1: a payload from an older peer may omit
+them,
 which reads as null. Verification is over the received bytes (§7.0), so those ops still
 verify; the next local write of that card emits the full field set.
 ```
-{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":0,"emphasized_at":null,"hlc_counter":0,"hlc_ms":1718020860000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
+{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":0,"emphasized_at":null,"hlc_counter":0,"hlc_ms":1718020860000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","more_attachment_ids":null,"position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
 ```
 
 **7.4.4 Card — delete** (`position`/`position_ms`/`position_counter` unchanged — a delete is
 not a reorder; content HLC bumps)
 ```
-{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":1,"emphasized_at":null,"hlc_counter":0,"hlc_ms":1718020980000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
+{"attachment_id":null,"author":"9f86…a08","collection_id":"0192f1a2-3b4c-7def-8123-000000000001","created_at":1718020860000,"created_by":"9f86…a08","deleted":1,"emphasized_at":null,"hlc_counter":0,"hlc_ms":1718020980000,"id":"0192f1a2-3b4c-7def-8123-00000000000a","kind":"text","more_attachment_ids":null,"position":"a0","position_counter":0,"position_ms":1718020860000,"settled_at":null,"t":"card","text":"Grind finer if the shot runs too fast."}
 ```
 
 **7.4.5 Link — put** (fields: `author, created_at, created_by, deleted, hlc_counter, hlc_ms,
