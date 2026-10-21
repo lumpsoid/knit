@@ -1179,6 +1179,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionMenuReorder => 'Изменить порядок карточек';
 
   @override
+  String get collectionMenuDelete => 'Удалить коллекцию';
+
+  @override
   String presentSlideCount(int index, int count) {
     return '$index / $count';
   }

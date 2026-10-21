@@ -236,6 +236,9 @@ class CollectionUpdater
           [DeleteCardEffect(cardId, attachmentId: card?.attachmentId)],
         );
 
+      case CollectionDeleteRequested():
+        return (state, [DeleteCollectionEffect(state.collectionId)]);
+
       case CardShareRequested(:final cardId):
         return _shareCard(state, cardId);
 

@@ -83,6 +83,11 @@ class CardDeleteRequested extends CollectionAction {
   final String cardId;
 }
 
+/// The ⋮ menu's Delete (confirmed by the user): delete this collection.
+class CollectionDeleteRequested extends CollectionAction {
+  const CollectionDeleteRequested();
+}
+
 /// Actions sheet → share a card through the system share sheet (§4.2). Text
 /// cards share their text; an image card shares the photo plus its caption.
 class CardShareRequested extends CollectionAction {

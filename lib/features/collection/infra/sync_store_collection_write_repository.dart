@@ -55,6 +55,14 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
       });
 
   @override
+  Future<Result<String, CollectionFailure>> deleteCollection(
+    String collectionId,
+  ) => _write(() async {
+    await _graph.store.delete(EntityType.collection, collectionId);
+    return collectionId;
+  });
+
+  @override
   Future<Result<String, CollectionFailure>> reorderCard(
     String cardId,
     String position,

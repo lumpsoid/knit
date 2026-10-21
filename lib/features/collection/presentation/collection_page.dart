@@ -113,6 +113,7 @@ class _CollectionPageState extends State<CollectionPage> {
         final l10n = AppLocalizations.of(context);
         final text = switch (message) {
           CollectionMessage.saveFailed => l10n.collectionSaveFailed,
+          CollectionMessage.deleteFailed => l10n.timelineDeleteFailed,
           CollectionMessage.micPermissionDenied =>
             l10n.collectionAudioPermissionDenied,
           CollectionMessage.linkOpenFailed => l10n.collectionLinkOpenFailed,
@@ -139,6 +140,8 @@ class _CollectionPageState extends State<CollectionPage> {
         );
       case CollectionQuickInputSentUiEffect():
         Navigator.of(context).pop(true);
+      case CollectionDeletedUiEffect():
+        Navigator.of(context).pop();
     }
   }
 
@@ -225,7 +228,8 @@ class _CollectionPageState extends State<CollectionPage> {
     }
   }
 
-  /// The app bar's ⋮ sheet: present the collection (§4.9) or reorder it.
+  /// The app bar's ⋮ sheet: present the collection (§4.9), reorder or delete
+  /// it.
   Future<void> _openMenu(CollectionState state) async {
     final action = await showModalBottomSheet<CollectionMenuAction>(
       context: context,
@@ -240,7 +244,36 @@ class _CollectionPageState extends State<CollectionPage> {
         await _openPresent(state.collectionId);
       case CollectionMenuAction.reorder:
         _controller.dispatch(const StartReorder());
+      case CollectionMenuAction.delete:
+        await _confirmDeleteCollection(state.collectionId);
     }
+  }
+
+  /// Ask before deleting this collection, then delete it (the page closes).
+  Future<void> _confirmDeleteCollection(String collectionId) async {
+    final l10n = AppLocalizations.of(context);
+    final title = _displayTitle(
+      CollectionScope.collectionDetails.of(collectionId)?.title,
+    );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.timelineDeleteTitle),
+        content: Text(l10n.timelineDeleteBody(title)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    _controller.dispatch(const CollectionDeleteRequested());
   }
 
   /// Hand the collection to the presentation carrier (cross_feature.md §2),

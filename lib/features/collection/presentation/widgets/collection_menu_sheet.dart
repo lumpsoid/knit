@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-enum CollectionMenuAction { present, reorder }
+enum CollectionMenuAction { present, reorder, delete }
 
-/// The Collection app bar's ⋮ sheet: Present (§4.9) and Reorder (§4.2).
+/// The Collection app bar's ⋮ sheet: Present (§4.9), Reorder (§4.2) and
+/// Delete.
 class CollectionMenuSheet extends StatelessWidget {
   const CollectionMenuSheet({
     super.key,
@@ -19,6 +20,7 @@ class CollectionMenuSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Wrap(
@@ -37,6 +39,14 @@ class CollectionMenuSheet extends StatelessWidget {
               onTap: () =>
                   Navigator.of(context).pop(CollectionMenuAction.reorder),
             ),
+          ListTile(
+            leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+            title: Text(
+              l10n.collectionMenuDelete,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+            onTap: () => Navigator.of(context).pop(CollectionMenuAction.delete),
+          ),
         ],
       ),
     );

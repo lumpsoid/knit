@@ -506,6 +506,7 @@
   "collectionMoreTooltip": "More",
   "collectionMenuPresent": "Present",
   "collectionMenuReorder": "Reorder cards",
+  "collectionMenuDelete": "Delete collection",
   "presentSlideCount": "{index} / {count}",
   "@presentSlideCount": {
     "placeholders": {

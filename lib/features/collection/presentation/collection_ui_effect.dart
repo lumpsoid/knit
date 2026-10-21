@@ -6,7 +6,12 @@ sealed class CollectionUiEffect {
 
 /// A semantic, locale-independent message the shell can raise without reaching
 /// for `BuildContext` — the View maps it to localized text (l10n).
-enum CollectionMessage { saveFailed, micPermissionDenied, linkOpenFailed }
+enum CollectionMessage {
+  saveFailed,
+  deleteFailed,
+  micPermissionDenied,
+  linkOpenFailed,
+}
 
 /// Show a transient message (e.g. a write failed) — a snackbar. Carries a
 /// semantic [CollectionMessage] key, not display text; the View localizes it.
@@ -26,6 +31,11 @@ class CollectionCardsMovedUiEffect extends CollectionUiEffect {
   final int count;
   final String targetCollectionId;
   final String targetTitle;
+}
+
+/// The collection was deleted: leave its page.
+class CollectionDeletedUiEffect extends CollectionUiEffect {
+  const CollectionDeletedUiEffect();
 }
 
 /// The quick input's card was saved: leave the page (and the app, back to the

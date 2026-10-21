@@ -1152,6 +1152,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionMenuReorder => 'Reorder cards';
 
   @override
+  String get collectionMenuDelete => 'Delete collection';
+
+  @override
   String presentSlideCount(int index, int count) {
     return '$index / $count';
   }

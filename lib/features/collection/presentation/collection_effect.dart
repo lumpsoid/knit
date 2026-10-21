@@ -137,6 +137,12 @@ class DeleteCardEffect extends CollectionEffect {
   final String? attachmentId;
 }
 
+/// Delete the collection [collectionId] (§6.1); the page then closes.
+class DeleteCollectionEffect extends CollectionEffect {
+  const DeleteCollectionEffect(this.collectionId);
+  final String collectionId;
+}
+
 /// Delete the selected [cardIds] in one transaction (§4.2). [attachmentIds]
 /// are their attachments, reclaimed once the cards are gone.
 class DeleteCardsEffect extends CollectionEffect {

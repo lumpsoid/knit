@@ -46,8 +46,12 @@ class _UnusedLinkLauncher implements LinkLauncher {
 
 class _FakeTimelineChannel implements TimelineChannelEmitter {
   int emits = 0;
+  TimelineChannelEvent? last;
   @override
-  void emit(TimelineChannelEvent event) => emits++;
+  void emit(TimelineChannelEvent event) {
+    emits++;
+    last = event;
+  }
 }
 
 void main() {
@@ -167,6 +171,20 @@ void main() {
       // The guard skips GC because card B still references it → no orphan.
       expect((await store.get(EntityType.attachment, attId))!.deleted, isFalse);
       expect(await blobs.exists(hash), isTrue);
+    },
+  );
+
+  test(
+    'deleting the collection tells the Timeline and closes the page',
+    () async {
+      final colId = (await timelineWrite.createCollection('C')).getOrThrow();
+
+      await shell.run(DeleteCollectionEffect(colId), dispatch: (_) {});
+
+      expect((await store.get(EntityType.collection, colId))!.deleted, isTrue);
+      final event = timelineChannel.last as CollectionDeletedChannelEvent;
+      expect(event.collectionId, colId);
+      expect(uiEffects.single, isA<CollectionDeletedUiEffect>());
     },
   );
 

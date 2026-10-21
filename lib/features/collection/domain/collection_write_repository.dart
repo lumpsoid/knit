@@ -51,6 +51,12 @@ abstract interface class CollectionWriteRepository {
   /// from the picker on the fly. Returns the new collection id.
   Future<Result<String, CollectionFailure>> createCollection(String title);
 
+  /// Soft-delete the collection [collectionId] (§6.1). Links to it become
+  /// broken chips. Returns the collection id.
+  Future<Result<String, CollectionFailure>> deleteCollection(
+    String collectionId,
+  );
+
   /// Move cards into [collectionId] in one transaction (all or none):
   /// [positions] maps each card id to its pre-computed position in the target
   /// (§8.7). Returns the target collection id on success.

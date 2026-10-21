@@ -2030,6 +2030,12 @@ abstract class AppLocalizations {
   /// **'Reorder cards'**
   String get collectionMenuReorder;
 
+  /// No description provided for @collectionMenuDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete collection'**
+  String get collectionMenuDelete;
+
   /// No description provided for @presentSlideCount.
   ///
   /// In en, this message translates to:

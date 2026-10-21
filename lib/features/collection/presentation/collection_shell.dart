@@ -215,6 +215,28 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           onSuccess: () => _gcDeletedCardAttachment(attachmentId),
         );
 
+      case DeleteCollectionEffect(:final collectionId):
+        final result = await _write.deleteCollection(collectionId);
+        result.onTap(
+          (id) {
+            // The Timeline reloads and drops the pin; the page closes.
+            _timelineChannel.emit(CollectionDeletedChannelEvent(id));
+            _effectEmitter.push(const CollectionDeletedUiEffect());
+          },
+          (failure) {
+            _log.severe(
+              'Collection delete failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            _effectEmitter.push(
+              const CollectionShowMessageUiEffect(
+                CollectionMessage.deleteFailed,
+              ),
+            );
+          },
+        );
+
       case DeleteCardsEffect(:final cardIds, :final attachmentIds):
         await _runWrite(
           () => _write.deleteCards(cardIds),

@@ -22,6 +22,13 @@ final class RefreshChannelEvent extends TimelineChannelEvent {
   const RefreshChannelEvent();
 }
 
+/// [collectionId] was deleted elsewhere (e.g. from its own Collection page):
+/// re-read the home feed and drop the collection's pin.
+final class CollectionDeletedChannelEvent extends TimelineChannelEvent {
+  const CollectionDeletedChannelEvent(this.collectionId);
+  final String collectionId;
+}
+
 /// Producer half — other features emit events here.
 abstract interface class TimelineChannelEmitter {
   void emit(TimelineChannelEvent event);

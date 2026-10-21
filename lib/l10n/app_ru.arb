@@ -480,6 +480,7 @@
   "collectionMoreTooltip": "Ещё",
   "collectionMenuPresent": "Показать",
   "collectionMenuReorder": "Изменить порядок карточек",
+  "collectionMenuDelete": "Удалить коллекцию",
   "presentSlideCount": "{index} / {count}",
   "presentContinueFrom": "Продолжить со слайда {number}",
   "presentSwipeHint": "Проведите вверх, чтобы начать",

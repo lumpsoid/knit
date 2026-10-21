@@ -25,6 +25,8 @@ class TimelineChannelBinder {
     switch (_reader.latestEvent) {
       case RefreshChannelEvent():
         _sink.dispatch(const RefreshRequested());
+      case CollectionDeletedChannelEvent(:final collectionId):
+        _sink.dispatch(CollectionDeleted(collectionId));
       case null:
         break;
     }

@@ -451,6 +451,15 @@ void main() {
       expect(eff.attachmentId, 'att-1');
     });
 
+    test('deleting the collection emits a delete for this collection', () {
+      final (next, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const CollectionDeleteRequested(),
+      );
+      expect(next.cards, hasLength(1));
+      expect((effects!.single as DeleteCollectionEffect).collectionId, 'col');
+    });
+
     test('delete of a text card carries no attachment id', () {
       final (_, effects) = updater.update(
         ready([card('c2', 'a0')]),
