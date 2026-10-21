@@ -19,6 +19,13 @@ class LoadCollectionEffect extends CollectionEffect {
   final FeedWindow window;
 }
 
+/// Read every card of [collectionId] for its Outline (§4.2), delivered as
+/// [OutlineCardsLoaded].
+class LoadOutlineEffect extends CollectionEffect {
+  const LoadOutlineEffect(this.collectionId);
+  final String collectionId;
+}
+
 /// Read up to [limit] cards of [collectionId] older than [before] (§8.7).
 class LoadOlderCardsEffect extends CollectionEffect {
   const LoadOlderCardsEffect({

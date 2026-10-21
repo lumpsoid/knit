@@ -4,6 +4,7 @@ import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/collection_outline.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
@@ -40,6 +41,7 @@ class CollectionUpdater
             collectionId: collectionId,
             status: CollectionStatus.loading,
             quickInput: quickInput,
+            focus: focusCardId == null ? null : _nextFocus(state, focusCardId),
           ),
           [
             LoadCollectionEffect(
@@ -86,6 +88,11 @@ class CollectionUpdater
             quickInput: state.quickInput,
             ownership: data.ownership,
             ownerHandle: data.ownerHandle,
+            outlineStatus: state.outlineStatus,
+            outline: state.outline,
+            // Kept until the feed reveals it: a resync landing first may not
+            // hold the card yet; the load reaching it follows.
+            focus: state.focus,
           ),
           [
             ShowFeedImagesEffect(_imageAttachments(data.cards)),
@@ -395,6 +402,40 @@ class CollectionUpdater
       case MoveTargetTailLoaded(:final target, :final lastPosition):
         return _moveSelection(state, target, lastPosition);
 
+      case OutlineRequested():
+        if (state.collectionId.isEmpty) return (state, null);
+        return (
+          state.copyWith(outlineStatus: OutlineStatus.loading),
+          [LoadOutlineEffect(state.collectionId)],
+        );
+
+      case OutlineCardsLoaded(:final cards):
+        return (
+          state.copyWith(
+            outlineStatus: OutlineStatus.ready,
+            outline: CollectionOutline.of(cards),
+          ),
+          null,
+        );
+
+      case OutlineLoadFailed():
+        return (state.copyWith(outlineStatus: OutlineStatus.failed), null);
+
+      case OutlineEntryChosen(:final cardId):
+        final focused = state.copyWith(focus: _nextFocus(state, cardId));
+        if (_cardById(state.cards, cardId) != null) return (focused, null);
+        // Not loaded yet: widen the window down to the card (the search-hit
+        // entry path); the feed reveals it once the load lands.
+        return (
+          focused,
+          [
+            LoadCollectionEffect(
+              state.collectionId,
+              FeedWindow.through(cardId, feedPageSize),
+            ),
+          ],
+        );
+
       case DeactivateFeature():
         // The composer releases the recorder itself, with the page.
         return (
@@ -465,6 +506,10 @@ class CollectionUpdater
       EmphasizeCardsEffect(change.cardIds, emphasized: change.emphasized),
     ];
   }
+
+  /// A fresh request to reveal [cardId], told apart from the current one.
+  static FeedFocus _nextFocus(CollectionState state, String cardId) =>
+      FeedFocus(cardId, (state.focus?.serial ?? 0) + 1);
 
   static FeedCard? _cardById(List<FeedCard> cards, String id) {
     for (final card in cards) {

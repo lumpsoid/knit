@@ -298,6 +298,15 @@ the `lib/sync/` core below.
   (`CreateMoveTargetEffect`, `CollectionWriteRepository.createCollection`)
   and moves into it as an empty tail. A title like an existing target
   offers "Move there" instead.
+- `collection` Outline (§4.2): the ⋮ sheet's **Outline** lists the emphasized
+  cards as headings (the `SlidePlanner` meaning). `OutlineRequested` reads the
+  whole feed through the narrow `CollectionOutlineReadRepository`, and the pure
+  `CollectionOutline` picks the entries and their one-line labels into
+  `CollectionState.outline` (`CollectionOutlineSheet`). A tapped row is
+  `OutlineEntryChosen`: it sets `CollectionState.focus` (a `FeedFocus` with a
+  serial, which the search-hit entry now sets too) and, for an unloaded card,
+  reloads `FeedWindow.through` it. `CollectionFeed` reveals each new focus once
+  its card is loaded. Imported collections offer it too.
 - Settled cards (§3.3): a nullable, synced `card.settled_at` (v5 migration),
   written by `SyncStore.setCardsSettled` on the content clock. The domain's
   `SettleChange` decides settle vs unsettle (all settled → unsettle). The

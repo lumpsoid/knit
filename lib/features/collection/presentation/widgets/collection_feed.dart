@@ -31,7 +31,8 @@ const double _kFeedEdgePadding = 8;
 ///
 /// Owns the feed's view-only state: the [SliverAnimatedList] mirror of
 /// [cards] (cards animate in and out), the scroll position, paging older cards
-/// in near the top (§8.7), and revealing [focusCardId] once on entry. The rows
+/// in near the top (§8.7), and revealing each [focus] request once its card is
+/// loaded (a search hit on entry, an Outline jump, §4.2). The rows
 /// themselves come from [cardBuilder] / [reorderRowBuilder].
 class CollectionFeed extends StatefulWidget {
   const CollectionFeed({
@@ -47,7 +48,7 @@ class CollectionFeed extends StatefulWidget {
     required this.onRefresh,
     required this.onReorder,
     required this.onHeaderMoved,
-    this.focusCardId,
+    this.focus,
   });
 
   /// The loaded window of the feed, oldest → newest.
@@ -86,9 +87,9 @@ class CollectionFeed extends StatefulWidget {
   /// A reorder-mode drag ended: move the card at `oldIndex` to `newIndex`.
   final void Function(int oldIndex, int newIndex) onReorder;
 
-  /// A card to reveal when the feed first appears (e.g. a search hit); ignored
-  /// if it isn't in [cards].
-  final String? focusCardId;
+  /// A card to reveal and highlight (e.g. a search hit or an Outline jump).
+  /// Each request is revealed once, as soon as its card is in [cards].
+  final FeedFocus? focus;
 
   @override
   State<CollectionFeed> createState() => _CollectionFeedState();
@@ -119,17 +120,18 @@ class _CollectionFeedState extends State<CollectionFeed> {
   final GlobalKey _focusCardKey = GlobalKey();
   Timer? _highlightTimer;
 
+  /// The last [CollectionFeed.focus] revealed, so each request runs once.
+  FeedFocus? _revealedFocus;
+
+  /// Bumped per reveal, so an older reveal still stepping stops.
+  int _revealRun = 0;
+
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_maybeLoadOlder);
     _reorderScroll.addListener(_reportHeaderMoved);
-    final focusId = widget.focusCardId;
-    if (focusId != null && widget.cards.any((c) => c.id == focusId)) {
-      _focusCardId = focusId;
-      _highlightFocus = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _revealFocusedCard());
-    }
+    _maybeRevealFocus();
     _scheduleLoadOlderCheck();
   }
 
@@ -137,7 +139,25 @@ class _CollectionFeedState extends State<CollectionFeed> {
   void didUpdateWidget(CollectionFeed oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.cards, widget.cards)) _syncList();
+    _maybeRevealFocus();
     _scheduleLoadOlderCheck();
+  }
+
+  /// Start revealing [CollectionFeed.focus] if it is a new request and its
+  /// card is loaded; a request whose card isn't loaded yet waits for the load
+  /// that brings it. Runs before the build that marks the row.
+  void _maybeRevealFocus() {
+    final focus = widget.focus;
+    if (focus == null || focus == _revealedFocus || widget.reordering) return;
+    if (!widget.cards.any((c) => c.id == focus.cardId)) return;
+    _revealedFocus = focus;
+    _highlightTimer?.cancel();
+    _focusCardId = focus.cardId;
+    _highlightFocus = true;
+    final run = ++_revealRun;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _revealFocusedCard(run);
+    });
   }
 
   @override
@@ -171,9 +191,13 @@ class _CollectionFeedState extends State<CollectionFeed> {
 
   /// Scroll the focused card into view. The feed builds lazily, so an older
   /// card's row may not exist yet: step up the (reversed) feed a screen at a
-  /// time until it is built, then center it. Then let the highlight fade.
-  Future<void> _revealFocusedCard() async {
+  /// time until it is built, then center it — or, once the top is reached
+  /// without it (a newer card, below the viewport), step back down. Then let
+  /// the highlight fade. A newer reveal ([run] behind [_revealRun]) takes over.
+  Future<void> _revealFocusedCard(int run) async {
+    var up = true;
     for (var step = 0; step < _kRevealMaxSteps; step++) {
+      if (run != _revealRun) return;
       final target = _focusCardKey.currentContext;
       if (target != null && target.mounted) {
         await Scrollable.ensureVisible(
@@ -186,16 +210,19 @@ class _CollectionFeedState extends State<CollectionFeed> {
       }
       if (!_scroll.hasClients) break;
       final position = _scroll.position;
-      if (position.pixels >= position.maxScrollExtent) break;
+      if (up && position.pixels >= position.maxScrollExtent) up = false;
+      if (!up && position.pixels <= position.minScrollExtent) break;
+      final stride = position.viewportDimension * 0.8;
       _scroll.jumpTo(
-        (position.pixels + position.viewportDimension * 0.8)
-            .clamp(0.0, position.maxScrollExtent)
+        (position.pixels + (up ? stride : -stride))
+            .clamp(position.minScrollExtent, position.maxScrollExtent)
             .toDouble(),
       );
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
     }
-    if (!mounted) return;
+    if (!mounted || run != _revealRun) return;
+    _highlightTimer?.cancel();
     _highlightTimer = Timer(_kFocusHighlight, () {
       if (mounted) setState(() => _highlightFocus = false);
     });

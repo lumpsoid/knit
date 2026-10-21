@@ -1155,6 +1155,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionMenuPresent => 'Present';
 
   @override
+  String get collectionMenuOutline => 'Outline';
+
+  @override
+  String get collectionOutlineTitle => 'Outline';
+
+  @override
+  String get collectionOutlineEmpty =>
+      'No headings yet. Emphasize a card to make it a heading: it shows up here, and opens a slide when you present.';
+
+  @override
+  String get collectionOutlineError => 'Couldn\'t load the outline.';
+
+  @override
   String get collectionMenuReorder => 'Reorder cards';
 
   @override

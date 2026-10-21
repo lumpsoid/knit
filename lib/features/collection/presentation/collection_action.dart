@@ -223,6 +223,29 @@ class MoveTargetTailLoaded extends CollectionAction {
   final String? lastPosition;
 }
 
+/// The ⋮ menu's Outline opened (§4.2): load the collection's headings.
+class OutlineRequested extends CollectionAction {
+  const OutlineRequested();
+}
+
+/// Delivery of [OutlineRequested]: the collection's whole feed, in order.
+class OutlineCardsLoaded extends CollectionAction {
+  const OutlineCardsLoaded(this.cards);
+  final List<FeedCard> cards;
+}
+
+/// Delivery of [OutlineRequested] on failure.
+class OutlineLoadFailed extends CollectionAction {
+  const OutlineLoadFailed();
+}
+
+/// An Outline row was tapped: reveal and highlight [cardId] in the feed,
+/// first loading the feed down to it when it isn't loaded yet.
+class OutlineEntryChosen extends CollectionAction {
+  const OutlineEntryChosen(this.cardId);
+  final String cardId;
+}
+
 class DeactivateFeature extends CollectionAction {
   const DeactivateFeature();
 }

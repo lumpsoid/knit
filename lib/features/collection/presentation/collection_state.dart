@@ -1,12 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/collection_outline.dart';
 
 enum CollectionStatus { loading, ready, failed }
 
 /// Where the move picker's list of target collections stands. [idle] until the
 /// user asks to move the selection; the picker shows a spinner while [loading].
 enum MoveTargetsStatus { idle, loading, ready, failed }
+
+/// Where the Outline sheet's list stands (§4.2). [idle] until the user opens
+/// it; the sheet shows a spinner while [loading].
+enum OutlineStatus { idle, loading, ready, failed }
 
 /// State for the Collection screen (§4.2). [reordering] is the *mode* of this
 /// screen (drag-to-reorder), not a separate screen — exactly as the spec frames
@@ -31,6 +36,9 @@ class CollectionState {
     this.quickInput = false,
     this.ownership = CollectionOwnership.own,
     this.ownerHandle,
+    this.outlineStatus = OutlineStatus.idle,
+    this.outline = const [],
+    this.focus,
   });
 
   final CollectionStatus status;
@@ -74,6 +82,16 @@ class CollectionState {
 
   /// The creator's `nickname#fingerprint` when [ownership] is imported.
   final String? ownerHandle;
+
+  /// The Outline (§4.2): the collection's emphasized cards, every one, in
+  /// feed order. Meaningful once [outlineStatus] is ready.
+  final OutlineStatus outlineStatus;
+  final List<OutlineEntry> outline;
+
+  /// The card the feed should reveal and highlight (an entry focus or an
+  /// Outline jump); null when none. It may name a card not loaded yet: the
+  /// load that reaches it is in flight, and the feed reveals it on arrival.
+  final FeedFocus? focus;
 
   /// Whether cards and the header may be written here.
   bool get canEdit => ownership.canEdit;
@@ -122,6 +140,9 @@ class CollectionState {
     bool? quickInput,
     CollectionOwnership? ownership,
     String? ownerHandle,
+    OutlineStatus? outlineStatus,
+    List<OutlineEntry>? outline,
+    FeedFocus? focus,
   }) => CollectionState(
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
@@ -138,5 +159,8 @@ class CollectionState {
     quickInput: quickInput ?? this.quickInput,
     ownership: ownership ?? this.ownership,
     ownerHandle: ownerHandle ?? this.ownerHandle,
+    outlineStatus: outlineStatus ?? this.outlineStatus,
+    outline: outline ?? this.outline,
+    focus: focus ?? this.focus,
   );
 }

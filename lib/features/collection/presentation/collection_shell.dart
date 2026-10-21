@@ -12,6 +12,7 @@ import 'package:knit/features/collection/domain/card_move_read_repository.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/collection_outline_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
@@ -34,6 +35,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required CollectionReadRepository readRepository,
     required CollectionWriteRepository writeRepository,
     required CardMoveReadRepository moveReadRepository,
+    required CollectionOutlineReadRepository outlineReadRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required AttachmentImageCache imageCache,
@@ -47,6 +49,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   }) : _read = readRepository,
        _write = writeRepository,
        _moveRead = moveReadRepository,
+       _outlineRead = outlineReadRepository,
        _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
        _images = imageCache,
@@ -61,6 +64,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final CollectionReadRepository _read;
   final CollectionWriteRepository _write;
   final CardMoveReadRepository _moveRead;
+  final CollectionOutlineReadRepository _outlineRead;
   final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
   final AttachmentImageCache _images;
@@ -127,6 +131,13 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
             failure.stackTrace,
           );
           dispatch(const OlderCardsLoadFailed());
+        });
+
+      case LoadOutlineEffect(:final collectionId):
+        final result = await _outlineRead.loadOutlineCards(collectionId);
+        result.onTap((cards) => dispatch(OutlineCardsLoaded(cards)), (failure) {
+          _log.severe('Outline load failed', failure.error, failure.stackTrace);
+          dispatch(const OutlineLoadFailed());
         });
 
       case ShowFeedImagesEffect(:final attachmentIds):

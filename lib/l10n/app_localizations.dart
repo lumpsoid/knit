@@ -2036,6 +2036,30 @@ abstract class AppLocalizations {
   /// **'Present'**
   String get collectionMenuPresent;
 
+  /// No description provided for @collectionMenuOutline.
+  ///
+  /// In en, this message translates to:
+  /// **'Outline'**
+  String get collectionMenuOutline;
+
+  /// No description provided for @collectionOutlineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Outline'**
+  String get collectionOutlineTitle;
+
+  /// No description provided for @collectionOutlineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No headings yet. Emphasize a card to make it a heading: it shows up here, and opens a slide when you present.'**
+  String get collectionOutlineEmpty;
+
+  /// No description provided for @collectionOutlineError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the outline.'**
+  String get collectionOutlineError;
+
   /// No description provided for @collectionMenuReorder.
   ///
   /// In en, this message translates to:

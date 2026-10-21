@@ -1182,6 +1182,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionMenuPresent => 'Показать';
 
   @override
+  String get collectionMenuOutline => 'Оглавление';
+
+  @override
+  String get collectionOutlineTitle => 'Оглавление';
+
+  @override
+  String get collectionOutlineEmpty =>
+      'Заголовков пока нет. Выделите карточку, чтобы сделать её заголовком: она появится здесь и откроет слайд при показе.';
+
+  @override
+  String get collectionOutlineError => 'Не удалось загрузить оглавление.';
+
+  @override
   String get collectionMenuReorder => 'Изменить порядок карточек';
 
   @override

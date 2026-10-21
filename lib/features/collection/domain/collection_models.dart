@@ -364,3 +364,21 @@ class MoveTarget {
   @override
   int get hashCode => Object.hash(collectionId, title);
 }
+
+/// A request to reveal card [cardId] in the feed and briefly highlight it: an
+/// entry focus (a search hit) or an Outline jump (§4.2). [serial] tells
+/// requests apart, so choosing the same card again reveals it again.
+@immutable
+class FeedFocus {
+  const FeedFocus(this.cardId, this.serial);
+
+  final String cardId;
+  final int serial;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FeedFocus && other.cardId == cardId && other.serial == serial;
+
+  @override
+  int get hashCode => Object.hash(cardId, serial);
+}

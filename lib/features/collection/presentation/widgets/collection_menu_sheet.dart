@@ -3,6 +3,7 @@ import 'package:knit/l10n/app_localizations.dart';
 
 enum CollectionMenuAction {
   present,
+  outline,
   reorder,
   shareFile,
   delete,
@@ -10,10 +11,10 @@ enum CollectionMenuAction {
   remove,
 }
 
-/// The Collection app bar's ⋮ sheet: Present (§4.9), Reorder (§4.2), Share
-/// as file (docs/collection_share.md) and Delete. An imported collection
-/// offers Present, Save a copy, Share as file (re-shared verbatim) and
-/// Remove instead.
+/// The Collection app bar's ⋮ sheet: Present (§4.9), Outline and Reorder
+/// (§4.2), Share as file (docs/collection_share.md) and Delete. An imported
+/// collection offers Present, Outline, Save a copy, Share as file (re-shared
+/// verbatim) and Remove instead.
 class CollectionMenuSheet extends StatelessWidget {
   const CollectionMenuSheet({
     super.key,
@@ -46,6 +47,12 @@ class CollectionMenuSheet extends StatelessWidget {
             enabled: canPresent,
             onTap: () =>
                 Navigator.of(context).pop(CollectionMenuAction.present),
+          ),
+          ListTile(
+            leading: const Icon(Icons.toc),
+            title: Text(l10n.collectionMenuOutline),
+            onTap: () =>
+                Navigator.of(context).pop(CollectionMenuAction.outline),
           ),
           if (canReorder)
             ListTile(

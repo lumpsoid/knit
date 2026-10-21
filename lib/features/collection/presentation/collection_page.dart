@@ -31,6 +31,7 @@ import 'package:knit/features/collection/presentation/widgets/collection_error_v
 import 'package:knit/features/collection/presentation/widgets/collection_feed.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_header_bar.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_menu_sheet.dart';
+import 'package:knit/features/collection/presentation/widgets/collection_outline_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/read_only_footer.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_title_card.dart';
 import 'package:knit/features/collection/presentation/widgets/move_target_sheet.dart';
@@ -71,10 +72,6 @@ class _CollectionPageState extends State<CollectionPage> {
   AudioPlaybackController get _playback => CollectionScope.playbackController;
   final TextEditingController _composer = TextEditingController();
 
-  /// A card the route args asked to reveal on entry (e.g. a search hit). The
-  /// feed reveals it when it first appears.
-  late final String? _focusCardId = CollectionScope.routeArgs.focusCardId;
-
   /// Opened from a widget's quick input: the composer takes focus on entry.
   late final bool _quickInput = CollectionScope.routeArgs.quickInput;
 
@@ -90,7 +87,7 @@ class _CollectionPageState extends State<CollectionPage> {
       ..dispatch(
         ViewAttached(
           CollectionScope.routeArgs.collectionId,
-          focusCardId: _focusCardId,
+          focusCardId: CollectionScope.routeArgs.focusCardId,
           quickInput: _quickInput,
         ),
       );
@@ -242,8 +239,8 @@ class _CollectionPageState extends State<CollectionPage> {
     }
   }
 
-  /// The app bar's ⋮ sheet: present the collection (§4.9), reorder or delete
-  /// it.
+  /// The app bar's ⋮ sheet: present the collection (§4.9), open its outline,
+  /// reorder or delete it.
   Future<void> _openMenu(CollectionState state) async {
     final action = await showModalBottomSheet<CollectionMenuAction>(
       context: context,
@@ -257,6 +254,8 @@ class _CollectionPageState extends State<CollectionPage> {
     switch (action) {
       case CollectionMenuAction.present:
         await _openPresent(state.collectionId);
+      case CollectionMenuAction.outline:
+        await _openOutline();
       case CollectionMenuAction.reorder:
         _controller.dispatch(const StartReorder());
       case CollectionMenuAction.shareFile:
@@ -268,6 +267,25 @@ class _CollectionPageState extends State<CollectionPage> {
       case CollectionMenuAction.remove:
         await _confirmRemove(state.collectionId);
     }
+  }
+
+  /// The Outline (§4.2): load the collection's headings, let the user pick
+  /// one, then reveal it in the feed.
+  Future<void> _openOutline() async {
+    _controller.dispatch(const OutlineRequested());
+    final cardId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ValueListenableBuilder<CollectionState>(
+        valueListenable: _controller.stateHolder,
+        builder: (context, state, _) => CollectionOutlineSheet(
+          status: state.outlineStatus,
+          entries: state.outline,
+        ),
+      ),
+    );
+    if (cardId == null || !mounted) return;
+    _controller.dispatch(OutlineEntryChosen(cardId));
   }
 
   /// "Save a copy" of an imported collection (§10.5 fork): the copy opens in
@@ -880,7 +898,7 @@ class _CollectionPageState extends State<CollectionPage> {
     hasOlder: state.hasOlder,
     loadingOlder: state.loadingOlder,
     reordering: state.reordering,
-    focusCardId: _focusCardId,
+    focus: state.focus,
     header: _titleCard(
       collectionId: state.collectionId,
       connectionCount: state.connectionCount,

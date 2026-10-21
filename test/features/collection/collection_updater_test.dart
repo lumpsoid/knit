@@ -5,7 +5,9 @@ import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/collection_outline.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
@@ -1138,6 +1140,129 @@ void main() {
         const FeedCard(id: 'c1', kind: CardKind.image, position: 'a0'),
       ]).copyWith(selectedCardIds: {'c1'});
       expect(state.selectionCopyText, isEmpty);
+    });
+  });
+
+  group('outline (§4.2)', () {
+    FeedCard heading(String id, String position) => FeedCard(
+      id: id,
+      kind: CardKind.text,
+      position: position,
+      text: id,
+      emphasizedAt: 1,
+    );
+
+    test('opening loads the whole collection\'s cards', () {
+      final (next, effects) = updater.update(
+        ready([card('c1', 'a1')]),
+        const OutlineRequested(),
+      );
+      expect(next.outlineStatus, OutlineStatus.loading);
+      expect((effects!.single as LoadOutlineEffect).collectionId, 'col');
+    });
+
+    test('the loaded cards become the emphasized headings, in order', () {
+      final (next, effects) = updater.update(
+        ready([]).copyWith(outlineStatus: OutlineStatus.loading),
+        OutlineCardsLoaded([
+          heading('h1', 'a1'),
+          card('c2', 'a2'),
+          heading('h3', 'a3'),
+        ]),
+      );
+      expect(effects, isNull);
+      expect(next.outlineStatus, OutlineStatus.ready);
+      expect(next.outline, const [
+        OutlineEntry(cardId: 'h1', kind: CardKind.text, label: 'h1'),
+        OutlineEntry(cardId: 'h3', kind: CardKind.text, label: 'h3'),
+      ]);
+    });
+
+    test('a failed load says so', () {
+      final (next, _) = updater.update(
+        ready([]).copyWith(outlineStatus: OutlineStatus.loading),
+        const OutlineLoadFailed(),
+      );
+      expect(next.outlineStatus, OutlineStatus.failed);
+    });
+
+    test('works in a read-only (imported) collection', () {
+      final imported = ready([
+        card('c1', 'a1'),
+      ]).copyWith(ownership: CollectionOwnership.imported);
+      final (opened, effects) = updater.update(
+        imported,
+        const OutlineRequested(),
+      );
+      expect(effects!.single, isA<LoadOutlineEffect>());
+      final (jumped, _) = updater.update(
+        opened,
+        const OutlineEntryChosen('c1'),
+      );
+      expect(jumped.focus?.cardId, 'c1');
+    });
+
+    test('choosing a loaded card focuses it without a load', () {
+      final (next, effects) = updater.update(
+        ready([card('c1', 'a1'), card('c2', 'a2')]),
+        const OutlineEntryChosen('c1'),
+      );
+      expect(effects, isNull);
+      expect(next.focus?.cardId, 'c1');
+    });
+
+    test('choosing the same card again is a new request', () {
+      final (first, _) = updater.update(
+        ready([card('c1', 'a1')]),
+        const OutlineEntryChosen('c1'),
+      );
+      final (second, _) = updater.update(first, const OutlineEntryChosen('c1'));
+      expect(second.focus, isNot(first.focus));
+      expect(second.focus?.cardId, 'c1');
+    });
+
+    test('choosing an unloaded card loads the feed down to it', () {
+      final (next, effects) = updater.update(
+        ready([
+          card('c9', 'a9'),
+        ]).copyWith(olderBoundary: const FeedCursor('a8', 'c8')),
+        const OutlineEntryChosen('c1'),
+      );
+      expect(next.focus?.cardId, 'c1');
+      final load = effects!.single as LoadCollectionEffect;
+      expect(load.collectionId, 'col');
+      final window = load.window as ThroughFeedWindow;
+      expect(window.cardId, 'c1');
+      expect(window.minLimit, CollectionUpdater.feedPageSize);
+    });
+
+    test('the focus survives the load that brings its card', () {
+      final (chosen, _) = updater.update(
+        ready([card('c9', 'a9')]),
+        const OutlineEntryChosen('c1'),
+      );
+      final (loaded, _) = updater.update(
+        chosen,
+        CollectionLoaded(
+          CollectionData(
+            collectionId: 'col',
+            title: 'T',
+            description: null,
+            coverAttachmentId: null,
+            cards: [card('c1', 'a1'), card('c9', 'a9')],
+          ),
+        ),
+      );
+      expect(loaded.focus, chosen.focus);
+      expect(loaded.cards.map((c) => c.id), ['c1', 'c9']);
+    });
+
+    test('a search-hit entry is a focus request too', () {
+      final (next, _) = updater.update(
+        const CollectionState(),
+        const ViewAttached('col-1', focusCardId: 'hit'),
+      );
+      expect(next.focus?.cardId, 'hit');
     });
   });
 }

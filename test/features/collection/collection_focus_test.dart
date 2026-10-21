@@ -14,6 +14,7 @@ import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
 import 'package:knit/features/collection/infra/sync_store_card_move_read_repository.dart';
+import 'package:knit/features/collection/infra/sync_store_collection_outline_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
@@ -162,6 +163,9 @@ void main() {
           ids: ids,
         ),
         moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
+        outlineReadRepository: SyncStoreCollectionOutlineReadRepository(
+          graph: graph,
+        ),
         attachmentReadRepository: SyncStoreAttachmentReadRepository(
           graph: graph,
         ),
@@ -369,5 +373,83 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1 selected'), findsNothing);
     expect(find.byType(CollectionPage), findsOneWidget);
+  });
+
+  group('outline (§4.2)', () {
+    Future<void> openOutline(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Outline'));
+      await settle(tester);
+    }
+
+    testWidgets('lists every emphasized card and jumps to an unloaded one', (
+      tester,
+    ) async {
+      await seed(tester);
+      routeArgs.open(routeArgs.collectionId);
+      await tester.runAsync(
+        () => graph.store.setCardsEmphasized([
+          cardIds[2],
+          cardIds[cardCount - 3],
+        ], emphasized: true),
+      );
+      await pumpPage(tester);
+      // The first page holds the newest cards only.
+      expect(find.text('card 2', skipOffstage: false), findsNothing);
+
+      await openOutline(tester);
+      final sheet = find.byType(BottomSheet);
+      expect(
+        find.descendant(of: sheet, matching: find.text('card 2')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: sheet,
+          matching: find.text('card ${cardCount - 3}'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.descendant(of: sheet, matching: find.text('card 2')),
+      );
+      await settle(tester);
+
+      expect(find.byType(BottomSheet), findsNothing);
+      final focused = find.text('card 2');
+      expect(focused, findsOneWidget);
+      final viewport = tester.getRect(find.byType(CustomScrollView));
+      expect(viewport.overlaps(tester.getRect(focused)), isTrue);
+      expect(find.text('card ${cardCount - 1}'), findsNothing);
+
+      // And back down to a newer heading, below the viewport now.
+      await openOutline(tester);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('card ${cardCount - 3}'),
+        ),
+      );
+      await settle(tester);
+      final newer = find.text('card ${cardCount - 3}');
+      expect(newer, findsOneWidget);
+      expect(viewport.overlaps(tester.getRect(newer)), isTrue);
+      expect(find.text('card 2'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('with no emphasized card the sheet explains headings', (
+      tester,
+    ) async {
+      await seed(tester);
+      routeArgs.open(routeArgs.collectionId);
+      await pumpPage(tester);
+
+      await openOutline(tester);
+      expect(find.textContaining('No headings yet'), findsOneWidget);
+    });
   });
 }

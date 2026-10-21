@@ -10,6 +10,7 @@ import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
 import 'package:knit/features/collection/infra/sync_store_card_move_read_repository.dart';
+import 'package:knit/features/collection/infra/sync_store_collection_outline_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -85,6 +86,9 @@ void main() {
       readRepository: SyncStoreCollectionReadRepository(graph: graph),
       writeRepository: write,
       moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
+      outlineReadRepository: SyncStoreCollectionOutlineReadRepository(
+        graph: graph,
+      ),
       attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
       attachmentWriteRepository: attachmentWrite,
       imageCache: AttachmentImageCache(
@@ -429,5 +433,30 @@ void main() {
     ).loadCollection(col)).getOrThrow();
     expect(data.cards.single.emphasized, isTrue);
     expect(data.cards.single.settled, isFalse);
+  });
+
+  test('the outline read delivers the whole feed, older pages too', () async {
+    final col = (await timelineWrite.createCollection('Long')).getOrThrow();
+    final ids = <String>[];
+    var position = 'a0';
+    for (var i = 0; i < 3; i++) {
+      ids.add(
+        (await write.addCard(
+          collectionId: col,
+          kind: CardKind.text,
+          position: position,
+          text: 'card $i',
+        )).getOrThrow(),
+      );
+      position = 'a${i + 1}';
+    }
+    await write.setCardsEmphasized([ids[0]], emphasized: true);
+
+    final actions = <CollectionAction>[];
+    await shell.run(LoadOutlineEffect(col), dispatch: actions.add);
+
+    final cards = (actions.single as OutlineCardsLoaded).cards;
+    expect(cards.map((c) => c.id), ids);
+    expect(cards.first.emphasized, isTrue);
   });
 }

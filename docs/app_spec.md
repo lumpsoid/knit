@@ -100,6 +100,8 @@ history, so a card can instead be **settled**.
   unsettles it, and settling an emphasized card clears the emphasis.
 - **Emphasize / Unemphasize** sits beside Settle in the actions sheet, the multi-select bar
   (same all-or-nothing rule) and Card Edit.
+- An emphasized card also acts as a **heading**: it is an entry in the collection's
+  **Outline** (§4.2) and opens a slide in **Present** (§4.9). A settled card is never one.
 - Data: one nullable `emphasized_at` on `card` (ms), written exactly like `settled_at`; the
   write that sets one mark nulls the other in the same op.
 
@@ -172,7 +174,13 @@ deleted. Archiving takes it off the home timeline without losing anything.
   a 2×2 grid with a "+N" on the last tile); a tap opens the full-screen viewer on that image.
 - **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle · emphasize/unemphasize (§3.3) ·
   delete.
-- **⋮ menu** in the app bar opens a sheet with **Present** (§4.9) and **Reorder**.
+- **⋮ menu** in the app bar opens a sheet with **Present** (§4.9), **Outline** and
+  **Reorder**. **Outline** lists every emphasized card of the collection (§3.3), not just
+  the loaded pages, in feed order, one line each: the first line of its text, else its file
+  name or kind. With none it explains that emphasized cards appear there as headings. A tap
+  closes the sheet and scrolls the feed to that card with the search-hit reveal and
+  highlight, loading older cards down to it first when needed. It is read-only navigation,
+  so imported collections offer it too.
 - **Reorder mode** — drag-to-reorder, a *state of this screen*, not a separate screen.
   **Reorder applies only to cards within this collection**; there is no reordering on Home.
 - **Multi-select mode** — long-press a card to select it; while selecting, a tap toggles a
