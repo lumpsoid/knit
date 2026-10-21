@@ -182,8 +182,7 @@ class CollectionEditShell
     }
     final media = result.getOrThrow();
     final previewIds = [
-      for (final photo in media.recentPhotos(_previewCount))
-        photo.attachmentId!,
+      for (final photo in media.recentPhotos(_previewCount)) photo.attachmentId,
     ];
     dispatch(MediaSummaryLoaded(counts: media.counts, previewIds: previewIds));
     await _images.show(_previewImages, previewIds);

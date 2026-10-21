@@ -252,7 +252,8 @@ each place. **Present** in the Collection screen's ⋮ sheet opens it from the s
   - slide 0 is a **title slide**: the cover, title and description;
   - **settled cards are left out** (§3.3);
   - a run of consecutive **images opens a slide**, and the cards after it join that
-    slide until the next image;
+    slide until the next image; a card with several images (§4.2) puts each of them in
+    the slide's carousel;
   - an **emphasized card opens a slide** as its heading. If it directly follows a
     slide's images it heads them instead, and images directly after a lone heading
     join it. This splits a text-only collection into sections;

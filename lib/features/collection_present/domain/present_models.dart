@@ -32,6 +32,7 @@ class PresentCard {
     required this.kind,
     this.text,
     this.attachmentId,
+    this.moreAttachmentIds = const [],
     this.fileName,
     this.settled = false,
     this.emphasized = false,
@@ -44,6 +45,13 @@ class PresentCard {
   /// A note's body, a link card's URL, or a media card's caption.
   final String? text;
   final String? attachmentId;
+
+  /// An image card's further images after [attachmentId] (§4.2).
+  final List<String> moreAttachmentIds;
+
+  /// An image card's images, in order; empty for every other kind.
+  List<String> get imageIds =>
+      kind == CardKind.image ? [?attachmentId, ...moreAttachmentIds] : const [];
 
   /// An audio or file card's original file name.
   final String? fileName;
@@ -89,9 +97,9 @@ class TitleSlide extends Slide {
   final String? coverAttachmentId;
 }
 
-/// A slide of [cards] in feed order: its [images] are pinned on top (a
-/// carousel when there are several) and its [notes] — the text, link, audio
-/// and file cards — sit below.
+/// A slide of [cards] in feed order: its [images] (the image cards, each with
+/// all its images) are pinned on top (a carousel when there are several) and
+/// its [notes] — the text, link, audio and file cards — sit below.
 class CardSlide extends Slide {
   CardSlide(this.cards) : assert(cards.isNotEmpty);
 

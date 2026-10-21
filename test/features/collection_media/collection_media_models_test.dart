@@ -108,7 +108,28 @@ void main() {
     });
 
     test('recentPhotos takes the newest photos only', () {
-      expect(media.recentPhotos(2).map((i) => i.cardId), ['e', 'c']);
+      expect(media.recentPhotos(2).map((p) => p.item.cardId), ['e', 'c']);
+    });
+
+    test('a card with several images counts and lists each, in order', () {
+      final many = CollectionMedia([
+        MediaItem.fromCard(
+          cardId: 'm',
+          cardKind: CardKind.image,
+          capturedAt: DateTime(2026, 6),
+          attachmentId: 'p1',
+          moreAttachmentIds: const ['p2', 'p3'],
+        )!,
+        item('a', CardKind.image, DateTime(2026, 3, 2)),
+      ]);
+      expect(many.counts.photos, 4);
+      expect(many.photos.map((p) => (p.attachmentId, p.index)), [
+        ('p1', 0),
+        ('p2', 1),
+        ('p3', 2),
+        ('att', 0),
+      ]);
+      expect(many.recentPhotos(2).map((p) => p.attachmentId), ['p1', 'p2']);
     });
 
     test('byCardId finds an item or returns null', () {

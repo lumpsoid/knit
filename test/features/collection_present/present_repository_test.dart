@@ -84,6 +84,21 @@ void main() {
     expect(cards['e']!.emphasized, isTrue);
   });
 
+  test('carries every image of a card with several, in order', () async {
+    await addCollection('col', 'Old town');
+    await store.create(EntityType.card, 'p', {
+      'collection_id': 'col',
+      'kind': 'image',
+      'attachment_id': 'i1',
+      CardSchema.colMoreAttachmentIds: CardSchema.encodeMoreAttachmentIds([
+        'i2',
+        'i3',
+      ]),
+    }, position: 'a1');
+
+    expect((await load()).cards.single.imageIds, ['i1', 'i2', 'i3']);
+  });
+
   test("names an audio card by its attachment's file name", () async {
     await addCollection('col', 'Old town');
     await store.create(EntityType.attachment, 'att', {

@@ -10,7 +10,8 @@ Object presentImageHeroTag(String id) => 'present-image-$id';
 class SlidePhoto {
   const SlidePhoto({required this.id, required this.bytes, this.caption});
 
-  /// The card (or cover) the photo belongs to; keys its [Hero].
+  /// The card (or cover) the photo belongs to, with the image's place on a
+  /// card of several (§4.2); keys its [Hero].
   final String id;
 
   /// Decoded bytes; null while loading or missing.

@@ -78,6 +78,7 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
       collectionId: CollectionMediaScope.routeArgs.collectionId,
       initialText: item.text ?? '',
       initialAttachmentId: item.attachmentId,
+      initialMoreAttachmentIds: item.moreAttachmentIds,
       initialAttachmentKind: item.attachmentId == null
           ? null
           : item.kind.cardKind,
@@ -88,20 +89,22 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
     if (mounted) _controller.dispatch(const ReloadRequested());
   }
 
-  /// Open the swipeable zoom gallery over every loaded photo (newest first),
-  /// starting at [item].
-  void _openGallery(CollectionMediaState state, MediaItem item) {
+  /// Open the swipeable zoom gallery over every loaded photo (newest card
+  /// first), starting at [start].
+  void _openGallery(CollectionMediaState state, MediaPhoto start) {
     final images = <GalleryImage>[];
     var initialIndex = 0;
-    for (final photo in state.media.ofKind(MediaKind.photo)) {
-      final bytes = CollectionMediaScope.images.of(photo.attachmentId!);
+    for (final photo in state.media.photos) {
+      final bytes = CollectionMediaScope.images.of(photo.attachmentId);
       if (bytes == null) continue;
-      if (photo.cardId == item.cardId) initialIndex = images.length;
+      if (photo.attachmentId == start.attachmentId) {
+        initialIndex = images.length;
+      }
       images.add(
         GalleryImage(
           bytes: bytes,
-          heroTag: _photoHeroTag(photo.cardId),
-          caption: photo.caption,
+          heroTag: _photoHeroTag(photo),
+          caption: photo.item.caption,
         ),
       );
     }
@@ -193,31 +196,31 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
     );
   }
 
-  Widget _photoGrid(CollectionMediaState state, List<MediaItem> photos) =>
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        sliver: SliverGrid.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 2,
-            crossAxisSpacing: 2,
-          ),
-          itemCount: photos.length,
-          itemBuilder: (context, i) {
-            final photo = photos[i];
-            final bytes = CollectionMediaScope.images.of(photo.attachmentId!);
-            return _PhotoTile(
-              heroTag: _photoHeroTag(photo.cardId),
-              bytes: bytes,
-              missing: CollectionMediaScope.images.isMissing(
-                photo.attachmentId!,
-              ),
-              onTap: bytes == null ? null : () => _openGallery(state, photo),
-              onLongPress: () => _openCard(photo),
-            );
-          },
+  Widget _photoGrid(CollectionMediaState state, List<MediaItem> items) {
+    final photos = MediaPhoto.of(items);
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      sliver: SliverGrid.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 2,
+          crossAxisSpacing: 2,
         ),
-      );
+        itemCount: photos.length,
+        itemBuilder: (context, i) {
+          final photo = photos[i];
+          final bytes = CollectionMediaScope.images.of(photo.attachmentId);
+          return _PhotoTile(
+            heroTag: _photoHeroTag(photo),
+            bytes: bytes,
+            missing: CollectionMediaScope.images.isMissing(photo.attachmentId),
+            onTap: bytes == null ? null : () => _openGallery(state, photo),
+            onLongPress: () => _openCard(photo.item),
+          );
+        },
+      ),
+    );
+  }
 
   Widget _row(MediaItem item, String locale) {
     final date = DateFormat.yMMMd(locale).format(item.capturedAt);
@@ -262,7 +265,8 @@ class _CollectionMediaPageState extends State<CollectionMediaPage> {
 
 /// Hero tag shared by a photo tile and its gallery page. Distinct from the
 /// Collection feed's tags so the two routes never collide.
-Object _photoHeroTag(String cardId) => 'media-photo-$cardId';
+Object _photoHeroTag(MediaPhoto photo) =>
+    'media-photo-${photo.item.cardId}-${photo.index}';
 
 class _MonthHeader extends StatelessWidget {
   const _MonthHeader({required this.label});

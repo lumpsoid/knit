@@ -44,6 +44,9 @@ class SyncStoreCollectionMediaReadRepository
           capturedAt: DateTime.fromMillisecondsSinceEpoch(card.createdAt),
           text: card.content['text'] as String?,
           attachmentId: attachmentId,
+          moreAttachmentIds: CardSchema.decodeMoreAttachmentIds(
+            card.content[CardSchema.colMoreAttachmentIds],
+          ),
           fileName: fileName,
           fileSize: fileSize,
         );

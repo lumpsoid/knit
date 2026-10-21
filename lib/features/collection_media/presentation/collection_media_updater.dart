@@ -1,5 +1,4 @@
 import 'package:fcis_core/fcis_core.dart';
-import 'package:knit/features/collection_media/domain/collection_media_models.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_action.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_effect.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_state.dart';
@@ -43,8 +42,7 @@ class CollectionMediaUpdater
           state.copyWith(status: CollectionMediaStatus.ready, media: media),
           [
             ShowPhotosEffect([
-              for (final photo in media.ofKind(MediaKind.photo))
-                photo.attachmentId!,
+              for (final photo in media.photos) photo.attachmentId,
             ]),
           ],
         );

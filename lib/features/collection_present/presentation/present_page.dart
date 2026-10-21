@@ -225,13 +225,15 @@ class _PresentPageState extends State<PresentPage> {
           onPrevious: _previous,
         );
       case CardSlide(images: final imageCards, :final notes):
+        // A card with several images (§4.2) gives the carousel each of them.
         final photos = [
           for (final c in imageCards)
-            SlidePhoto(
-              id: c.id,
-              bytes: c.attachmentId == null ? null : images.of(c.attachmentId!),
-              caption: c.text,
-            ),
+            for (final (i, id) in c.imageIds.indexed)
+              SlidePhoto(
+                id: i == 0 ? c.id : '${c.id}-$i',
+                bytes: images.of(id),
+                caption: c.text,
+              ),
         ];
         return CardSlideView(
           photos: photos,

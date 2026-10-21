@@ -100,6 +100,9 @@ class SyncStorePresentReadRepository implements PresentReadRepository {
       kind: CardKind.fromTag(row.content['kind'] as String?),
       text: row.content['text'] as String?,
       attachmentId: row.content['attachment_id'] as String?,
+      moreAttachmentIds: CardSchema.decodeMoreAttachmentIds(
+        row.content[CardSchema.colMoreAttachmentIds],
+      ),
       fileName: withMeta
           ? att.content[AttachmentSchema.colName] as String?
           : null,

@@ -46,6 +46,7 @@ class MediaItem {
     required this.capturedAt,
     this.text,
     this.attachmentId,
+    this.moreAttachmentIds = const [],
     this.fileName,
     this.fileSize,
   });
@@ -58,6 +59,7 @@ class MediaItem {
     required DateTime capturedAt,
     String? text,
     String? attachmentId,
+    List<String> moreAttachmentIds = const [],
     String? fileName,
     int? fileSize,
   }) {
@@ -71,6 +73,7 @@ class MediaItem {
       capturedAt: capturedAt,
       text: text,
       attachmentId: kind.hasAttachment ? attachmentId : null,
+      moreAttachmentIds: kind == MediaKind.photo ? moreAttachmentIds : const [],
       fileName: fileName,
       fileSize: fileSize,
     );
@@ -86,8 +89,17 @@ class MediaItem {
   /// The card body: a caption for photo/audio/file, the URL for a link.
   final String? text;
 
-  /// `attachment_id` for photo/audio/file; null for a link.
+  /// `attachment_id` for photo/audio/file; null for a link. A photo card's
+  /// first image.
   final String? attachmentId;
+
+  /// A photo card's further images after [attachmentId] (§4.2).
+  final List<String> moreAttachmentIds;
+
+  /// A photo card's images, in order; empty for every other kind.
+  List<String> get photoIds => kind == MediaKind.photo
+      ? [?attachmentId, ...moreAttachmentIds]
+      : const [];
 
   /// For audio/file, the attachment's original name and byte size (§7.4.8);
   /// null for an in-app recording and for photos/links.
@@ -102,6 +114,29 @@ class MediaItem {
 
   /// A link's URL to open (its trimmed body); null for every other kind.
   String? get url => kind == MediaKind.link ? caption : null;
+}
+
+/// One image of a photo card in the overview: the [item] it belongs to and
+/// its place [index] on the card (§4.2).
+@immutable
+class MediaPhoto {
+  const MediaPhoto({
+    required this.item,
+    required this.index,
+    required this.attachmentId,
+  });
+
+  final MediaItem item;
+  final int index;
+  final String attachmentId;
+
+  /// Every image of the photo cards among [items], card by card, each card's
+  /// images in order.
+  static List<MediaPhoto> of(Iterable<MediaItem> items) => [
+    for (final item in items)
+      for (final (index, id) in item.photoIds.indexed)
+        MediaPhoto(item: item, index: index, attachmentId: id),
+  ];
 }
 
 /// One month's worth of [items] (newest first), headed by [month] (the 1st).
@@ -162,7 +197,7 @@ class CollectionMedia {
     for (final item in items) {
       switch (item.kind) {
         case MediaKind.photo:
-          photos++;
+          photos += item.photoIds.length;
         case MediaKind.audio:
           audio++;
         case MediaKind.file:
@@ -179,9 +214,11 @@ class CollectionMedia {
     );
   }
 
+  /// Every image of the photo cards, newest card first.
+  List<MediaPhoto> get photos => MediaPhoto.of(ofKind(MediaKind.photo));
+
   /// The newest [count] photos — the summary row's thumbnail strip.
-  List<MediaItem> recentPhotos(int count) =>
-      ofKind(MediaKind.photo).take(count).toList();
+  List<MediaPhoto> recentPhotos(int count) => photos.take(count).toList();
 
   MediaItem? byCardId(String cardId) {
     for (final item in items) {

@@ -148,9 +148,7 @@ class PresentController {
         for (final slide in slides.sublist(from, to))
           ...switch (slide) {
             TitleSlide(:final coverAttachmentId) => [?coverAttachmentId],
-            CardSlide(:final images) => [
-              for (final c in images) ?c.attachmentId,
-            ],
+            CardSlide(:final images) => [for (final c in images) ...c.imageIds],
           },
       ]),
     );
