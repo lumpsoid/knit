@@ -1,4 +1,6 @@
 import 'package:logging/logging.dart';
+import 'package:knit/core/recents/domain/recent_targets.dart';
+import 'package:knit/core/recents/domain/recent_targets_repository.dart';
 import 'package:knit/features/card_links/domain/card_links_failure.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/domain/card_links_write_repository.dart';
@@ -13,18 +15,25 @@ import 'package:result_dart/result_dart.dart';
 /// Connections view clearing a broken link).
 ///
 /// The picker reads one level at a time into [state]. Each write returns its
-/// [Result] so the calling feature can react (resync, message).
+/// [Result] so the calling feature can react (resync, message). A link to a
+/// collection is remembered for the picker's device-local "Recent" row.
 class CardLinksController {
   CardLinksController({
     required LinkTargetsReadRepository readRepository,
     required CardLinksWriteRepository writeRepository,
+    required RecentTargetsReadRepository recentsReadRepository,
+    required RecentTargetsWriteRepository recentsWriteRepository,
     Logger? logger,
   }) : _read = readRepository,
        _write = writeRepository,
+       _recentsRead = recentsReadRepository,
+       _recentsWrite = recentsWriteRepository,
        _log = logger ?? Logger('knit.card_links');
 
   final LinkTargetsReadRepository _read;
   final CardLinksWriteRepository _write;
+  final RecentTargetsReadRepository _recentsRead;
+  final RecentTargetsWriteRepository _recentsWrite;
   final Logger _log;
 
   final CardLinksState state = CardLinksState();
@@ -34,10 +43,12 @@ class CardLinksController {
   int _session = 0;
 
   /// Open the picker for [source]: start a fresh session and load the
-  /// collections level. A failed read shows an empty list.
+  /// collections level with the recently linked ones. A failed read shows an
+  /// empty list; failed recents show no "Recent" row.
   Future<void> openPicker(LinkPick source) async {
     final session = ++_session;
     state.startPicking(source);
+    final recents = await _recentsRead.load(RecentPurpose.link);
     final result = await _read.loadCollections();
     if (session != _session) return;
     state.showCollections(
@@ -48,6 +59,10 @@ class CardLinksController {
           failure.stackTrace,
         );
         return const [];
+      }),
+      recents: recents.fold((recents) => recents, (failure) {
+        _log.warning('Recent link targets load failed', failure.error);
+        return const RecentTargets();
       }),
     );
   }
@@ -71,16 +86,27 @@ class CardLinksController {
     );
   }
 
-  /// Link [sourceCardId] to the [targetKind] entity [targetId].
+  /// Link [sourceCardId] to the [targetKind] entity [targetId]. A collection
+  /// linked to is remembered as recent once the link is written.
   Future<Result<String, CardLinksFailure>> link({
     required String sourceCardId,
     required ConnectedEntityKind targetKind,
     required String targetId,
-  }) => _write.addLink(
-    sourceCardId: sourceCardId,
-    targetKind: targetKind,
-    targetId: targetId,
-  );
+  }) async {
+    final result = await _write.addLink(
+      sourceCardId: sourceCardId,
+      targetKind: targetKind,
+      targetId: targetId,
+    );
+    if (result.isSuccess && targetKind == ConnectedEntityKind.collection) {
+      // Non-fatal: the link is written either way.
+      (await _recentsWrite.record(RecentPurpose.link, targetId)).onFailure(
+        (failure) =>
+            _log.warning('Recent link target save failed', failure.error),
+      );
+    }
+    return result;
+  }
 
   /// Remove the link [linkId] (also clears a broken link, §8.6.1).
   Future<Result<String, CardLinksFailure>> unlink(String linkId) =>

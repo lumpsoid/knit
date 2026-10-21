@@ -11,6 +11,7 @@ import 'package:knit/app/composition.dart';
 import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/core/files/infra/infra.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
+import 'package:knit/core/recents/infra/infra.dart';
 import 'package:knit/features/backup/infra/argon2_identity_key_cipher.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_export_repository.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_import_repository.dart';
@@ -307,12 +308,18 @@ void bootstrap(AppConfig config) {
   CollectionScope.setCollectionDetails(collectionDetails.state);
   CollectionEditScope.setCollectionDetails(collectionDetails.state);
 
+  // The pickers' "Recent" rows (§4.2/§4.4): the collections last moved into
+  // and linked to — device-local view state like pins, never synced.
+  const recentTargets = SharedPreferencesRecentTargetsRepository();
+
   // The shared card links (§4.4): one app-wide controller owning the link
   // picker the Collection screen and Card Edit open, and every link write —
   // including the Connections view clearing a broken link.
   final cardLinks = CardLinksController(
     readRepository: SyncStoreLinkTargetsReadRepository(graph: graph),
     writeRepository: SyncStoreCardLinksWriteRepository(graph: graph, ids: ids),
+    recentsReadRepository: recentTargets,
+    recentsWriteRepository: recentTargets,
   );
   CollectionScope.setCardLinks(cardLinks);
   CardEditScope.setCardLinks(cardLinks);
@@ -346,6 +353,8 @@ void bootstrap(AppConfig config) {
         ids: ids,
       ),
       moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
+      recentsReadRepository: recentTargets,
+      recentsWriteRepository: recentTargets,
       outlineReadRepository: SyncStoreCollectionOutlineReadRepository(
         graph: graph,
       ),

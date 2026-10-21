@@ -8,6 +8,8 @@ import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
+import 'package:knit/core/recents/domain/recent_targets.dart';
+import 'package:knit/core/recents/domain/recent_targets_repository.dart';
 import 'package:knit/features/collection/domain/card_move_read_repository.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
@@ -35,6 +37,8 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     required CollectionReadRepository readRepository,
     required CollectionWriteRepository writeRepository,
     required CardMoveReadRepository moveReadRepository,
+    required RecentTargetsReadRepository recentsReadRepository,
+    required RecentTargetsWriteRepository recentsWriteRepository,
     required CollectionOutlineReadRepository outlineReadRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
@@ -49,6 +53,8 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   }) : _read = readRepository,
        _write = writeRepository,
        _moveRead = moveReadRepository,
+       _recentsRead = recentsReadRepository,
+       _recentsWrite = recentsWriteRepository,
        _outlineRead = outlineReadRepository,
        _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
@@ -64,6 +70,8 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   final CollectionReadRepository _read;
   final CollectionWriteRepository _write;
   final CardMoveReadRepository _moveRead;
+  final RecentTargetsReadRepository _recentsRead;
+  final RecentTargetsWriteRepository _recentsWrite;
   final CollectionOutlineReadRepository _outlineRead;
   final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
@@ -313,16 +321,21 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
 
       case LoadMoveTargetsEffect():
         final result = await _moveRead.loadMoveTargets();
-        result.onTap((targets) => dispatch(MoveTargetsLoaded(targets)), (
-          failure,
-        ) {
-          _log.severe(
-            'Move targets load failed',
-            failure.error,
-            failure.stackTrace,
-          );
-          dispatch(const MoveTargetsLoadFailed());
-        });
+        final recentIds = result.isSuccess
+            ? await _recentMoveIds()
+            : const <String>[];
+        result.onTap(
+          (targets) =>
+              dispatch(MoveTargetsLoaded(targets, recentIds: recentIds)),
+          (failure) {
+            _log.severe(
+              'Move targets load failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            dispatch(const MoveTargetsLoadFailed());
+          },
+        );
 
       case LoadMoveTargetTailEffect(:final target):
         final result = await _moveRead.lastCardPosition(target.collectionId);
@@ -370,13 +383,16 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           () => _write.moveCards(target.collectionId, positions),
           'move cards',
           dispatch,
-          onSuccess: () async => _effectEmitter.push(
-            CollectionCardsMovedUiEffect(
-              count: positions.length,
-              targetCollectionId: target.collectionId,
-              targetTitle: target.title,
-            ),
-          ),
+          onSuccess: () async {
+            await _recordMoveTarget(target.collectionId);
+            _effectEmitter.push(
+              CollectionCardsMovedUiEffect(
+                count: positions.length,
+                targetCollectionId: target.collectionId,
+                targetTitle: target.title,
+              ),
+            );
+          },
         );
     }
   }
@@ -597,6 +613,25 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         );
         dispatch(const ReloadRequested());
       },
+    );
+  }
+
+  /// The collections recently moved into (device-local, §4.2); none when the
+  /// read fails — the picker just shows no "Recent" row.
+  Future<List<String>> _recentMoveIds() async {
+    final result = await _recentsRead.load(RecentPurpose.move);
+    return result.fold((recents) => recents.ids, (failure) {
+      _log.warning('Recent move targets load failed', failure.error);
+      return const [];
+    });
+  }
+
+  /// Remember [collectionId] as moved into. Non-fatal: the move is done.
+  Future<void> _recordMoveTarget(String collectionId) async {
+    final result = await _recentsWrite.record(RecentPurpose.move, collectionId);
+    result.onFailure(
+      (failure) =>
+          _log.warning('Recent move target save failed', failure.error),
     );
   }
 

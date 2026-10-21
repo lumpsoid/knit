@@ -854,6 +854,12 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get collectionActionShare;
 
+  /// No description provided for @collectionActionMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to collection…'**
+  String get collectionActionMove;
+
   /// No description provided for @collectionActionSettle.
   ///
   /// In en, this message translates to:
@@ -1927,6 +1933,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Move there'**
   String get collectionMoveThere;
+
+  /// No description provided for @pickerRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get pickerRecent;
 
   /// No description provided for @collectionMoveNoTargets.
   ///

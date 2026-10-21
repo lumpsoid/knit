@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knit/core/recents/presentation/recent_targets_row.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
 import 'package:knit/l10n/app_localizations.dart';
@@ -21,17 +22,22 @@ class MoveSheetNewCollection extends MoveSheetChoice {
   final Rect? origin;
 }
 
-/// The move picker (bottom sheet): a "New collection" row, then every other
+/// The move picker (bottom sheet): a "Recent" row of the collections last
+/// moved into (when there are any), a "New collection" row, then every other
 /// collection, most recently updated first. Pops a [MoveSheetChoice].
 class MoveTargetSheet extends StatelessWidget {
   const MoveTargetSheet({
     super.key,
     required this.status,
     required this.targets,
+    this.recents = const [],
   });
 
   final MoveTargetsStatus status;
   final List<MoveTarget> targets;
+
+  /// Up to three of [targets] recently moved into, most recent first.
+  final List<MoveTarget> recents;
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +89,15 @@ class MoveTargetSheet extends StatelessWidget {
                 style: theme.textTheme.titleMedium,
               ),
             ),
+            if (status == MoveTargetsStatus.ready)
+              RecentTargetsRow(
+                labels: [
+                  for (final t in recents)
+                    t.title.isEmpty ? l10n.labelUntitled : t.title,
+                ],
+                onSelected: (i) =>
+                    Navigator.of(context).pop(MoveSheetTarget(recents[i])),
+              ),
             Builder(
               builder: (rowContext) => ListTile(
                 leading: const Icon(Icons.add),

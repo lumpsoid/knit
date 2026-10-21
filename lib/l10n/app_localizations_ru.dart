@@ -450,6 +450,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionActionShare => 'Поделиться';
 
   @override
+  String get collectionActionMove => 'Переместить в коллекцию…';
+
+  @override
   String get collectionActionSettle => 'Приглушить';
 
   @override
@@ -1092,6 +1095,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get collectionMoveThere => 'Переместить туда';
+
+  @override
+  String get pickerRecent => 'Недавние';
 
   @override
   String get collectionMoveNoTargets => 'Других коллекций пока нет.';

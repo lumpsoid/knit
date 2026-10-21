@@ -795,6 +795,10 @@ void main() {
     CollectionState selecting(Set<String> ids) =>
         ready(cards).copyWith(selectedCardIds: ids);
 
+    /// Selected, with the move picker opened over the selection.
+    CollectionState moving(Set<String> ids) =>
+        selecting(ids).copyWith(moveCardIds: ids);
+
     test('a toggle enters selection; toggling the last card leaves it', () {
       var (next, effects) = updater.update(
         ready(cards),
@@ -877,38 +881,41 @@ void main() {
 
     test('choosing a target reads its tail', () {
       final (next, effects) = updater.update(
-        selecting({'c1'}),
+        moving({'c1'}),
         const MoveTargetChosen(target),
       );
       expect(next.moveTargetsStatus, MoveTargetsStatus.idle);
       expect((effects!.single as LoadMoveTargetTailEffect).target, target);
     });
 
-    test('choosing the current collection or with no selection is a no-op', () {
-      final (_, sameCol) = updater.update(
-        selecting({'c1'}),
-        const MoveTargetChosen(MoveTarget(collectionId: 'col', title: 'T')),
-      );
-      expect(sameCol, isNull);
-      final (_, none) = updater.update(
-        ready(cards),
-        const MoveTargetChosen(target),
-      );
-      expect(none, isNull);
-    });
+    test(
+      'choosing the current collection or with nothing to move is a no-op',
+      () {
+        final (_, sameCol) = updater.update(
+          moving({'c1'}),
+          const MoveTargetChosen(MoveTarget(collectionId: 'col', title: 'T')),
+        );
+        expect(sameCol, isNull);
+        final (_, none) = updater.update(
+          ready(cards),
+          const MoveTargetChosen(target),
+        );
+        expect(none, isNull);
+      },
+    );
 
     test('a new collection is created as the target', () {
       final (next, effects) = updater.update(
-        selecting({'c1'}),
+        moving({'c1'}),
         const MoveToNewCollectionChosen('  Fresh  '),
       );
       expect(next.moveTargetsStatus, MoveTargetsStatus.idle);
       expect((effects!.single as CreateMoveTargetEffect).title, 'Fresh');
     });
 
-    test('a blank title or no selection creates nothing', () {
+    test('a blank title or nothing to move creates nothing', () {
       final (_, blank) = updater.update(
-        selecting({'c1'}),
+        moving({'c1'}),
         const MoveToNewCollectionChosen('   '),
       );
       expect(blank, isNull);
@@ -922,7 +929,7 @@ void main() {
     test('the tail appends the selection in feed order, not tap order', () {
       // Selected c3 first, then c1: they still land as c1, c3.
       final (next, effects) = updater.update(
-        selecting({'c3', 'c1'}),
+        moving({'c3', 'c1'}),
         const MoveTargetTailLoaded(target, 'a5'),
       );
       final move = effects!.single as MoveCardsEffect;
@@ -939,11 +946,110 @@ void main() {
 
     test('an empty target starts at the first key', () {
       final (_, effects) = updater.update(
-        selecting({'c2'}),
+        moving({'c2'}),
         const MoveTargetTailLoaded(target, null),
       );
       final move = effects!.single as MoveCardsEffect;
       expect(move.positions, {'c2': FractionalIndex.first()});
+    });
+
+    test("the selection's Move moves the selected cards", () {
+      final (next, effects) = updater.update(
+        selecting({'c1', 'c3'}),
+        const MoveTargetsRequested(),
+      );
+      expect(next.moveCardIds, {'c1', 'c3'});
+      expect(effects!.single, isA<LoadMoveTargetsEffect>());
+    });
+
+    test('the Recent row keeps offered targets, most recent first', () {
+      const a = MoveTarget(collectionId: 'a', title: 'A');
+      const b = MoveTarget(collectionId: 'b', title: 'B');
+      final (loaded, _) = updater.update(
+        moving({'c1'}),
+        const MoveTargetsLoaded(
+          [MoveTarget(collectionId: 'col', title: 'This'), a, b],
+          // 'col' is this collection, 'gone' no longer offered.
+          recentIds: ['b', 'col', 'gone', 'a'],
+        ),
+      );
+      expect(loaded.moveRecents, [b, a]);
+
+      final (closed, _) = updater.update(loaded, const MoveTargetChosen(b));
+      expect(closed.moveRecents, isEmpty);
+    });
+  });
+
+  group("one card's Move (§4.2)", () {
+    const target = MoveTarget(collectionId: 'other', title: 'Other');
+    final cards = [card('c1', 'a0'), card('c2', 'a1'), card('c3', 'a2')];
+
+    test('opens the picker for that card alone, without selecting it', () {
+      final (next, effects) = updater.update(
+        ready(cards),
+        const CardMoveRequested('c2'),
+      );
+      expect(next.moveTargetsStatus, MoveTargetsStatus.loading);
+      expect(next.moveCardIds, {'c2'});
+      expect(next.selecting, isFalse);
+      expect(effects!.single, isA<LoadMoveTargetsEffect>());
+    });
+
+    test('runs the selection path: tail read, then one move write', () {
+      var (state, effects) = updater.update(
+        ready(cards),
+        const CardMoveRequested('c2'),
+      );
+      (state, effects) = updater.update(
+        state,
+        const MoveTargetsLoaded([target]),
+      );
+      (state, effects) = updater.update(state, const MoveTargetChosen(target));
+      expect((effects!.single as LoadMoveTargetTailEffect).target, target);
+      (state, effects) = updater.update(
+        state,
+        const MoveTargetTailLoaded(target, 'a5'),
+      );
+      final move = effects!.single as MoveCardsEffect;
+      expect(move.positions.keys, ['c2']);
+      expect(move.positions['c2']!.compareTo('a5'), greaterThan(0));
+      expect(state.cards.map((c) => c.id), ['c1', 'c3']);
+      expect(state.moveCardIds, isEmpty);
+    });
+
+    test('a new collection works for one card too', () {
+      final (opened, _) = updater.update(
+        ready(cards),
+        const CardMoveRequested('c1'),
+      );
+      final (_, effects) = updater.update(
+        opened,
+        const MoveToNewCollectionChosen('Fresh'),
+      );
+      expect((effects!.single as CreateMoveTargetEffect).title, 'Fresh');
+    });
+
+    test('is inert for an unknown card, in reorder mode, or read-only', () {
+      final idle = ready(cards);
+      expect(updater.update(idle, const CardMoveRequested('nope')).$2, isNull);
+      expect(
+        updater
+            .update(
+              idle.copyWith(reordering: true),
+              const CardMoveRequested('c1'),
+            )
+            .$2,
+        isNull,
+      );
+      expect(
+        updater
+            .update(
+              idle.copyWith(ownership: CollectionOwnership.imported),
+              const CardMoveRequested('c1'),
+            )
+            .$2,
+        isNull,
+      );
     });
   });
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/core/recents/recents.dart';
 import 'package:knit/features/card_links/domain/card_links_failure.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/domain/card_links_write_repository.dart';
@@ -50,14 +51,20 @@ class _UnusedWrite implements CardLinksWriteRepository {
 }
 
 void main() {
-  testWidgets('drills in, hides the source card, and pops the pick', (
-    tester,
-  ) async {
+  /// Pump a button that opens the picker for the card 'self' of 'own', and
+  /// record what it pops into the returned list.
+  Future<List<LinkTarget?>> pumpPicker(
+    WidgetTester tester, {
+    InMemoryRecentTargetsRepository? recents,
+  }) async {
+    final store = recents ?? InMemoryRecentTargetsRepository();
     final links = CardLinksController(
       readRepository: _Read(),
       writeRepository: _UnusedWrite(),
+      recentsReadRepository: store,
+      recentsWriteRepository: store,
     );
-    LinkTarget? picked;
+    final picked = <LinkTarget?>[];
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [
@@ -69,10 +76,12 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) => TextButton(
-            onPressed: () async => picked = await LinkPickerSheet.show(
-              context,
-              links: links,
-              source: const LinkSource(cardId: 'self', collectionId: 'own'),
+            onPressed: () async => picked.add(
+              await LinkPickerSheet.show(
+                context,
+                links: links,
+                source: const LinkSource(cardId: 'self', collectionId: 'own'),
+              ),
             ),
             child: const Text('open'),
           ),
@@ -81,9 +90,17 @@ void main() {
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    return picked;
+  }
 
-    // Only the other collection offers a direct link.
+  testWidgets('drills in, hides the source card, and pops the pick', (
+    tester,
+  ) async {
+    final picked = await pumpPicker(tester);
+
+    // Only the other collection offers a direct link; no recents, no row.
     expect(find.text('Link'), findsOneWidget);
+    expect(find.text('Recent'), findsNothing);
 
     await tester.tap(find.text('Own'));
     await tester.pumpAndSettle();
@@ -91,6 +108,24 @@ void main() {
     await tester.tap(find.text('Sibling'));
     await tester.pumpAndSettle();
 
-    expect(picked?.id, 'sib');
+    expect(picked.single?.id, 'sib');
+  });
+
+  testWidgets('the Recent row skips the own collection and links on tap', (
+    tester,
+  ) async {
+    final recents = InMemoryRecentTargetsRepository({
+      RecentPurpose.link: ['own', 'other'],
+    });
+    final picked = await pumpPicker(tester, recents: recents);
+
+    expect(find.text('Recent'), findsOneWidget);
+    final chip = find.widgetWithText(ActionChip, 'Other');
+    expect(chip, findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'Own'), findsNothing);
+
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+    expect(picked.single?.id, 'other');
   });
 }

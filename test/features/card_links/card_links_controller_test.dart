@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/core/recents/recents.dart';
 import 'package:knit/features/card_links/domain/card_links_failure.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/domain/card_links_write_repository.dart';
@@ -46,6 +47,7 @@ class _FakeRead implements LinkTargetsReadRepository {
 class _FakeWrite implements CardLinksWriteRepository {
   final added = <(String, ConnectedEntityKind, String)>[];
   final removed = <String>[];
+  bool fail = false;
 
   @override
   Future<Result<String, CardLinksFailure>> addLink({
@@ -53,6 +55,7 @@ class _FakeWrite implements CardLinksWriteRepository {
     required ConnectedEntityKind targetKind,
     required String targetId,
   }) async {
+    if (fail) return Failure(CardLinksWriteFailure(StateError('boom')));
     added.add((sourceCardId, targetKind, targetId));
     return const Ok('link-1');
   }
@@ -68,15 +71,19 @@ void main() {
   late _FakeRead read;
   late _FakeWrite write;
   late CardLinksController controller;
+  late InMemoryRecentTargetsRepository recents;
 
   const source = LinkSource(cardId: 'c1', collectionId: 'col-1');
 
   setUp(() {
     read = _FakeRead();
     write = _FakeWrite();
+    recents = InMemoryRecentTargetsRepository();
     controller = CardLinksController(
       readRepository: read,
       writeRepository: write,
+      recentsReadRepository: recents,
+      recentsWriteRepository: recents,
     );
   });
 
@@ -131,6 +138,33 @@ void main() {
     });
   });
 
+  group('recent row', () {
+    test('lists recent collections the source may link to', () async {
+      read.collections = [_col('col-1'), _col('col-2'), _col('col-3')];
+      // col-1 is the card's own collection; gone was deleted.
+      for (final id in ['col-3', 'gone', 'col-1', 'col-2']) {
+        await recents.record(RecentPurpose.link, id);
+      }
+      await controller.openPicker(source);
+      expect(controller.state.recentCollections.map((c) => c.id), [
+        'col-2',
+        'col-3',
+      ]);
+    });
+
+    test('"Link from my card…" shows no recent row', () async {
+      await recents.record(RecentPurpose.link, 'col-2');
+      await controller.openPicker(const LinkFromMine(targetCardId: 'x'));
+      expect(controller.state.recentCollections, isEmpty);
+    });
+
+    test('move recents never show in the link picker', () async {
+      await recents.record(RecentPurpose.move, 'col-2');
+      await controller.openPicker(source);
+      expect(controller.state.recentCollections, isEmpty);
+    });
+  });
+
   group('link rules (LinkSource)', () {
     test('a card never offers itself as a target', () async {
       await controller.openPicker(source);
@@ -154,6 +188,35 @@ void main() {
       );
       expect(result.getOrThrow(), 'link-1');
       expect(write.added.single, ('c1', ConnectedEntityKind.card, 'c9'));
+    });
+
+    test('a link to a collection is remembered as recent', () async {
+      await controller.link(
+        sourceCardId: 'c1',
+        targetKind: ConnectedEntityKind.collection,
+        targetId: 'col-2',
+      );
+      expect((await recents.load(RecentPurpose.link)).getOrThrow().ids, [
+        'col-2',
+      ]);
+    });
+
+    test('a card link or a failed link remembers nothing', () async {
+      await controller.link(
+        sourceCardId: 'c1',
+        targetKind: ConnectedEntityKind.card,
+        targetId: 'c9',
+      );
+      write.fail = true;
+      await controller.link(
+        sourceCardId: 'c1',
+        targetKind: ConnectedEntityKind.collection,
+        targetId: 'col-2',
+      );
+      expect(
+        (await recents.load(RecentPurpose.link)).getOrThrow().ids,
+        isEmpty,
+      );
     });
 
     test('unlink removes the link', () async {

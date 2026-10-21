@@ -33,6 +33,8 @@ class CollectionState {
     this.selectedCardIds = const {},
     this.moveTargetsStatus = MoveTargetsStatus.idle,
     this.moveTargets = const [],
+    this.moveRecents = const [],
+    this.moveCardIds = const {},
     this.quickInput = false,
     this.ownership = CollectionOwnership.own,
     this.ownerHandle,
@@ -71,6 +73,14 @@ class CollectionState {
   /// updated first. Meaningful once [moveTargetsStatus] is ready.
   final MoveTargetsStatus moveTargetsStatus;
   final List<MoveTarget> moveTargets;
+
+  /// The picker's "Recent" row: up to three of [moveTargets] recently moved
+  /// into, most recent first (device-local, like pins). Empty ⇒ no row.
+  final List<MoveTarget> moveRecents;
+
+  /// The cards the open move picker moves: the selection, or the one card
+  /// whose actions sheet asked. Empty when no move is under way.
+  final Set<String> moveCardIds;
 
   /// Opened from a home-screen widget's quick input: a sent text that is a
   /// bare URL becomes a link card, and the page leaves once the card is saved.
@@ -137,6 +147,8 @@ class CollectionState {
     Set<String>? selectedCardIds,
     MoveTargetsStatus? moveTargetsStatus,
     List<MoveTarget>? moveTargets,
+    List<MoveTarget>? moveRecents,
+    Set<String>? moveCardIds,
     bool? quickInput,
     CollectionOwnership? ownership,
     String? ownerHandle,
@@ -156,6 +168,8 @@ class CollectionState {
     selectedCardIds: selectedCardIds ?? this.selectedCardIds,
     moveTargetsStatus: moveTargetsStatus ?? this.moveTargetsStatus,
     moveTargets: moveTargets ?? this.moveTargets,
+    moveRecents: moveRecents ?? this.moveRecents,
+    moveCardIds: moveCardIds ?? this.moveCardIds,
     quickInput: quickInput ?? this.quickInput,
     ownership: ownership ?? this.ownership,
     ownerHandle: ownerHandle ?? this.ownerHandle,

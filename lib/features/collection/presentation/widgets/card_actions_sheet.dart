@@ -7,6 +7,7 @@ enum CardAction {
   link,
   copy,
   share,
+  move,
   settle,
   emphasize,
   connections,
@@ -64,6 +65,11 @@ class CardActionsSheet extends StatelessWidget {
             leading: const Icon(Icons.ios_share),
             title: Text(l10n.collectionActionShare),
             onTap: () => Navigator.of(context).pop(CardAction.share),
+          ),
+          ListTile(
+            leading: const Icon(Icons.drive_file_move_outline),
+            title: Text(l10n.collectionActionMove),
+            onTap: () => Navigator.of(context).pop(CardAction.move),
           ),
           ListTile(
             leading: Icon(settled ? Icons.eco : Icons.eco_outlined),

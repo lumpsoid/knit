@@ -444,6 +444,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionActionShare => 'Share';
 
   @override
+  String get collectionActionMove => 'Move to collection…';
+
+  @override
   String get collectionActionSettle => 'Settle';
 
   @override
@@ -1071,6 +1074,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collectionMoveThere => 'Move there';
+
+  @override
+  String get pickerRecent => 'Recent';
 
   @override
   String get collectionMoveNoTargets => 'No other collections yet.';

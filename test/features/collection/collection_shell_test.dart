@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
+import 'package:knit/core/recents/recents.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -66,9 +67,11 @@ void main() {
   late CollectionShell shell;
   late List<CollectionUiEffect> uiEffects;
   late _FakeTimelineChannel timelineChannel;
+  late InMemoryRecentTargetsRepository recents;
 
   setUp(() async {
     uiEffects = [];
+    recents = InMemoryRecentTargetsRepository();
     timelineChannel = _FakeTimelineChannel();
     graph = AppGraph();
     store = SyncStore.inMemory();
@@ -86,6 +89,8 @@ void main() {
       readRepository: SyncStoreCollectionReadRepository(graph: graph),
       writeRepository: write,
       moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
+      recentsReadRepository: recents,
+      recentsWriteRepository: recents,
       outlineReadRepository: SyncStoreCollectionOutlineReadRepository(
         graph: graph,
       ),
@@ -110,6 +115,8 @@ void main() {
           graph: graph,
           ids: ids,
         ),
+        recentsReadRepository: recents,
+        recentsWriteRepository: recents,
       ),
       effectEmitter: EffectEmitter<CollectionUiEffect>()..attach(uiEffects.add),
       timelineChannel: timelineChannel,
@@ -305,6 +312,16 @@ void main() {
       expect(moved.count, 2);
       expect(moved.targetCollectionId, dst);
       expect(moved.targetTitle, 'Dst');
+      // Remembered for the picker's "Recent" row.
+      expect((await recents.load(RecentPurpose.move)).getOrThrow().ids, [dst]);
+    });
+
+    test('loading targets carries the recently moved-into ids', () async {
+      final dst = (await timelineWrite.createCollection('Dst')).getOrThrow();
+      await recents.record(RecentPurpose.move, dst);
+      final actions = <CollectionAction>[];
+      await shell.run(const LoadMoveTargetsEffect(), dispatch: actions.add);
+      expect((actions.single as MoveTargetsLoaded).recentIds, [dst]);
     });
 
     test('a new target is created and delivered with no tail', () async {
@@ -335,6 +352,10 @@ void main() {
         dispatch: actions.add,
       );
       expect(actions.single, isA<ReloadRequested>());
+      expect(
+        (await recents.load(RecentPurpose.move)).getOrThrow().ids,
+        isEmpty,
+      );
       expect(
         (uiEffects.single as CollectionShowMessageUiEffect).message,
         CollectionMessage.saveFailed,

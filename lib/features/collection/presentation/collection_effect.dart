@@ -222,7 +222,8 @@ class LinkEffect extends CollectionEffect {
   final String targetId;
 }
 
-/// Load every live collection for the move picker.
+/// Load every live collection for the move picker, and the ones recently
+/// moved into.
 class LoadMoveTargetsEffect extends CollectionEffect {
   const LoadMoveTargetsEffect();
 }

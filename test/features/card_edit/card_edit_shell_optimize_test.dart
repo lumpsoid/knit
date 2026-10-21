@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/core/attachments/attachments.dart';
+import 'package:knit/core/recents/recents.dart';
 import 'package:knit/features/card_edit/domain/card_edit_failure.dart';
 import 'package:knit/features/card_edit/domain/card_edit_links_read_repository.dart';
 import 'package:knit/features/card_edit/domain/card_edit_timeline_preview_read_repository.dart';
@@ -167,6 +168,8 @@ void main() {
       cardLinks: CardLinksController(
         readRepository: _UnusedTargets(),
         writeRepository: _UnusedLinksWrite(),
+        recentsReadRepository: InMemoryRecentTargetsRepository(),
+        recentsWriteRepository: InMemoryRecentTargetsRepository(),
       ),
       imageCache: images,
       attachmentReadRepository: read,

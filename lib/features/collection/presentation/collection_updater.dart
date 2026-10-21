@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
+import 'package:knit/core/recents/domain/recent_targets.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_outline.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -85,6 +86,8 @@ class CollectionUpdater
             selectedCardIds: _keepLoaded(state.selectedCardIds, data.cards),
             moveTargetsStatus: state.moveTargetsStatus,
             moveTargets: state.moveTargets,
+            moveRecents: state.moveRecents,
+            moveCardIds: _keepLoaded(state.moveCardIds, data.cards),
             quickInput: state.quickInput,
             ownership: data.ownership,
             ownerHandle: data.ownerHandle,
@@ -356,20 +359,28 @@ class CollectionUpdater
 
       case MoveTargetsRequested():
         if (!state.selecting) return (state, null);
-        return (
-          state.copyWith(moveTargetsStatus: MoveTargetsStatus.loading),
-          const [LoadMoveTargetsEffect()],
-        );
+        return _openMovePicker(state, state.selectedCardIds);
 
-      case MoveTargetsLoaded(:final targets):
+      case CardMoveRequested(:final cardId):
+        // One card's Move is the selection's, for that card alone.
+        if (state.reordering || _cardById(state.cards, cardId) == null) {
+          return (state, null);
+        }
+        return _openMovePicker(state, {cardId});
+
+      case MoveTargetsLoaded(:final targets, :final recentIds):
         // Moving into the collection the cards are already in is no move.
+        final offered = [
+          for (final t in targets)
+            if (t.collectionId != state.collectionId) t,
+        ];
         return (
           state.copyWith(
             moveTargetsStatus: MoveTargetsStatus.ready,
-            moveTargets: [
-              for (final t in targets)
-                if (t.collectionId != state.collectionId) t,
-            ],
+            moveTargets: offered,
+            moveRecents: RecentTargets(
+              recentIds,
+            ).among(offered, (t) => t.collectionId),
           ),
           null,
         );
@@ -381,26 +392,21 @@ class CollectionUpdater
         );
 
       case MoveTargetChosen(:final target):
-        final idle = state.copyWith(
-          moveTargetsStatus: MoveTargetsStatus.idle,
-          moveTargets: const [],
-        );
-        if (!state.selecting || target.collectionId == state.collectionId) {
+        final idle = _pickerClosed(state);
+        if (state.moveCardIds.isEmpty ||
+            target.collectionId == state.collectionId) {
           return (idle, null);
         }
         return (idle, [LoadMoveTargetTailEffect(target)]);
 
       case MoveToNewCollectionChosen(:final title):
-        final idle = state.copyWith(
-          moveTargetsStatus: MoveTargetsStatus.idle,
-          moveTargets: const [],
-        );
+        final idle = _pickerClosed(state);
         final trimmed = title.trim();
-        if (!state.selecting || trimmed.isEmpty) return (idle, null);
+        if (state.moveCardIds.isEmpty || trimmed.isEmpty) return (idle, null);
         return (idle, [CreateMoveTargetEffect(trimmed)]);
 
       case MoveTargetTailLoaded(:final target, :final lastPosition):
-        return _moveSelection(state, target, lastPosition);
+        return _moveCards(state, target, lastPosition);
 
       case OutlineRequested():
         if (state.collectionId.isEmpty) return (state, null);
@@ -439,7 +445,11 @@ class CollectionUpdater
       case DeactivateFeature():
         // The composer releases the recorder itself, with the page.
         return (
-          state.copyWith(reordering: false, selectedCardIds: const {}),
+          state.copyWith(
+            reordering: false,
+            selectedCardIds: const {},
+            moveCardIds: const {},
+          ),
           const [ReleaseImagesEffect()],
         );
     }
@@ -545,20 +555,43 @@ class CollectionUpdater
     };
   }
 
-  /// Move the selection into [target]: append the selected cards after the
-  /// target's [lastPosition] in their feed order (so they keep their relative
-  /// order), drop them from this feed optimistically, and leave selection mode.
-  (CollectionState, List<CollectionEffect>?) _moveSelection(
+  /// Open the move picker for [cardIds]: load its targets.
+  static (CollectionState, List<CollectionEffect>?) _openMovePicker(
+    CollectionState state,
+    Set<String> cardIds,
+  ) => (
+    state.copyWith(
+      moveTargetsStatus: MoveTargetsStatus.loading,
+      moveCardIds: cardIds,
+    ),
+    const [LoadMoveTargetsEffect()],
+  );
+
+  /// The picker closed on a choice: its rows are no longer needed. The cards
+  /// to move stay until the move is made.
+  static CollectionState _pickerClosed(CollectionState state) => state.copyWith(
+    moveTargetsStatus: MoveTargetsStatus.idle,
+    moveTargets: const [],
+    moveRecents: const [],
+  );
+
+  /// Move the picker's cards into [target]: append them after the target's
+  /// [lastPosition] in their feed order (so they keep their relative order),
+  /// drop them from this feed optimistically, and leave selection mode.
+  (CollectionState, List<CollectionEffect>?) _moveCards(
     CollectionState state,
     MoveTarget target,
     String? lastPosition,
   ) {
     final moving = [
       for (final c in state.cards)
-        if (state.selectedCardIds.contains(c.id)) c,
+        if (state.moveCardIds.contains(c.id)) c,
     ];
     if (moving.isEmpty) {
-      return (state.copyWith(selectedCardIds: const {}), null);
+      return (
+        state.copyWith(selectedCardIds: const {}, moveCardIds: const {}),
+        null,
+      );
     }
     final positions = <String, String>{};
     var previous = lastPosition;
@@ -576,6 +609,7 @@ class CollectionUpdater
             if (!positions.containsKey(c.id)) c,
         ],
         selectedCardIds: const {},
+        moveCardIds: const {},
       ),
       [MoveCardsEffect(target: target, positions: positions)],
     );
@@ -634,6 +668,7 @@ class CollectionUpdater
     SelectionDeleteRequested() ||
     SelectionEmphasisRequested() ||
     MoveTargetsRequested() ||
+    CardMoveRequested() ||
     MoveTargetChosen() ||
     MoveToNewCollectionChosen() => true,
     _ => false,

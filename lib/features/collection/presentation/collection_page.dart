@@ -227,6 +227,8 @@ class _CollectionPageState extends State<CollectionPage> {
         );
       case CardAction.share:
         _controller.dispatch(CardShareRequested(card.id));
+      case CardAction.move:
+        await _pickMoveTarget(CardMoveRequested(card.id));
       case CardAction.settle:
         _controller.dispatch(CardSettleToggled(card.id));
       case CardAction.emphasize:
@@ -431,8 +433,13 @@ class _CollectionPageState extends State<CollectionPage> {
 
   /// Open the move picker over the selection: load the targets, let the user
   /// choose one (or make a new one), then move the selected cards there.
-  Future<void> _openMovePicker() async {
-    _controller.dispatch(const MoveTargetsRequested());
+  Future<void> _openMovePicker() =>
+      _pickMoveTarget(const MoveTargetsRequested());
+
+  /// Open the move picker with [request] (the selection's, or one card's):
+  /// the same picker and move either way.
+  Future<void> _pickMoveTarget(CollectionAction request) async {
+    _controller.dispatch(request);
     final choice = await showModalBottomSheet<MoveSheetChoice>(
       context: context,
       isScrollControlled: true,
@@ -441,6 +448,7 @@ class _CollectionPageState extends State<CollectionPage> {
         builder: (context, state, _) => MoveTargetSheet(
           status: state.moveTargetsStatus,
           targets: state.moveTargets,
+          recents: state.moveRecents,
         ),
       ),
     );

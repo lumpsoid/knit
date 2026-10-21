@@ -191,8 +191,10 @@ deleted. Archiving takes it off the home timeline without losing anything.
   tile opens that collection over this one; a tap beside it still opens the actions sheet.
   If the target is deleted, the card keeps its plain bubble and the broken-link chip (§8.6.1).
   The tiles of a loaded page are read in batches (one links-out read, one summary read).
-- **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle · emphasize/unemphasize (§3.3) ·
-  delete.
+- **Tap a card → actions sheet:** edit · link · copy · share · move to collection ·
+  settle/unsettle · emphasize/unemphasize (§3.3) · delete. **Move to collection…** runs the
+  multi-select Move below for that one card, without entering selection mode. An imported
+  (read-only) collection's sheet doesn't offer it.
 - **⋮ menu** in the app bar opens a sheet with **Present** (§4.9), **Outline** and
   **Reorder**. **Outline** lists every emphasized card of the collection (§3.3), not just
   the loaded pages, in feed order, one line each: the first line of its text, else its file
@@ -205,7 +207,11 @@ deleted. Archiving takes it off the home timeline without losing anything.
 - **Multi-select mode** — long-press a card to select it; while selecting, a tap toggles a
   card, the app bar shows the count, and the bottom bar offers *select all*, **Settle /
   Unsettle**, **Emphasize / Unemphasize** (§3.3) and **Move to collection**. Move opens a
-  picker of the other live collections (most recently updated first); the selected cards are
+  picker of the other live collections (most recently updated first), topped by a **Recent**
+  row: up to 3 collections last moved into that the picker offers anyway (never this one, a
+  deleted one or an imported one), with no row when there are none. Recents are
+  **device-local view state** like pins: not synced, not signed, one list per picker (5
+  kept). The selected cards are
   appended to the target's end, keeping their relative feed order, in **one transaction** (all
   or none). The source feed drops them, and a snackbar offers to open the target. Back (or
   "✕") leaves the mode; it is exclusive with reorder mode. A moved card keeps its id, so its
@@ -235,6 +241,11 @@ newest first, at most 20 with a "+N more". Each row shows the card's text around
 and its collection; **Link** writes the card→collection link (a signed link create, so the
 row moves into backlinks), and a tap opens the card in its collection, focused. It loads
 after the links, so it never holds them up. A card's view has no such section.
+
+The **link picker** (a card's "Make a link", Card Edit) lists the collections — link to one
+directly, or drill in to pick a card. A **Recent** row at its top offers up to 3 collections
+last linked to, by the same device-local rule as Move's (§4.2), and only those the card may
+link to (never its own collection); a tap links to that collection.
 
 ### 4.5 Settings
 - **Sync / Relay** (subpage): relay ip/domain field + "Check connectivity" button; shows

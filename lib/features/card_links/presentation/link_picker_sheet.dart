@@ -1,14 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:knit/core/recents/presentation/recent_targets_row.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/card_links/presentation/card_links_state.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// The one link picker (§4.4) the Collection screen and the Card Edit page both
-/// open: browse the collections, link to one directly, or drill into one to
-/// pick a card in it. Renders the shared [CardLinksState]; drilling asks for a
+/// open: browse the collections, link to one directly (the "Recent" row offers
+/// the ones last linked to), or drill into one to pick a card in it. Renders the shared [CardLinksState]; drilling asks for a
 /// collection's cards through [onOpenCollection]. Pops the picked
 /// [LinkTarget] (null when dismissed).
 class LinkPickerSheet extends StatefulWidget {
@@ -75,6 +76,7 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
     final state = widget.state;
     final collections = state.collections;
     if (collections == null) return const _SheetSpinner();
+    final recents = state.recentCollections;
     if (collections.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(24),
@@ -88,6 +90,10 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
           state.source is LinkFromMine
               ? l10n.collectionLinkFromMineTitle
               : l10n.collectionLinkFinderTitle,
+        ),
+        RecentTargetsRow(
+          labels: [for (final c in recents) _collectionLabel(l10n, c)],
+          onSelected: (i) => Navigator.of(context).pop(recents[i]),
         ),
         for (final c in collections)
           ListTile(

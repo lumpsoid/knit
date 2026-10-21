@@ -10,6 +10,7 @@ import 'package:knit/core/attachments/domain/image_optimizer_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
+import 'package:knit/core/recents/domain/recent_targets_repository.dart';
 import 'package:knit/features/collection/domain/card_move_read_repository.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_outline_read_repository.dart';
@@ -41,6 +42,8 @@ class CollectionController {
     required CollectionReadRepository readRepository,
     required CollectionWriteRepository writeRepository,
     required CardMoveReadRepository moveReadRepository,
+    required RecentTargetsReadRepository recentsReadRepository,
+    required RecentTargetsWriteRepository recentsWriteRepository,
     required CollectionOutlineReadRepository outlineReadRepository,
     required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
@@ -65,6 +68,8 @@ class CollectionController {
       readRepository: readRepository,
       writeRepository: writeRepository,
       moveReadRepository: moveReadRepository,
+      recentsReadRepository: recentsReadRepository,
+      recentsWriteRepository: recentsWriteRepository,
       outlineReadRepository: outlineReadRepository,
       attachmentReadRepository: attachmentReadRepository,
       attachmentWriteRepository: attachmentWriteRepository,

@@ -1,5 +1,6 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/core/recents/recents.dart';
 import 'package:knit/features/card_links/domain/card_links_failure.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/domain/card_links_write_repository.dart';
@@ -90,6 +91,8 @@ void main() {
     cardLinks: CardLinksController(
       readRepository: _UnusedTargets(),
       writeRepository: write ?? _FakeLinkWrite(),
+      recentsReadRepository: InMemoryRecentTargetsRepository(),
+      recentsWriteRepository: InMemoryRecentTargetsRepository(),
     ),
     effectEmitter: emitter,
     logger: Logger('test.connections'),

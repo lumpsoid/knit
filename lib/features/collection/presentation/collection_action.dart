@@ -187,29 +187,39 @@ class SelectionCleared extends CollectionAction {
 }
 
 /// The selection's "Move" opened the target picker: load its collections.
+/// The selected cards are the ones that move.
 class MoveTargetsRequested extends CollectionAction {
   const MoveTargetsRequested();
 }
 
-/// Delivery of [MoveTargetsRequested]: every live collection.
-class MoveTargetsLoaded extends CollectionAction {
-  const MoveTargetsLoaded(this.targets);
-  final List<MoveTarget> targets;
+/// The card actions sheet's "Move to collection…" (§4.2): the same picker and
+/// move as the selection's, for [cardId] alone.
+class CardMoveRequested extends CollectionAction {
+  const CardMoveRequested(this.cardId);
+  final String cardId;
 }
 
-/// Delivery of [MoveTargetsRequested] on failure.
+/// Delivery of the picker's read: every live collection, and the ids of
+/// those recently moved into, most recent first (device-local, §4.2).
+class MoveTargetsLoaded extends CollectionAction {
+  const MoveTargetsLoaded(this.targets, {this.recentIds = const []});
+  final List<MoveTarget> targets;
+  final List<String> recentIds;
+}
+
+/// Delivery of the picker's read on failure.
 class MoveTargetsLoadFailed extends CollectionAction {
   const MoveTargetsLoadFailed();
 }
 
-/// The picker chose [target]: move the selected cards there.
+/// The picker chose [target]: move the cards it was opened for there.
 class MoveTargetChosen extends CollectionAction {
   const MoveTargetChosen(this.target);
   final MoveTarget target;
 }
 
 /// The picker's "New collection" line sent [title]: create that collection,
-/// then move the selected cards into it.
+/// then move the cards the picker was opened for into it.
 class MoveToNewCollectionChosen extends CollectionAction {
   const MoveToNewCollectionChosen(this.title);
   final String title;

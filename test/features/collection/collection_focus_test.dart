@@ -9,6 +9,7 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
+import 'package:knit/core/recents/recents.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -163,6 +164,8 @@ void main() {
           ids: ids,
         ),
         moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
+        recentsReadRepository: InMemoryRecentTargetsRepository(),
+        recentsWriteRepository: InMemoryRecentTargetsRepository(),
         outlineReadRepository: SyncStoreCollectionOutlineReadRepository(
           graph: graph,
         ),
@@ -187,6 +190,8 @@ void main() {
             graph: graph,
             ids: ids,
           ),
+          recentsReadRepository: InMemoryRecentTargetsRepository(),
+          recentsWriteRepository: InMemoryRecentTargetsRepository(),
         ),
         timelineChannel: _NoopTimelineChannel(),
       ),

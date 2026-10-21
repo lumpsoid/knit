@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:knit/core/recents/domain/recent_targets.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 
 /// The link picker's state (§4.4) — a [ChangeNotifier] the shared
@@ -8,6 +9,7 @@ import 'package:knit/features/card_links/domain/card_links_models.dart';
 class CardLinksState extends ChangeNotifier {
   LinkPick? _source;
   List<LinkTarget>? _collections;
+  RecentTargets _recents = const RecentTargets();
   final Map<String, List<LinkTarget>> _cards = {};
 
   /// What the session picks; null before a picker has opened.
@@ -22,6 +24,18 @@ class CardLinksState extends ChangeNotifier {
       for (final c in collections)
         if (source.lists(c)) c,
     ];
+  }
+
+  /// The "Recent" row: up to three collections recently linked to that the
+  /// [source] may link to right now (never the card's own collection), most
+  /// recent first. Empty ⇒ no row.
+  List<LinkTarget> get recentCollections {
+    final listed = collections;
+    if (listed == null) return const [];
+    return _recents.among([
+      for (final c in listed)
+        if (canLinkToCollection(c.id)) c,
+    ], (c) => c.id);
   }
 
   /// The collection [id] among [collections], or null.
@@ -55,12 +69,17 @@ class CardLinksState extends ChangeNotifier {
   void startPicking(LinkPick source) {
     _source = source;
     _collections = null;
+    _recents = const RecentTargets();
     _cards.clear();
     notifyListeners();
   }
 
-  void showCollections(List<LinkTarget> collections) {
+  void showCollections(
+    List<LinkTarget> collections, {
+    RecentTargets recents = const RecentTargets(),
+  }) {
     _collections = collections;
+    _recents = recents;
     notifyListeners();
   }
 

@@ -306,6 +306,9 @@ the `lib/sync/` core below.
   (`CreateMoveTargetEffect`, `CollectionWriteRepository.createCollection`)
   and moves into it as an empty tail. A title like an existing target
   offers "Move there" instead.
+  The actions sheet's **Move to collection…** (`CardMoveRequested`) opens the
+  same flow for one card: the picker moves `CollectionState.moveCardIds` (the
+  selection, or that card), so it never enters selection mode.
 - `collection` Outline (§4.2): the ⋮ sheet's **Outline** lists the emphasized
   cards as headings (the `SlidePlanner` meaning). `OutlineRequested` reads the
   whole feed through the narrow `CollectionOutlineReadRepository`, and the pure
@@ -417,6 +420,13 @@ the `lib/sync/` core below.
   Collection and Card Edit open the picker and add links through it; Card Edit
   and Connections remove links through it. The `LinkSource` rule (no self-link,
   no link to the card's own collection) lives in its domain.
+- `lib/core/recents/` — the pickers' "Recent" rows (§4.2/§4.4): the pure
+  `RecentTargets` MRU (5 kept, 3 shown, `among` drops what the picker wouldn't
+  offer) per `RecentPurpose` (move / link), behind narrow
+  `RecentTargets{Read,Write}Repository` ports (shared_preferences + in-memory),
+  device-local like pins, and the shared `RecentTargetsRow` chips. The
+  Collection shell records a target after a successful move and
+  `CardLinksController.link` after a successful collection link.
 
 - `collection_present` (§4.9, lightweight) presents a collection as slides. The
   Collection app bar's ⋮ sheet (`CollectionMenuSheet`: Present, Reorder) writes
