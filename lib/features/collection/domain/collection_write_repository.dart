@@ -11,12 +11,15 @@ abstract interface class CollectionWriteRepository {
   /// [text] is the body for a text card or the URL/label for a link card — or
   /// the caption for an image card. [attachmentId] points an image card at its
   /// stored attachment (§7.4.8); it is null for text/link cards.
+  /// [moreAttachmentIds] are an image card's further images, after
+  /// [attachmentId] (§4.2).
   Future<Result<String, CollectionFailure>> addCard({
     required String collectionId,
     required CardKind kind,
     required String position,
     String? text,
     String? attachmentId,
+    List<String> moreAttachmentIds = const [],
   });
 
   /// Soft-delete a card (§6.1). Links to it become broken chips, never vanish.

@@ -19,7 +19,7 @@ void main() {
         text: 'Grind finer if the shot runs too fast.',
         fileName: null,
         fileSize: null,
-        imageBytes: null,
+        images: const [],
         settled: settled,
         onTap: () {},
       ),

@@ -5,13 +5,10 @@ import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/core/emphasized/emphasized_palette.dart';
 import 'package:knit/features/audio_playback/presentation/audio_playback_controller.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/presentation/widgets/card_image_grid.dart';
 import 'package:knit/core/settled/settled_palette.dart';
 import 'package:knit/features/collection/presentation/widgets/settled_roots.dart';
 import 'package:knit/l10n/app_localizations.dart';
-
-/// The shared [Hero] tag tying a card's feed thumbnail to its full-screen
-/// preview, so the open/close transition flies between the two.
-Object imageHeroTag(String cardId) => 'card-image-$cardId';
 
 /// A card's chat bubble in the feed: a note, a link, an image, an audio clip,
 /// or a file, with its caption where it has one.
@@ -23,7 +20,7 @@ class CardBubble extends StatelessWidget {
     required this.text,
     required this.fileName,
     required this.fileSize,
-    required this.imageBytes,
+    required this.images,
     required this.onTap,
     this.settled = false,
     this.emphasized = false,
@@ -43,8 +40,9 @@ class CardBubble extends StatelessWidget {
   final String? fileName;
   final int? fileSize;
 
-  /// Decoded bytes for an image card; null while loading or missing.
-  final Uint8List? imageBytes;
+  /// An image card's images in order (§4.2), each decoded bytes or null while
+  /// loading or missing; empty for every other kind.
+  final List<Uint8List?> images;
   final VoidCallback onTap;
 
   /// Whether the card is settled (§3.3): drawn receded and greyed, with
@@ -55,9 +53,10 @@ class CardBubble extends StatelessWidget {
   /// halo. Flipping it animates the change.
   final bool emphasized;
 
-  /// Opens the full-screen image preview; null when the image hasn't loaded yet
-  /// (a tap then falls through to [onTap], the card-actions sheet).
-  final VoidCallback? onImageTap;
+  /// Opens the full-screen image preview on the tapped image (its index); a
+  /// tap on an image that hasn't loaded yet falls through to [onTap], the
+  /// card-actions sheet.
+  final ValueChanged<int>? onImageTap;
 
   /// Shares a file card through the system sheet; null for every other kind (a
   /// tap then falls through to [onTap], the card-actions sheet).
@@ -211,27 +210,37 @@ class CardBubble extends StatelessWidget {
         return GestureDetector(onTap: onLinkTap, child: link);
       case CardKind.image:
         final caption = text?.trim();
-        Widget image = ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: AttachmentImage(
-            bytes: imageBytes,
-            width: 220,
-            height: 220,
-            placeholder: _placeholder(
-              theme,
-              Icons.image_outlined,
-              l10n.collectionCardPhoto,
-            ),
-          ),
-        );
-        // Tap the image itself to view it full-screen; the Hero ties this
-        // thumbnail to the preview so the transition flies between them.
         final onImageTap = this.onImageTap;
-        if (onImageTap != null) {
-          image = GestureDetector(
-            onTap: onImageTap,
-            child: Hero(tag: imageHeroTag(cardId), child: image),
+        Widget image;
+        if (images.length > 1) {
+          image = CardImageGrid(
+            cardId: cardId,
+            images: images,
+            onImageTap: onImageTap,
           );
+        } else {
+          final bytes = images.firstOrNull;
+          image = ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: AttachmentImage(
+              bytes: bytes,
+              width: 220,
+              height: 220,
+              placeholder: _placeholder(
+                theme,
+                Icons.image_outlined,
+                l10n.collectionCardPhoto,
+              ),
+            ),
+          );
+          // Tap the image itself to view it full-screen; the Hero ties this
+          // thumbnail to the preview so the transition flies between them.
+          if (onImageTap != null && bytes != null) {
+            image = GestureDetector(
+              onTap: () => onImageTap(0),
+              child: Hero(tag: imageHeroTag(cardId), child: image),
+            );
+          }
         }
         if (caption == null || caption.isEmpty) return image;
         return Column(

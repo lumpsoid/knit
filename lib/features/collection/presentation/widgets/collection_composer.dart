@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:knit/features/collection/presentation/collection_composer_state.dart';
 import 'package:knit/l10n/app_localizations.dart';
@@ -10,7 +9,8 @@ class CollectionComposer extends StatelessWidget {
     super.key,
     required this.controller,
     this.autofocus = false,
-    required this.pendingImageBytes,
+    required this.pendingImages,
+    this.pendingImagesSize = 0,
     this.optimizeImage = false,
     this.optimizedImageSize,
     this.optimizingImage = false,
@@ -25,8 +25,9 @@ class CollectionComposer extends StatelessWidget {
     required this.onAddBlock,
     required this.onCancelPhotoSources,
     required this.onPickFromGallery,
+    required this.onAddImages,
     required this.onPickFromCamera,
-    required this.onClearImage,
+    required this.onRemoveImage,
     required this.onClearFile,
     required this.onStartRecording,
     required this.onPauseRecording,
@@ -40,11 +41,14 @@ class CollectionComposer extends StatelessWidget {
   /// Focus the text field (keyboard up) as soon as the composer shows.
   final bool autofocus;
 
-  /// Bytes of an image the user picked but hasn't sent yet; null ⇒ no preview.
-  final Uint8List? pendingImageBytes;
+  /// The photos the user picked but hasn't sent yet; empty ⇒ no preview.
+  final List<PendingImageThumb> pendingImages;
 
-  /// The staged image's "Optimize size" state (see [PendingImagePreview]);
-  /// [onOptimizeImageChanged] is null when its format can't be optimized.
+  /// Their total byte size as picked.
+  final int pendingImagesSize;
+
+  /// The staged photos' "Optimize size" state (see [PendingImagesPreview]);
+  /// [onOptimizeImageChanged] is null when no format can be optimized.
   final bool optimizeImage;
   final int? optimizedImageSize;
   final bool optimizingImage;
@@ -72,8 +76,11 @@ class CollectionComposer extends StatelessWidget {
   /// Leave photo-source mode without picking (the "+" becomes a "✕" in mode).
   final VoidCallback onCancelPhotoSources;
   final VoidCallback onPickFromGallery;
+
+  /// Pick more photos to join the staged ones (the "+" tile after them).
+  final VoidCallback onAddImages;
   final VoidCallback onPickFromCamera;
-  final VoidCallback onClearImage;
+  final ValueChanged<int> onRemoveImage;
   final VoidCallback onClearFile;
   final VoidCallback onStartRecording;
   final VoidCallback onPauseRecording;
@@ -88,7 +95,6 @@ class CollectionComposer extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final bytes = pendingImageBytes;
     // The audio bar shows while revealed-idle or actively recording (but not once
     // a clip is staged — its preview chip takes over). Modes are exclusive.
     final inAudioMode = recordingPhase != null || showAudioBar;
@@ -101,10 +107,13 @@ class CollectionComposer extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (bytes != null)
-              PendingImagePreview(
-                bytes: bytes,
-                onClear: onClearImage,
+            if (pendingImages.isNotEmpty)
+              PendingImagesPreview(
+                images: pendingImages,
+                size: pendingImagesSize,
+                onRemove: onRemoveImage,
+                // The photo sources open again; what is picked joins these.
+                onAdd: onAddImages,
                 optimize: optimizeImage,
                 optimizedSize: optimizedImageSize,
                 optimizing: optimizingImage,

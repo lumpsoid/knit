@@ -14,32 +14,51 @@ enum AudioRecordingPhase { recording, paused }
 /// options ("+" → Photo) or the audio-recording bar ("+" → Audio). Exclusive.
 enum ComposerPanel { none, photoSources, audioBar }
 
+/// One photo staged in the composer (§4.2): the picked [original] and, once
+/// "Optimize size" has run on it, its smaller [optimized] copy — or
+/// [alreadySmall] when there was nothing worth saving.
+@immutable
+class StagedImage {
+  const StagedImage(this.original, {this.optimized, this.alreadySmall = false});
+
+  final PickedImage original;
+  final PickedImage? optimized;
+  final bool alreadySmall;
+
+  /// Whether "Optimize size" can work on this photo's format.
+  bool get canOptimize => ImageOptimization.canOptimize(original.mime);
+
+  /// The optimiser has run on it (with or without a smaller copy).
+  bool get optimizeDone => optimized != null || alreadySmall;
+}
+
 /// The Collection composer's state (§4.2) — a [ChangeNotifier] the
 /// [CollectionComposerController] owns and mutates, and the page listens to.
 ///
-/// Holds what the user is composing but hasn't sent: a picked image, a recorded
+/// Holds what the user is composing but hasn't sent: picked images, a recorded
 /// clip, or a picked file (in memory only — nothing is stored or attached to a
 /// card until the composer is sent), the live recording phase, and which inline
 /// panel is open. The composer's text stays in the page's text field.
 class CollectionComposerState extends ChangeNotifier {
-  PickedImage? _pendingImage;
+  List<StagedImage> _images = const [];
   PickedAudio? _pendingAudio;
   PickedFile? _pendingFile;
   AudioRecordingPhase? _recordingPhase;
   ComposerPanel _panel = ComposerPanel.none;
   bool _optimizeImages = false;
-  PickedImage? _optimizedImage;
-  bool _optimizingImage = false;
-  bool _imageAlreadySmall = false;
+  PickedImage? _optimizing;
 
-  /// A picked image, shown as a preview above the input field. Clearing or
-  /// repicking just drops these bytes — no attachment is written.
-  PickedImage? get pendingImage => _pendingImage;
+  /// The picked images, in pick order, shown as thumbnails above the input
+  /// field. One send makes one image card holding them all. Clearing just
+  /// drops the bytes — no attachment is written.
+  List<StagedImage> get pendingImages => _images;
 
-  /// A recorded clip — the audio twin of [pendingImage], shown as a chip.
+  bool get hasPendingImages => _images.isNotEmpty;
+
+  /// A recorded clip — the audio twin of [pendingImages], shown as a chip.
   PickedAudio? get pendingAudio => _pendingAudio;
 
-  /// A picked file — the file twin of [pendingImage], shown by its name.
+  /// A picked file — the file twin of [pendingImages], shown by its name.
   PickedFile? get pendingFile => _pendingFile;
 
   /// The live audio-capture sub-state: non-null while recording or paused. Null
@@ -47,33 +66,49 @@ class CollectionComposerState extends ChangeNotifier {
   AudioRecordingPhase? get recordingPhase => _recordingPhase;
 
   /// Whether the user chose "Optimise size" for photos. It stays on for the
-  /// next photo picked on this page.
+  /// next photos picked on this page.
   bool get optimizeImages => _optimizeImages;
 
-  /// The smaller copy of [pendingImage], once optimised. Sent in its place
-  /// while [optimizeImages] is on.
-  PickedImage? get optimizedImage => _optimizedImage;
+  /// The optimiser is working on one of [pendingImages]; a send waits for it.
+  bool get optimizingImage => _optimizing != null;
 
-  /// The optimiser is working on [pendingImage]; a send waits for it.
-  bool get optimizingImage => _optimizingImage;
+  /// Whether the optimiser is working on [image] right now.
+  bool isOptimizing(StagedImage image) =>
+      identical(image.original, _optimizing);
 
-  /// Optimising [pendingImage] would not make it meaningfully smaller (or it
-  /// couldn't be read), so the original is sent.
-  bool get imageAlreadySmall => _imageAlreadySmall;
+  /// Whether any of [pendingImages] is a format "Optimise size" can work on.
+  bool get canOptimizePendingImages => _images.any((i) => i.canOptimize);
 
-  /// Whether [pendingImage] is a format "Optimise size" can work on.
-  bool get canOptimizePendingImage {
-    final image = _pendingImage;
-    return image != null && ImageOptimization.canOptimize(image.mime);
+  /// The bytes of every staged photo as picked.
+  int get pendingImagesSize =>
+      _images.fold(0, (sum, i) => sum + i.original.bytes.length);
+
+  /// The bytes the send would store with "Optimise size" on, once every photo
+  /// it can work on has been optimised; null until then.
+  int? get optimizedImagesSize {
+    if (_images.any((i) => i.canOptimize && !i.optimizeDone)) return null;
+    return _images.fold<int>(
+      0,
+      (sum, i) => sum + (i.optimized ?? i.original).bytes.length,
+    );
   }
 
-  /// Whether the optimiser still has to run on [pendingImage].
-  bool get needsOptimizing =>
-      _optimizeImages &&
-      canOptimizePendingImage &&
-      _optimizedImage == null &&
-      !_optimizingImage &&
-      !_imageAlreadySmall;
+  /// Optimising found nothing to save on any staged photo, so the originals
+  /// are sent.
+  bool get imagesAlreadySmall {
+    final optimizable = _images.where((i) => i.canOptimize);
+    return optimizable.isNotEmpty && optimizable.every((i) => i.alreadySmall);
+  }
+
+  /// The next photo the optimiser has to run on; null when none (or it is
+  /// busy, or "Optimise size" is off).
+  StagedImage? get nextToOptimize {
+    if (!_optimizeImages || _optimizing != null) return null;
+    for (final image in _images) {
+      if (image.canOptimize && !image.optimizeDone) return image;
+    }
+    return null;
+  }
 
   ComposerPanel get panel => _panel;
   bool get showPhotoSources => _panel == ComposerPanel.photoSources;
@@ -90,29 +125,29 @@ class CollectionComposerState extends ChangeNotifier {
   /// image, clip, or file (which makes an empty caption a valid send).
   bool canSend(String text) =>
       !isRecordingAudio &&
-      !_optimizingImage &&
+      !optimizingImage &&
       (text.trim().isNotEmpty ||
-          _pendingImage != null ||
+          _images.isNotEmpty ||
           _pendingAudio != null ||
           _pendingFile != null);
 
   /// Build the send for [text] and drop what it carries, closing any panel.
-  /// One attachment rides per send — an image wins, then a file, then a clip;
-  /// whatever else is staged stays for the next send. Call only when
-  /// [canSend] holds. An optimised photo goes in place of its original.
+  /// One kind of attachment rides per send — the images win, then a file, then
+  /// a clip; whatever else is staged stays for the next send. Call only when
+  /// [canSend] holds. Optimised photos go in place of their originals.
   ComposerSubmitted takeSubmission(String text) {
-    final picked = _pendingImage;
-    final image = picked == null
-        ? null
-        : (_optimizeImages ? _optimizedImage : null) ?? picked;
-    final file = image == null ? _pendingFile : null;
-    final audio = image == null && file == null ? _pendingAudio : null;
-    if (image != null) _dropImage();
+    final images = [
+      for (final i in _images)
+        (_optimizeImages ? i.optimized : null) ?? i.original,
+    ];
+    final file = images.isEmpty ? _pendingFile : null;
+    final audio = images.isEmpty && file == null ? _pendingAudio : null;
+    if (images.isNotEmpty) _dropImages();
     if (file != null) _pendingFile = null;
     if (audio != null) _pendingAudio = null;
     _panel = ComposerPanel.none;
     notifyListeners();
-    return ComposerSubmitted(text, image: image, file: file, audio: audio);
+    return ComposerSubmitted(text, images: images, file: file, audio: audio);
   }
 
   void showPanel(ComposerPanel panel) {
@@ -121,47 +156,64 @@ class CollectionComposerState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void stageImage(PickedImage image) {
-    _dropImage();
-    _pendingImage = image;
+  /// Add [images] after the ones already staged.
+  void stageImages(List<PickedImage> images) {
+    if (images.isEmpty) return;
+    _images = [..._images, for (final i in images) StagedImage(i)];
     notifyListeners();
   }
 
-  void clearImage() {
-    _dropImage();
+  /// Drop the staged photo [image]; one being optimised stops there.
+  void removeImage(StagedImage image) {
+    if (isOptimizing(image)) _optimizing = null;
+    _images = [
+      for (final i in _images)
+        if (!identical(i, image)) i,
+    ];
+    notifyListeners();
+  }
+
+  void clearImages() {
+    _dropImages();
     notifyListeners();
   }
 
   /// Turning it off mid-run cancels the run: its result is dropped and a send
-  /// goes through with the original.
+  /// goes through with the originals.
   void setOptimizeImages(bool optimize) {
     if (optimize == _optimizeImages) return;
     _optimizeImages = optimize;
-    if (!optimize) _optimizingImage = false;
+    if (!optimize) _optimizing = null;
     notifyListeners();
   }
 
-  void startOptimizing() {
-    _optimizingImage = true;
+  void startOptimizing(StagedImage image) {
+    _optimizing = image.original;
     notifyListeners();
   }
 
   /// The optimiser finished on [source]: keep the smaller [optimized] copy, or
-  /// note that there was nothing to gain (null). Ignored when [source] is no
-  /// longer the staged photo, or the run was cancelled.
+  /// note that there was nothing to gain (null). Ignored when the run was
+  /// cancelled or [source] is no longer staged.
   void finishOptimizing(PickedImage source, PickedImage? optimized) {
-    if (!identical(source, _pendingImage) || !_optimizingImage) return;
-    _optimizingImage = false;
-    _optimizedImage = optimized;
-    _imageAlreadySmall = optimized == null;
+    if (!identical(source, _optimizing)) return;
+    _optimizing = null;
+    _images = [
+      for (final i in _images)
+        identical(i.original, source)
+            ? StagedImage(
+                source,
+                optimized: optimized,
+                alreadySmall: optimized == null,
+              )
+            : i,
+    ];
     notifyListeners();
   }
 
-  void _dropImage() {
-    _pendingImage = null;
-    _optimizedImage = null;
-    _optimizingImage = false;
-    _imageAlreadySmall = false;
+  void _dropImages() {
+    _images = const [];
+    _optimizing = null;
   }
 
   void stageFile(PickedFile file) {

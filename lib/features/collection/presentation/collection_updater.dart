@@ -133,7 +133,7 @@ class CollectionUpdater
 
       case ComposerSubmitted(
         :final text,
-        :final image,
+        :final images,
         :final file,
         :final audio,
       ):
@@ -141,14 +141,14 @@ class CollectionUpdater
         final caption = body.isEmpty ? null : body;
         final position = _appendPosition(state.cards);
         // A staged attachment goes as its card, the (optional) text its caption.
-        if (image != null) {
+        if (images.isNotEmpty) {
           return (
             state,
             [
               AddPhotoCardEffect(
                 collectionId: state.collectionId,
                 position: position,
-                image: image,
+                images: images,
                 caption: caption,
                 closesQuickInput: state.quickInput,
               ),
@@ -164,7 +164,7 @@ class CollectionUpdater
             CardKind.image => AddPhotoCardEffect(
               collectionId: state.collectionId,
               position: position,
-              image: PickedImage(bytes: file.bytes, mime: file.mime),
+              images: [PickedImage(bytes: file.bytes, mime: file.mime)],
               caption: caption,
               closesQuickInput: state.quickInput,
             ),
@@ -235,13 +235,18 @@ class CollectionUpdater
         );
 
       case CardDeleteRequested(:final cardId):
-        // Carry the card's attachment id so the shell can reclaim it after
+        // Carry the card's attachment ids so the shell can reclaim them after
         // delete; a text/link card (or a card not in the feed) has none →
         // nothing to GC.
         final card = _cardById(state.cards, cardId);
         return (
           state,
-          [DeleteCardEffect(cardId, attachmentId: card?.attachmentId)],
+          [
+            DeleteCardEffect(
+              cardId,
+              attachmentIds: card?.attachmentIds ?? const [],
+            ),
+          ],
         );
 
       case CollectionDeleteRequested():
@@ -324,7 +329,7 @@ class CollectionUpdater
           [
             DeleteCardsEffect(
               [for (final c in selected) c.id],
-              attachmentIds: [for (final c in selected) ?c.attachmentId],
+              attachmentIds: [for (final c in selected) ...c.attachmentIds],
             ),
           ],
         );
@@ -401,8 +406,8 @@ class CollectionUpdater
 
   /// Resolve [cardId] to its shareable content and emit a [ShareCardEffect];
   /// a missing card or an empty text card with no attachment is a pure no-op.
-  /// An image or file card carries an attachment to share (a file shares under
-  /// its stored name); other kinds share text only.
+  /// An image card shares its photos and a file card its file (under its
+  /// stored name); other kinds share text only.
   (CollectionState, List<CollectionEffect>?) _shareCard(
     CollectionState state,
     String cardId,
@@ -411,16 +416,18 @@ class CollectionUpdater
     if (card == null) return (state, null);
     final text = card.text?.trim();
     final hasText = text != null && text.isNotEmpty;
-    final sharesAttachment =
-        card.kind == CardKind.image || card.kind == CardKind.file;
-    final attachmentId = sharesAttachment ? card.attachmentId : null;
-    if (!hasText && attachmentId == null) return (state, null);
+    final attachmentIds = switch (card.kind) {
+      CardKind.image => card.imageIds,
+      CardKind.file => [?card.attachmentId],
+      _ => const <String>[],
+    };
+    if (!hasText && attachmentIds.isEmpty) return (state, null);
     return (
       state,
       [
         ShareCardEffect(
           text: hasText ? text : null,
-          attachmentId: attachmentId,
+          attachmentIds: attachmentIds,
           imageBaseName: _shareBaseName(card),
           fileName: card.kind == CardKind.file ? card.fileName : null,
         ),
@@ -475,10 +482,9 @@ class CollectionUpdater
     return '${DateFormat('yyyy-MM-dd').format(at)}-knit';
   }
 
-  /// The `attachment_id`s of the image cards in [cards] — what the feed shows.
+  /// Every image of the image cards in [cards] — what the feed shows.
   static List<String> _imageAttachments(List<FeedCard> cards) => [
-    for (final card in cards)
-      if (card.kind == CardKind.image) ?card.attachmentId,
+    for (final card in cards) ...card.imageIds,
   ];
 
   /// The ids in [selected] that are still among [cards].

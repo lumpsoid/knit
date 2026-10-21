@@ -11,7 +11,7 @@ import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_composer_state.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
 
-/// The Collection composer's input object (§4.2): stages a picked image, a
+/// The Collection composer's input object (§4.2): stages picked images, a
 /// recorded clip, or a picked file in [state] while the user writes a caption,
 /// drives the recorder, and hands a send to the Collection through [onSend].
 ///
@@ -64,39 +64,51 @@ class CollectionComposerController {
   /// Leave the photo options without picking (the "✕" the "+" turns into).
   void closePhotoSources() => state.showPanel(ComposerPanel.none);
 
-  /// A source was chosen: hide the options and stage the picked image (a
-  /// cancelled pick changes nothing).
+  /// A source was chosen: hide the options and stage what was picked — any
+  /// number of photos from the gallery, one shot from the camera — after the
+  /// photos already staged (a cancelled pick changes nothing).
   Future<void> pickImage(ImagePickerSource source) async {
     state.showPanel(ComposerPanel.none);
-    final picked = await _imagePicker.pickImage(source: source);
-    if (_disposed || picked == null) return;
-    state.stageImage(picked);
-    await _optimizePendingImage();
+    final picked = switch (source) {
+      ImagePickerSource.gallery => await _imagePicker.pickImages(),
+      ImagePickerSource.camera => [
+        ?await _imagePicker.pickImage(source: source),
+      ],
+    };
+    if (_disposed || picked.isEmpty) return;
+    state.stageImages(picked);
+    await _optimizePendingImages();
   }
 
-  void clearImage() => state.clearImage();
+  void removeImage(StagedImage image) => state.removeImage(image);
 
-  /// The "Optimise size" toggle on the staged photo. Turning it on shrinks the
-  /// photo now, so the preview can show what it saves; the choice carries over
-  /// to the next photo.
+  void clearImages() => state.clearImages();
+
+  /// The "Optimise size" toggle on the staged photos. Turning it on shrinks
+  /// them now, so the preview can show what it saves; the choice carries over
+  /// to the next photos.
   Future<void> setOptimizeImages(bool optimize) async {
     state.setOptimizeImages(optimize);
-    await _optimizePendingImage();
+    await _optimizePendingImages();
   }
 
-  Future<void> _optimizePendingImage() async {
-    final image = state.pendingImage;
-    if (image == null || !state.needsOptimizing) return;
-    state.startOptimizing();
-    PickedImage? optimized;
-    try {
-      optimized = await _imageOptimizer.optimize(image);
-    } catch (e, s) {
-      _log.severe('Optimise image failed', e, s);
-      optimized = null;
+  /// Run the optimiser over the staged photos one at a time, until none is
+  /// left to do (or the toggle goes off, or the page leaves).
+  Future<void> _optimizePendingImages() async {
+    while (!_disposed) {
+      final image = state.nextToOptimize;
+      if (image == null) return;
+      state.startOptimizing(image);
+      PickedImage? optimized;
+      try {
+        optimized = await _imageOptimizer.optimize(image.original);
+      } catch (e, s) {
+        _log.severe('Optimise image failed', e, s);
+        optimized = null;
+      }
+      if (_disposed) return;
+      state.finishOptimizing(image.original, optimized);
     }
-    if (_disposed) return;
-    state.finishOptimizing(image, optimized);
   }
 
   // --- file ------------------------------------------------------------------

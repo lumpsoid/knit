@@ -47,39 +47,58 @@ class PhotoSourceOptions extends StatelessWidget {
   }
 }
 
-/// The picked-but-unsent image shown above the composer (§4.2). Tapping ✕ drops
-/// it via [onClear]; the user keeps composing text or picks another from "+".
+/// One staged photo in a [PendingImagesPreview] — a widget-owned view-model
+/// (widgets.md §1): its [bytes], and whether the optimiser is working on it.
+@immutable
+class PendingImageThumb {
+  const PendingImageThumb({required this.bytes, this.optimizing = false});
+
+  final Uint8List bytes;
+  final bool optimizing;
+}
+
+/// The picked-but-unsent photos shown above the composer (§4.2), in pick
+/// order: one send makes one image card holding them all. Each thumbnail's ✕
+/// drops that photo via [onRemove]; the trailing "+" tile ([onAdd]) picks more.
 ///
-/// Beside it sits the photo's size and the opt-in "Optimize size" chip: when it
-/// is on, the size shows what the smaller copy saves. Optimizing is a phase of
-/// its own: the photo dims under a spinner and the line says what is happening
-/// and that it takes a moment (turning the chip off cancels it).
-/// [onOptimizeChanged] is null for a format that can't be optimized, which
-/// hides the chip.
-class PendingImagePreview extends StatelessWidget {
-  const PendingImagePreview({
+/// Under them sits their size and the opt-in "Optimize size" chip: when it is
+/// on, the size shows what the smaller copies save. Optimizing is a phase of
+/// its own: the photo being worked on dims under a spinner and the line says
+/// what is happening and that it takes a moment (turning the chip off cancels
+/// it). [onOptimizeChanged] is null when no photo's format can be optimized,
+/// which hides the chip.
+class PendingImagesPreview extends StatelessWidget {
+  const PendingImagesPreview({
     super.key,
-    required this.bytes,
-    required this.onClear,
+    required this.images,
+    required this.size,
+    required this.onRemove,
+    required this.onAdd,
     this.optimize = false,
     this.optimizedSize,
     this.optimizing = false,
     this.alreadySmall = false,
     this.onOptimizeChanged,
   });
-  final Uint8List bytes;
-  final VoidCallback onClear;
+  final List<PendingImageThumb> images;
+
+  /// The photos' total byte size as picked.
+  final int size;
+  final ValueChanged<int> onRemove;
+  final VoidCallback onAdd;
 
   /// Whether "Optimize size" is on.
   final bool optimize;
 
-  /// The optimized copy's byte size, once it is ready.
+  /// The optimized photos' total byte size, once every one is ready.
   final int? optimizedSize;
   final bool optimizing;
 
-  /// Optimizing found nothing worth saving; the original is sent.
+  /// Optimizing found nothing worth saving; the originals are sent.
   final bool alreadySmall;
   final ValueChanged<bool>? onOptimizeChanged;
+
+  static const double _thumbSize = 88;
 
   @override
   Widget build(BuildContext context) {
@@ -88,87 +107,65 @@ class PendingImagePreview extends StatelessWidget {
     final onOptimizeChanged = this.onOptimizeChanged;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.memory(
-                  bytes,
-                  width: 96,
-                  height: 96,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              if (optimizing)
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(12),
+          SizedBox(
+            height: _thumbSize,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: images.length + 1,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) => index == images.length
+                  ? _AddImageTile(size: _thumbSize, onTap: onAdd)
+                  : _PendingThumb(
+                      image: images[index],
+                      size: _thumbSize,
+                      onRemove: () => onRemove(index),
                     ),
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                ),
-              Positioned(
-                top: 2,
-                right: 2,
-                child: Material(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: onClear,
-                    child: Tooltip(
-                      message: l10n.actionRemove,
-                      child: const Padding(
-                        padding: EdgeInsets.all(2),
-                        child: Icon(Icons.close, size: 18),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (optimizing) ...[
-                  Text(
-                    l10n.collectionImageOptimizing,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.collectionImageOptimizingHint,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ] else
-                  Text(
-                    _sizeLabel(l10n),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                if (onOptimizeChanged != null) ...[
-                  const SizedBox(height: 4),
-                  FilterChip(
-                    label: Text(l10n.collectionImageOptimize),
-                    selected: optimize,
-                    onSelected: onOptimizeChanged,
-                  ),
-                ],
-              ],
             ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: optimizing
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.collectionImageOptimizing,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.collectionImageOptimizingHint,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        _sizeLabel(l10n),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+              ),
+              if (onOptimizeChanged != null) ...[
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: Text(l10n.collectionImageOptimize),
+                  selected: optimize,
+                  onSelected: onOptimizeChanged,
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -176,7 +173,7 @@ class PendingImagePreview extends StatelessWidget {
   }
 
   String _sizeLabel(AppLocalizations l10n) {
-    final original = formatByteSize(bytes.length);
+    final original = formatByteSize(size);
     if (!optimize) return original;
     if (alreadySmall) return '$original · ${l10n.collectionImageAlreadySmall}';
     final optimizedSize = this.optimizedSize;
@@ -188,8 +185,101 @@ class PendingImagePreview extends StatelessWidget {
   }
 }
 
+/// One staged photo: the thumbnail, dimmed under a spinner while it is being
+/// optimized, with a ✕ in its corner.
+class _PendingThumb extends StatelessWidget {
+  const _PendingThumb({
+    required this.image,
+    required this.size,
+    required this.onRemove,
+  });
+
+  final PendingImageThumb image;
+  final double size;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            image.bytes,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          ),
+        ),
+        if (image.optimizing)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+        Positioned(
+          top: 2,
+          right: 2,
+          child: Material(
+            color: theme.colorScheme.surface.withValues(alpha: 0.8),
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: Tooltip(
+                message: l10n.actionRemove,
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.close, size: 18),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The tile after the staged photos that adds more to the same card.
+class _AddImageTile extends StatelessWidget {
+  const _AddImageTile({required this.size, required this.onTap});
+
+  final double size;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: AppLocalizations.of(context).collectionAddMorePhotos,
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: SizedBox.square(
+            dimension: size,
+            child: Icon(
+              Icons.add_photo_alternate_outlined,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The recorded-but-unsent audio clip shown above the composer (§4.2) — the
-/// audio twin of [PendingImagePreview]. Tapping ✕ drops it via [onClear]; the
+/// audio twin of [PendingImagesPreview]. Tapping ✕ drops it via [onClear]; the
 /// user can add a caption first, then send.
 class PendingAudioPreview extends StatelessWidget {
   const PendingAudioPreview({super.key, required this.onClear});

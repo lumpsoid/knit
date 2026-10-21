@@ -22,9 +22,11 @@ import 'package:knit/features/collection/presentation/image_gallery_page.dart';
 import 'package:knit/features/collection/presentation/widgets/add_block_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/card_actions_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/card_bubble.dart';
+import 'package:knit/features/collection/presentation/widgets/card_image_grid.dart';
 import 'package:knit/features/collection/presentation/widgets/card_connections_badge.dart';
 import 'package:knit/features/collection/presentation/widgets/card_reorder_row.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_composer.dart';
+import 'package:knit/features/collection/presentation/widgets/composer_previews.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_error_view.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_feed.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_header_bar.dart';
@@ -481,25 +483,27 @@ class _CollectionPageState extends State<CollectionPage> {
     if (mounted) _controller.dispatch(const ReloadRequested());
   }
 
-  /// Open a card's image full-screen in the swipeable zoom gallery (§4.2), over
-  /// every loaded image card in feed order and starting at [card]. Each feed
-  /// thumbnail shares a [Hero] with its gallery page, so the open/close animates.
-  void _openImagePreview(FeedCard card) {
+  /// Open one of a card's images full-screen in the swipeable zoom gallery
+  /// (§4.2), over every loaded image of the feed in order and starting at
+  /// [card]'s image [index]. Each feed thumbnail shares a [Hero] with its
+  /// gallery page, so the open/close animates.
+  void _openImagePreview(FeedCard card, int index) {
     final state = _controller.stateHolder.value;
     final images = <GalleryImage>[];
     var initialIndex = 0;
     for (final c in state.cards) {
-      if (c.kind != CardKind.image) continue;
-      final bytes = _bytesFor(c);
-      if (bytes == null) continue;
-      if (c.id == card.id) initialIndex = images.length;
-      images.add(
-        GalleryImage(
-          bytes: bytes,
-          heroTag: imageHeroTag(c.id),
-          caption: c.text,
-        ),
-      );
+      for (final (i, id) in c.imageIds.indexed) {
+        final bytes = CollectionScope.images.of(id);
+        if (bytes == null) continue;
+        if (c.id == card.id && i == index) initialIndex = images.length;
+        images.add(
+          GalleryImage(
+            bytes: bytes,
+            heroTag: imageHeroTag(c.id, i),
+            caption: c.text,
+          ),
+        );
+      }
     }
     if (images.isEmpty) return;
     Navigator.of(
@@ -732,12 +736,19 @@ class _CollectionPageState extends State<CollectionPage> {
         return CollectionComposer(
           controller: _composer,
           autofocus: _quickInput,
-          pendingImageBytes: composer.pendingImage?.bytes,
+          pendingImages: [
+            for (final image in composer.pendingImages)
+              PendingImageThumb(
+                bytes: image.original.bytes,
+                optimizing: composer.isOptimizing(image),
+              ),
+          ],
+          pendingImagesSize: composer.pendingImagesSize,
           optimizeImage: composer.optimizeImages,
-          optimizedImageSize: composer.optimizedImage?.bytes.length,
+          optimizedImageSize: composer.optimizedImagesSize,
           optimizingImage: composer.optimizingImage,
-          imageAlreadySmall: composer.imageAlreadySmall,
-          onOptimizeImageChanged: composer.canOptimizePendingImage
+          imageAlreadySmall: composer.imagesAlreadySmall,
+          onOptimizeImageChanged: composer.canOptimizePendingImages
               ? (optimize) => unawaited(input.setOptimizeImages(optimize))
               : null,
           pendingFileName: composer.pendingFile?.name,
@@ -752,7 +763,9 @@ class _CollectionPageState extends State<CollectionPage> {
               unawaited(input.pickImage(ImagePickerSource.gallery)),
           onPickFromCamera: () =>
               unawaited(input.pickImage(ImagePickerSource.camera)),
-          onClearImage: input.clearImage,
+          onAddImages: input.showPhotoSources,
+          onRemoveImage: (index) =>
+              input.removeImage(composer.pendingImages[index]),
           onClearFile: input.clearFile,
           onStartRecording: () => unawaited(input.startRecording()),
           onPauseRecording: () => unawaited(input.pauseRecording()),
@@ -932,7 +945,6 @@ class _CollectionPageState extends State<CollectionPage> {
   /// A non-empty [selection] (the selected card ids) puts the row in
   /// multi-select mode.
   Widget _cardRow(FeedCard card, {required Set<String> selection}) {
-    final bytes = _bytesFor(card);
     final audioId = card.kind == CardKind.audio ? card.attachmentId : null;
     final bubble = CardBubble(
       cardId: card.id,
@@ -940,11 +952,11 @@ class _CollectionPageState extends State<CollectionPage> {
       text: card.text,
       fileName: card.fileName,
       fileSize: card.fileSize,
-      imageBytes: bytes,
+      images: [for (final id in card.imageIds) CollectionScope.images.of(id)],
       settled: card.settled,
       emphasized: card.emphasized,
       onTap: () => _openCardActions(card),
-      onImageTap: bytes == null ? null : () => _openImagePreview(card),
+      onImageTap: (index) => _openImagePreview(card, index),
       // Tapping a captioned file card shares it through the system sheet
       // (which offers "Open with…"); the same path the actions-sheet Share
       // uses. A caption-less file card has no other tap target, so leave it

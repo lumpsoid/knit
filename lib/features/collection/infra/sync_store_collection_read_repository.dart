@@ -182,6 +182,9 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       position: card.position!,
       text: card.content['text'] as String?,
       attachmentId: card.content['attachment_id'] as String?,
+      moreAttachmentIds: CardSchema.decodeMoreAttachmentIds(
+        card.content[CardSchema.colMoreAttachmentIds],
+      ),
       fileName: withMeta
           ? att.content[AttachmentSchema.colName] as String?
           : null,
@@ -212,9 +215,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
   ) async {
     try {
       // readAll, not feed: a card in *any* collection counts as a referent.
-      final referenced = (await _graph.store.readAll(
-        EntityType.card,
-      )).any(
+      final referenced = (await _graph.store.readAll(EntityType.card)).any(
         (c) =>
             !c.deleted &&
             CardSchema.attachmentIdsOf(c.content).contains(attachmentId),

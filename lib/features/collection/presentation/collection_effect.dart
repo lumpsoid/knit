@@ -67,21 +67,22 @@ class AddCardEffect extends CollectionEffect {
   final bool closesQuickInput;
 }
 
-/// Store the already-picked [image] (§7.4.8), then append an image card at
-/// [position] carrying [caption] (the composer text, already trimmed; null when
-/// blank). The attachment id is minted in the shell from [image] — unlike a
-/// text/link [AddCardEffect], which carries no attachment.
+/// Store the already-picked [images] (§7.4.8), then append one image card at
+/// [position] holding them all in order (§4.2) and carrying [caption] (the
+/// composer text, already trimmed; null when blank). The attachment ids are
+/// minted in the shell from [images] — unlike a text/link [AddCardEffect],
+/// which carries no attachment.
 class AddPhotoCardEffect extends CollectionEffect {
   const AddPhotoCardEffect({
     required this.collectionId,
     required this.position,
-    required this.image,
+    required this.images,
     this.caption,
     this.closesQuickInput = false,
   });
   final String collectionId;
   final String position;
-  final PickedImage image;
+  final List<PickedImage> images;
   final String? caption;
 
   /// Leave the quick-input page once the card is saved.
@@ -128,13 +129,14 @@ class AddFileCardEffect extends CollectionEffect {
   final bool closesQuickInput;
 }
 
-/// Delete [cardId] (§4.2). Links to it become broken, not gone. [attachmentId]
-/// is the card's attachment (image/audio/file) so the shell can reclaim it once
-/// the card is gone; null for text/link cards (nothing to GC).
+/// Delete [cardId] (§4.2). Links to it become broken, not gone.
+/// [attachmentIds] are the card's attachments (its images, audio or file) so
+/// the shell can reclaim them once the card is gone; empty for text/link cards
+/// (nothing to GC).
 class DeleteCardEffect extends CollectionEffect {
-  const DeleteCardEffect(this.cardId, {this.attachmentId});
+  const DeleteCardEffect(this.cardId, {this.attachmentIds = const []});
   final String cardId;
-  final String? attachmentId;
+  final List<String> attachmentIds;
 }
 
 /// Delete the collection [collectionId] (§6.1); the page then closes.
@@ -152,19 +154,20 @@ class DeleteCardsEffect extends CollectionEffect {
 }
 
 /// Share a card (§4.2). The updater resolves the card to its shareable content:
-/// [text] is the body/caption (null when blank); [attachmentId] is set for an
-/// image or file card (the shell loads its bytes). For a file card [fileName]
-/// is its stored name, used verbatim; for an image card [fileName] is null and
-/// the shell builds a date-stamped name from [imageBaseName] + the image mime.
+/// [text] is the body/caption (null when blank); [attachmentIds] are an image
+/// card's photos or a file card's file (the shell loads their bytes). For a
+/// file card [fileName] is its stored name, used verbatim; for an image card
+/// [fileName] is null and the shell builds a date-stamped name from
+/// [imageBaseName] + the image mime.
 class ShareCardEffect extends CollectionEffect {
   const ShareCardEffect({
     this.text,
-    this.attachmentId,
+    this.attachmentIds = const [],
     required this.imageBaseName,
     this.fileName,
   });
   final String? text;
-  final String? attachmentId;
+  final List<String> attachmentIds;
   final String imageBaseName;
   final String? fileName;
 }

@@ -377,6 +377,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionPhotoSourceCamera => 'Camera';
 
   @override
+  String get collectionAddMorePhotos => 'Add more photos';
+
+  @override
   String get collectionAudioStart => 'Start recording';
 
   @override

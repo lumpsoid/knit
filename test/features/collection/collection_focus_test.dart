@@ -40,6 +40,9 @@ class _UnusedImagePicker implements ImagePickerPort {
   Future<PickedImage?> pickImage({
     ImagePickerSource source = ImagePickerSource.gallery,
   }) => throw UnimplementedError();
+
+  @override
+  Future<List<PickedImage>> pickImages() => throw UnimplementedError();
 }
 
 class _UnusedAudioRecorder implements AudioRecorderPort {

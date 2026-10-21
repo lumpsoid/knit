@@ -11,6 +11,9 @@ import 'package:logging/logging.dart';
 
 class _FakeImagePicker implements ImagePickerPort {
   PickedImage? next;
+
+  /// What a gallery pick returns; defaults to [next] alone.
+  List<PickedImage>? nextMany;
   ImagePickerSource? lastSource;
   Completer<PickedImage?>? gate;
 
@@ -22,6 +25,14 @@ class _FakeImagePicker implements ImagePickerPort {
     final gate = this.gate;
     if (gate != null) return gate.future;
     return next;
+  }
+
+  @override
+  Future<List<PickedImage>> pickImages() async {
+    lastSource = ImagePickerSource.gallery;
+    final gate = this.gate;
+    if (gate != null) return [?await gate.future];
+    return nextMany ?? [?next];
   }
 }
 
@@ -142,7 +153,7 @@ void main() {
     test('plain text is sent and reported as sent', () {
       expect(composer.submit('hi'), isTrue);
       expect(sent.single.text, 'hi');
-      expect(sent.single.image, isNull);
+      expect(sent.single.images, isEmpty);
     });
 
     test('blank text with nothing staged sends nothing', () {
@@ -154,8 +165,8 @@ void main() {
       imagePicker.next = image;
       await composer.pickImage(ImagePickerSource.gallery);
       expect(composer.submit(''), isTrue);
-      expect(sent.single.image, same(image));
-      expect(state().pendingImage, isNull);
+      expect(sent.single.images.single, same(image));
+      expect(state().pendingImages, isEmpty);
     });
 
     test('one attachment per send: image, then file, then clip', () async {
@@ -169,7 +180,7 @@ void main() {
       composer.submit('2');
       composer.submit('3');
 
-      expect(sent[0].image, same(image));
+      expect(sent[0].images.single, same(image));
       expect(sent[0].file, isNull);
       expect(sent[0].audio, isNull);
       expect(sent[1].file, same(file));
@@ -199,7 +210,7 @@ void main() {
       await composer.pickImage(ImagePickerSource.camera);
       expect(imagePicker.lastSource, ImagePickerSource.camera);
       expect(state().showPhotoSources, isFalse);
-      expect(state().pendingImage, same(image));
+      expect(state().pendingImages.single.original, same(image));
     });
 
     test('a cancelled pick keeps the staged image', () async {
@@ -207,14 +218,56 @@ void main() {
       await composer.pickImage(ImagePickerSource.gallery);
       imagePicker.next = null;
       await composer.pickImage(ImagePickerSource.gallery);
-      expect(state().pendingImage, same(image));
+      expect(state().pendingImages.single.original, same(image));
     });
 
     test('clearing drops the staged image', () async {
       imagePicker.next = image;
       await composer.pickImage(ImagePickerSource.gallery);
-      composer.clearImage();
-      expect(state().pendingImage, isNull);
+      composer.clearImages();
+      expect(state().pendingImages, isEmpty);
+    });
+
+    test('a gallery pick stages every photo, in pick order', () async {
+      final second = PickedImage(
+        bytes: Uint8List.fromList([7]),
+        mime: 'image/png',
+      );
+      imagePicker.nextMany = [image, second];
+      await composer.pickImage(ImagePickerSource.gallery);
+      expect(
+        [for (final i in state().pendingImages) i.original],
+        [image, second],
+      );
+    });
+
+    test(
+      'more picks join the staged photos; one send carries them all',
+      () async {
+        final shot = PickedImage(
+          bytes: Uint8List.fromList([7]),
+          mime: 'image/png',
+        );
+        imagePicker.next = image;
+        await composer.pickImage(ImagePickerSource.gallery);
+        imagePicker.next = shot;
+        await composer.pickImage(ImagePickerSource.camera);
+        expect(composer.submit('two'), isTrue);
+        expect(sent.single.images, [image, shot]);
+        expect(sent.single.text, 'two');
+        expect(state().pendingImages, isEmpty);
+      },
+    );
+
+    test('removing one staged photo keeps the others', () async {
+      final second = PickedImage(
+        bytes: Uint8List.fromList([7]),
+        mime: 'image/png',
+      );
+      imagePicker.nextMany = [image, second];
+      await composer.pickImage(ImagePickerSource.gallery);
+      composer.removeImage(state().pendingImages.first);
+      expect(state().pendingImages.single.original, same(second));
     });
 
     test('photo options and the audio bar are exclusive', () {
@@ -248,7 +301,7 @@ void main() {
       await stage(image);
       expect(optimizer.seen, isEmpty);
       composer.submit('');
-      expect(sent.single.image, same(image));
+      expect(sent.single.images.single, same(image));
     });
 
     test(
@@ -257,9 +310,9 @@ void main() {
         optimizer.next = smaller;
         await stage(image);
         await composer.setOptimizeImages(true);
-        expect(state().optimizedImage, same(smaller));
+        expect(state().pendingImages.single.optimized, same(smaller));
         composer.submit('caption');
-        expect(sent.single.image, same(smaller));
+        expect(sent.single.images.single, same(smaller));
         expect(sent.single.text, 'caption');
       },
     );
@@ -270,7 +323,7 @@ void main() {
       await composer.setOptimizeImages(true);
       await composer.setOptimizeImages(false);
       composer.submit('');
-      expect(sent.single.image, same(image));
+      expect(sent.single.images.single, same(image));
     });
 
     test('the choice carries over to the next photo', () async {
@@ -297,7 +350,7 @@ void main() {
       gate.complete(smaller);
       await running;
       expect(composer.submit('hi'), isTrue);
-      expect(sent.single.image, same(smaller));
+      expect(sent.single.images.single, same(smaller));
     });
 
     test('turning it off mid-run cancels: the original goes at once', () async {
@@ -308,19 +361,19 @@ void main() {
       await composer.setOptimizeImages(false);
       expect(state().optimizingImage, isFalse);
       expect(composer.submit(''), isTrue);
-      expect(sent.single.image, same(image));
+      expect(sent.single.images.single, same(image));
       gate.complete(smaller);
       await running;
-      expect(state().optimizedImage, isNull);
+      expect(state().pendingImages, isEmpty);
     });
 
     test('nothing to gain keeps the original and says so', () async {
       optimizer.next = null;
       await stage(image);
       await composer.setOptimizeImages(true);
-      expect(state().imageAlreadySmall, isTrue);
+      expect(state().imagesAlreadySmall, isTrue);
       composer.submit('');
-      expect(sent.single.image, same(image));
+      expect(sent.single.images.single, same(image));
     });
 
     test('an optimizer error keeps the original', () async {
@@ -329,7 +382,7 @@ void main() {
       await composer.setOptimizeImages(true);
       expect(state().optimizingImage, isFalse);
       composer.submit('');
-      expect(sent.single.image, same(image));
+      expect(sent.single.images.single, same(image));
     });
 
     test('a format it cannot read is left alone', () async {
@@ -338,11 +391,26 @@ void main() {
         mime: 'image/gif',
       );
       await stage(gif);
-      expect(state().canOptimizePendingImage, isFalse);
+      expect(state().canOptimizePendingImages, isFalse);
       await composer.setOptimizeImages(true);
       expect(optimizer.seen, isEmpty);
       composer.submit('');
-      expect(sent.single.image, same(gif));
+      expect(sent.single.images.single, same(gif));
+    });
+
+    test('it runs over every staged photo, one at a time', () async {
+      final second = PickedImage(
+        bytes: Uint8List.fromList([5, 5, 5]),
+        mime: 'image/jpeg',
+      );
+      imagePicker.nextMany = [image, second];
+      await composer.pickImage(ImagePickerSource.gallery);
+      optimizer.next = smaller;
+      await composer.setOptimizeImages(true);
+      expect(optimizer.seen, [image, second]);
+      expect(state().optimizedImagesSize, 2);
+      composer.submit('');
+      expect(sent.single.images, [smaller, smaller]);
     });
 
     test('a result for a photo that was replaced is dropped', () async {
@@ -350,10 +418,10 @@ void main() {
       optimizer.gate = gate;
       await stage(image);
       final running = composer.setOptimizeImages(true);
-      composer.clearImage();
+      composer.clearImages();
       gate.complete(smaller);
       await running;
-      expect(state().optimizedImage, isNull);
+      expect(state().pendingImages, isEmpty);
       expect(state().optimizingImage, isFalse);
     });
   });

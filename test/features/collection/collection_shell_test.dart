@@ -132,7 +132,7 @@ void main() {
       )).getOrThrow();
 
       await shell.run(
-        DeleteCardEffect(cardId, attachmentId: attId),
+        DeleteCardEffect(cardId, attachmentIds: [attId]),
         dispatch: (_) {},
       );
 
@@ -164,7 +164,7 @@ void main() {
       );
 
       await shell.run(
-        DeleteCardEffect(cardA, attachmentId: attId),
+        DeleteCardEffect(cardA, attachmentIds: [attId]),
         dispatch: (_) {},
       );
 

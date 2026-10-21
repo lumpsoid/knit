@@ -728,6 +728,12 @@ abstract class AppLocalizations {
   /// **'Camera'**
   String get collectionPhotoSourceCamera;
 
+  /// No description provided for @collectionAddMorePhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Add more photos'**
+  String get collectionAddMorePhotos;
+
   /// No description provided for @collectionAudioStart.
   ///
   /// In en, this message translates to:

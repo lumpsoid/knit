@@ -27,6 +27,7 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
     required String position,
     String? text,
     String? attachmentId,
+    List<String> moreAttachmentIds = const [],
   }) => _write(() async {
     final id = _ids.newId();
     await _graph.store.create(EntityType.card, id, {
@@ -36,6 +37,9 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
       // Only an image card carries an attachment; omit the key for
       // text/link cards so their signed payloads stay byte-identical.
       'attachment_id': ?attachmentId,
+      CardSchema.colMoreAttachmentIds: ?CardSchema.encodeMoreAttachmentIds(
+        moreAttachmentIds,
+      ),
     }, position: position);
     return id;
   });

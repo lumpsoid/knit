@@ -4,17 +4,17 @@ import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// A card's shareable payload — primitives only (widgets.md §1), never a sync
-/// domain type. [text] is the card body / caption (null ⇒ no text); [image] is
-/// the photo, present only for an image card whose bytes were available.
+/// domain type. [text] is the card body / caption (null ⇒ no text); [files]
+/// are its photos (or its one file), those whose bytes were available.
 class ShareableCard {
-  const ShareableCard({this.text, this.image});
+  const ShareableCard({this.text, this.files = const []});
 
   final String? text;
-  final ShareableImage? image;
+  final List<ShareableImage> files;
 }
 
-/// The photo half of a [ShareableCard]: the decoded [bytes], the [mime] the
-/// blob store recorded, and the [fileName] the share sheet should present.
+/// A file of a [ShareableCard]: the decoded [bytes], the [mime] the blob store
+/// recorded, and the [fileName] the share sheet should present.
 class ShareableImage {
   const ShareableImage({
     required this.bytes,

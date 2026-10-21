@@ -79,11 +79,13 @@ class CollectionMediaShell
         final shared = await _share.share(
           ShareableCard(
             text: caption,
-            image: ShareableImage(
-              bytes: file.bytes,
-              mime: file.mime,
-              fileName: fileName ?? file.name ?? _fallbackFileName,
-            ),
+            files: [
+              ShareableImage(
+                bytes: file.bytes,
+                mime: file.mime,
+                fileName: fileName ?? file.name ?? _fallbackFileName,
+              ),
+            ],
           ),
         );
         shared.onFailure(

@@ -6,13 +6,13 @@ import 'package:image/image.dart' as img;
 import 'package:knit/features/collection/presentation/widgets/composer_previews.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-/// The staged photo's size line and "Optimize size" chip.
+/// The staged photos' thumbnails, size line and "Optimize size" chip.
 void main() {
   final bytes = Uint8List.fromList(
     img.encodePng(img.Image(width: 8, height: 8)),
   );
 
-  Future<void> pump(WidgetTester tester, PendingImagePreview preview) =>
+  Future<void> pump(WidgetTester tester, PendingImagesPreview preview) =>
       tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -27,9 +27,11 @@ void main() {
     bool? changed;
     await pump(
       tester,
-      PendingImagePreview(
-        bytes: bytes,
-        onClear: () {},
+      PendingImagesPreview(
+        images: [PendingImageThumb(bytes: bytes)],
+        size: bytes.length,
+        onRemove: (_) {},
+        onAdd: () {},
         onOptimizeChanged: (value) => changed = value,
       ),
     );
@@ -41,9 +43,11 @@ void main() {
   testWidgets('once optimized, shows what it saves', (tester) async {
     await pump(
       tester,
-      PendingImagePreview(
-        bytes: bytes,
-        onClear: () {},
+      PendingImagesPreview(
+        images: [PendingImageThumb(bytes: bytes)],
+        size: bytes.length,
+        onRemove: (_) {},
+        onAdd: () {},
         optimize: true,
         optimizedSize: 20,
         onOptimizeChanged: (_) {},
@@ -58,9 +62,11 @@ void main() {
     bool? changed;
     await pump(
       tester,
-      PendingImagePreview(
-        bytes: bytes,
-        onClear: () {},
+      PendingImagesPreview(
+        images: [PendingImageThumb(bytes: bytes, optimizing: true)],
+        size: bytes.length,
+        onRemove: (_) {},
+        onAdd: () {},
         optimize: true,
         optimizing: true,
         onOptimizeChanged: (value) => changed = value,
@@ -77,7 +83,39 @@ void main() {
   });
 
   testWidgets('a format it cannot optimize has no chip', (tester) async {
-    await pump(tester, PendingImagePreview(bytes: bytes, onClear: () {}));
+    await pump(
+      tester,
+      PendingImagesPreview(
+        images: [PendingImageThumb(bytes: bytes)],
+        size: bytes.length,
+        onRemove: (_) {},
+        onAdd: () {},
+      ),
+    );
     expect(find.byType(FilterChip), findsNothing);
+  });
+
+  testWidgets('each staged photo has its own ✕, and "+" adds more', (
+    tester,
+  ) async {
+    final removed = <int>[];
+    var added = 0;
+    await pump(
+      tester,
+      PendingImagesPreview(
+        images: [
+          PendingImageThumb(bytes: bytes),
+          PendingImageThumb(bytes: bytes),
+        ],
+        size: bytes.length * 2,
+        onRemove: removed.add,
+        onAdd: () => added++,
+      ),
+    );
+    expect(find.byIcon(Icons.close), findsNWidgets(2));
+    await tester.tap(find.byIcon(Icons.close).last);
+    expect(removed, [1]);
+    await tester.tap(find.byIcon(Icons.add_photo_alternate_outlined));
+    expect(added, 1);
   });
 }

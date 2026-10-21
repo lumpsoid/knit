@@ -111,8 +111,7 @@ abstract class ProjectionRowMapper {
           CardSchema.colKind: row[CardSchema.colKind],
           CardSchema.colText: row[CardSchema.colText],
           CardSchema.colAttachmentId: row[CardSchema.colAttachmentId],
-          CardSchema.colMoreAttachmentIds:
-              row[CardSchema.colMoreAttachmentIds],
+          CardSchema.colMoreAttachmentIds: row[CardSchema.colMoreAttachmentIds],
           CardSchema.colSettledAt: row[CardSchema.colSettledAt],
           CardSchema.colEmphasizedAt: row[CardSchema.colEmphasizedAt],
         },

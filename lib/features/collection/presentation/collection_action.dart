@@ -61,12 +61,18 @@ class OlderCardsLoadFailed extends CollectionAction {
 }
 
 /// The bottom composer sent (§4.2): [text] as a text card, or as the caption
-/// of the one staged attachment riding along — an [image], a [file], or an
-/// [audio] clip (at most one is set; the composer picks it).
+/// of the staged attachment riding along — [images] (one image card holding
+/// them all, in order), a [file], or an [audio] clip (one kind at most; the
+/// composer picks it).
 class ComposerSubmitted extends CollectionAction {
-  const ComposerSubmitted(this.text, {this.image, this.file, this.audio});
+  const ComposerSubmitted(
+    this.text, {
+    this.images = const [],
+    this.file,
+    this.audio,
+  });
   final String text;
-  final PickedImage? image;
+  final List<PickedImage> images;
   final PickedFile? file;
   final PickedAudio? audio;
 }

@@ -309,7 +309,7 @@ void main() {
     test('quick input closes after an attachment send too', () {
       final (_, effects) = updater.update(
         ready(const []).copyWith(quickInput: true),
-        ComposerSubmitted('', image: image),
+        ComposerSubmitted('', images: [image]),
       );
       expect((effects!.single as AddPhotoCardEffect).closesQuickInput, isTrue);
     });
@@ -348,20 +348,32 @@ void main() {
     test('sending an image emits a photo card with the trimmed caption', () {
       final (next, effects) = updater.update(
         ready([card('c1', 'a0')]),
-        ComposerSubmitted('  a caption  ', image: image),
+        ComposerSubmitted('  a caption  ', images: [image]),
       );
       final effect = effects!.single as AddPhotoCardEffect;
       expect(effect.collectionId, 'col');
       expect(effect.position.compareTo('a0') > 0, isTrue);
       expect(effect.caption, 'a caption', reason: 'trimmed');
-      expect(effect.image, same(image));
+      expect(effect.images.single, same(image));
       expect(next.cards, hasLength(1), reason: 'the feed waits for the resync');
+    });
+
+    test('several staged photos go as one photo card, in order', () {
+      final second = PickedImage(
+        bytes: Uint8List.fromList([9]),
+        mime: 'image/png',
+      );
+      final (_, effects) = updater.update(
+        ready(const []),
+        ComposerSubmitted('', images: [image, second]),
+      );
+      expect((effects!.single as AddPhotoCardEffect).images, [image, second]);
     });
 
     test('an attachment with blank text carries a null caption', () {
       final (_, effects) = updater.update(
         ready(const []),
-        ComposerSubmitted('   ', image: image),
+        ComposerSubmitted('   ', images: [image]),
       );
       final effect = effects!.single as AddPhotoCardEffect;
       expect(effect.caption, isNull);
@@ -402,8 +414,8 @@ void main() {
         ComposerSubmitted('beach', file: imageFile),
       );
       final effect = effects!.single as AddPhotoCardEffect;
-      expect(effect.image.bytes, imageFile.bytes);
-      expect(effect.image.mime, 'image/jpeg');
+      expect(effect.images.single.bytes, imageFile.bytes);
+      expect(effect.images.single.mime, 'image/jpeg');
       expect(effect.caption, 'beach');
       expect(effect.position.compareTo('a0') > 0, isTrue);
     });
@@ -448,7 +460,25 @@ void main() {
       );
       final eff = effects!.single as DeleteCardEffect;
       expect(eff.cardId, 'c1');
-      expect(eff.attachmentId, 'att-1');
+      expect(eff.attachmentIds, ['att-1']);
+    });
+
+    test('delete carries every image of a several-photo card for GC', () {
+      const img = FeedCard(
+        id: 'c1',
+        kind: CardKind.image,
+        position: 'a0',
+        attachmentId: 'att-1',
+        moreAttachmentIds: ['att-2'],
+      );
+      final (_, effects) = updater.update(
+        ready([img]),
+        const CardDeleteRequested('c1'),
+      );
+      expect((effects!.single as DeleteCardEffect).attachmentIds, [
+        'att-1',
+        'att-2',
+      ]);
     });
 
     test('deleting the collection emits a delete for this collection', () {
@@ -465,7 +495,7 @@ void main() {
         ready([card('c2', 'a0')]),
         const CardDeleteRequested('c2'),
       );
-      expect((effects!.single as DeleteCardEffect).attachmentId, isNull);
+      expect((effects!.single as DeleteCardEffect).attachmentIds, isEmpty);
     });
 
     test('link to a collection emits LinkEffect with the collection kind', () {
@@ -520,7 +550,7 @@ void main() {
       );
       final effect = effects!.single as ShareCardEffect;
       expect(effect.text, 'c1');
-      expect(effect.attachmentId, isNull);
+      expect(effect.attachmentIds, isEmpty);
     });
 
     test('an image card shares the photo plus its caption, date-stamped', () {
@@ -530,8 +560,27 @@ void main() {
       );
       final effect = effects!.single as ShareCardEffect;
       expect(effect.text, 'a caption');
-      expect(effect.attachmentId, 'att-1');
+      expect(effect.attachmentIds, ['att-1']);
       expect(effect.imageBaseName, matches(r'^\d{4}-\d{2}-\d{2}-knit$'));
+    });
+
+    test('an image card with several photos shares them all, in order', () {
+      const many = FeedCard(
+        id: v7Id,
+        kind: CardKind.image,
+        position: 'a0',
+        attachmentId: 'att-1',
+        moreAttachmentIds: ['att-2', 'att-3'],
+      );
+      final (_, effects) = updater.update(
+        ready([many]),
+        const CardShareRequested(v7Id),
+      );
+      expect((effects!.single as ShareCardEffect).attachmentIds, [
+        'att-1',
+        'att-2',
+        'att-3',
+      ]);
     });
 
     test('an image card with no caption shares the photo alone', () {
@@ -541,7 +590,7 @@ void main() {
       );
       final effect = effects!.single as ShareCardEffect;
       expect(effect.text, isNull);
-      expect(effect.attachmentId, 'att-1');
+      expect(effect.attachmentIds, ['att-1']);
     });
 
     test('the photo file-name stem falls back to "knit" for a non-v7 id', () {
@@ -583,7 +632,7 @@ void main() {
         const CardShareRequested('f1'),
       );
       final effect = effects!.single as ShareCardEffect;
-      expect(effect.attachmentId, 'att-9');
+      expect(effect.attachmentIds, ['att-9']);
       expect(effect.fileName, 'report.pdf');
     });
   });

@@ -383,6 +383,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionPhotoSourceCamera => 'Камера';
 
   @override
+  String get collectionAddMorePhotos => 'Добавить ещё фото';
+
+  @override
   String get collectionAudioStart => 'Начать запись';
 
   @override

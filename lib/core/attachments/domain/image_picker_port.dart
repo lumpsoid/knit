@@ -14,4 +14,8 @@ abstract class ImagePickerPort {
   Future<PickedImage?> pickImage({
     ImagePickerSource source = ImagePickerSource.gallery,
   });
+
+  /// Prompt the user to pick one or more images from the gallery, in the
+  /// order they chose them. Returns an empty list if they cancel.
+  Future<List<PickedImage>> pickImages();
 }

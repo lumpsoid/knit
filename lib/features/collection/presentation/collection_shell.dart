@@ -162,14 +162,14 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       case AddPhotoCardEffect(
         :final collectionId,
         :final position,
-        :final image,
+        :final images,
         :final caption,
         :final closesQuickInput,
       ):
         await _addPhotoCard(
           collectionId,
           position,
-          image,
+          images,
           caption,
           dispatch,
           onSuccess: _quickInputCloser(closesQuickInput),
@@ -207,12 +207,16 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           onSuccess: _quickInputCloser(closesQuickInput),
         );
 
-      case DeleteCardEffect(:final cardId, :final attachmentId):
+      case DeleteCardEffect(:final cardId, :final attachmentIds):
         await _runWrite(
           () => _write.deleteCard(cardId),
           'delete card',
           dispatch,
-          onSuccess: () => _gcDeletedCardAttachment(attachmentId),
+          onSuccess: () async {
+            for (final id in attachmentIds) {
+              await _gcDeletedCardAttachment(id);
+            }
+          },
         );
 
       case DeleteCollectionEffect(:final collectionId):
@@ -251,11 +255,11 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
 
       case ShareCardEffect(
         :final text,
-        :final attachmentId,
+        :final attachmentIds,
         :final imageBaseName,
         :final fileName,
       ):
-        await _shareCard(text, attachmentId, imageBaseName, fileName);
+        await _shareCard(text, attachmentIds, imageBaseName, fileName);
 
       case OpenLinkEffect(:final url):
         await _openLink(url);
@@ -366,30 +370,39 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     }
   }
 
-  /// Store the already-picked [image] (content-addressed, §7.4.8), then append
-  /// an image card carrying [caption] and resync. The preview was cleared
+  /// Store the already-picked [images] (content-addressed, §7.4.8), then
+  /// append one image card holding them in order (§4.2), carrying [caption],
+  /// and resync. The preview was cleared
   /// optimistically by the updater on send; a store/write failure surfaces a
   /// message and still resyncs, matching the text/link write path.
   Future<void> _addPhotoCard(
     String collectionId,
     String position,
-    PickedImage image,
+    List<PickedImage> images,
     String? caption,
     void Function(CollectionAction) dispatch, {
     Future<void> Function()? onSuccess,
   }) async {
-    final created = await _attachmentWrite.createFromPicked(image);
-    if (created.isFailure) {
-      _log.severe('Store picked image failed', created.error);
-      _effectEmitter.push(
-        const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
-      );
-      dispatch(const ReloadRequested());
-      return;
+    final ids = <String>[];
+    for (final image in images) {
+      final created = await _attachmentWrite.createFromPicked(image);
+      if (created.isFailure) {
+        _log.severe('Store picked image failed', created.error);
+        // The card is never written: drop the photos already stored.
+        for (final id in ids) {
+          await _attachmentWrite.delete(id);
+        }
+        _effectEmitter.push(
+          const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
+        );
+        dispatch(const ReloadRequested());
+        return;
+      }
+      // The bytes are in hand: seed the shared cache so the new card renders
+      // without reading them back.
+      _images.put(created.getOrThrow(), image.bytes);
+      ids.add(created.getOrThrow());
     }
-    // The bytes are in hand: seed the shared cache so the new card renders
-    // without reading them back.
-    _images.put(created.getOrThrow(), image.bytes);
 
     await _runWrite(
       () => _write.addCard(
@@ -397,7 +410,8 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         kind: CardKind.image,
         position: position,
         text: caption,
-        attachmentId: created.getOrThrow(),
+        attachmentId: ids.first,
+        moreAttachmentIds: ids.sublist(1),
       ),
       'add photo card',
       dispatch,
@@ -481,18 +495,20 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   /// it triggers no resync; a failure is logged only.
   Future<void> _shareCard(
     String? text,
-    String? attachmentId,
+    List<String> attachmentIds,
     String imageBaseName,
     String? fileName,
   ) async {
-    ShareableImage? image;
-    if (attachmentId != null) {
+    final files = <ShareableImage>[];
+    for (final (index, attachmentId) in attachmentIds.indexed) {
       final result = await _attachmentRead.bytesOf(attachmentId);
       if (result.isFailure) {
         _log.warning('Share: attachment bytes missing for $attachmentId');
-      } else {
-        final bytes = result.getOrThrow();
-        image = fileName != null
+        continue;
+      }
+      final bytes = result.getOrThrow();
+      files.add(
+        fileName != null
             ? ShareableImage(
                 bytes: bytes.bytes,
                 mime: bytes.mime,
@@ -501,13 +517,17 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
             : ShareableImage.named(
                 bytes: bytes.bytes,
                 mime: bytes.mime,
-                baseName: imageBaseName,
-              );
-      }
+                // Several photos get numbered names, so none overwrites another.
+                baseName: attachmentIds.length == 1
+                    ? imageBaseName
+                    : '$imageBaseName-${index + 1}',
+              ),
+      );
     }
-    // The attachment may have vanished from a text-less card — nothing to share.
-    if (text == null && image == null) return;
-    final shared = await _share.share(ShareableCard(text: text, image: image));
+    // The attachments may have vanished from a text-less card — nothing to
+    // share.
+    if (text == null && files.isEmpty) return;
+    final shared = await _share.share(ShareableCard(text: text, files: files));
     shared.onFailure(
       (failure) =>
           _log.severe('Share card failed', failure.error, failure.stackTrace),

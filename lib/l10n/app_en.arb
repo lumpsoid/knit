@@ -159,6 +159,7 @@
   "collectionBlockFile": "File",
   "collectionPhotoSourceGallery": "Gallery",
   "collectionPhotoSourceCamera": "Camera",
+  "collectionAddMorePhotos": "Add more photos",
   "collectionAudioStart": "Start recording",
   "collectionAudioStop": "Stop",
   "collectionAudioPause": "Pause",

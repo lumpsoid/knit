@@ -72,6 +72,7 @@ class FeedCard {
     required this.position,
     this.text,
     this.attachmentId,
+    this.moreAttachmentIds = const [],
     this.fileName,
     this.fileSize,
     this.connectionCount = 0,
@@ -91,6 +92,18 @@ class FeedCard {
 
   /// `attachment_id` for image/audio/file cards (§7.4.3); null otherwise.
   final String? attachmentId;
+
+  /// An image card's further images after [attachmentId], in order (§4.2);
+  /// empty for one image and for every other kind.
+  final List<String> moreAttachmentIds;
+
+  /// Every attachment the card points at: [attachmentId], then
+  /// [moreAttachmentIds].
+  List<String> get attachmentIds => [?attachmentId, ...moreAttachmentIds];
+
+  /// The images an image card shows, in order; empty for other kinds.
+  List<String> get imageIds =>
+      kind == CardKind.image ? attachmentIds : const [];
 
   /// For a file or audio card, the attachment's original file name and byte size
   /// (§7.4.8), resolved eagerly into the feed read so the chip can label/size it
@@ -139,6 +152,7 @@ class FeedCard {
     position: position ?? this.position,
     text: text,
     attachmentId: attachmentId,
+    moreAttachmentIds: moreAttachmentIds,
     fileName: fileName,
     fileSize: fileSize,
     connectionCount: connectionCount,

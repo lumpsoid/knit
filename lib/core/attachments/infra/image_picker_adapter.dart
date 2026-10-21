@@ -42,6 +42,16 @@ class ImagePickerAdapter implements ImagePickerPort {
     return PickedImage(bytes: bytes, mime: _mimeOf(file.name));
   }
 
+  @override
+  Future<List<PickedImage>> pickImages() async {
+    final result = await FilePicker.pickFiles(type: FileType.image);
+    if (result == null) return const [];
+    return [
+      for (final file in result.files)
+        PickedImage(bytes: await file.readAsBytes(), mime: _mimeOf(file.name)),
+    ];
+  }
+
   Future<PickedImage?> _pickFromCamera() async {
     final file = await _picker.pickImage(source: ImageSource.camera);
     if (file == null) return null;
