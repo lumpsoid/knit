@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
+import 'package:knit/core/files/infra/log_archive.dart';
 import 'package:knit/features/backup/domain/backup_models.dart';
 
 /// The on-disk backup layout (one `.zip`):
@@ -12,9 +12,6 @@ import 'package:knit/features/backup/domain/backup_models.dart';
 const String kBackupFormat = 'knit-backup';
 const int kBackupVersion = 2;
 
-const String _manifestEntry = 'manifest.json';
-const String _logEntry = 'log.jsonl';
-const String _blobsPrefix = 'blobs/';
 const String _identityEntry = 'identity.json';
 
 /// The bundle header. Self-describing so a future reader can refuse an
@@ -80,9 +77,9 @@ class ParsedBackup {
   );
 }
 
-/// Pure zip (de)serialization for the backup bundle. Not a storage abstraction —
-/// `package:archive` is pure Dart, so this runs verbatim in unit tests. The
-/// repositories own the store/blob I/O; this only shapes bytes ↔ entries.
+/// Pure zip (de)serialization for the backup bundle, over the shared
+/// [LogArchive] layout. The repositories own the store/blob I/O; this only
+/// shapes bytes ↔ entries.
 class BackupArchiveCodec {
   const BackupArchiveCodec();
 
@@ -91,44 +88,24 @@ class BackupArchiveCodec {
     required List<String> opLines,
     required Map<String, Uint8List> blobs,
     SealedIdentity? identity,
-  }) {
-    final archive = Archive()
-      ..addFile(
-        ArchiveFile.string(_manifestEntry, jsonEncode(manifest.toJson())),
-      )
-      ..addFile(ArchiveFile.string(_logEntry, opLines.join('\n')));
-    if (identity != null) {
-      archive.addFile(
-        ArchiveFile.string(
-          _identityEntry,
-          jsonEncode(_identityToJson(identity)),
-        ),
-      );
-    }
-    blobs.forEach((hash, bytes) {
-      archive.addFile(ArchiveFile.bytes('$_blobsPrefix$hash', bytes));
-    });
-    return Uint8List.fromList(ZipEncoder().encode(archive));
-  }
+  }) => LogArchive.encode(
+    LogArchiveEntries(
+      manifest: manifest.toJson(),
+      opLines: opLines,
+      blobs: blobs,
+      extras: {
+        if (identity != null)
+          _identityEntry: jsonEncode(_identityToJson(identity)),
+      },
+    ),
+  );
 
   /// Decode a bundle. Throws [FormatException] when the bytes are not a valid
   /// zip, the manifest is missing, or the format/version is incompatible — the
   /// repository maps that to a `BackupCorruptArchiveFailure`.
   ParsedBackup decode(Uint8List zip) {
-    final Archive archive;
-    try {
-      archive = ZipDecoder().decodeBytes(zip);
-    } catch (e) {
-      throw const FormatException('not a valid zip archive');
-    }
-
-    final manifestFile = archive.findFile(_manifestEntry);
-    if (manifestFile == null) {
-      throw const FormatException('missing manifest.json');
-    }
-    final manifest = BackupManifest.fromJson(
-      jsonDecode(utf8.decode(manifestFile.content)) as Map<String, Object?>,
-    );
+    final entries = LogArchive.decode(zip, extras: const {_identityEntry});
+    final manifest = BackupManifest.fromJson(entries.manifest);
     if (manifest.format != kBackupFormat) {
       throw FormatException('unrecognized backup format: "${manifest.format}"');
     }
@@ -136,36 +113,15 @@ class BackupArchiveCodec {
       throw FormatException('unsupported backup version: ${manifest.version}');
     }
 
-    final logFile = archive.findFile(_logEntry);
-    final opLines = logFile == null
-        ? const <String>[]
-        : const LineSplitter()
-              .convert(utf8.decode(logFile.content))
-              .where((line) => line.trim().isNotEmpty)
-              .toList(growable: false);
-
-    final blobs = <String, Uint8List>{};
-    for (final file in archive.files) {
-      if (!file.name.startsWith(_blobsPrefix)) continue;
-      final hash = file.name.substring(_blobsPrefix.length);
-      if (hash.isEmpty) continue;
-      final bytes = file.readBytes();
-      if (bytes == null) continue;
-      blobs[hash] = bytes;
-    }
-
-    final identityFile = archive.findFile(_identityEntry);
-    final identity = identityFile == null
+    final identityJson = entries.extras[_identityEntry];
+    final identity = identityJson == null
         ? null
-        : _identityFromJson(
-            jsonDecode(utf8.decode(identityFile.content))
-                as Map<String, Object?>,
-          );
+        : _identityFromJson(jsonDecode(identityJson) as Map<String, Object?>);
 
     return ParsedBackup(
       manifest: manifest,
-      opLines: opLines,
-      blobs: blobs,
+      opLines: entries.opLines,
+      blobs: entries.blobs,
       identity: identity,
     );
   }
