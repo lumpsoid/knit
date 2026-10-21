@@ -34,7 +34,7 @@ void main() {
     expect(optimized!.mime, 'image/jpeg');
     expect(optimized.bytes.length, lessThan(original.bytes.length));
     final decoded = img.decodeImage(optimized.bytes)!;
-    expect((decoded.width, decoded.height), (2048, 1365));
+    expect((decoded.width, decoded.height), (1600, 1067));
   });
 
   test('a see-through image stays PNG', () async {
@@ -54,8 +54,37 @@ void main() {
     );
     final optimized = await optimizer.optimize(original);
     final decoded = img.decodeImage(optimized!.bytes)!;
-    expect((decoded.width, decoded.height), (683, 2048));
+    expect((decoded.width, decoded.height), (533, 1600));
     expect(decoded.exif.imageIfd.hasOrientation, isFalse);
+  });
+
+  group('metadata', () {
+    PickedImage cameraPhoto() {
+      final photo = _photo(3000, 2000);
+      photo.exif.imageIfd['Make'] = 'Pixel';
+      photo.exif.imageIfd.orientation = 1;
+      // GPS tags have no names in package:image; 1 is GPSLatitudeRef.
+      photo.exif.gpsIfd[1] = img.IfdValueAscii('N');
+      return PickedImage(
+        bytes: img.encodeJpg(photo, quality: 100),
+        mime: 'image/jpeg',
+      );
+    }
+
+    test('is kept by default, minus the orientation', () async {
+      final optimized = await optimizer.optimize(cameraPhoto());
+      final exif = img.decodeJpgExif(optimized!.bytes)!;
+      expect(exif.imageIfd['Make']?.toString(), 'Pixel');
+      expect(exif.gpsIfd[1]?.toString(), 'N');
+      expect(exif.imageIfd.hasOrientation, isFalse);
+    });
+
+    test('is dropped when the setting says so', () async {
+      final stripping = PackageImageOptimizer(keepMetadata: () => false);
+      final optimized = await stripping.optimize(cameraPhoto());
+      final exif = img.decodeJpgExif(optimized!.bytes);
+      expect(exif == null || exif.isEmpty, isTrue);
+    });
   });
 
   test('an already small photo is left alone', () async {

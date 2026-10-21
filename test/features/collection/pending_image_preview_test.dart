@@ -52,7 +52,10 @@ void main() {
     expect(find.text('$size → 20 B'), findsOneWidget);
   });
 
-  testWidgets('while optimizing, the chip waits', (tester) async {
+  testWidgets('optimizing is its own phase, and the chip cancels it', (
+    tester,
+  ) async {
+    bool? changed;
     await pump(
       tester,
       PendingImagePreview(
@@ -60,14 +63,17 @@ void main() {
         onClear: () {},
         optimize: true,
         optimizing: true,
-        onOptimizeChanged: (_) {},
+        onOptimizeChanged: (value) => changed = value,
       ),
     );
-    expect(find.text('$size · Optimizing…'), findsOneWidget);
+    expect(find.text('Optimizing photo…'), findsOneWidget);
     expect(
-      tester.widget<FilterChip>(find.byType(FilterChip)).onSelected,
-      isNull,
+      find.text('Resizing to 1600×1200. This can take a few seconds.'),
+      findsOneWidget,
     );
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.tap(find.text('Optimize size'));
+    expect(changed, isFalse);
   });
 
   testWidgets('a format it cannot optimize has no chip', (tester) async {

@@ -411,7 +411,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionImageOptimize => 'Optimize size';
 
   @override
-  String get collectionImageOptimizing => 'Optimizing…';
+  String get collectionImageOptimizing => 'Optimizing photo…';
+
+  @override
+  String get collectionImageOptimizingHint =>
+      'Resizing to 1600×1200. This can take a few seconds.';
 
   @override
   String get collectionImageAlreadySmall => 'Already small';
@@ -777,6 +781,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLanguageTitle => 'Language';
+
+  @override
+  String get settingsKeepPhotoMetadataTitle => 'Keep photo metadata';
+
+  @override
+  String get settingsKeepPhotoMetadataSubtitle =>
+      'When a photo is optimized, keep its camera, date and location details';
 
   @override
   String get settingsLanguageSystem => 'System default';

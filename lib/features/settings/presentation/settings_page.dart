@@ -53,6 +53,14 @@ class SettingsPage extends StatelessWidget {
                 subtitle: Text(_languageLabel(l10n, prefs.language)),
                 onTap: () => _pickLanguage(context, prefs.language),
               ),
+              SwitchListTile(
+                secondary: const Icon(Icons.photo_camera_outlined),
+                title: Text(l10n.settingsKeepPhotoMetadataTitle),
+                subtitle: Text(l10n.settingsKeepPhotoMetadataSubtitle),
+                value: prefs.keepPhotoMetadata,
+                onChanged: (keep) =>
+                    _controller.dispatch(KeepPhotoMetadataToggled(keep)),
+              ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.info_outline),

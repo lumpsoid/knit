@@ -152,12 +152,16 @@ deleted. Archiving takes it off the home timeline without losing anything.
   blocks. Selecting a type transforms the sheet into that block's sheet — "link" becomes a
   **finder sheet** (search cards / collections / existing link objects).
 - **Optimize size** (opt-in): a staged photo shows its size and an *Optimize size* chip.
-  On, the photo is scaled to fit 2048 px on its long side and re-encoded (JPEG, or PNG
-  when it has transparency), with its orientation baked in and its metadata dropped; the
-  preview shows the saving and the smaller copy is what gets stored. If it would not save
-  at least a tenth, the original is kept ("Already small"). GIF and HEIC are left as they
-  are. The choice carries over to the next photo on that page; it is device-local UI,
-  never synced.
+  On, the photo is scaled to fit 1600×1200 (1200×1600 for a portrait photo) and re-encoded
+  (JPEG, or PNG when it has transparency), with its orientation baked in. Its metadata
+  (camera, date, location) is kept, unless Settings → *Keep photo metadata* is off (a
+  device-local preference, on by default). Optimizing is a visible phase: the thumbnail
+  dims under a spinner, the line reads "Optimizing photo… This can take a few seconds",
+  and the send button shows a spinner until it's done; turning the chip off cancels it.
+  Then the preview shows the saving and the smaller copy is what gets stored. If it would
+  not save at least a tenth, the original is kept ("Already small"). GIF and HEIC are left
+  as they are. The choice carries over to the next photo on that page; it is device-local
+  UI, never synced.
 - **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle · emphasize/unemphasize (§3.3) ·
   delete.
 - **⋮ menu** in the app bar opens a sheet with **Present** (§4.9) and **Reorder**.
@@ -179,7 +183,8 @@ deleted. Archiving takes it off the home timeline without losing anything.
 Edit text/content; manage that card's image and its links; **Settled** and
 **Emphasized** toggles (§3.3). An image card also offers **Optimize**: the same rules as
 the composer's *Optimize size* (§4.2) swap the image for a smaller copy (a new attachment;
-the original is dropped), and a snackbar says what it saved — or that the photo can't be
+the original is dropped; the section shows the same "Optimizing photo…" phase while it
+runs), and a snackbar says what it saved — or that the photo can't be
 made smaller, leaving it as it is.
 
 ### 4.4 Connections view

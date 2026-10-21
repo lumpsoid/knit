@@ -797,8 +797,14 @@ abstract class AppLocalizations {
   /// No description provided for @collectionImageOptimizing.
   ///
   /// In en, this message translates to:
-  /// **'Optimizing…'**
+  /// **'Optimizing photo…'**
   String get collectionImageOptimizing;
+
+  /// No description provided for @collectionImageOptimizingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Resizing to 1600×1200. This can take a few seconds.'**
+  String get collectionImageOptimizingHint;
 
   /// No description provided for @collectionImageAlreadySmall.
   ///
@@ -1435,6 +1441,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Language'**
   String get settingsLanguageTitle;
+
+  /// No description provided for @settingsKeepPhotoMetadataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep photo metadata'**
+  String get settingsKeepPhotoMetadataTitle;
+
+  /// No description provided for @settingsKeepPhotoMetadataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When a photo is optimized, keep its camera, date and location details'**
+  String get settingsKeepPhotoMetadataSubtitle;
 
   /// No description provided for @settingsLanguageSystem.
   ///

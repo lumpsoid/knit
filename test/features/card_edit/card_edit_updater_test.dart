@@ -480,8 +480,23 @@ void main() {
         const OptimizeImageRequested(),
       );
       expect(next.attachmentBusy, isTrue);
+      expect(next.optimizingImage, isTrue);
       final effect = effects!.single as OptimizeImageEffect;
       expect((effect.cardId, effect.attachmentId), ('c1', 'a1'));
+    });
+
+    test('the phase ends however the edit ends', () {
+      final busy = withImage.copyWith(
+        attachmentBusy: true,
+        optimizingImage: true,
+      );
+      final (ended, _) = updater.update(busy, const AttachmentEditEnded());
+      expect(ended.optimizingImage, isFalse);
+      final (resolved, _) = updater.update(
+        busy,
+        const AttachmentResolved(attachmentId: 'a2', kind: CardKind.image),
+      );
+      expect(resolved.optimizingImage, isFalse);
     });
 
     test('ignored for a non-image attachment or mid-edit', () {

@@ -29,30 +29,41 @@ enum AppLanguage {
   );
 }
 
-/// This device's UI preferences (theme + language). Device-local config, not
-/// synced graph data — persisted in shared_preferences, never the change log.
+/// This device's UI preferences (theme, language, and whether an optimized
+/// photo keeps its metadata). Device-local config, not synced graph data —
+/// persisted in shared_preferences, never the change log.
 @immutable
 class AppPreferences {
   const AppPreferences({
     this.themeMode = AppThemeMode.system,
     this.language = AppLanguage.system,
+    this.keepPhotoMetadata = true,
   });
 
   final AppThemeMode themeMode;
   final AppLanguage language;
 
-  AppPreferences copyWith({AppThemeMode? themeMode, AppLanguage? language}) =>
-      AppPreferences(
-        themeMode: themeMode ?? this.themeMode,
-        language: language ?? this.language,
-      );
+  /// Whether "Optimize size" carries a photo's metadata (camera, date,
+  /// location) over to the smaller copy. On by default: it is the user's data.
+  final bool keepPhotoMetadata;
+
+  AppPreferences copyWith({
+    AppThemeMode? themeMode,
+    AppLanguage? language,
+    bool? keepPhotoMetadata,
+  }) => AppPreferences(
+    themeMode: themeMode ?? this.themeMode,
+    language: language ?? this.language,
+    keepPhotoMetadata: keepPhotoMetadata ?? this.keepPhotoMetadata,
+  );
 
   @override
   bool operator ==(Object other) =>
       other is AppPreferences &&
       other.themeMode == themeMode &&
-      other.language == language;
+      other.language == language &&
+      other.keepPhotoMetadata == keepPhotoMetadata;
 
   @override
-  int get hashCode => Object.hash(themeMode, language);
+  int get hashCode => Object.hash(themeMode, language, keepPhotoMetadata);
 }

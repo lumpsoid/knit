@@ -300,6 +300,20 @@ void main() {
       expect(sent.single.image, same(smaller));
     });
 
+    test('turning it off mid-run cancels: the original goes at once', () async {
+      final gate = Completer<PickedImage?>();
+      optimizer.gate = gate;
+      await stage(image);
+      final running = composer.setOptimizeImages(true);
+      await composer.setOptimizeImages(false);
+      expect(state().optimizingImage, isFalse);
+      expect(composer.submit(''), isTrue);
+      expect(sent.single.image, same(image));
+      gate.complete(smaller);
+      await running;
+      expect(state().optimizedImage, isNull);
+    });
+
     test('nothing to gain keeps the original and says so', () async {
       optimizer.next = null;
       await stage(image);

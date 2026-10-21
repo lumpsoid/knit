@@ -18,6 +18,7 @@ void main() {
     const prefs = AppPreferences(
       themeMode: AppThemeMode.dark,
       language: AppLanguage.russian,
+      keepPhotoMetadata: false,
     );
 
     final saved = await repo.save(prefs);

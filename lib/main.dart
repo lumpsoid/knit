@@ -213,6 +213,16 @@ void bootstrap(AppConfig config) {
       timelineChannel: timelineChannel,
     ).controller,
   );
+  // "Optimize size" for a photo added to a card; it reads the Settings toggle
+  // for keeping the photo's metadata each time it runs.
+  final imageOptimizer = PackageImageOptimizer(
+    keepMetadata: () => SettingsScope
+        .controller
+        .stateHolder
+        .value
+        .preferences
+        .keepPhotoMetadata,
+  );
 
   // The route-args carrier (cross_feature.md §2): Timeline writes the target
   // collection, the Collection page reads it on entry.
@@ -326,7 +336,7 @@ void bootstrap(AppConfig config) {
       ),
       imageCache: imageCache,
       imagePicker: ImagePickerAdapter(),
-      imageOptimizer: const PackageImageOptimizer(),
+      imageOptimizer: imageOptimizer,
       audioRecorder: RecordAudioRecorder(),
       filePicker: const FilePickerAdapter(),
       shareRepository: const SharePlusCardShareRepository(),
@@ -389,7 +399,7 @@ void bootstrap(AppConfig config) {
         ids: ids,
       ),
       imagePicker: ImagePickerAdapter(),
-      imageOptimizer: const PackageImageOptimizer(),
+      imageOptimizer: imageOptimizer,
       filePicker: const FilePickerAdapter(),
     ).controller,
   );

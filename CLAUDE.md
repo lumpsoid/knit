@@ -246,8 +246,11 @@ the `lib/sync/` core below.
 - `collection` composer "Optimize size" (§4.2, opt-in per staged photo): the
   pure `ImageOptimization` rules (`lib/core/attachments/domain/`) and the
   `ImageOptimizerPort`, realized by `PackageImageOptimizer` (pure-Dart
-  `package:image` on a background isolate). The composer optimizes when the chip
-  turns on, so the preview shows the saving, and sends the smaller copy.
+  `package:image` on a background isolate): fit 1600×1200, keep EXIF unless the
+  Settings `AppPreferences.keepPhotoMetadata` toggle is off (main wires it in as
+  a getter). The composer optimizes when the chip turns on, as a visible phase
+  (dimmed thumbnail, "Optimizing photo…", send spinner; chip off cancels), and
+  sends the smaller copy.
   Card Edit's **Optimize** (image cards) runs the same port over the stored
   image (`OptimizeImageEffect`) and swaps in the copy as a new attachment.
 - `collection` app bar: `CollectionHeaderBar` is the title card, docked. A

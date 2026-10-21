@@ -71,6 +71,23 @@ void main() {
     );
   });
 
+  test('KeepPhotoMetadataToggled applies at once and persists', () {
+    const prior = SettingsState(
+      preferences: AppPreferences(themeMode: AppThemeMode.dark),
+    );
+    expect(prior.preferences.keepPhotoMetadata, isTrue); // on by default
+    final (next, effects) = updater.update(
+      prior,
+      const KeepPhotoMetadataToggled(false),
+    );
+    expect(next.preferences.keepPhotoMetadata, isFalse);
+    expect(next.preferences.themeMode, AppThemeMode.dark); // untouched
+    expect(
+      (effects!.single as SavePreferencesEffect).preferences,
+      next.preferences,
+    );
+  });
+
   test('PreferencesSaveFailed leaves the optimistic state intact', () {
     const prior = SettingsState(
       preferences: AppPreferences(themeMode: AppThemeMode.dark),

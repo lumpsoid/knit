@@ -10,19 +10,32 @@ void main() {
       ));
     });
 
-    test('a large photo fits its long edge to the limit, aspect kept', () {
+    test('a 4:3 photo lands on 1600×1200, turned for portrait', () {
       expect(ImageOptimization.targetSize(4032, 3024), (
-        width: 2048,
-        height: 1536,
+        width: 1600,
+        height: 1200,
       ));
       expect(ImageOptimization.targetSize(3024, 4032), (
-        width: 1536,
-        height: 2048,
+        width: 1200,
+        height: 1600,
+      ));
+    });
+
+    test('other shapes fit inside the 1600×1200 frame, aspect kept', () {
+      // Wide: the long edge binds.
+      expect(ImageOptimization.targetSize(4000, 2000), (
+        width: 1600,
+        height: 800,
+      ));
+      // Squarer than 4:3: the short edge binds.
+      expect(ImageOptimization.targetSize(3000, 2400), (
+        width: 1500,
+        height: 1200,
       ));
     });
 
     test('a thin strip never drops below one pixel', () {
-      expect(ImageOptimization.targetSize(10000, 1), (width: 2048, height: 1));
+      expect(ImageOptimization.targetSize(10000, 1), (width: 1600, height: 1));
     });
   });
 

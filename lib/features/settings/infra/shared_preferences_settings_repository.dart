@@ -15,6 +15,7 @@ class SharedPreferencesSettingsRepository
 
   static const _themeKey = 'settings.themeMode';
   static const _languageKey = 'settings.language';
+  static const _keepPhotoMetadataKey = 'settings.keepPhotoMetadata';
 
   @override
   Future<Result<AppPreferences, SettingsFailure>> load() async {
@@ -24,6 +25,7 @@ class SharedPreferencesSettingsRepository
         AppPreferences(
           themeMode: AppThemeMode.fromName(prefs.getString(_themeKey)),
           language: AppLanguage.fromName(prefs.getString(_languageKey)),
+          keepPhotoMetadata: prefs.getBool(_keepPhotoMetadataKey) ?? true,
         ),
       );
     } catch (e, st) {
@@ -39,6 +41,7 @@ class SharedPreferencesSettingsRepository
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeKey, preferences.themeMode.name);
       await prefs.setString(_languageKey, preferences.language.name);
+      await prefs.setBool(_keepPhotoMetadataKey, preferences.keepPhotoMetadata);
       return Ok(preferences);
     } catch (e, st) {
       return Failure(PreferencesSaveFailure(e, st));

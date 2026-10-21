@@ -1,3 +1,5 @@
+import 'dart:math';
+
 /// The format an optimised photo is re-encoded as.
 enum OptimizedImageFormat {
   jpeg('image/jpeg'),
@@ -10,14 +12,17 @@ enum OptimizedImageFormat {
 /// The rules for the opt-in "Optimise size" of a photo added to a card. Pure:
 /// the [ImageOptimizerPort] adapter does the pixel work and asks these.
 ///
-/// A photo is scaled down to fit [maxEdge] on its long side and re-encoded:
-/// JPEG at [jpegQuality] when it is opaque, PNG when it has transparency (JPEG
-/// would flatten it). The result is kept only when it saves at least
+/// A photo is scaled down to fit a 1600×1200 frame ([maxLongEdge] ×
+/// [maxShortEdge], turned to match a portrait photo) and re-encoded: JPEG at
+/// [jpegQuality] when it is opaque, PNG when it has transparency (JPEG would
+/// flatten it). Its metadata (camera, date, location) is kept unless the user
+/// turned that off in Settings. The result is kept only when it saves at least
 /// [minSavingRatio] of the original, so an already small photo stays as it is.
 class ImageOptimization {
   const ImageOptimization._();
 
-  static const int maxEdge = 2048;
+  static const int maxLongEdge = 1600;
+  static const int maxShortEdge = 1200;
   static const int jpegQuality = 82;
   static const double minSavingRatio = 0.1;
 
@@ -33,12 +38,13 @@ class ImageOptimization {
   static bool canOptimize(String mime) =>
       optimizableMimes.contains(mime.toLowerCase());
 
-  /// The size a [width]×[height] photo is scaled to: fit within [maxEdge],
-  /// aspect kept, never enlarged.
+  /// The size a [width]×[height] photo is scaled to: fit within 1600×1200
+  /// (1200×1600 for a portrait photo), aspect kept, never enlarged.
   static ({int width, int height}) targetSize(int width, int height) {
     final longEdge = width > height ? width : height;
-    if (longEdge <= maxEdge) return (width: width, height: height);
-    final scale = maxEdge / longEdge;
+    final shortEdge = width > height ? height : width;
+    final scale = min(maxLongEdge / longEdge, maxShortEdge / shortEdge);
+    if (scale >= 1) return (width: width, height: height);
     int scaled(int edge) {
       final value = (edge * scale).round();
       return value < 1 ? 1 : value;

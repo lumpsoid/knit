@@ -167,11 +167,25 @@ class CollectionComposer extends StatelessWidget {
                     ),
                   ),
                 ),
-                IconButton(
-                  tooltip: l10n.collectionSendTooltip,
-                  icon: const Icon(Icons.send),
-                  onPressed: onSend,
-                ),
+                // While the photo is being optimized the send waits; the
+                // button says so instead of silently doing nothing.
+                optimizingImage
+                    ? IconButton(
+                        tooltip: l10n.collectionImageOptimizing,
+                        onPressed: null,
+                        icon: const SizedBox.square(
+                          dimension: 24,
+                          child: Padding(
+                            padding: EdgeInsets.all(2),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      )
+                    : IconButton(
+                        tooltip: l10n.collectionSendTooltip,
+                        icon: const Icon(Icons.send),
+                        onPressed: onSend,
+                      ),
               ],
             ),
           ],

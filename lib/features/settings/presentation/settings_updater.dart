@@ -34,6 +34,12 @@ class SettingsUpdater
           state.copyWith(preferences: next),
           [SavePreferencesEffect(next)],
         );
+      case KeepPhotoMetadataToggled(:final keep):
+        final next = state.preferences.copyWith(keepPhotoMetadata: keep);
+        return (
+          state.copyWith(preferences: next),
+          [SavePreferencesEffect(next)],
+        );
       case PreferencesSaved(:final preferences):
         return (state.copyWith(preferences: preferences), null);
       case PreferencesSaveFailed():

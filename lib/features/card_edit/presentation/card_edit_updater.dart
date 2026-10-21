@@ -136,7 +136,7 @@ class CardEditUpdater
           return (state, null);
         }
         return (
-          state.copyWith(attachmentBusy: true),
+          state.copyWith(attachmentBusy: true, optimizingImage: true),
           [
             OptimizeImageEffect(
               cardId: state.cardId,
@@ -169,6 +169,7 @@ class CardEditUpdater
             attachmentName: name,
             attachmentSize: size,
             attachmentBusy: false,
+            optimizingImage: false,
           ),
           [
             ShowImageEffect(kind == CardKind.image ? attachmentId : null),
@@ -177,7 +178,10 @@ class CardEditUpdater
         );
 
       case AttachmentEditEnded():
-        return (state.copyWith(attachmentBusy: false), null);
+        return (
+          state.copyWith(attachmentBusy: false, optimizingImage: false),
+          null,
+        );
 
       // --- settled ----------------------------------------------------------
 

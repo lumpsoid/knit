@@ -51,8 +51,11 @@ class PhotoSourceOptions extends StatelessWidget {
 /// it via [onClear]; the user keeps composing text or picks another from "+".
 ///
 /// Beside it sits the photo's size and the opt-in "Optimize size" chip: when it
-/// is on, the size shows what the smaller copy saves. [onOptimizeChanged] is
-/// null for a format that can't be optimized, which hides the chip.
+/// is on, the size shows what the smaller copy saves. Optimizing is a phase of
+/// its own: the photo dims under a spinner and the line says what is happening
+/// and that it takes a moment (turning the chip off cancels it).
+/// [onOptimizeChanged] is null for a format that can't be optimized, which
+/// hides the chip.
 class PendingImagePreview extends StatelessWidget {
   const PendingImagePreview({
     super.key,
@@ -98,6 +101,16 @@ class PendingImagePreview extends StatelessWidget {
                   fit: BoxFit.cover,
                 ),
               ),
+              if (optimizing)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                ),
               Positioned(
                 top: 2,
                 right: 2,
@@ -125,24 +138,33 @@ class PendingImagePreview extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _sizeLabel(l10n),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                if (optimizing) ...[
+                  Text(
+                    l10n.collectionImageOptimizing,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.collectionImageOptimizingHint,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ] else
+                  Text(
+                    _sizeLabel(l10n),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 if (onOptimizeChanged != null) ...[
                   const SizedBox(height: 4),
                   FilterChip(
                     label: Text(l10n.collectionImageOptimize),
                     selected: optimize,
-                    onSelected: optimizing ? null : onOptimizeChanged,
-                    avatar: optimizing
-                        ? const SizedBox.square(
-                            dimension: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : null,
+                    onSelected: onOptimizeChanged,
                   ),
                 ],
               ],
@@ -156,7 +178,6 @@ class PendingImagePreview extends StatelessWidget {
   String _sizeLabel(AppLocalizations l10n) {
     final original = formatByteSize(bytes.length);
     if (!optimize) return original;
-    if (optimizing) return '$original · ${l10n.collectionImageOptimizing}';
     if (alreadySmall) return '$original · ${l10n.collectionImageAlreadySmall}';
     final optimizedSize = this.optimizedSize;
     if (optimizedSize == null) return original;

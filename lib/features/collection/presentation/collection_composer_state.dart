@@ -132,9 +132,12 @@ class CollectionComposerState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Turning it off mid-run cancels the run: its result is dropped and a send
+  /// goes through with the original.
   void setOptimizeImages(bool optimize) {
     if (optimize == _optimizeImages) return;
     _optimizeImages = optimize;
+    if (!optimize) _optimizingImage = false;
     notifyListeners();
   }
 
@@ -145,9 +148,9 @@ class CollectionComposerState extends ChangeNotifier {
 
   /// The optimiser finished on [source]: keep the smaller [optimized] copy, or
   /// note that there was nothing to gain (null). Ignored when [source] is no
-  /// longer the staged photo.
+  /// longer the staged photo, or the run was cancelled.
   void finishOptimizing(PickedImage source, PickedImage? optimized) {
-    if (!identical(source, _pendingImage)) return;
+    if (!identical(source, _pendingImage) || !_optimizingImage) return;
     _optimizingImage = false;
     _optimizedImage = optimized;
     _imageAlreadySmall = optimized == null;

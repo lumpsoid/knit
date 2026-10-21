@@ -236,9 +236,13 @@ class _AttachmentSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     if (state.attachmentBusy) {
-      return const SizedBox(
+      return SizedBox(
         height: 160,
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(
+          child: state.optimizingImage
+              ? const _OptimizingImage()
+              : const CircularProgressIndicator(),
+        ),
       );
     }
     if (!state.hasAttachment) {
@@ -301,6 +305,39 @@ class _AttachmentSection extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The attachment section while "Optimize" runs: what is happening and that it
+/// takes a moment, so the wait doesn't look like a hang.
+class _OptimizingImage extends StatelessWidget {
+  const _OptimizingImage();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const CircularProgressIndicator(),
+        const SizedBox(height: 12),
+        Text(
+          l10n.collectionImageOptimizing,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          l10n.collectionImageOptimizingHint,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

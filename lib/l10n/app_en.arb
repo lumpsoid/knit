@@ -170,7 +170,8 @@
   "collectionAudioMessage": "Audio message",
   "collectionAudioPermissionDenied": "Microphone access is needed to record audio.",
   "collectionImageOptimize": "Optimize size",
-  "collectionImageOptimizing": "Optimizing…",
+  "collectionImageOptimizing": "Optimizing photo…",
+  "collectionImageOptimizingHint": "Resizing to 1600×1200. This can take a few seconds.",
   "collectionImageAlreadySmall": "Already small",
   "collectionImageSizeSaved": "{from} → {to}",
   "@collectionImageSizeSaved": {
@@ -331,6 +332,8 @@
   "settingsThemeLight": "Light",
   "settingsThemeDark": "Dark",
   "settingsLanguageTitle": "Language",
+  "settingsKeepPhotoMetadataTitle": "Keep photo metadata",
+  "settingsKeepPhotoMetadataSubtitle": "When a photo is optimized, keep its camera, date and location details",
   "settingsLanguageSystem": "System default",
   "settingsLanguageEnglish": "English",
   "settingsLanguageRussian": "Русский",

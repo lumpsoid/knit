@@ -42,6 +42,12 @@ class LanguageSelected extends SettingsAction {
   final AppLanguage language;
 }
 
+/// The user flipped "Keep photo metadata" (applied at once, then persisted).
+class KeepPhotoMetadataToggled extends SettingsAction {
+  const KeepPhotoMetadataToggled(this.keep);
+  final bool keep;
+}
+
 /// A preference change was persisted.
 class PreferencesSaved extends SettingsAction {
   const PreferencesSaved(this.preferences);

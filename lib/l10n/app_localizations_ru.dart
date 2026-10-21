@@ -417,7 +417,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionImageOptimize => 'Уменьшить размер';
 
   @override
-  String get collectionImageOptimizing => 'Уменьшаем…';
+  String get collectionImageOptimizing => 'Уменьшаем фото…';
+
+  @override
+  String get collectionImageOptimizingHint =>
+      'Уменьшаем до 1600×1200. Это может занять несколько секунд.';
 
   @override
   String get collectionImageAlreadySmall => 'Уже компактное';
@@ -793,6 +797,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsLanguageTitle => 'Язык';
+
+  @override
+  String get settingsKeepPhotoMetadataTitle => 'Сохранять данные фото';
+
+  @override
+  String get settingsKeepPhotoMetadataSubtitle =>
+      'При сжатии фото сохранять камеру, дату и место съёмки';
 
   @override
   String get settingsLanguageSystem => 'Как в системе';
