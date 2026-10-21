@@ -9,6 +9,7 @@ class CollectionComposer extends StatelessWidget {
   const CollectionComposer({
     super.key,
     required this.controller,
+    this.autofocus = false,
     required this.pendingImageBytes,
     required this.pendingFileName,
     required this.showPhotoSources,
@@ -30,6 +31,9 @@ class CollectionComposer extends StatelessWidget {
     required this.onClearAudio,
   });
   final TextEditingController controller;
+
+  /// Focus the text field (keyboard up) as soon as the composer shows.
+  final bool autofocus;
 
   /// Bytes of an image the user picked but hasn't sent yet; null ⇒ no preview.
   final Uint8List? pendingImageBytes;
@@ -122,6 +126,7 @@ class CollectionComposer extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     controller: controller,
+                    autofocus: autofocus,
                     minLines: 1,
                     maxLines: 5,
                     keyboardType: TextInputType.multiline,

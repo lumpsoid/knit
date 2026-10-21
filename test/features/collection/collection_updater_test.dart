@@ -278,6 +278,63 @@ void main() {
       expect(effects, isNull);
     });
 
+    test('the full composer keeps a bare URL as a text card', () {
+      final (_, effects) = updater.update(
+        ready(const []),
+        const ComposerSubmitted('https://x.y'),
+      );
+      final effect = effects!.single as AddCardEffect;
+      expect(effect.kind, CardKind.text);
+      expect(effect.closesQuickInput, isFalse);
+    });
+
+    test('quick input sends a bare URL as a link card and closes after', () {
+      final quick = ready(const []).copyWith(quickInput: true);
+      final (_, effects) = updater.update(
+        quick,
+        const ComposerSubmitted('  https://x.y  '),
+      );
+      final effect = effects!.single as AddCardEffect;
+      expect(effect.kind, CardKind.link);
+      expect(effect.text, 'https://x.y');
+      expect(effect.closesQuickInput, isTrue);
+
+      final (_, textEffects) = updater.update(
+        quick,
+        const ComposerSubmitted('see https://x.y'),
+      );
+      expect((textEffects!.single as AddCardEffect).kind, CardKind.text);
+    });
+
+    test('quick input closes after an attachment send too', () {
+      final (_, effects) = updater.update(
+        ready(const []).copyWith(quickInput: true),
+        ComposerSubmitted('', image: image),
+      );
+      expect((effects!.single as AddPhotoCardEffect).closesQuickInput, isTrue);
+    });
+
+    test('quick input survives the post-load state rebuild', () {
+      final (attached, _) = updater.update(
+        const CollectionState(),
+        const ViewAttached('col', quickInput: true),
+      );
+      expect(attached.quickInput, isTrue);
+      final (loaded, _) = updater.update(
+        attached,
+        const CollectionLoaded(
+          CollectionData(
+            collectionId: 'col',
+            title: 'Col',
+            description: null,
+            coverAttachmentId: null,
+            cards: [],
+          ),
+        ),
+      );
+      expect(loaded.quickInput, isTrue);
+    });
+
     test('link block appends a link-kind card', () {
       final (_, effects) = updater.update(
         ready(const []),
@@ -618,6 +675,20 @@ void main() {
       expect(CardKind.forFileMime('application/pdf'), CardKind.file);
       expect(CardKind.forFileMime('video/mp4'), CardKind.file);
       expect(CardKind.forFileMime(''), CardKind.file);
+    });
+  });
+
+  group('CardKind.forText', () {
+    test('a lone http(s) URL with a host is a link card', () {
+      expect(CardKind.forText('https://x.y/p?q=1'), CardKind.link);
+      expect(CardKind.forText('HTTP://x.y'), CardKind.link);
+    });
+
+    test('anything else is a text card', () {
+      expect(CardKind.forText('see https://x.y'), CardKind.text);
+      expect(CardKind.forText('ftp://x.y'), CardKind.text);
+      expect(CardKind.forText('https://'), CardKind.text);
+      expect(CardKind.forText('hello'), CardKind.text);
     });
   });
 

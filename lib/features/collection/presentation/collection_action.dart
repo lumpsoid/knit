@@ -14,9 +14,16 @@ sealed class CollectionAction {
 /// [focusCardId] is a card the entry must reveal (e.g. a search hit), so the
 /// first load reaches back far enough to include it.
 class ViewAttached extends CollectionAction {
-  const ViewAttached(this.collectionId, {this.focusCardId});
+  const ViewAttached(
+    this.collectionId, {
+    this.focusCardId,
+    this.quickInput = false,
+  });
   final String collectionId;
   final String? focusCardId;
+
+  /// Opened for one quick card from a home-screen widget.
+  final bool quickInput;
 }
 
 /// Re-read the feed silently (pull-to-refresh and post-write resync).

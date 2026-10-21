@@ -92,14 +92,17 @@ class MethodChannelCollectionWidgetHost
     }
   }
 
-  /// Decode a request map from the platform — `{type: open, collectionId}` or
-  /// `{type: configure, widgetId}`; anything else is null.
+  /// Decode a request map from the platform — `{type: open, collectionId}`,
+  /// `{type: quickInput, collectionId}` or `{type: configure, widgetId}`;
+  /// anything else is null.
   static CollectionWidgetRequest? parseRequest(Object? raw) {
     if (raw is! Map) return null;
     return switch ((raw['type'], raw['collectionId'], raw['widgetId'])) {
       ('open', final String id, _) when id.isNotEmpty => OpenCollectionRequest(
         id,
       ),
+      ('quickInput', final String id, _) when id.isNotEmpty =>
+        QuickInputRequest(id),
       ('configure', _, final int widgetId) => ConfigureWidgetRequest(widgetId),
       _ => null,
     };

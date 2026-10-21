@@ -42,6 +42,24 @@ enum CardKind {
         'audio' => CardKind.audio,
         _ => CardKind.file,
       };
+
+  /// URL schemes a bare-link text becomes a [link] card for.
+  static const Set<String> linkSchemes = {'http', 'https'};
+
+  /// Classify trimmed [text] sent as a card: nothing but one http(s) URL with
+  /// a host is a [link] card, anything else a [text] card. The rule share
+  /// capture and the widget's quick input both follow.
+  static CardKind forText(String text) =>
+      isBareUrl(text) ? link : CardKind.text;
+
+  /// Whether [text] is nothing but one http(s) URL with a host.
+  static bool isBareUrl(String text) {
+    if (text.contains(RegExp(r'\s'))) return false;
+    final uri = Uri.tryParse(text);
+    return uri != null &&
+        linkSchemes.contains(uri.scheme.toLowerCase()) &&
+        uri.host.isNotEmpty;
+  }
 }
 
 /// One card in the feed (spec §4.2 / §8.7). Ordered by [position] (string,

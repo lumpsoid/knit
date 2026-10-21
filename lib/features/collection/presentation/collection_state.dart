@@ -27,6 +27,7 @@ class CollectionState {
     this.selectedCardIds = const {},
     this.moveTargetsStatus = MoveTargetsStatus.idle,
     this.moveTargets = const [],
+    this.quickInput = false,
   });
 
   final CollectionStatus status;
@@ -59,6 +60,10 @@ class CollectionState {
   /// updated first. Meaningful once [moveTargetsStatus] is ready.
   final MoveTargetsStatus moveTargetsStatus;
   final List<MoveTarget> moveTargets;
+
+  /// Opened from a home-screen widget's quick input: a sent text that is a
+  /// bare URL becomes a link card, and the page leaves once the card is saved.
+  final bool quickInput;
 
   /// Whether multi-select mode is active.
   bool get selecting => selectedCardIds.isNotEmpty;
@@ -97,6 +102,7 @@ class CollectionState {
     Set<String>? selectedCardIds,
     MoveTargetsStatus? moveTargetsStatus,
     List<MoveTarget>? moveTargets,
+    bool? quickInput,
   }) => CollectionState(
     status: status ?? this.status,
     collectionId: collectionId ?? this.collectionId,
@@ -110,5 +116,6 @@ class CollectionState {
     selectedCardIds: selectedCardIds ?? this.selectedCardIds,
     moveTargetsStatus: moveTargetsStatus ?? this.moveTargetsStatus,
     moveTargets: moveTargets ?? this.moveTargets,
+    quickInput: quickInput ?? this.quickInput,
   );
 }

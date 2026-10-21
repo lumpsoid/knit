@@ -27,3 +27,9 @@ class CollectionCardsMovedUiEffect extends CollectionUiEffect {
   final String targetCollectionId;
   final String targetTitle;
 }
+
+/// The quick input's card was saved: leave the page (and the app, back to the
+/// home screen the widget lives on).
+class CollectionQuickInputSentUiEffect extends CollectionUiEffect {
+  const CollectionQuickInputSentUiEffect();
+}

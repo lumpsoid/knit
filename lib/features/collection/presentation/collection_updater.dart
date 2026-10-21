@@ -27,11 +27,16 @@ class CollectionUpdater
     CollectionAction action,
   ) {
     switch (action) {
-      case ViewAttached(:final collectionId, :final focusCardId):
+      case ViewAttached(
+        :final collectionId,
+        :final focusCardId,
+        :final quickInput,
+      ):
         return (
           state.copyWith(
             collectionId: collectionId,
             status: CollectionStatus.loading,
+            quickInput: quickInput,
           ),
           [
             LoadCollectionEffect(
@@ -72,6 +77,7 @@ class CollectionUpdater
             selectedCardIds: _keepLoaded(state.selectedCardIds, data.cards),
             moveTargetsStatus: state.moveTargetsStatus,
             moveTargets: state.moveTargets,
+            quickInput: state.quickInput,
           ),
           [
             ShowFeedImagesEffect(_imageAttachments(data.cards)),
@@ -136,6 +142,7 @@ class CollectionUpdater
                 position: position,
                 image: image,
                 caption: caption,
+                closesQuickInput: state.quickInput,
               ),
             ],
           );
@@ -151,6 +158,7 @@ class CollectionUpdater
               position: position,
               image: PickedImage(bytes: file.bytes, mime: file.mime),
               caption: caption,
+              closesQuickInput: state.quickInput,
             ),
             CardKind.audio => AddAudioCardEffect(
               collectionId: state.collectionId,
@@ -161,12 +169,14 @@ class CollectionUpdater
                 name: file.name,
               ),
               caption: caption,
+              closesQuickInput: state.quickInput,
             ),
             _ => AddFileCardEffect(
               collectionId: state.collectionId,
               position: position,
               file: file,
               caption: caption,
+              closesQuickInput: state.quickInput,
             ),
           };
           return (state, [effect]);
@@ -180,19 +190,23 @@ class CollectionUpdater
                 position: position,
                 audio: audio,
                 caption: caption,
+                closesQuickInput: state.quickInput,
               ),
             ],
           );
         }
         if (body.isEmpty) return (state, null);
+        // Quick input is a one-line capture: a pasted link becomes a link card
+        // (the share-capture rule). The full composer has "+" → Link for that.
         return (
           state,
           [
             AddCardEffect(
               collectionId: state.collectionId,
-              kind: CardKind.text,
+              kind: state.quickInput ? CardKind.forText(body) : CardKind.text,
               position: position,
               text: body,
+              closesQuickInput: state.quickInput,
             ),
           ],
         );

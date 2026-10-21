@@ -119,6 +119,32 @@ void main() {
     ]);
   });
 
+  testWidgets('handle: quick input for a removed collection falls back with '
+      'a message', (tester) async {
+    await wire();
+    await tester.pumpWidget(app(CollectionWidgetGateMode.handle));
+    source.warm.add(const QuickInputRequest('gone'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('That collection was removed — tap the widget to pick another'),
+      findsOneWidget,
+    );
+    expect(routeArgs.quickInput, isFalse);
+    expect(host.returnedHome, 0);
+  });
+
+  testWidgets('reject: quick input just lands in onboarding', (tester) async {
+    await wire();
+    await tester.pumpWidget(app(CollectionWidgetGateMode.reject));
+    source.warm.add(const QuickInputRequest('a'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('home'), findsOneWidget);
+    expect(controller.state.hasPending, isFalse);
+    expect(routeArgs.collectionId, isEmpty);
+  });
+
   testWidgets('reject: configuring asks to set up Knit first', (tester) async {
     await wire();
     await tester.pumpWidget(app(CollectionWidgetGateMode.reject));

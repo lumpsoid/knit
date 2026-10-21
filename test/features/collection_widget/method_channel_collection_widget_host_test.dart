@@ -42,6 +42,18 @@ void main() {
       'widgetId': 3,
     });
     expect((configure! as ConfigureWidgetRequest).widgetId, 3);
+    final quick = MethodChannelCollectionWidgetHost.parseRequest({
+      'type': 'quickInput',
+      'collectionId': 'a',
+    });
+    expect((quick! as QuickInputRequest).collectionId, 'a');
+    expect(
+      MethodChannelCollectionWidgetHost.parseRequest({
+        'type': 'quickInput',
+        'collectionId': '',
+      }),
+      isNull,
+    );
     expect(MethodChannelCollectionWidgetHost.parseRequest(null), isNull);
     expect(
       MethodChannelCollectionWidgetHost.parseRequest({'type': 'open'}),

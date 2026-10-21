@@ -6,4 +6,5 @@
     <string name="collection_widget_unbound">Choose a collection</string>
     <string name="collection_widget_removed">Collection removed</string>
     <string name="collection_widget_reconfigure">Tap to pick another</string>
+    <string name="collection_widget_quick_input">Quick note</string>
 </resources>

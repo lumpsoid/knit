@@ -12,6 +12,14 @@ final class OpenCollectionRequest extends CollectionWidgetRequest {
   final String collectionId;
 }
 
+/// Open the bound collection for one quick card: the composer focused, and
+/// back to the home screen once it is sent (the tile's ✎ button).
+final class QuickInputRequest extends CollectionWidgetRequest {
+  const QuickInputRequest(this.collectionId);
+
+  final String collectionId;
+}
+
 /// Pick the collection for widget [widgetId] — when it is placed, when the
 /// launcher reconfigures it, or when an unbound or orphaned widget is tapped.
 final class ConfigureWidgetRequest extends CollectionWidgetRequest {

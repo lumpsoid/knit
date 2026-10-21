@@ -87,7 +87,10 @@ class _CollectionWidgetGateState extends State<CollectionWidgetGate> {
     final l10n = AppLocalizations.of(context);
     _busy = true;
     switch ((widget.mode, request)) {
-      case (CollectionWidgetGateMode.reject, OpenCollectionRequest()):
+      case (
+        CollectionWidgetGateMode.reject,
+        OpenCollectionRequest() || QuickInputRequest(),
+      ):
         // Onboarding is already on screen — that is where the tap lands.
         break;
       case (CollectionWidgetGateMode.reject, ConfigureWidgetRequest()):
@@ -104,6 +107,28 @@ class _CollectionWidgetGateState extends State<CollectionWidgetGate> {
           CollectionWidgetScope.collectionRouteArgs.open(collectionId);
           // Not awaited: a later tap must not wait for this page to close.
           navigator.pushAndRemoveUntil(CollectionPage.route(), isHome).ignore();
+        } else {
+          messenger.showSnackBar(
+            SnackBar(content: Text(l10n.collectionWidgetRemoved)),
+          );
+        }
+      case (
+        CollectionWidgetGateMode.handle,
+        QuickInputRequest(:final collectionId),
+      ):
+        final live = await widgets.isLive(collectionId);
+        if (!mounted) break;
+        if (live) {
+          CollectionWidgetScope.collectionRouteArgs.open(
+            collectionId,
+            quickInput: true,
+          );
+          // Sent → back to the home screen; backing out stays in the app.
+          navigator.pushAndRemoveUntil(CollectionPage.route(), isHome).then((
+            sent,
+          ) async {
+            if (sent ?? false) await widgets.returnToHomeScreen();
+          }).ignore();
         } else {
           messenger.showSnackBar(
             SnackBar(content: Text(l10n.collectionWidgetRemoved)),

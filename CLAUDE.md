@@ -345,6 +345,11 @@ the `lib/sync/` core below.
   the pure `CollectionWidgetTilePlanner` on every `CollectionDetailsState`
   change and whenever the app is hidden. A deleted collection's widget shows
   "removed" and taps through to the picker.
+  A live tile also has a ✎ quick-input button (`QuickInputRequest`): the gate
+  opens the collection with `CollectionRouteArgs.quickInput`, so the composer
+  autofocuses, a bare URL is sent as a link card (`CardKind.forText`), and the
+  first saved card pops the page (`true`) and returns to the home screen.
+  Every widget tap first clears the stack back to the Timeline.
 
 ### `packages/` — extracted local packages (path deps)
 - `sql_migrator/` — backend-agnostic sqflite schema migrator (used by the prod

@@ -56,11 +56,15 @@ class AddCardEffect extends CollectionEffect {
     required this.kind,
     required this.position,
     this.text,
+    this.closesQuickInput = false,
   });
   final String collectionId;
   final CardKind kind;
   final String position;
   final String? text;
+
+  /// Leave the quick-input page once the card is saved.
+  final bool closesQuickInput;
 }
 
 /// Store the already-picked [image] (§7.4.8), then append an image card at
@@ -73,11 +77,15 @@ class AddPhotoCardEffect extends CollectionEffect {
     required this.position,
     required this.image,
     this.caption,
+    this.closesQuickInput = false,
   });
   final String collectionId;
   final String position;
   final PickedImage image;
   final String? caption;
+
+  /// Leave the quick-input page once the card is saved.
+  final bool closesQuickInput;
 }
 
 /// Store the recorded [audio] (§7.4.8), then append an audio card at [position]
@@ -89,11 +97,15 @@ class AddAudioCardEffect extends CollectionEffect {
     required this.position,
     required this.audio,
     this.caption,
+    this.closesQuickInput = false,
   });
   final String collectionId;
   final String position;
   final PickedAudio audio;
   final String? caption;
+
+  /// Leave the quick-input page once the card is saved.
+  final bool closesQuickInput;
 }
 
 /// Store the already-picked [file] (§7.4.8), then append a file card at
@@ -105,11 +117,15 @@ class AddFileCardEffect extends CollectionEffect {
     required this.position,
     required this.file,
     this.caption,
+    this.closesQuickInput = false,
   });
   final String collectionId;
   final String position;
   final PickedFile file;
   final String? caption;
+
+  /// Leave the quick-input page once the card is saved.
+  final bool closesQuickInput;
 }
 
 /// Delete [cardId] (§4.2). Links to it become broken, not gone. [attachmentId]

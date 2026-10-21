@@ -303,6 +303,39 @@ void main() {
     });
   });
 
+  group('quick input', () {
+    test('a saved quick card asks the page to close, then resyncs', () async {
+      final col = (await timelineWrite.createCollection('Inbox')).getOrThrow();
+      final actions = <CollectionAction>[];
+      await shell.run(
+        AddCardEffect(
+          collectionId: col,
+          kind: CardKind.link,
+          position: 'a0',
+          text: 'https://x.y',
+          closesQuickInput: true,
+        ),
+        dispatch: actions.add,
+      );
+      expect(uiEffects.single, isA<CollectionQuickInputSentUiEffect>());
+      expect(actions.single, isA<ReloadRequested>());
+    });
+
+    test('an ordinary send leaves the page open', () async {
+      final col = (await timelineWrite.createCollection('Inbox')).getOrThrow();
+      await shell.run(
+        AddCardEffect(
+          collectionId: col,
+          kind: CardKind.text,
+          position: 'a0',
+          text: 'hi',
+        ),
+        dispatch: (_) {},
+      );
+      expect(uiEffects, isEmpty);
+    });
+  });
+
   test(
     'settling writes the cards, refreshes, and reads back settled',
     () async {

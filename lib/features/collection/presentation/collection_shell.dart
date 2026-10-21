@@ -145,6 +145,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         :final kind,
         :final position,
         :final text,
+        :final closesQuickInput,
       ):
         await _runWrite(
           () => _write.addCard(
@@ -155,6 +156,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           ),
           'add card',
           dispatch,
+          onSuccess: _quickInputCloser(closesQuickInput),
         );
 
       case AddPhotoCardEffect(
@@ -162,24 +164,48 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         :final position,
         :final image,
         :final caption,
+        :final closesQuickInput,
       ):
-        await _addPhotoCard(collectionId, position, image, caption, dispatch);
+        await _addPhotoCard(
+          collectionId,
+          position,
+          image,
+          caption,
+          dispatch,
+          onSuccess: _quickInputCloser(closesQuickInput),
+        );
 
       case AddAudioCardEffect(
         :final collectionId,
         :final position,
         :final audio,
         :final caption,
+        :final closesQuickInput,
       ):
-        await _addAudioCard(collectionId, position, audio, caption, dispatch);
+        await _addAudioCard(
+          collectionId,
+          position,
+          audio,
+          caption,
+          dispatch,
+          onSuccess: _quickInputCloser(closesQuickInput),
+        );
 
       case AddFileCardEffect(
         :final collectionId,
         :final position,
         :final file,
         :final caption,
+        :final closesQuickInput,
       ):
-        await _addFileCard(collectionId, position, file, caption, dispatch);
+        await _addFileCard(
+          collectionId,
+          position,
+          file,
+          caption,
+          dispatch,
+          onSuccess: _quickInputCloser(closesQuickInput),
+        );
 
       case DeleteCardEffect(:final cardId, :final attachmentId):
         await _runWrite(
@@ -302,8 +328,9 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     String position,
     PickedImage image,
     String? caption,
-    void Function(CollectionAction) dispatch,
-  ) async {
+    void Function(CollectionAction) dispatch, {
+    Future<void> Function()? onSuccess,
+  }) async {
     final created = await _attachmentWrite.createFromPicked(image);
     if (created.isFailure) {
       _log.severe('Store picked image failed', created.error);
@@ -327,6 +354,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       ),
       'add photo card',
       dispatch,
+      onSuccess: onSuccess,
     );
   }
 
@@ -337,8 +365,9 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     String position,
     PickedAudio audio,
     String? caption,
-    void Function(CollectionAction) dispatch,
-  ) async {
+    void Function(CollectionAction) dispatch, {
+    Future<void> Function()? onSuccess,
+  }) async {
     final created = await _attachmentWrite.createFromAudio(audio);
     if (created.isFailure) {
       _log.severe('Store recorded audio failed', created.error);
@@ -359,6 +388,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       ),
       'add audio card',
       dispatch,
+      onSuccess: onSuccess,
     );
   }
 
@@ -369,8 +399,9 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
     String position,
     PickedFile file,
     String? caption,
-    void Function(CollectionAction) dispatch,
-  ) async {
+    void Function(CollectionAction) dispatch, {
+    Future<void> Function()? onSuccess,
+  }) async {
     final created = await _attachmentWrite.createFromFile(file);
     if (created.isFailure) {
       _log.severe('Store picked file failed', created.error);
@@ -391,6 +422,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       ),
       'add file card',
       dispatch,
+      onSuccess: onSuccess,
     );
   }
 
@@ -452,6 +484,14 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
   /// message and still resync (drops any optimistic local change). [onSuccess],
   /// when given, runs on the success branch *before* the resync — used to
   /// reclaim any storage the write freed (e.g. a deleted card's attachment).
+  /// The [_runWrite] success step that leaves a quick-input page, or null
+  /// for an ordinary send.
+  Future<void> Function()? _quickInputCloser(bool closesQuickInput) =>
+      closesQuickInput
+      ? () async =>
+            _effectEmitter.push(const CollectionQuickInputSentUiEffect())
+      : null;
+
   Future<void> _runWrite(
     Future<Result<String, CollectionFailure>> Function() op,
     String label,

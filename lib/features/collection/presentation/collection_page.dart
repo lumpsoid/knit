@@ -44,8 +44,10 @@ import 'package:knit/features/connections/presentation/connections_page.dart';
 class CollectionPage extends StatefulWidget {
   const CollectionPage({super.key});
 
-  static Route<void> route() =>
-      MaterialPageRoute<void>(builder: (_) => const CollectionPage());
+  /// Completes with true when a quick-input page closed itself after its card
+  /// was saved; null for any other way out.
+  static Route<bool> route() =>
+      MaterialPageRoute<bool>(builder: (_) => const CollectionPage());
 
   @override
   State<CollectionPage> createState() => _CollectionPageState();
@@ -65,6 +67,9 @@ class _CollectionPageState extends State<CollectionPage> {
   /// feed reveals it when it first appears.
   late final String? _focusCardId = CollectionScope.routeArgs.focusCardId;
 
+  /// Opened from a widget's quick input: the composer takes focus on entry.
+  late final bool _quickInput = CollectionScope.routeArgs.quickInput;
+
   /// Carries the collection name from the title card into the app bar as the
   /// card scrolls under it.
   final TitleMorphLink _titleMorph = TitleMorphLink();
@@ -78,6 +83,7 @@ class _CollectionPageState extends State<CollectionPage> {
         ViewAttached(
           CollectionScope.routeArgs.collectionId,
           focusCardId: _focusCardId,
+          quickInput: _quickInput,
         ),
       );
   }
@@ -128,6 +134,8 @@ class _CollectionPageState extends State<CollectionPage> {
             ),
           ),
         );
+      case CollectionQuickInputSentUiEffect():
+        Navigator.of(context).pop(true);
     }
   }
 
@@ -502,6 +510,7 @@ class _CollectionPageState extends State<CollectionPage> {
         final composer = input.state;
         return CollectionComposer(
           controller: _composer,
+          autofocus: _quickInput,
           pendingImageBytes: composer.pendingImage?.bytes,
           pendingFileName: composer.pendingFile?.name,
           showPhotoSources: composer.showPhotoSources,

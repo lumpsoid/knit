@@ -5,4 +5,5 @@
     <string name="collection_widget_unbound">Выберите коллекцию</string>
     <string name="collection_widget_removed">Коллекция удалена</string>
     <string name="collection_widget_reconfigure">Нажмите, чтобы выбрать другую</string>
+    <string name="collection_widget_quick_input">Быстрая заметка</string>
 </resources>

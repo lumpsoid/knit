@@ -97,6 +97,9 @@ class CollectionWidgetChannel(
                 CollectionWidgetProvider.ACTION_OPEN ->
                     intent.getStringExtra(CollectionWidgetProvider.EXTRA_COLLECTION_ID)
                         ?.let { mapOf("type" to "open", "collectionId" to it) }
+                CollectionWidgetProvider.ACTION_QUICK_INPUT ->
+                    intent.getStringExtra(CollectionWidgetProvider.EXTRA_COLLECTION_ID)
+                        ?.let { mapOf("type" to "quickInput", "collectionId" to it) }
                 CollectionWidgetProvider.ACTION_CONFIGURE ->
                     intent.getIntExtra(
                         AppWidgetManager.EXTRA_APPWIDGET_ID,
