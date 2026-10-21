@@ -141,7 +141,6 @@
       "count": { "type": "int" }
     }
   },
-  "collectionReorderTooltip": "Изменить порядок",
   "collectionComingSoon": "{feature} — скоро",
   "@collectionComingSoon": {
     "placeholders": {
@@ -467,5 +466,16 @@
   "collectionWidgetEmpty": "Коллекций пока нет — сначала создайте её в Knit",
   "collectionWidgetSaveError": "Не удалось настроить виджет — попробуйте ещё раз",
   "collectionWidgetNeedsSetup": "Сначала настройте Knit, затем снова нажмите на виджет",
-  "collectionWidgetRemoved": "Эта коллекция удалена — нажмите на виджет, чтобы выбрать другую"
+  "collectionWidgetRemoved": "Эта коллекция удалена — нажмите на виджет, чтобы выбрать другую",
+  "collectionMoreTooltip": "Ещё",
+  "collectionMenuPresent": "Показать",
+  "collectionMenuReorder": "Изменить порядок карточек",
+  "presentSlideCount": "{index} / {count}",
+  "presentContinueFrom": "Продолжить со слайда {number}",
+  "presentSwipeHint": "Проведите вверх, чтобы начать",
+  "presentEmpty": "Пока нечего показать",
+  "presentLoadFailed": "Не удалось открыть коллекцию",
+  "presentSeeAlso": "См. также",
+  "presentNextTooltip": "Следующий слайд",
+  "presentPreviousTooltip": "Предыдущий слайд"
 }

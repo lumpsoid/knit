@@ -5,6 +5,8 @@ import 'package:knit/features/audio_playback/presentation/audio_playback_control
 import 'package:knit/features/collection/presentation/collection_controller.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_state.dart';
+import 'package:knit/features/collection_present/presentation/present_controller.dart';
+import 'package:knit/features/collection_present/presentation/present_route_args.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
 
@@ -28,6 +30,8 @@ abstract final class CollectionScope {
   static CollectionDetailsState? _collectionDetails;
   static AttachmentImageCacheState? _images;
   static CardLinksController? _cardLinks;
+  static PresentController Function()? _presentFactory;
+  static PresentRouteArgsWriter? _presentWriter;
 
   static void setFactory(CollectionController Function() factory) =>
       _factory = factory;
@@ -40,6 +44,10 @@ abstract final class CollectionScope {
       _collectionDetails = details;
   static void setImages(AttachmentImageCacheState images) => _images = images;
   static void setCardLinks(CardLinksController links) => _cardLinks = links;
+  static void setPresentFactory(PresentController Function() factory) =>
+      _presentFactory = factory;
+  static void setPresentRouteArgsWriter(PresentRouteArgsWriter writer) =>
+      _presentWriter = writer;
   static void setConnectionsRouteArgsWriter(
     ConnectionsRouteArgsWriter writer,
   ) => _connectionsWriter = writer;
@@ -169,6 +177,31 @@ abstract final class CollectionScope {
         'CollectionScope.collectionEditRouteArgsWriter is not initialized.\n'
         'Call CollectionScope.setCollectionEditRouteArgsWriter() during '
         'composition.',
+      );
+    }
+    return writer;
+  }
+
+  /// Build a presentation controller (§4.9) for one page instance; the
+  /// presentation page owns and disposes it.
+  static PresentController createPresent() {
+    final factory = _presentFactory;
+    if (factory == null) {
+      throw StateError(
+        'CollectionScope is not initialized.\n'
+        'Call CollectionScope.setPresentFactory() before createPresent().',
+      );
+    }
+    return factory();
+  }
+
+  /// The write side of the presentation carrier — the collection to present.
+  static PresentRouteArgsWriter get presentRouteArgsWriter {
+    final writer = _presentWriter;
+    if (writer == null) {
+      throw StateError(
+        'CollectionScope.presentRouteArgsWriter is not initialized.\n'
+        'Call CollectionScope.setPresentRouteArgsWriter() during composition.',
       );
     }
     return writer;

@@ -351,9 +351,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get collectionReorderTooltip => 'Изменить порядок';
-
-  @override
   String collectionComingSoon(String feature) {
     return '$feature — скоро';
   }
@@ -1135,4 +1132,41 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get collectionWidgetRemoved =>
       'Эта коллекция удалена — нажмите на виджет, чтобы выбрать другую';
+
+  @override
+  String get collectionMoreTooltip => 'Ещё';
+
+  @override
+  String get collectionMenuPresent => 'Показать';
+
+  @override
+  String get collectionMenuReorder => 'Изменить порядок карточек';
+
+  @override
+  String presentSlideCount(int index, int count) {
+    return '$index / $count';
+  }
+
+  @override
+  String presentContinueFrom(int number) {
+    return 'Продолжить со слайда $number';
+  }
+
+  @override
+  String get presentSwipeHint => 'Проведите вверх, чтобы начать';
+
+  @override
+  String get presentEmpty => 'Пока нечего показать';
+
+  @override
+  String get presentLoadFailed => 'Не удалось открыть коллекцию';
+
+  @override
+  String get presentSeeAlso => 'См. также';
+
+  @override
+  String get presentNextTooltip => 'Следующий слайд';
+
+  @override
+  String get presentPreviousTooltip => 'Предыдущий слайд';
 }

@@ -668,12 +668,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 connection} other{{count} connections}}'**
   String collectionCardConnections(int count);
 
-  /// No description provided for @collectionReorderTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Reorder'**
-  String get collectionReorderTooltip;
-
   /// No description provided for @collectionComingSoon.
   ///
   /// In en, this message translates to:
@@ -1957,6 +1951,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That collection was removed — tap the widget to pick another'**
   String get collectionWidgetRemoved;
+
+  /// No description provided for @collectionMoreTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get collectionMoreTooltip;
+
+  /// No description provided for @collectionMenuPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Present'**
+  String get collectionMenuPresent;
+
+  /// No description provided for @collectionMenuReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder cards'**
+  String get collectionMenuReorder;
+
+  /// No description provided for @presentSlideCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{index} / {count}'**
+  String presentSlideCount(int index, int count);
+
+  /// No description provided for @presentContinueFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue from slide {number}'**
+  String presentContinueFrom(int number);
+
+  /// No description provided for @presentSwipeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe up to start'**
+  String get presentSwipeHint;
+
+  /// No description provided for @presentEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to present yet'**
+  String get presentEmpty;
+
+  /// No description provided for @presentLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this collection'**
+  String get presentLoadFailed;
+
+  /// No description provided for @presentSeeAlso.
+  ///
+  /// In en, this message translates to:
+  /// **'See also'**
+  String get presentSeeAlso;
+
+  /// No description provided for @presentNextTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next slide'**
+  String get presentNextTooltip;
+
+  /// No description provided for @presentPreviousTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous slide'**
+  String get presentPreviousTooltip;
 }
 
 class _AppLocalizationsDelegate

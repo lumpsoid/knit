@@ -345,9 +345,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get collectionReorderTooltip => 'Reorder';
-
-  @override
   String collectionComingSoon(String feature) {
     return '$feature — coming soon';
   }
@@ -1108,4 +1105,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get collectionWidgetRemoved =>
       'That collection was removed — tap the widget to pick another';
+
+  @override
+  String get collectionMoreTooltip => 'More';
+
+  @override
+  String get collectionMenuPresent => 'Present';
+
+  @override
+  String get collectionMenuReorder => 'Reorder cards';
+
+  @override
+  String presentSlideCount(int index, int count) {
+    return '$index / $count';
+  }
+
+  @override
+  String presentContinueFrom(int number) {
+    return 'Continue from slide $number';
+  }
+
+  @override
+  String get presentSwipeHint => 'Swipe up to start';
+
+  @override
+  String get presentEmpty => 'Nothing to present yet';
+
+  @override
+  String get presentLoadFailed => 'Couldn\'t open this collection';
+
+  @override
+  String get presentSeeAlso => 'See also';
+
+  @override
+  String get presentNextTooltip => 'Next slide';
+
+  @override
+  String get presentPreviousTooltip => 'Previous slide';
 }

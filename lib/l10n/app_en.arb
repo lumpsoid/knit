@@ -144,7 +144,6 @@
       "count": { "type": "int" }
     }
   },
-  "collectionReorderTooltip": "Reorder",
   "collectionComingSoon": "{feature} — coming soon",
   "@collectionComingSoon": {
     "placeholders": {
@@ -480,5 +479,27 @@
   "collectionWidgetEmpty": "No collections yet — create one in Knit first",
   "collectionWidgetSaveError": "Couldn't set up the widget — try again",
   "collectionWidgetNeedsSetup": "Set up Knit first, then tap the widget again",
-  "collectionWidgetRemoved": "That collection was removed — tap the widget to pick another"
+  "collectionWidgetRemoved": "That collection was removed — tap the widget to pick another",
+  "collectionMoreTooltip": "More",
+  "collectionMenuPresent": "Present",
+  "collectionMenuReorder": "Reorder cards",
+  "presentSlideCount": "{index} / {count}",
+  "@presentSlideCount": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "count": { "type": "int" }
+    }
+  },
+  "presentContinueFrom": "Continue from slide {number}",
+  "@presentContinueFrom": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "presentSwipeHint": "Swipe up to start",
+  "presentEmpty": "Nothing to present yet",
+  "presentLoadFailed": "Couldn't open this collection",
+  "presentSeeAlso": "See also",
+  "presentNextTooltip": "Next slide",
+  "presentPreviousTooltip": "Previous slide"
 }

@@ -28,12 +28,14 @@ import 'package:knit/features/collection/presentation/widgets/collection_compose
 import 'package:knit/features/collection/presentation/widgets/collection_error_view.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_feed.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_header_bar.dart';
+import 'package:knit/features/collection/presentation/widgets/collection_menu_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_title_card.dart';
 import 'package:knit/features/collection/presentation/widgets/move_target_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/selectable_card_row.dart';
 import 'package:knit/features/collection/presentation/widgets/selection_action_bar.dart';
 import 'package:knit/features/collection/presentation/widgets/text_prompt_dialog.dart';
 import 'package:knit/features/collection/presentation/widgets/title_morph.dart';
+import 'package:knit/features/collection_present/presentation/present_page.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_page.dart';
 import 'package:knit/features/new_collection/new_collection.dart';
@@ -221,6 +223,33 @@ class _CollectionPageState extends State<CollectionPage> {
       case CardAction.emphasize:
         _controller.dispatch(CardEmphasisToggled(card.id));
     }
+  }
+
+  /// The app bar's ⋮ sheet: present the collection (§4.9) or reorder it.
+  Future<void> _openMenu(CollectionState state) async {
+    final action = await showModalBottomSheet<CollectionMenuAction>(
+      context: context,
+      builder: (_) => CollectionMenuSheet(
+        canPresent: state.cards.isNotEmpty,
+        canReorder: state.canReorder,
+      ),
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case CollectionMenuAction.present:
+        await _openPresent(state.collectionId);
+      case CollectionMenuAction.reorder:
+        _controller.dispatch(const StartReorder());
+    }
+  }
+
+  /// Hand the collection to the presentation carrier (cross_feature.md §2),
+  /// then present it full screen from its start (§4.9).
+  Future<void> _openPresent(String collectionId) async {
+    CollectionScope.presentRouteArgsWriter.open(collectionId);
+    await Navigator.of(
+      context,
+    ).push(PresentPage.route(CollectionScope.createPresent()));
   }
 
   /// Put the selection's [text] on the clipboard, leave selection mode and
@@ -490,7 +519,7 @@ class _CollectionPageState extends State<CollectionPage> {
         : _headerBar(
             state,
             actions: [
-              if (state.status == CollectionStatus.ready && state.canReorder)
+              if (state.status == CollectionStatus.ready)
                 state.reordering
                     ? TextButton(
                         onPressed: () =>
@@ -498,10 +527,9 @@ class _CollectionPageState extends State<CollectionPage> {
                         child: Text(l10n.actionDone),
                       )
                     : IconButton(
-                        tooltip: l10n.collectionReorderTooltip,
-                        icon: const Icon(Icons.swap_vert),
-                        onPressed: () =>
-                            _controller.dispatch(const StartReorder()),
+                        tooltip: l10n.collectionMoreTooltip,
+                        icon: const Icon(Icons.more_vert),
+                        onPressed: () => unawaited(_openMenu(state)),
                       ),
             ],
           ),

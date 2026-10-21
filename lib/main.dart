@@ -43,6 +43,11 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_modul
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_scope.dart';
 import 'package:knit/features/collection_media/infra/sync_store_collection_media_read_repository.dart';
+import 'package:knit/features/collection_present/infra/shared_preferences_present_progress_repository.dart';
+import 'package:knit/features/collection_present/infra/sync_store_present_read_repository.dart';
+import 'package:knit/features/collection_present/infra/wakelock_plus_screen_awake.dart';
+import 'package:knit/features/collection_present/presentation/present_controller.dart';
+import 'package:knit/features/collection_present/presentation/present_route_args.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_module.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_route_args.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_scope.dart';
@@ -341,6 +346,26 @@ void bootstrap(AppConfig config) {
   );
   CollectionScope.setPlaybackController(playback);
   CollectionMediaScope.setPlaybackController(playback);
+
+  // Presenting a collection (§4.9), from the Collection app bar's ⋮ sheet: a
+  // carrier names the collection, and a fresh controller per page plans it
+  // into slides. The slide it was left on is device-local, like pins.
+  final presentRouteArgs = InMemoryPresentRouteArgsStore();
+  const presentProgress = SharedPreferencesPresentProgressRepository();
+  CollectionScope.setPresentRouteArgsWriter(presentRouteArgs);
+  CollectionScope.setPresentFactory(
+    () => PresentController(
+      routeArgs: presentRouteArgs,
+      readRepository: SyncStorePresentReadRepository(graph: graph),
+      progressReadRepository: presentProgress,
+      progressWriteRepository: presentProgress,
+      imageCache: imageCache,
+      playback: playback,
+      linkLauncher: const UrlLauncherLinkLauncher(),
+      connectionsRouteArgs: connectionsRouteArgs,
+      screenAwake: const WakelockPlusScreenAwake(),
+    ),
+  );
   ConnectionsScope.setFactory(
     () => ConnectionsController(
       readRepository: SyncStoreConnectionsReadRepository(graph: graph),
