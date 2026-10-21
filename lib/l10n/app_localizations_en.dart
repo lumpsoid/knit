@@ -1329,6 +1329,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String timelineInHubs(String names) {
+    return 'in: $names';
+  }
+
+  @override
+  String timelineInHubsMore(String names, int more) {
+    return 'in: $names +$more';
+  }
+
+  @override
+  String get collectionLinkTileOpen => 'Open collection';
+
+  @override
   String timelineFromHandle(String handle) {
     return 'from $handle';
   }

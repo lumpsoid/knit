@@ -27,6 +27,7 @@ class TimelineUpdater
         :final pinnedIds,
         :final importedOwners,
         :final localArchivedIds,
+        :final hubs,
       ):
         // The covers load through the shared image cache (it skips the ones
         // it already holds).
@@ -37,6 +38,7 @@ class TimelineUpdater
             pinnedIds: pinnedIds ?? state.pinnedIds,
             importedOwners: importedOwners,
             localArchivedIds: localArchivedIds ?? state.localArchivedIds,
+            hubs: hubs,
           ),
           [ShowCoversEffect(_covers(collections))],
         );

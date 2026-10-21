@@ -6,6 +6,7 @@ import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/features/collection_details/domain/collection_details.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/collection_share/domain/local_archive_repository.dart';
+import 'package:knit/features/timeline/domain/timeline_hub_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_owner_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
@@ -13,6 +14,7 @@ import 'package:knit/features/timeline/domain/timeline_write_repository.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_effect.dart';
 import 'package:knit/features/timeline/presentation/timeline_ui_effect.dart';
+import 'package:knit/sync/sync.dart';
 
 /// Imperative shell for Timeline (fcis.md §6.6). Unwraps the read/write Results
 /// at the seam (result.md §9.3) into success/failure Actions, and pushes
@@ -25,6 +27,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
     required TimelinePinReadRepository pinReadRepository,
     required TimelinePinWriteRepository pinWriteRepository,
     required TimelineOwnerReadRepository ownerReadRepository,
+    required TimelineHubReadRepository hubReadRepository,
     required LocalArchiveReadRepository localArchiveReadRepository,
     required LocalArchiveWriteRepository localArchiveWriteRepository,
     required AttachmentImageCache imageCache,
@@ -36,6 +39,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
        _pinRead = pinReadRepository,
        _pinWrite = pinWriteRepository,
        _ownerRead = ownerReadRepository,
+       _hubRead = hubReadRepository,
        _localArchiveRead = localArchiveReadRepository,
        _localArchiveWrite = localArchiveWriteRepository,
        _images = imageCache,
@@ -48,6 +52,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
   final TimelinePinReadRepository _pinRead;
   final TimelinePinWriteRepository _pinWrite;
   final TimelineOwnerReadRepository _ownerRead;
+  final TimelineHubReadRepository _hubRead;
   final LocalArchiveReadRepository _localArchiveRead;
   final LocalArchiveWriteRepository _localArchiveWrite;
   final AttachmentImageCache _images;
@@ -88,6 +93,17 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
             ),
           Failure() => const <String, String>{},
         };
+        // The "in:" line is a hint: a failed read shows rows without it.
+        final hubs = switch (result) {
+          Ok(value: final collections) =>
+            (await _hubRead.loadHubs(collections)).fold((hubs) => hubs, (
+              failure,
+            ) {
+              _log.warning('Collection hubs load failed', failure.error);
+              return const <String, List<CollectionHub>>{};
+            }),
+          Failure() => const <String, List<CollectionHub>>{},
+        };
         result.onTap(
           (collections) {
             _details.rememberAll([
@@ -105,6 +121,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
                 pinnedIds: pinnedIds,
                 importedOwners: owners,
                 localArchivedIds: localArchived,
+                hubs: hubs,
               ),
             );
           },

@@ -6,6 +6,7 @@ import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/collection_share/domain/local_archive_repository.dart';
+import 'package:knit/features/timeline/domain/timeline_hub_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_owner_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
@@ -28,6 +29,7 @@ class TimelineModule {
     required TimelinePinReadRepository pinReadRepository,
     required TimelinePinWriteRepository pinWriteRepository,
     required TimelineOwnerReadRepository ownerReadRepository,
+    required TimelineHubReadRepository hubReadRepository,
     required LocalArchiveReadRepository localArchiveReadRepository,
     required LocalArchiveWriteRepository localArchiveWriteRepository,
     required AttachmentImageCache imageCache,
@@ -45,6 +47,7 @@ class TimelineModule {
       pinReadRepository: pinReadRepository,
       pinWriteRepository: pinWriteRepository,
       ownerReadRepository: ownerReadRepository,
+      hubReadRepository: hubReadRepository,
       localArchiveReadRepository: localArchiveReadRepository,
       localArchiveWriteRepository: localArchiveWriteRepository,
       imageCache: imageCache,

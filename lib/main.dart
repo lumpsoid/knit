@@ -92,6 +92,7 @@ import 'package:knit/features/sync_status/infra/sync_store_sync_status_read_repo
 import 'package:knit/features/sync_status/presentation/sync_status_module.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
 import 'package:knit/features/timeline/infra/shared_preferences_timeline_pin_repository.dart';
+import 'package:knit/features/timeline/infra/sync_store_timeline_hub_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_owner_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_write_repository.dart';
@@ -328,6 +329,7 @@ void bootstrap(AppConfig config) {
       pinReadRepository: timelinePins,
       pinWriteRepository: timelinePins,
       ownerReadRepository: SyncStoreTimelineOwnerRepository(graph: graph),
+      hubReadRepository: SyncStoreTimelineHubRepository(graph: graph),
       localArchiveReadRepository: localArchive,
       localArchiveWriteRepository: localArchive,
       imageCache: imageCache,

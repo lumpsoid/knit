@@ -22,6 +22,7 @@ class CollectionsLoaded extends TimelineAction {
     this.pinnedIds,
     this.importedOwners = const {},
     this.localArchivedIds,
+    this.hubs = const {},
   });
   final List<CollectionSummary> collections;
   final Set<String>? pinnedIds;
@@ -31,6 +32,9 @@ class CollectionsLoaded extends TimelineAction {
 
   /// The locally archived (imported) collections; null keeps the last known.
   final Set<String>? localArchivedIds;
+
+  /// The hubs over each collection (§8.6.4), for the rows' "in:" line.
+  final Map<String, List<CollectionHub>> hubs;
 }
 
 class TimelineLoadFailed extends TimelineAction {

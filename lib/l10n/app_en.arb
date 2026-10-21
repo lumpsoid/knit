@@ -590,6 +590,22 @@
       "handle": { "type": "String" }
     }
   },
+  "timelineInHubs": "in: {names}",
+  "@timelineInHubs": {
+    "description": "Home row line listing the collections that link to this one (joined by ' · ').",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+  "timelineInHubsMore": "in: {names} +{more}",
+  "@timelineInHubsMore": {
+    "description": "The in: line when more collections link here than are named.",
+    "placeholders": {
+      "names": { "type": "String" },
+      "more": { "type": "int" }
+    }
+  },
+  "collectionLinkTileOpen": "Open collection",
   "timelineFromHandle": "from {handle}",
   "@timelineFromHandle": {
     "placeholders": {

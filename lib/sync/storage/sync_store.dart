@@ -140,6 +140,56 @@ class SyncStore {
   Future<List<Snapshot>> linksOut(String sourceId) =>
       projection.linksOut(sourceId);
 
+  /// Live links originating at any of [sourceIds] — [linksOut] batched.
+  Future<List<Snapshot>> linksOutOf(Iterable<String> sourceIds) =>
+      projection.linksOutOf(sourceIds);
+
+  /// The §8.6.3 home-row summaries of just [collectionIds] (the live ones
+  /// among them; deleted or missing ids are absent), in home order — two
+  /// batched reads instead of the whole projection.
+  Future<List<CollectionSummary>> collectionSummaries(
+    Iterable<String> collectionIds,
+  ) async {
+    final ids = collectionIds.toSet();
+    if (ids.isEmpty) return const [];
+    return buildHomeTimeline([
+      ...await projection.getMany(EntityType.collection, ids),
+      ...await projection.liveCardsIn(ids),
+    ]);
+  }
+
+  /// The hubs over each of [collectionIds] (spec §8.6.4): the live collections
+  /// linking to it, from themselves or their cards. One batched backlink read,
+  /// then the sources' rows in two more.
+  Future<Map<String, List<CollectionHub>>> collectionHubs(
+    Iterable<String> collectionIds,
+  ) async {
+    final ids = collectionIds.toSet();
+    if (ids.isEmpty) return const {};
+    final links = await projection.backlinksTo(ids);
+    final cardIds = {
+      for (final l in links)
+        if (l.content['source_type'] == EntityType.card.name)
+          l.content['source_id'] as String,
+    };
+    final cards = await projection.getMany(EntityType.card, cardIds);
+    final sourceCollectionIds = {
+      for (final l in links)
+        if (l.content['source_type'] == EntityType.collection.name)
+          l.content['source_id'] as String,
+      for (final c in cards) c.content['collection_id'] as String,
+    };
+    return buildCollectionHubs(
+      collectionIds: ids,
+      links: links,
+      sourceCards: cards,
+      sourceCollections: await projection.getMany(
+        EntityType.collection,
+        sourceCollectionIds,
+      ),
+    );
+  }
+
   /// Endpoint liveness for a live [link] — the broken-link chip (spec §8.6.1).
   /// Never auto-deletes; the UI offers repair/clear.
   Future<LinkEndpointStatus> linkStatus(Snapshot link) =>

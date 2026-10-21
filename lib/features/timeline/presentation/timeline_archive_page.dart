@@ -68,6 +68,9 @@ class TimelineArchivePage extends StatelessWidget {
                     .stateHolder
                     .value
                     .importedOwners[summary.collectionId],
+                hubs: _controller.stateHolder.value.hubsOf(
+                  summary.collectionId,
+                ),
               );
             },
           );

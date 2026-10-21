@@ -200,6 +200,47 @@ void main() {
         expect(ids, ['l1']);
       });
 
+      test(
+        'linksOutOf / backlinksTo: live links of many ids at once',
+        () async {
+          await store.upsert(
+            link(id: 'l1', sourceId: 'card-1', targetId: 'col-1', hlcMs: 1),
+          );
+          await store.upsert(
+            link(id: 'l2', sourceId: 'card-2', targetId: 'col-2', hlcMs: 1),
+          );
+          await store.upsert(
+            link(
+              id: 'l3',
+              sourceId: 'card-1',
+              targetId: 'col-2',
+              hlcMs: 1,
+              deleted: true,
+            ),
+          );
+          await store.upsert(
+            link(id: 'l4', sourceId: 'card-9', targetId: 'col-9', hlcMs: 1),
+          );
+
+          final out = await store.linksOutOf(['card-1', 'card-2', 'nope']);
+          expect(out.map((s) => s.id).toSet(), {'l1', 'l2'});
+          final back = await store.backlinksTo(['col-1', 'col-2']);
+          expect(back.map((s) => s.id).toSet(), {'l1', 'l2'});
+          expect(await store.linksOutOf(const []), isEmpty);
+        },
+      );
+
+      test('liveCardsIn: the live cards of the given collections', () async {
+        await store.upsert(card(id: 'x', collectionId: 'col-1', hlcMs: 1));
+        await store.upsert(
+          card(id: 'y', collectionId: 'col-1', hlcMs: 1, deleted: true),
+        );
+        await store.upsert(card(id: 'z', collectionId: 'col-2', hlcMs: 1));
+        await store.upsert(card(id: 'w', collectionId: 'col-3', hlcMs: 1));
+        final got = await store.liveCardsIn(['col-1', 'col-2']);
+        expect(got.map((s) => s.id).toSet(), {'x', 'z'});
+      });
+
       test('readAll spans every entity table', () async {
         await store.upsert(collection(hlcMs: 1));
         await store.upsert(card(hlcMs: 1));

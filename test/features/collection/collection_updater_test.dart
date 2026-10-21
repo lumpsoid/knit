@@ -6,6 +6,7 @@ import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/core/ownership/collection_ownership.dart';
+import 'package:knit/features/collection/domain/collection_link_tile.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_outline.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -208,6 +209,41 @@ void main() {
         'att-2',
       ]);
       expect(effects.whereType<ShowCoverEffect>().single.attachmentId, 'cov');
+    });
+
+    test('a collection-link tile shows its target\'s cover (§4.2)', () {
+      final data = dataWith([
+        imageCard('c1', 'a0', 'att-1'),
+        const FeedCard(
+          id: 'c2',
+          kind: CardKind.text,
+          position: 'a1',
+          collectionLink: CollectionLinkTile(
+            collectionId: 'col-2',
+            title: 'Trips',
+            cardCount: 3,
+            coverAttachmentId: 'cov-2',
+          ),
+        ),
+        const FeedCard(
+          id: 'c3',
+          kind: CardKind.text,
+          position: 'a2',
+          collectionLink: CollectionLinkTile(
+            collectionId: 'col-3',
+            title: 'House',
+            cardCount: 0,
+          ),
+        ),
+      ]);
+      final (_, effects) = updater.update(
+        const CollectionState(),
+        CollectionLoaded(data),
+      );
+      expect(effects!.whereType<ShowFeedImagesEffect>().single.attachmentIds, [
+        'att-1',
+        'cov-2',
+      ]);
     });
 
     test('an image card without an attachment id shows nothing', () {

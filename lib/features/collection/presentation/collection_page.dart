@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
+import 'package:knit/core/previews/card_preview_label.dart';
 import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/presentation/link_picker_sheet.dart';
+import 'package:knit/features/collection/domain/collection_link_tile.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_page.dart';
 import 'package:knit/features/audio_playback/presentation/audio_mini_player.dart';
@@ -30,6 +32,7 @@ import 'package:knit/features/collection/presentation/widgets/composer_previews.
 import 'package:knit/features/collection/presentation/widgets/collection_error_view.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_feed.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_header_bar.dart';
+import 'package:knit/features/collection/presentation/widgets/collection_link_tile_view.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_menu_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_outline_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/read_only_footer.dart';
@@ -960,6 +963,33 @@ class _CollectionPageState extends State<CollectionPage> {
     );
   }
 
+  /// The tile of a card that links to a collection as its whole purpose
+  /// (§4.2): the target's cover from the shared image cache, its counters,
+  /// and a tap that opens it on top of this feed.
+  Widget? _collectionLinkTile(CollectionLinkTile? link) {
+    if (link == null) return null;
+    final coverId = link.coverAttachmentId;
+    return CollectionLinkTileView(
+      title: link.title,
+      cardCount: link.cardCount,
+      preview: CardPreviewLabel.of(
+        AppLocalizations.of(context),
+        kind: link.lastCardKind,
+        text: link.lastCardText,
+      ),
+      previewSettled: link.lastCardSettled,
+      coverBytes: coverId == null ? null : CollectionScope.images.of(coverId),
+      caption: link.caption,
+      onTap: () => _openLinkedCollection(link.collectionId),
+    );
+  }
+
+  /// Open a collection a tile links to, over this one (back returns here).
+  void _openLinkedCollection(String collectionId) {
+    CollectionScope.collectionRouteArgsWriter.open(collectionId);
+    Navigator.of(context).push(CollectionPage.route());
+  }
+
   /// One feed row for [card]: its bubble, plus a connections badge when linked.
   /// A non-empty [selection] (the selected card ids) puts the row in
   /// multi-select mode.
@@ -1000,6 +1030,7 @@ class _CollectionPageState extends State<CollectionPage> {
       onToggleAudio: audioId == null
           ? null
           : () => unawaited(_playback.toggle(card.id, audioId)),
+      collectionLink: _collectionLinkTile(card.collectionLink),
     );
     // A card with links-out (§4.4) gets a count badge under its bubble;
     // tapping it opens the Connections page focused on that card — the

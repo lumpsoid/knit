@@ -1362,6 +1362,19 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String timelineInHubs(String names) {
+    return 'в: $names';
+  }
+
+  @override
+  String timelineInHubsMore(String names, int more) {
+    return 'в: $names +$more';
+  }
+
+  @override
+  String get collectionLinkTileOpen => 'Открыть коллекцию';
+
+  @override
   String timelineFromHandle(String handle) {
     return 'от $handle';
   }

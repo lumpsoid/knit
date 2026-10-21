@@ -78,6 +78,27 @@ abstract class ProjectionStorage {
   /// by the caller.
   Future<List<Snapshot>> linksOut(String sourceId, {StorageContext? ctx});
 
+  /// Live links originating at any of [sourceIds] — [linksOut] batched, in no
+  /// particular order.
+  Future<List<Snapshot>> linksOutOf(
+    Iterable<String> sourceIds, {
+    StorageContext? ctx,
+  });
+
+  /// Live links pointing at any of [targetIds] — [backlinks] batched, in no
+  /// particular order.
+  Future<List<Snapshot>> backlinksTo(
+    Iterable<String> targetIds, {
+    StorageContext? ctx,
+  });
+
+  /// The live cards of every collection in [collectionIds], in no particular
+  /// order — one batched read for per-collection counters (§8.6.3).
+  Future<List<Snapshot>> liveCardsIn(
+    Iterable<String> collectionIds, {
+    StorageContext? ctx,
+  });
+
   /// Truncate every entity table (rebuild step 1, spec §8.9).
   Future<void> clear({StorageContext? ctx});
 }

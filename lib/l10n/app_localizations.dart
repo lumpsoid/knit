@@ -2300,6 +2300,24 @@ abstract class AppLocalizations {
   /// **'Read-only · from {handle}'**
   String collectionReadOnlyFrom(String handle);
 
+  /// Home row line listing the collections that link to this one (joined by ' · ').
+  ///
+  /// In en, this message translates to:
+  /// **'in: {names}'**
+  String timelineInHubs(String names);
+
+  /// The in: line when more collections link here than are named.
+  ///
+  /// In en, this message translates to:
+  /// **'in: {names} +{more}'**
+  String timelineInHubsMore(String names, int more);
+
+  /// No description provided for @collectionLinkTileOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open collection'**
+  String get collectionLinkTileOpen;
+
   /// No description provided for @timelineFromHandle.
   ///
   /// In en, this message translates to:

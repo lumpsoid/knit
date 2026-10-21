@@ -40,6 +40,11 @@ can be exported. Search, links, and ownership are solved structurally, not bolte
   `link(source, target)` record.
 - **Backlinks** — if A links to B, B automatically shows "linked from A." No reverse link is
   authored; costs no extra UI; makes the web navigable. Derived, never stored.
+- **Collections as hubs** — a link to a collection works like a tag, and a collection made
+  mostly of links to others works like an index or folder. That is only a way of reading
+  links: there is **no hierarchy** in the model (no parent, no nesting, no new field). The UI
+  makes it visible read-side: the feed draws such a link as a tile (§4.2) and Home names the
+  collections that link to a row (§4.1, derived in §8.6.4).
 
 ### 3.1 Node affordances (the collection-vs-card line)
 
@@ -129,6 +134,11 @@ deleted. Archiving takes it off the home timeline without losing anything.
 - Vertical list of **collections**, **sorted latest-updated first (descending)** — recency
   order, like a messenger's chat list. **Not reorderable.**
 - Each row shows: cover image (if set), title, last-card preview, card count, last-updated.
+- **"in:" line:** under the preview, a small muted line names the collections that link to this
+  one (§3, §8.6.4): "in: House · Trips", at most two names, then "+N". A collection counts
+  once however many of its links point here, from itself or from its cards; the row's own
+  collection and deleted sources never count. Archived and imported collections count like
+  any other. No hubs, no line. The Archive page's rows show it too.
 - **Inline collection creation:** a button becomes a title/theme input line; on submit it
   opens the new Collection Screen with the card composer ready. ("Title/theme" is one input
   — there is **no** separate theme field.)
@@ -172,6 +182,15 @@ deleted. Archiving takes it off the home timeline without losing anything.
   adds more photos to an image card and removes any one of them (§4.3). The bubble lays them
   out as a grid (one wide, two side by side, three as one big and two small, four or more as
   a 2×2 grid with a "+N" on the last tile); a tap opens the full-screen viewer on that image.
+- **Collection-link tile:** a card whose whole purpose is linking to another collection is
+  drawn as a tile instead of a plain bubble: that collection's cover (or a folder glyph), title,
+  card count and its newest card's one-line preview (muted when settled, like Home). Such a
+  card has no attachment and exactly one link out, to a collection, and its text is blank or
+  one short line (a label, up to 80 characters); a `kind=link` card qualifies only without a
+  URL. The card's text shows above the tile unless it just repeats the title. A tap on the
+  tile opens that collection over this one; a tap beside it still opens the actions sheet.
+  If the target is deleted, the card keeps its plain bubble and the broken-link chip (§8.6.1).
+  The tiles of a loaded page are read in batches (one links-out read, one summary read).
 - **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle · emphasize/unemphasize (§3.3) ·
   delete.
 - **⋮ menu** in the app bar opens a sheet with **Present** (§4.9), **Outline** and
@@ -934,6 +953,14 @@ reorderable**. *(Adding a card resurfaces its collection; like a messenger chat 
 Materializing the home view into a cache table is an optional later optimization; if added,
 invalidate on any committed card op (local/remote) for that collection and any collection
 update; the cache is local-only, excluded from sync/signing.
+
+**8.6.4 Collection hubs (per collection).** The hubs over collection `C` are the live
+collections with a live link to `C`, made from the collection itself or from one of its live
+cards; deduped by source collection, excluding `C` itself, sorted by title. Read in one batch
+for the whole home list: the backlinks of every row, then their source cards and collections.
+```sql
+SELECT * FROM link WHERE target_id IN (:ids) AND deleted=0;  -- then resolve each source
+```
 
 ### 8.7 Feed order (cards within a collection)
 Concurrent inserts into the same gap can mint identical `position` strings on **different**

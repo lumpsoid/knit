@@ -179,7 +179,8 @@ the `lib/sync/` core below.
 - `projection/` — the materialized entity tables (§6.3/§6.4). `EnvelopeColumns`
   + the five entity schemas + `ProjectionTables`; `ProjectionStorage`
   (`get`/`getMany`/`upsert`/`readAll`/`feed`/`feedPage` (newest-first keyset
-  page)/`backlinks`/`linkCounts` (batched)/`deleteMany`/`clear`);
+  page)/`backlinks`/`linkCounts` (batched)/`linksOutOf`/`backlinksTo`/
+  `liveCardsIn` (batched)/`deleteMany`/`clear`);
   `ProjectionRowMapper`
   (`Snapshot` ↔ typed row); both impls.
 - `sync_store.dart` — `SyncStore`: the persistent orchestrator tying all three
@@ -199,8 +200,11 @@ the `lib/sync/` core below.
 
 ### `lib/sync/storage/derivations/` — read-time derivations (§8.6, pure)
 - `broken_link.dart` (`BrokenLinkResolver`, §8.6.1/2), `home_timeline.dart`
-  (`buildHomeTimeline` → `CollectionSummary`/`CardPreview`, §8.6.3). Never
-  synced/signed; surfaced via `SyncStore.linkStatus` / `linksOut` / `homeTimeline`.
+  (`buildHomeTimeline` → `CollectionSummary`/`CardPreview`, §8.6.3),
+  `collection_hubs.dart` (`buildCollectionHubs` → `CollectionHub`, §8.6.4: the
+  live collections linking to each one). Never synced/signed; surfaced via
+  `SyncStore.linkStatus` / `linksOut` / `homeTimeline` / `collectionSummaries`
+  (just some home rows, batched) / `collectionHubs`.
 
 ### `lib/app/` — composition root (composition.md)
 - `app_config.dart` — immutable `AppConfig` graph selector (`AppEnvironment`
@@ -307,6 +311,17 @@ the `lib/sync/` core below.
   serial, which the search-hit entry now sets too) and, for an unloaded card,
   reloads `FeedWindow.through` it. `CollectionFeed` reveals each new focus once
   its card is loaded. Imported collections offer it too.
+- Collections as hubs (§3, read-side only, no new field). `collection` feed:
+  the pure `CollectionLinkTile.targetOf` picks a card whose whole purpose is
+  linking to a collection (no attachment, one link out, to a collection, text
+  blank or one short label line); the read repo batches `linksOutOf` +
+  `collectionSummaries` for the page into `FeedCard.collectionLink`, and
+  `CardBubble` draws `CollectionLinkTileView` (cover via the image cache, tap
+  writes the Collection carrier and pushes). A deleted target gets no tile.
+  Timeline: the narrow `TimelineHubReadRepository` (`collectionHubs`) fills
+  `TimelineState.hubs`; the row's "in:" line is `TimelineHubLine` (two names,
+  then "+N"). `CardPreviewLabel` (`lib/core/previews/`) is the shared
+  newest-card preview text.
 - Settled cards (§3.3): a nullable, synced `card.settled_at` (v5 migration),
   written by `SyncStore.setCardsSettled` on the content clock. The domain's
   `SettleChange` decides settle vs unsettle (all settled → unsettle). The

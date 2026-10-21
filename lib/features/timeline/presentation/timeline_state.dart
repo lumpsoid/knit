@@ -13,6 +13,7 @@ class TimelineState {
     this.pinnedIds = const {},
     this.importedOwners = const {},
     this.localArchivedIds = const {},
+    this.hubs = const {},
   });
 
   final TimelineStatus status;
@@ -33,6 +34,14 @@ class TimelineState {
 
   /// Imported collections archived on this device only (never synced).
   final Set<String> localArchivedIds;
+
+  /// The hubs over each collection (§8.6.4): the live collections linking to
+  /// it, shown as the row's "in:" line. Absent ⇒ none.
+  final Map<String, List<CollectionHub>> hubs;
+
+  /// The hubs over [collectionId], in hub order; empty when none.
+  List<CollectionHub> hubsOf(String collectionId) =>
+      hubs[collectionId] ?? const [];
 
   bool get isEmpty => collections.isEmpty;
 
@@ -63,11 +72,13 @@ class TimelineState {
     Set<String>? pinnedIds,
     Map<String, String>? importedOwners,
     Set<String>? localArchivedIds,
+    Map<String, List<CollectionHub>>? hubs,
   }) => TimelineState(
     status: status ?? this.status,
     collections: collections ?? this.collections,
     pinnedIds: pinnedIds ?? this.pinnedIds,
     importedOwners: importedOwners ?? this.importedOwners,
     localArchivedIds: localArchivedIds ?? this.localArchivedIds,
+    hubs: hubs ?? this.hubs,
   );
 }

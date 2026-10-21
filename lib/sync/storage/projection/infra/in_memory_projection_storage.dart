@@ -123,6 +123,39 @@ class InMemoryProjectionStorage implements ProjectionStorage {
       .toList();
 
   @override
+  Future<List<Snapshot>> linksOutOf(
+    Iterable<String> sourceIds, {
+    StorageContext? ctx,
+  }) async {
+    final wanted = sourceIds.toSet();
+    return _tables[EntityType.link]!.values
+        .where((s) => !s.deleted && wanted.contains(s.content['source_id']))
+        .toList();
+  }
+
+  @override
+  Future<List<Snapshot>> backlinksTo(
+    Iterable<String> targetIds, {
+    StorageContext? ctx,
+  }) async {
+    final wanted = targetIds.toSet();
+    return _tables[EntityType.link]!.values
+        .where((s) => !s.deleted && wanted.contains(s.content['target_id']))
+        .toList();
+  }
+
+  @override
+  Future<List<Snapshot>> liveCardsIn(
+    Iterable<String> collectionIds, {
+    StorageContext? ctx,
+  }) async {
+    final wanted = collectionIds.toSet();
+    return _tables[EntityType.card]!.values
+        .where((s) => !s.deleted && wanted.contains(s.content['collection_id']))
+        .toList();
+  }
+
+  @override
   Future<void> clear({StorageContext? ctx}) async {
     for (final table in _tables.values) {
       table.clear();

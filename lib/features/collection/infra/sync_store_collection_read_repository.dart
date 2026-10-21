@@ -1,14 +1,16 @@
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
+import 'package:knit/features/collection/domain/collection_link_tile.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/sync/sync.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// [CollectionReadRepository] over the graph's [SyncStore]: the header via
 /// [SyncStore.get], the feed as keyset pages via [SyncStore.feedPage] (§8.7),
-/// hydrated with batched attachment + link-count reads.
+/// hydrated with batched attachment, link-count and collection-link reads.
 class SyncStoreCollectionReadRepository implements CollectionReadRepository {
   SyncStoreCollectionReadRepository({required AppGraph graph}) : _graph = graph;
 
@@ -161,11 +163,71 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       ...extraCountIds,
     ]);
 
+    final tiles = await _collectionLinks(store, rows, counts);
+
     final cards = [
       for (final card in rows)
-        _feedCard(card, meta[card.content['attachment_id']], counts[card.id]),
+        _feedCard(
+          card,
+          meta[card.content['attachment_id']],
+          counts[card.id],
+          tiles[card.id],
+        ),
     ];
     return (cards, counts);
+  }
+
+  /// The rich tile of each card in [rows] whose whole purpose is linking to a
+  /// live collection (§4.2), by card id — batched: one links-out read for the
+  /// linked cards, and one summary read for their targets. A deleted target
+  /// gets no tile, so the card keeps the plain bubble and its broken chip.
+  Future<Map<String, CollectionLinkTile>> _collectionLinks(
+    SyncStore store,
+    List<Snapshot> rows,
+    Map<String, int> counts,
+  ) async {
+    final linked = [
+      for (final card in rows)
+        if ((counts[card.id] ?? 0) > 0) card,
+    ];
+    if (linked.isEmpty) return const {};
+    final linksOut = <String, List<CardLinkOut>>{};
+    for (final link in await store.linksOutOf([for (final c in linked) c.id])) {
+      (linksOut[link.content[LinkSchema.colSourceId] as String] ??= []).add((
+        targetKind: ConnectedEntityKind.fromTag(
+          link.content[LinkSchema.colTargetType] as String?,
+        ),
+        targetId: link.content[LinkSchema.colTargetId] as String,
+      ));
+    }
+    final targets = <String, String>{
+      for (final card in linked)
+        card.id: ?CollectionLinkTile.targetOf(
+          kind: CardKind.fromTag(card.content['kind'] as String?),
+          text: card.content['text'] as String?,
+          attachmentIds: CardSchema.attachmentIdsOf(card.content),
+          linksOut: linksOut[card.id] ?? const [],
+        ),
+    };
+    if (targets.isEmpty) return const {};
+    final summaries = {
+      for (final s in await store.collectionSummaries(targets.values))
+        s.collectionId: s,
+    };
+    return {
+      for (final card in linked)
+        if (summaries[targets[card.id]] case final summary?)
+          card.id: CollectionLinkTile.of(
+            cardText: card.content['text'] as String?,
+            collectionId: summary.collectionId,
+            title: summary.title,
+            cardCount: summary.cardCount,
+            coverAttachmentId: summary.coverAttachmentId,
+            lastCardKind: summary.lastCard?.kind,
+            lastCardText: summary.lastCard?.text,
+            lastCardSettled: summary.lastCard?.settled ?? false,
+          ),
+    };
   }
 
   static bool _needsMeta(Snapshot card) {
@@ -173,7 +235,12 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
     return kind == CardKind.file || kind == CardKind.audio;
   }
 
-  static FeedCard _feedCard(Snapshot card, Snapshot? att, int? linkCount) {
+  static FeedCard _feedCard(
+    Snapshot card,
+    Snapshot? att,
+    int? linkCount,
+    CollectionLinkTile? collectionLink,
+  ) {
     final kind = CardKind.fromTag(card.content['kind'] as String?);
     final withMeta = att != null && _needsMeta(card);
     return FeedCard(
@@ -192,6 +259,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       connectionCount: linkCount ?? 0,
       settledAt: card.content[CardSchema.colSettledAt] as int?,
       emphasizedAt: card.content[CardSchema.colEmphasizedAt] as int?,
+      collectionLink: collectionLink,
     );
   }
 

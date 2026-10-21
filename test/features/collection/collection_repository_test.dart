@@ -118,6 +118,78 @@ void main() {
     },
   );
 
+  group('collection-link tile (§4.2)', () {
+    Future<String> addText(String colId, String position, String text) async =>
+        (await write.addCard(
+          collectionId: colId,
+          kind: CardKind.text,
+          position: position,
+          text: text,
+        )).getOrThrow();
+
+    Future<void> linkTo(String cardId, String colId) async =>
+        (await linkWrite.addLink(
+          sourceCardId: cardId,
+          targetKind: ConnectedEntityKind.collection,
+          targetId: colId,
+        )).getOrThrow();
+
+    test('a label card linking to a collection gets its tile', () async {
+      final index = await createCollection('Index');
+      final trips = await createCollection('Trips');
+      await addText(trips, 'a0', 'Rome');
+      await addText(trips, 'a1', 'Lisbon');
+      final label = await addText(index, 'a0', 'trips');
+      final note = await addText(
+        index,
+        'a1',
+        'A long note about everything\nthat also links to Trips.',
+      );
+      await linkTo(label, trips);
+      await linkTo(note, trips);
+
+      final cards = (await load(index)).cards;
+      final tile = cards.firstWhere((c) => c.id == label).collectionLink;
+      expect(tile?.collectionId, trips);
+      expect(tile?.title, 'Trips');
+      expect(tile?.cardCount, 2);
+      expect(tile?.lastCardText, 'Lisbon');
+      expect(tile?.caption, isNull, reason: 'the label repeats the title');
+      expect(
+        cards.firstWhere((c) => c.id == note).collectionLink,
+        isNull,
+        reason: 'a note is more than a link',
+      );
+    });
+
+    test('a deleted target keeps the plain bubble (broken link)', () async {
+      final index = await createCollection('Index');
+      final trips = await createCollection('Trips');
+      final label = await addText(index, 'a0', 'Trips');
+      await linkTo(label, trips);
+      await store.delete(EntityType.collection, trips);
+
+      final card = (await load(index)).cards.single;
+      expect(card.collectionLink, isNull);
+      expect(card.connectionCount, 1);
+    });
+
+    test('a card linking to a collection and a card gets none', () async {
+      final index = await createCollection('Index');
+      final trips = await createCollection('Trips');
+      final label = await addText(index, 'a0', 'Trips');
+      final other = await addText(index, 'a1', 'other');
+      await linkTo(label, trips);
+      await linkWrite.addLink(
+        sourceCardId: label,
+        targetKind: ConnectedEntityKind.card,
+        targetId: other,
+      );
+      final cards = (await load(index)).cards;
+      expect(cards.every((c) => c.collectionLink == null), isTrue);
+    });
+  });
+
   test('link a card to another card writes a card→card link', () async {
     final colId = await createCollection('Espresso');
     final src = (await write.addCard(

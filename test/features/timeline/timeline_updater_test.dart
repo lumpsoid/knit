@@ -42,6 +42,25 @@ void main() {
     expect((effects!.single as ShowCoversEffect).attachmentIds, isEmpty);
   });
 
+  test('CollectionsLoaded keeps the hubs for the "in:" line (§4.1)', () {
+    const hubs = {
+      'a': [CollectionHub(collectionId: 'b', title: 'House')],
+    };
+    final (next, _) = updater.update(
+      const TimelineState(),
+      CollectionsLoaded([summary('a'), summary('b')], hubs: hubs),
+    );
+    expect(next.hubsOf('a'), hubs['a']);
+    expect(next.hubsOf('b'), isEmpty);
+
+    // A reload replaces them: a link removed elsewhere drops its hub.
+    final (reloaded, _) = updater.update(
+      next,
+      CollectionsLoaded([summary('a'), summary('b')]),
+    );
+    expect(reloaded.hubsOf('a'), isEmpty);
+  });
+
   test('CollectionsLoaded shows the covers through the image cache', () {
     final list = [
       summary('a', cover: 'cov-1'),

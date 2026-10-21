@@ -225,6 +225,52 @@ class SqfliteProjectionStorage implements ProjectionStorage {
   }
 
   @override
+  Future<List<Snapshot>> linksOutOf(
+    Iterable<String> sourceIds, {
+    StorageContext? ctx,
+  }) => _liveWhereIn(EntityType.link, LinkSchema.colSourceId, sourceIds, ctx);
+
+  @override
+  Future<List<Snapshot>> backlinksTo(
+    Iterable<String> targetIds, {
+    StorageContext? ctx,
+  }) => _liveWhereIn(EntityType.link, LinkSchema.colTargetId, targetIds, ctx);
+
+  @override
+  Future<List<Snapshot>> liveCardsIn(
+    Iterable<String> collectionIds, {
+    StorageContext? ctx,
+  }) => _liveWhereIn(
+    EntityType.card,
+    CardSchema.colCollectionId,
+    collectionIds,
+    ctx,
+  );
+
+  /// The live rows of [type] whose [column] is one of [values], read in
+  /// chunks under the bound-parameter budget.
+  Future<List<Snapshot>> _liveWhereIn(
+    EntityType type,
+    String column,
+    Iterable<String> values,
+    StorageContext? ctx,
+  ) async {
+    final db = _exec(ctx);
+    final out = <Snapshot>[];
+    for (final chunk in _chunks(values.toSet().toList(), _maxInArgs)) {
+      final rows = await db.query(
+        ProjectionTables.of(type),
+        where:
+            '$column IN (${_marks(chunk.length)}) '
+            'AND ${EnvelopeColumns.colDeleted} = 0',
+        whereArgs: chunk,
+      );
+      out.addAll(rows.map((r) => ProjectionRowMapper.fromRow(type, r)));
+    }
+    return out;
+  }
+
+  @override
   Future<void> clear({StorageContext? ctx}) async {
     final db = _exec(ctx);
     for (final type in ProjectionTables.all) {

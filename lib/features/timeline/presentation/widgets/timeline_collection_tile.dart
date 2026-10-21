@@ -2,13 +2,16 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
+import 'package:knit/core/previews/card_preview_label.dart';
 import 'package:knit/core/settled/settled_palette.dart';
+import 'package:knit/features/timeline/domain/timeline_hub_line.dart';
 import 'package:knit/features/timeline/presentation/timeline_scope.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/sync/sync.dart';
 
 /// One collection row (§4.1): cover or lettered avatar, title, last-card
-/// preview · count, and the relative last-updated time. Used by Home and the
+/// preview · count, the "in:" line of the collections linking to it, and the
+/// relative last-updated time. Used by Home and the
 /// Archive page.
 class TimelineCollectionTile extends StatelessWidget {
   const TimelineCollectionTile({
@@ -19,6 +22,7 @@ class TimelineCollectionTile extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     this.fromHandle,
+    this.hubNames = const [],
   });
 
   /// A row for [summary] whose header comes from the shared collection details
@@ -30,6 +34,7 @@ class TimelineCollectionTile extends StatelessWidget {
     required VoidCallback onTap,
     required VoidCallback onLongPress,
     String? fromHandle,
+    List<CollectionHub> hubs = const [],
   }) {
     final header = TimelineScope.collectionDetails.of(summary.collectionId);
     final coverId = header == null
@@ -43,6 +48,11 @@ class TimelineCollectionTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       fromHandle: fromHandle,
+      hubNames: [
+        for (final hub in hubs)
+          TimelineScope.collectionDetails.of(hub.collectionId)?.title ??
+              hub.title,
+      ],
     );
   }
 
@@ -61,6 +71,10 @@ class TimelineCollectionTile extends StatelessWidget {
   /// collection (docs/collection_share.md), shown as a "from" line.
   final String? fromHandle;
 
+  /// The titles of the collections linking to this one (§4.1 "in:" line), in
+  /// hub order; empty shows no line.
+  final List<String> hubNames;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -71,7 +85,11 @@ class TimelineCollectionTile extends StatelessWidget {
         children: [
           // A settled newest card (§3.3) previews muted, like its bubble.
           TextSpan(
-            text: _preview(l10n, summary.lastCard),
+            text: CardPreviewLabel.of(
+              l10n,
+              kind: summary.lastCard?.kind,
+              text: summary.lastCard?.text,
+            ),
             style: summary.lastCard?.settled == true
                 ? TextStyle(
                     color: SettledPalette.previewText(theme.colorScheme),
@@ -84,23 +102,34 @@ class TimelineCollectionTile extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
+    final hubLine = TimelineHubLine.of(hubNames);
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
       leading: _leading(title),
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: fromHandle == null
+      subtitle: fromHandle == null && hubLine == null
           ? preview
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 preview,
-                Text(
-                  l10n.timelineFromHandle(fromHandle!),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                if (hubLine != null)
+                  Text(
+                    _hubText(l10n, hubLine),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                if (fromHandle case final handle?)
+                  Text(
+                    l10n.timelineFromHandle(handle),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
       trailing: Text(
@@ -143,21 +172,15 @@ class TimelineCollectionTile extends StatelessWidget {
     return HSLColor.fromAHSL(1, (h % 360).toDouble(), 0.5, 0.5).toColor();
   }
 
-  String _preview(AppLocalizations l10n, CardPreview? card) {
-    if (card == null) return l10n.timelineNoCardsYet;
-    switch (card.kind) {
-      case 'text':
-        final t = card.text?.trim() ?? '';
-        return t.isEmpty ? l10n.labelEmptyNote : t;
-      case 'image':
-        return l10n.timelinePreviewPhoto;
-      case 'audio':
-        return l10n.timelinePreviewAudio;
-      case 'link':
-        return l10n.timelinePreviewLink;
-      default:
-        return card.kind;
-    }
+  /// "in: House · Trips", with "+N" past the first names.
+  static String _hubText(AppLocalizations l10n, TimelineHubLine line) {
+    final names = [
+      for (final name in line.names)
+        name.trim().isEmpty ? l10n.labelUntitled : name.trim(),
+    ].join(' · ');
+    return line.more == 0
+        ? l10n.timelineInHubs(names)
+        : l10n.timelineInHubsMore(names, line.more);
   }
 
   String _relative(AppLocalizations l10n, int ms) {

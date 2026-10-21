@@ -260,6 +260,7 @@ class _TimelinePageState extends State<TimelinePage> {
         onLongPress: () => _openCollectionActions(summary, isPinned: isPinned),
         fromHandle:
             _controller.stateHolder.value.importedOwners[summary.collectionId],
+        hubs: _controller.stateHolder.value.hubsOf(summary.collectionId),
       );
     }
   }

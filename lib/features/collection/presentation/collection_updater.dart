@@ -527,9 +527,13 @@ class CollectionUpdater
     return '${DateFormat('yyyy-MM-dd').format(at)}-knit';
   }
 
-  /// Every image of the image cards in [cards] — what the feed shows.
+  /// Every image of the image cards in [cards], and the cover of each
+  /// collection-link tile (§4.2) — what the feed shows.
   static List<String> _imageAttachments(List<FeedCard> cards) => [
-    for (final card in cards) ...card.imageIds,
+    for (final card in cards) ...[
+      ...card.imageIds,
+      ?card.collectionLink?.coverAttachmentId,
+    ],
   ];
 
   /// The ids in [selected] that are still among [cards].

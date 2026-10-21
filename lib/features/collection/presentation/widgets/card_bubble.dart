@@ -11,7 +11,7 @@ import 'package:knit/features/collection/presentation/widgets/settled_roots.dart
 import 'package:knit/l10n/app_localizations.dart';
 
 /// A card's chat bubble in the feed: a note, a link, an image, an audio clip,
-/// or a file, with its caption where it has one.
+/// or a file, with its caption where it has one — or a collection-link tile.
 class CardBubble extends StatelessWidget {
   const CardBubble({
     super.key,
@@ -29,6 +29,7 @@ class CardBubble extends StatelessWidget {
     this.onLinkTap,
     this.playback,
     this.onToggleAudio,
+    this.collectionLink,
   });
   final String cardId;
   final CardKind kind;
@@ -75,6 +76,11 @@ class CardBubble extends StatelessWidget {
   /// Toggle this audio card's playback (play / pause / replay); null when not a
   /// playable audio card.
   final VoidCallback? onToggleAudio;
+
+  /// The collection-link tile (§4.2) drawn in place of the card's own
+  /// content, for a card whose whole purpose is linking to a collection; null
+  /// for every other card.
+  final Widget? collectionLink;
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +188,7 @@ class CardBubble extends StatelessWidget {
       );
 
   Widget _content(ThemeData theme, AppLocalizations l10n) {
+    if (collectionLink case final tile?) return tile;
     switch (kind) {
       case CardKind.link:
         final link = Row(
