@@ -256,6 +256,11 @@ the `lib/sync/` core below.
   the cards after it (feed order) → one `SyncStore.moveCards` transaction
   (content + placement on one stamp, §8.4). `CollectionCardsMovedUiEffect`
   shows the snackbar whose "Open" writes the Collection carrier.
+  The picker's "New collection" row grows into the shared
+  `showNewCollectionBar` line; sending creates the target
+  (`CreateMoveTargetEffect`, `CollectionWriteRepository.createCollection`)
+  and moves into it as an empty tail. A title like an existing target
+  offers "Move there" instead.
 - Settled cards (§3.3): a nullable, synced `card.settled_at` (v5 migration),
   written by `SyncStore.setCardsSettled` on the content clock. The domain's
   `SettleChange` decides settle vs unsettle (all settled → unsettle). The

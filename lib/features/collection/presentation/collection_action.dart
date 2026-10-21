@@ -197,6 +197,13 @@ class MoveTargetChosen extends CollectionAction {
   final MoveTarget target;
 }
 
+/// The picker's "New collection" line sent [title]: create that collection,
+/// then move the selected cards into it.
+class MoveToNewCollectionChosen extends CollectionAction {
+  const MoveToNewCollectionChosen(this.title);
+  final String title;
+}
+
 /// Delivery of [MoveTargetChosen]'s read: [lastPosition] is the target's
 /// newest card position (null when it is empty), so the moved cards append.
 class MoveTargetTailLoaded extends CollectionAction {

@@ -443,6 +443,8 @@
   },
   "collectionDeleteSelectedBody": "Links to them will show as broken.",
   "collectionMoveSheetTitle": "Move to…",
+  "collectionMoveNewCollection": "New collection",
+  "collectionMoveThere": "Move there",
   "collectionMoveNoTargets": "No other collections yet.",
   "collectionMoveTargetsError": "Couldn't load collections.",
   "collectionCardsMoved": "{count, plural, =1{Moved 1 card to “{title}”} other{Moved {count} cards to “{title}”}}",

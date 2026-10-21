@@ -36,6 +36,7 @@ import 'package:knit/features/collection/presentation/widgets/text_prompt_dialog
 import 'package:knit/features/collection/presentation/widgets/title_morph.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_page.dart';
+import 'package:knit/features/new_collection/new_collection.dart';
 
 /// The Collection screen (§4.2) — a chat-style card feed (oldest at top), a
 /// bottom composer, a "+" add-block sheet, per-card actions, and drag-to-reorder
@@ -247,10 +248,10 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   /// Open the move picker over the selection: load the targets, let the user
-  /// choose one, then move the selected cards there.
+  /// choose one (or make a new one), then move the selected cards there.
   Future<void> _openMovePicker() async {
     _controller.dispatch(const MoveTargetsRequested());
-    final target = await showModalBottomSheet<MoveTarget>(
+    final choice = await showModalBottomSheet<MoveSheetChoice>(
       context: context,
       isScrollControlled: true,
       builder: (_) => ValueListenableBuilder<CollectionState>(
@@ -261,8 +262,45 @@ class _CollectionPageState extends State<CollectionPage> {
         ),
       ),
     );
-    if (target == null || !mounted) return;
-    _controller.dispatch(MoveTargetChosen(target));
+    if (!mounted) return;
+    switch (choice) {
+      case MoveSheetTarget(:final target):
+        _controller.dispatch(MoveTargetChosen(target));
+      case MoveSheetNewCollection(:final origin):
+        await _moveToNewCollection(origin);
+      case null:
+        break;
+    }
+  }
+
+  /// The picker's "New collection" row grows into the title line (§4.1); a
+  /// title that reads like one of the targets offers to move there instead.
+  Future<void> _moveToNewCollection(Rect? origin) async {
+    final targets = _controller.stateHolder.value.moveTargets;
+    final choice = await showNewCollectionBar(
+      context,
+      origin: origin,
+      originColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      originRadius: 0,
+      existing: [
+        for (final t in targets)
+          CollectionTitle(collectionId: t.collectionId, title: t.title),
+      ],
+      existingActionLabel: AppLocalizations.of(context).collectionMoveThere,
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case NewCollectionCreate(:final title):
+        _controller.dispatch(MoveToNewCollectionChosen(title));
+      case NewCollectionUseExisting(:final collectionId):
+        _controller.dispatch(
+          MoveTargetChosen(
+            targets.firstWhere((t) => t.collectionId == collectionId),
+          ),
+        );
+      case null:
+        break;
+    }
   }
 
   /// Hand the card to the Card Edit carrier (cross_feature.md §2), then navigate

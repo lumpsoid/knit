@@ -1038,6 +1038,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionMoveSheetTitle => 'Переместить в…';
 
   @override
+  String get collectionMoveNewCollection => 'Новая коллекция';
+
+  @override
+  String get collectionMoveThere => 'Переместить туда';
+
+  @override
   String get collectionMoveNoTargets => 'Других коллекций пока нет.';
 
   @override

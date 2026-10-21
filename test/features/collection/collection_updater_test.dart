@@ -801,6 +801,28 @@ void main() {
       expect(none, isNull);
     });
 
+    test('a new collection is created as the target', () {
+      final (next, effects) = updater.update(
+        selecting({'c1'}),
+        const MoveToNewCollectionChosen('  Fresh  '),
+      );
+      expect(next.moveTargetsStatus, MoveTargetsStatus.idle);
+      expect((effects!.single as CreateMoveTargetEffect).title, 'Fresh');
+    });
+
+    test('a blank title or no selection creates nothing', () {
+      final (_, blank) = updater.update(
+        selecting({'c1'}),
+        const MoveToNewCollectionChosen('   '),
+      );
+      expect(blank, isNull);
+      final (_, none) = updater.update(
+        ready(cards),
+        const MoveToNewCollectionChosen('Fresh'),
+      );
+      expect(none, isNull);
+    });
+
     test('the tail appends the selection in feed order, not tap order', () {
       // Selected c3 first, then c1: they still land as c1, c3.
       final (next, effects) = updater.update(

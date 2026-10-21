@@ -218,6 +218,13 @@ class LoadMoveTargetTailEffect extends CollectionEffect {
   final MoveTarget target;
 }
 
+/// Create the collection titled [title] as a move target. It is new and
+/// empty, so it is delivered as a [MoveTargetTailLoaded] with no tail.
+class CreateMoveTargetEffect extends CollectionEffect {
+  const CreateMoveTargetEffect(this.title);
+  final String title;
+}
+
 /// Move cards into [target] in one transaction: [positions] maps each card id
 /// to its new position there, already in feed order (§8.7).
 class MoveCardsEffect extends CollectionEffect {

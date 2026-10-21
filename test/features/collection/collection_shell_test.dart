@@ -285,6 +285,23 @@ void main() {
       expect(moved.targetTitle, 'Dst');
     });
 
+    test('a new target is created and delivered with no tail', () async {
+      final actions = <CollectionAction>[];
+      await shell.run(
+        const CreateMoveTargetEffect('Fresh'),
+        dispatch: actions.add,
+      );
+      final tail = actions.single as MoveTargetTailLoaded;
+      expect(tail.target.title, 'Fresh');
+      expect(tail.lastPosition, isNull);
+      final created = await store.get(
+        EntityType.collection,
+        tail.target.collectionId,
+      );
+      expect(created?.content['title'], 'Fresh');
+      expect(timelineChannel.emits, 1);
+    });
+
     test('a failed move surfaces a message and resyncs', () async {
       final dst = (await timelineWrite.createCollection('Dst')).getOrThrow();
       final actions = <CollectionAction>[];

@@ -1832,6 +1832,18 @@ abstract class AppLocalizations {
   /// **'Move to…'**
   String get collectionMoveSheetTitle;
 
+  /// No description provided for @collectionMoveNewCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'New collection'**
+  String get collectionMoveNewCollection;
+
+  /// No description provided for @collectionMoveThere.
+  ///
+  /// In en, this message translates to:
+  /// **'Move there'**
+  String get collectionMoveThere;
+
   /// No description provided for @collectionMoveNoTargets.
   ///
   /// In en, this message translates to:

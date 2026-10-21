@@ -47,6 +47,10 @@ abstract interface class CollectionWriteRepository {
     required bool emphasized,
   });
 
+  /// Create an empty collection titled [title] — a move's new target, made
+  /// from the picker on the fly. Returns the new collection id.
+  Future<Result<String, CollectionFailure>> createCollection(String title);
+
   /// Move cards into [collectionId] in one transaction (all or none):
   /// [positions] maps each card id to its pre-computed position in the target
   /// (§8.7). Returns the target collection id on success.

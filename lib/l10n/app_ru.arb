@@ -430,6 +430,8 @@
   },
   "collectionDeleteSelectedBody": "Ссылки на них станут недействительными.",
   "collectionMoveSheetTitle": "Переместить в…",
+  "collectionMoveNewCollection": "Новая коллекция",
+  "collectionMoveThere": "Переместить туда",
   "collectionMoveNoTargets": "Других коллекций пока нет.",
   "collectionMoveTargetsError": "Не удалось загрузить коллекции.",
   "collectionCardsMoved": "{count, plural, =1{1 карточка перемещена в «{title}»} few{{count} карточки перемещены в «{title}»} many{{count} карточек перемещено в «{title}»} other{{count} карточки перемещены в «{title}»}}",

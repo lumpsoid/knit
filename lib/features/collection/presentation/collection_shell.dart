@@ -303,6 +303,31 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
           },
         );
 
+      case CreateMoveTargetEffect(:final title):
+        final result = await _write.createCollection(title);
+        result.onTap(
+          (id) {
+            // Home shows the new collection even if the move then fails.
+            _timelineChannel.emit(const RefreshChannelEvent());
+            dispatch(
+              MoveTargetTailLoaded(
+                MoveTarget(collectionId: id, title: title),
+                null,
+              ),
+            );
+          },
+          (failure) {
+            _log.severe(
+              'Move target create failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            _effectEmitter.push(
+              const CollectionShowMessageUiEffect(CollectionMessage.saveFailed),
+            );
+          },
+        );
+
       case MoveCardsEffect(:final target, :final positions):
         await _runWrite(
           () => _write.moveCards(target.collectionId, positions),

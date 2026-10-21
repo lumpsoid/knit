@@ -3,8 +3,26 @@ import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-/// The move picker (bottom sheet): every other collection, most recently
-/// updated first. Choosing one pops its [MoveTarget] back to the page.
+/// What the move picker popped with.
+sealed class MoveSheetChoice {
+  const MoveSheetChoice();
+}
+
+/// Move into this existing collection.
+class MoveSheetTarget extends MoveSheetChoice {
+  const MoveSheetTarget(this.target);
+  final MoveTarget target;
+}
+
+/// Move into a collection made on the fly. [origin] is the tapped row's global
+/// rect, for the title line to grow out of.
+class MoveSheetNewCollection extends MoveSheetChoice {
+  const MoveSheetNewCollection(this.origin);
+  final Rect? origin;
+}
+
+/// The move picker (bottom sheet): a "New collection" row, then every other
+/// collection, most recently updated first. Pops a [MoveSheetChoice].
 class MoveTargetSheet extends StatelessWidget {
   const MoveTargetSheet({
     super.key,
@@ -43,7 +61,7 @@ class MoveTargetSheet extends StatelessWidget {
               title: Text(
                 target.title.isEmpty ? l10n.labelUntitled : target.title,
               ),
-              onTap: () => Navigator.of(context).pop(target),
+              onTap: () => Navigator.of(context).pop(MoveSheetTarget(target)),
             );
           },
         ),
@@ -65,6 +83,23 @@ class MoveTargetSheet extends StatelessWidget {
                 style: theme.textTheme.titleMedium,
               ),
             ),
+            Builder(
+              builder: (rowContext) => ListTile(
+                leading: const Icon(Icons.add),
+                title: Text(l10n.collectionMoveNewCollection),
+                onTap: () {
+                  final box = rowContext.findRenderObject() as RenderBox?;
+                  Navigator.of(context).pop(
+                    MoveSheetNewCollection(
+                      box == null || !box.hasSize
+                          ? null
+                          : box.localToGlobal(Offset.zero) & box.size,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const Divider(height: 1),
             body,
           ],
         ),

@@ -1017,6 +1017,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionMoveSheetTitle => 'Move to…';
 
   @override
+  String get collectionMoveNewCollection => 'New collection';
+
+  @override
+  String get collectionMoveThere => 'Move there';
+
+  @override
   String get collectionMoveNoTargets => 'No other collections yet.';
 
   @override

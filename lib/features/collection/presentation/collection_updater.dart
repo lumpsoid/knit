@@ -367,6 +367,15 @@ class CollectionUpdater
         }
         return (idle, [LoadMoveTargetTailEffect(target)]);
 
+      case MoveToNewCollectionChosen(:final title):
+        final idle = state.copyWith(
+          moveTargetsStatus: MoveTargetsStatus.idle,
+          moveTargets: const [],
+        );
+        final trimmed = title.trim();
+        if (!state.selecting || trimmed.isEmpty) return (idle, null);
+        return (idle, [CreateMoveTargetEffect(trimmed)]);
+
       case MoveTargetTailLoaded(:final target, :final lastPosition):
         return _moveSelection(state, target, lastPosition);
 
