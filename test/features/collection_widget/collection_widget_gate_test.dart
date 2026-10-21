@@ -67,6 +67,29 @@ void main() {
     expect(host.returnedHome, 1);
   });
 
+  testWidgets('handle: a tap starts over from home instead of stacking on '
+      'what the user left open', (tester) async {
+    await wire();
+    await tester.pumpWidget(app(CollectionWidgetGateMode.handle));
+    tester
+        .state<NavigatorState>(find.byType(Navigator))
+        .push(
+          MaterialPageRoute<void>(
+            builder: (_) => const Scaffold(body: Text('left open')),
+          ),
+        )
+        .ignore();
+    await tester.pumpAndSettle();
+
+    source.warm.add(const ConfigureWidgetRequest(3));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Coffee'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('home'), findsOneWidget);
+    expect(find.text('left open', skipOffstage: false), findsNothing);
+  });
+
   testWidgets('handle: a removed collection falls back with a message', (
     tester,
   ) async {

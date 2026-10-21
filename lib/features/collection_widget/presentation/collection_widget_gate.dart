@@ -79,6 +79,11 @@ class _CollectionWidgetGateState extends State<CollectionWidgetGate> {
 
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final home = ModalRoute.of(context);
+    // A widget tap starts over from this page: whatever the user left open
+    // the last time is dropped, so repeated taps never stack pages.
+    bool isHome(Route<dynamic> route) =>
+        home == null ? route.isFirst : route == home;
     final l10n = AppLocalizations.of(context);
     _busy = true;
     switch ((widget.mode, request)) {
@@ -98,7 +103,7 @@ class _CollectionWidgetGateState extends State<CollectionWidgetGate> {
         if (live) {
           CollectionWidgetScope.collectionRouteArgs.open(collectionId);
           // Not awaited: a later tap must not wait for this page to close.
-          navigator.push(CollectionPage.route()).ignore();
+          navigator.pushAndRemoveUntil(CollectionPage.route(), isHome).ignore();
         } else {
           messenger.showSnackBar(
             SnackBar(content: Text(l10n.collectionWidgetRemoved)),
@@ -108,10 +113,11 @@ class _CollectionWidgetGateState extends State<CollectionWidgetGate> {
         CollectionWidgetGateMode.handle,
         ConfigureWidgetRequest(:final widgetId),
       ):
-        await navigator.push(
+        await navigator.pushAndRemoveUntil(
           CollectionWidgetPickerPage.route(
             CollectionWidgetScope.createPicker(widgetId),
           ),
+          isHome,
         );
         // Picked or dismissed, the setup started on the home screen.
         await widgets.returnToHomeScreen();
