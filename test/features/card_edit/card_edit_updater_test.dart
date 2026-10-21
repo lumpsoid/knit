@@ -466,4 +466,37 @@ void main() {
       expect(effects, isNull);
     });
   });
+
+  group('optimize image', () {
+    const withImage = CardEditState(
+      cardId: 'c1',
+      attachmentId: 'a1',
+      attachmentKind: CardKind.image,
+    );
+
+    test('goes busy and swaps the image for a smaller copy', () {
+      final (next, effects) = updater.update(
+        withImage,
+        const OptimizeImageRequested(),
+      );
+      expect(next.attachmentBusy, isTrue);
+      final effect = effects!.single as OptimizeImageEffect;
+      expect((effect.cardId, effect.attachmentId), ('c1', 'a1'));
+    });
+
+    test('ignored for a non-image attachment or mid-edit', () {
+      for (final state in [
+        withImage.copyWith(attachmentKind: CardKind.file),
+        withImage.copyWith(attachmentId: null),
+        withImage.copyWith(attachmentBusy: true),
+      ]) {
+        final (next, effects) = updater.update(
+          state,
+          const OptimizeImageRequested(),
+        );
+        expect(next, same(state));
+        expect(effects, isNull);
+      }
+    });
+  });
 }

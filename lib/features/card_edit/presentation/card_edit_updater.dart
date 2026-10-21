@@ -128,6 +128,23 @@ class CardEditUpdater
           ],
         );
 
+      case OptimizeImageRequested():
+        final attachmentId = state.attachmentId;
+        if (state.attachmentBusy ||
+            attachmentId == null ||
+            state.attachmentKind != CardKind.image) {
+          return (state, null);
+        }
+        return (
+          state.copyWith(attachmentBusy: true),
+          [
+            OptimizeImageEffect(
+              cardId: state.cardId,
+              attachmentId: attachmentId,
+            ),
+          ],
+        );
+
       case RemoveAttachmentRequested():
         return (
           state.copyWith(attachmentBusy: true),

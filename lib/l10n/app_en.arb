@@ -263,6 +263,15 @@
   "cardEditAttachment": "Attachment",
   "cardEditReplace": "Replace",
   "cardEditRemove": "Remove",
+  "cardEditOptimize": "Optimize",
+  "cardEditImageNotSmaller": "This photo can't be made smaller.",
+  "cardEditImageOptimized": "Photo optimized: {from} → {to}",
+  "@cardEditImageOptimized": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
   "cardEditLinksHeader": "LINKS",
   "cardEditNoLinks": "No links yet.",
   "cardEditAddLink": "Add link",

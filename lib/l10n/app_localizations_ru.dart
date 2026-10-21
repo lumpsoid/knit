@@ -637,6 +637,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cardEditRemove => 'Убрать';
 
   @override
+  String get cardEditOptimize => 'Сжать';
+
+  @override
+  String get cardEditImageNotSmaller => 'Это фото не получится уменьшить.';
+
+  @override
+  String cardEditImageOptimized(String from, String to) {
+    return 'Фото сжато: $from → $to';
+  }
+
+  @override
   String get cardEditLinksHeader => 'СВЯЗИ';
 
   @override

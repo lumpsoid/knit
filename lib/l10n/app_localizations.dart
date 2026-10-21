@@ -1142,6 +1142,24 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get cardEditRemove;
 
+  /// No description provided for @cardEditOptimize.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimize'**
+  String get cardEditOptimize;
+
+  /// No description provided for @cardEditImageNotSmaller.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo can\'t be made smaller.'**
+  String get cardEditImageNotSmaller;
+
+  /// No description provided for @cardEditImageOptimized.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo optimized: {from} → {to}'**
+  String cardEditImageOptimized(String from, String to);
+
   /// No description provided for @cardEditLinksHeader.
   ///
   /// In en, this message translates to:

@@ -73,7 +73,18 @@ class _CardEditPageState extends State<CardEditPage> {
           CardEditMessage.saveFailed => AppLocalizations.of(
             context,
           ).cardEditSaveFailed,
+          CardEditMessage.imageNotSmaller => AppLocalizations.of(
+            context,
+          ).cardEditImageNotSmaller,
         };
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(text)));
+      case CardEditImageOptimizedUiEffect(:final fromBytes, :final toBytes):
+        final text = AppLocalizations.of(context).cardEditImageOptimized(
+          formatByteSize(fromBytes),
+          formatByteSize(toBytes),
+        );
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(text)));
@@ -136,6 +147,8 @@ class _CardEditPageState extends State<CardEditPage> {
                     _controller.dispatch(const PickImageRequested()),
                 onPickFile: () =>
                     _controller.dispatch(const PickFileRequested()),
+                onOptimizeImage: () =>
+                    _controller.dispatch(const OptimizeImageRequested()),
                 onRemove: () =>
                     _controller.dispatch(const RemoveAttachmentRequested()),
               ),
@@ -197,13 +210,15 @@ class _CardEditPageState extends State<CardEditPage> {
 /// The card's attachment manager (§4.3, subtask 4). With no attachment it offers
 /// two adds — a photo (gallery/camera) and any file (routed to image/audio/file
 /// by mime). With one, it renders the right representation (image thumbnail,
-/// audio chip, or file chip) over Replace (any file) + Remove.
+/// audio chip, or file chip) over Replace (any file) + Remove, and an image
+/// also offers Optimize (swap it for a smaller copy).
 class _AttachmentSection extends StatelessWidget {
   const _AttachmentSection({
     required this.state,
     required this.imageBytes,
     required this.onPickImage,
     required this.onPickFile,
+    required this.onOptimizeImage,
     required this.onRemove,
   });
 
@@ -214,6 +229,7 @@ class _AttachmentSection extends StatelessWidget {
   final Uint8List? imageBytes;
   final VoidCallback onPickImage;
   final VoidCallback onPickFile;
+  final VoidCallback onOptimizeImage;
   final VoidCallback onRemove;
 
   @override
@@ -254,13 +270,25 @@ class _AttachmentSection extends StatelessWidget {
         Row(
           children: [
             // Replace with any file type — the file picker routes by mime, so a
-            // card's attachment can switch kind (image → audio, etc.).
-            TextButton.icon(
-              onPressed: onPickFile,
-              icon: const Icon(Icons.swap_horiz),
-              label: Text(l10n.cardEditReplace),
+            // card's attachment can switch kind (image → audio, etc.). Replace
+            // and Optimize wrap on a narrow screen rather than squeeze Remove.
+            Expanded(
+              child: Wrap(
+                children: [
+                  TextButton.icon(
+                    onPressed: onPickFile,
+                    icon: const Icon(Icons.swap_horiz),
+                    label: Text(l10n.cardEditReplace),
+                  ),
+                  if (state.attachmentKind == CardKind.image)
+                    TextButton.icon(
+                      onPressed: onOptimizeImage,
+                      icon: const Icon(Icons.compress),
+                      label: Text(l10n.cardEditOptimize),
+                    ),
+                ],
+              ),
             ),
-            const Spacer(),
             TextButton.icon(
               onPressed: onRemove,
               icon: Icon(
@@ -378,7 +406,6 @@ class _AttachmentChip extends StatelessWidget {
     );
   }
 }
-
 
 // --- links section ----------------------------------------------------------
 

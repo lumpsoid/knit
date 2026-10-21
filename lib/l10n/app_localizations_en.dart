@@ -622,6 +622,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cardEditRemove => 'Remove';
 
   @override
+  String get cardEditOptimize => 'Optimize';
+
+  @override
+  String get cardEditImageNotSmaller => 'This photo can\'t be made smaller.';
+
+  @override
+  String cardEditImageOptimized(String from, String to) {
+    return 'Photo optimized: $from → $to';
+  }
+
+  @override
   String get cardEditLinksHeader => 'LINKS';
 
   @override

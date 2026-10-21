@@ -1,8 +1,10 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
+import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/file_picker_port.dart';
+import 'package:knit/core/attachments/domain/image_optimizer_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
@@ -24,8 +26,8 @@ import 'package:knit/features/timeline/domain/timeline_channel.dart';
 /// stateHolder → effectEmitter → shell → loop → controller. The shell gets the
 /// card-edit write + links-read ports, the timeline-preview read port + the
 /// Timeline's input channel (refresh after a previewed card's edit), the shared
-/// card links (link writes), the shared image cache, and the attachments write
-/// port + pickers for the attachment section.
+/// card links (link writes), the shared image cache, and the attachments read +
+/// write ports, the pickers and the image optimizer for the attachment section.
 class CardEditModule {
   CardEditModule({
     required CardEditWriteRepository writeRepository,
@@ -34,8 +36,10 @@ class CardEditModule {
     required TimelineChannelEmitter timelineChannel,
     required CardLinksController cardLinks,
     required AttachmentImageCache imageCache,
+    required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
+    required ImageOptimizerPort imageOptimizer,
     required FilePickerPort filePicker,
     Logger? logger,
   }) {
@@ -50,8 +54,10 @@ class CardEditModule {
       timelineChannel: timelineChannel,
       cardLinks: cardLinks,
       imageCache: imageCache,
+      attachmentReadRepository: attachmentReadRepository,
       attachmentWriteRepository: attachmentWriteRepository,
       imagePicker: imagePicker,
+      imageOptimizer: imageOptimizer,
       filePicker: filePicker,
       effectEmitter: effectEmitter,
       logger: logger ?? Logger('knit.card_edit'),

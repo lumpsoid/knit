@@ -101,6 +101,11 @@ class PickFileRequested extends CardEditAction {
   const PickFileRequested();
 }
 
+/// Swap the card's image for a smaller copy (the opt-in "Optimize size").
+class OptimizeImageRequested extends CardEditAction {
+  const OptimizeImageRequested();
+}
+
 /// Remove the card's attachment.
 class RemoveAttachmentRequested extends CardEditAction {
   const RemoveAttachmentRequested();

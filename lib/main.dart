@@ -383,11 +383,13 @@ void bootstrap(AppConfig config) {
       timelineChannel: timelineChannel,
       cardLinks: cardLinks,
       imageCache: imageCache,
+      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
       attachmentWriteRepository: SyncStoreAttachmentWriteRepository(
         graph: graph,
         ids: ids,
       ),
       imagePicker: ImagePickerAdapter(),
+      imageOptimizer: const PackageImageOptimizer(),
       filePicker: const FilePickerAdapter(),
     ).controller,
   );

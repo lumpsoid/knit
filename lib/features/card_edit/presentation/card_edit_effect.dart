@@ -104,6 +104,14 @@ class PickFileEffect extends CardEditEffect {
   final String? previousAttachmentId;
 }
 
+/// Shrink [cardId]'s image [attachmentId], store the smaller copy, point the
+/// card at it, and GC the original.
+class OptimizeImageEffect extends CardEditEffect {
+  const OptimizeImageEffect({required this.cardId, required this.attachmentId});
+  final String cardId;
+  final String attachmentId;
+}
+
 /// Clear [cardId]'s attachment and GC the [previousAttachmentId].
 class RemoveAttachmentEffect extends CardEditEffect {
   const RemoveAttachmentEffect({

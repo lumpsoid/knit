@@ -177,7 +177,10 @@ deleted. Archiving takes it off the home timeline without losing anything.
 
 ### 4.3 Card Edit (from the actions sheet)
 Edit text/content; manage that card's image and its links; **Settled** and
-**Emphasized** toggles (§3.3).
+**Emphasized** toggles (§3.3). An image card also offers **Optimize**: the same rules as
+the composer's *Optimize size* (§4.2) swap the image for a smaller copy (a new attachment;
+the original is dropped), and a snackbar says what it saved — or that the photo can't be
+made smaller, leaving it as it is.
 
 ### 4.4 Connections view
 A card's links-out + linked-from (backlinks), each tappable to jump; breadcrumb back-stack

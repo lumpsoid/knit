@@ -248,6 +248,8 @@ the `lib/sync/` core below.
   `ImageOptimizerPort`, realized by `PackageImageOptimizer` (pure-Dart
   `package:image` on a background isolate). The composer optimizes when the chip
   turns on, so the preview shows the saving, and sends the smaller copy.
+  Card Edit's **Optimize** (image cards) runs the same port over the stored
+  image (`OptimizeImageEffect`) and swaps in the copy as a new attachment.
 - `collection` app bar: `CollectionHeaderBar` is the title card, docked. A
   `TitleMorphLink` (`widgets/title_morph.dart`) ties the card's name
   (`TitleMorphSource`) to the bar's slot (`TitleMorphTarget`). The

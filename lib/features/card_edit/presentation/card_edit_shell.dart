@@ -4,8 +4,10 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:result_dart/result_dart.dart';
+import 'package:knit/core/attachments/domain/attachment_read_repository.dart';
 import 'package:knit/core/attachments/domain/attachment_write_repository.dart';
 import 'package:knit/core/attachments/domain/file_picker_port.dart';
+import 'package:knit/core/attachments/domain/image_optimizer_port.dart';
 import 'package:knit/core/attachments/domain/image_picker_port.dart';
 import 'package:knit/core/attachments/presentation/attachment_image_cache.dart';
 import 'package:knit/core/attachments/domain/picked_audio.dart';
@@ -34,8 +36,10 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     required TimelineChannelEmitter timelineChannel,
     required CardLinksController cardLinks,
     required AttachmentImageCache imageCache,
+    required AttachmentReadRepository attachmentReadRepository,
     required AttachmentWriteRepository attachmentWriteRepository,
     required ImagePickerPort imagePicker,
+    required ImageOptimizerPort imageOptimizer,
     required FilePickerPort filePicker,
     required EffectEmitter<CardEditUiEffect> effectEmitter,
     required Logger logger,
@@ -45,8 +49,10 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
        _timelineChannel = timelineChannel,
        _cardLinks = cardLinks,
        _images = imageCache,
+       _attachmentRead = attachmentReadRepository,
        _attachmentWrite = attachmentWriteRepository,
        _picker = imagePicker,
+       _optimizer = imageOptimizer,
        _filePicker = filePicker,
        _effectEmitter = effectEmitter,
        _log = logger;
@@ -57,8 +63,10 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
   final TimelineChannelEmitter _timelineChannel;
   final CardLinksController _cardLinks;
   final AttachmentImageCache _images;
+  final AttachmentReadRepository _attachmentRead;
   final AttachmentWriteRepository _attachmentWrite;
   final ImagePickerPort _picker;
+  final ImageOptimizerPort _optimizer;
   final FilePickerPort _filePicker;
   final EffectEmitter<CardEditUiEffect> _effectEmitter;
   final Logger _log;
@@ -180,6 +188,9 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
       case PickFileEffect(:final cardId, :final previousAttachmentId):
         await _pickFileAndAttach(cardId, previousAttachmentId, dispatch);
 
+      case OptimizeImageEffect(:final cardId, :final attachmentId):
+        await _optimizeImage(cardId, attachmentId, dispatch);
+
       case RemoveAttachmentEffect(:final cardId, :final previousAttachmentId):
         final result = await _write.removeCardAttachment(cardId: cardId);
         if (result.isFailure) {
@@ -246,6 +257,60 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     );
   }
 
+  /// Read the card's image → shrink it → store the copy → point the card at it
+  /// → GC the original. Nothing to gain says so and leaves the card as it is.
+  Future<void> _optimizeImage(
+    String cardId,
+    String attachmentId,
+    void Function(CardEditAction) dispatch,
+  ) async {
+    final read = await _attachmentRead.bytesOf(attachmentId);
+    if (read.isFailure) {
+      _log.severe('Read image to optimize failed', read.error);
+      _failAttachment(dispatch);
+      return;
+    }
+    final original = read.getOrThrow();
+    PickedImage? optimized;
+    try {
+      optimized = await _optimizer.optimize(
+        PickedImage(bytes: original.bytes, mime: original.mime),
+      );
+    } catch (e, s) {
+      _log.severe('Optimize image failed', e, s);
+      optimized = null;
+    }
+    if (optimized == null) {
+      _effectEmitter.push(
+        const CardEditShowMessageUiEffect(CardEditMessage.imageNotSmaller),
+      );
+      dispatch(const AttachmentEditEnded());
+      return;
+    }
+
+    final created = await _attachmentWrite.createFromPicked(optimized);
+    if (created.isFailure) {
+      _log.severe('Store optimized image failed', created.error);
+      _failAttachment(dispatch);
+      return;
+    }
+    final attached = await _attach(
+      cardId: cardId,
+      attachmentId: created.getOrThrow(),
+      kind: CardKind.image,
+      bytes: optimized.bytes,
+      previousAttachmentId: attachmentId,
+      dispatch: dispatch,
+    );
+    if (!attached) return;
+    _effectEmitter.push(
+      CardEditImageOptimizedUiEffect(
+        fromBytes: original.bytes.length,
+        toBytes: optimized.bytes.length,
+      ),
+    );
+  }
+
   /// Pick any file → classify it by its mime (§4.2) → store it as the matching
   /// kind → point the card at it → GC the one it replaced.
   Future<void> _pickFileAndAttach(
@@ -290,7 +355,8 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
   /// Point [cardId] at the freshly stored [attachmentId] of [kind], GC the one
   /// it replaced, and resolve the section with the rendered representation.
-  Future<void> _attach({
+  /// Returns whether the card now points at it.
+  Future<bool> _attach({
     required String cardId,
     required String attachmentId,
     required CardKind kind,
@@ -313,7 +379,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         failure.stackTrace,
       );
       _failAttachment(dispatch);
-      return;
+      return false;
     }
 
     if (previousAttachmentId != null && previousAttachmentId != attachmentId) {
@@ -330,6 +396,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         size: size,
       ),
     );
+    return true;
   }
 
   /// Surface a write failure and clear the in-flight flag, leaving the card's
