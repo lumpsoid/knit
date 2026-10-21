@@ -1,5 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
+import 'package:knit/features/collection_share/domain/collection_share_files.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_import_sheet.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_scope.dart';
+import 'package:knit/features/share_capture/domain/shared_item.dart';
 import 'package:knit/features/share_capture/domain/share_capture_models.dart';
 import 'package:knit/features/share_capture/presentation/incoming_share_controller.dart';
 import 'package:knit/features/share_capture/presentation/share_capture_page.dart';
@@ -9,6 +15,7 @@ import 'package:knit/l10n/app_localizations.dart';
 /// What a page does with a share from another app (§4.7).
 enum IncomingShareGateMode {
   /// Open the capture screen, then confirm with a "Saved — Open" snackbar.
+  /// A shared (or opened) `.knitc` goes to the collection import instead.
   capture,
 
   /// No identity yet, so nothing can be signed: drop the share and say so.
@@ -65,6 +72,16 @@ class _IncomingShareGateState extends State<IncomingShareGate> {
       case IncomingShareGateMode.capture:
         final navigator = Navigator.of(context);
         _capturing = true;
+        final shareFile = _collectionShareFile(items);
+        if (shareFile != null) {
+          final controller = CollectionShareScope.createImport();
+          unawaited(controller.open(shareFile.path));
+          await CollectionShareImportSheet.showAndOpen(context, controller);
+          _capturing = false;
+          if (!mounted) return;
+          await _handlePending();
+          return;
+        }
         final saved = await navigator.push(
           ShareCapturePage.route(ShareCaptureScope.create(items)),
         );
@@ -74,6 +91,20 @@ class _IncomingShareGateState extends State<IncomingShareGate> {
         // A share that arrived while the capture screen was open.
         await _handlePending();
     }
+  }
+
+  /// The first collection share file among [items], when imports are wired.
+  static SharedFile? _collectionShareFile(List<SharedItem> items) {
+    if (!CollectionShareScope.canImport) return null;
+    for (final item in items) {
+      if (item case SharedFile(
+        :final name,
+        :final mime,
+      ) when CollectionShareFiles.matches(name: name, mime: mime)) {
+        return item;
+      }
+    }
+    return null;
   }
 
   void _confirm(

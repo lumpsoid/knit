@@ -500,5 +500,19 @@
   "shareExportSave": "Сохранить в файл",
   "shareExportFailed": "Не удалось создать файл. Попробуйте ещё раз.",
   "shareExportLoadFailed": "Не удалось прочитать коллекцию.",
-  "shareExportSaved": "Файл коллекции сохранён"
+  "shareExportSaved": "Файл коллекции сохранён",
+  "shareImportTitle": "Импорт коллекции",
+  "shareImportReading": "Читаем файл…",
+  "shareImportSummary": "{count, plural, =1{1 карточка} few{{count} карточки} many{{count} карточек} other{{count} карточки}} · от {handle}",
+  "shareImportNoMedia": "Без медиафайлов",
+  "shareImportReadOnlyHint": "Она будет только для чтения. Позже можно сохранить свою копию.",
+  "shareImportOwnHint": "Это ваша коллекция. Она объединится с той, что на этом устройстве.",
+  "shareImportAction": "Импортировать",
+  "shareImportUpdate": "Обновить",
+  "shareImportUnreadable": "Это не файл коллекции Knit, или он повреждён.",
+  "shareImportNewer": "Этот файл из более новой версии Knit. Обновите приложение, чтобы открыть его.",
+  "shareImportRefused": "Файл не прошёл проверку, поэтому ничего не импортировано.",
+  "shareImportFailed": "Импорт прервался. Импортируйте файл ещё раз, чтобы завершить его.",
+  "settingsImportCollection": "Импорт коллекции",
+  "settingsImportCollectionSubtitle": "Открыть файл .knitc, которым с вами поделились"
 }

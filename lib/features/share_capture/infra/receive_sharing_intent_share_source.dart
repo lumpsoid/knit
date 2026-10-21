@@ -6,7 +6,8 @@ import 'package:knit/features/share_capture/domain/shared_item.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 /// [IncomingShareSource] over `package:receive_sharing_intent` (Android
-/// `ACTION_SEND` / `ACTION_SEND_MULTIPLE`). The plugin copies every shared
+/// `ACTION_SEND` / `ACTION_SEND_MULTIPLE`, and `ACTION_VIEW` for an opened
+/// `.knitc` collection file). The plugin copies every shared
 /// stream into the app cache and reports its path; shared text arrives in the
 /// same `path` field, so an entry is a file only when that path is an existing
 /// local file.

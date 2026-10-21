@@ -554,5 +554,25 @@
   "shareExportSave": "Save to file",
   "shareExportFailed": "Couldn't create the file. Please try again.",
   "shareExportLoadFailed": "Couldn't read this collection.",
-  "shareExportSaved": "Collection file saved"
+  "shareExportSaved": "Collection file saved",
+  "shareImportTitle": "Import collection",
+  "shareImportReading": "Reading the file…",
+  "shareImportSummary": "{count, plural, =1{1 card} other{{count} cards}} · from {handle}",
+  "@shareImportSummary": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "handle": { "type": "String" }
+    }
+  },
+  "shareImportNoMedia": "Media not included",
+  "shareImportReadOnlyHint": "It arrives read-only. You can save your own copy later.",
+  "shareImportOwnHint": "This is your own collection. It merges into the one on this device.",
+  "shareImportAction": "Import",
+  "shareImportUpdate": "Update",
+  "shareImportUnreadable": "This isn't a Knit collection file, or it's damaged.",
+  "shareImportNewer": "This file is from a newer Knit. Update the app to open it.",
+  "shareImportRefused": "This file failed its safety checks, so nothing was imported.",
+  "shareImportFailed": "The import stopped part-way. Import the file again to finish it.",
+  "settingsImportCollection": "Import collection",
+  "settingsImportCollectionSubtitle": "Open a .knitc file someone shared with you"
 }

@@ -1237,4 +1237,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareExportSaved => 'Collection file saved';
+
+  @override
+  String get shareImportTitle => 'Import collection';
+
+  @override
+  String get shareImportReading => 'Reading the file…';
+
+  @override
+  String shareImportSummary(int count, String handle) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cards',
+      one: '1 card',
+    );
+    return '$_temp0 · from $handle';
+  }
+
+  @override
+  String get shareImportNoMedia => 'Media not included';
+
+  @override
+  String get shareImportReadOnlyHint =>
+      'It arrives read-only. You can save your own copy later.';
+
+  @override
+  String get shareImportOwnHint =>
+      'This is your own collection. It merges into the one on this device.';
+
+  @override
+  String get shareImportAction => 'Import';
+
+  @override
+  String get shareImportUpdate => 'Update';
+
+  @override
+  String get shareImportUnreadable =>
+      'This isn\'t a Knit collection file, or it\'s damaged.';
+
+  @override
+  String get shareImportNewer =>
+      'This file is from a newer Knit. Update the app to open it.';
+
+  @override
+  String get shareImportRefused =>
+      'This file failed its safety checks, so nothing was imported.';
+
+  @override
+  String get shareImportFailed =>
+      'The import stopped part-way. Import the file again to finish it.';
+
+  @override
+  String get settingsImportCollection => 'Import collection';
+
+  @override
+  String get settingsImportCollectionSubtitle =>
+      'Open a .knitc file someone shared with you';
 }

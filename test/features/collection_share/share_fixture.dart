@@ -12,8 +12,12 @@ Future<SyncStore> device(String seed) async {
 
 /// Seeds [store] with its profile and a collection `trip` (title "Trip to
 /// Kyoto") holding text cards c1, c2, an image card c3 (attachment `att-1`,
-/// hash `h-1`), a deleted card c4 and a link c1→c2.
-Future<void> seedTrip(SyncStore store, {String nickname = 'mira'}) async {
+/// hash [imageHash]), a deleted card c4 and a link c1→c2.
+Future<void> seedTrip(
+  SyncStore store, {
+  String nickname = 'mira',
+  String imageHash = 'h-1',
+}) async {
   final me = await store.authorPubkey();
   await store.create(EntityType.profile, me, {
     'nickname': nickname,
@@ -21,7 +25,7 @@ Future<void> seedTrip(SyncStore store, {String nickname = 'mira'}) async {
   await store.create(EntityType.attachment, 'att-1', {
     'kind': 'image',
     'mime': 'image/png',
-    'content_hash': 'h-1',
+    'content_hash': imageHash,
     'size': 3,
     'name': null,
   }, physicalNowMs: 1000);

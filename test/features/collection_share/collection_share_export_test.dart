@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/core/files/files.dart';
 import 'package:knit/features/collection_share/domain/domain.dart';
 import 'package:knit/features/collection_share/infra/infra.dart';
-import 'package:knit/features/collection_share/infra/sync_store_collection_share_export_repository.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_export_state.dart';
 import 'package:knit/sync/sync.dart';

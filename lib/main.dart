@@ -47,7 +47,10 @@ import 'package:knit/features/collection_present/infra/wakelock_plus_screen_awak
 import 'package:knit/features/collection_present/presentation/present_controller.dart';
 import 'package:knit/features/collection_present/presentation/present_route_args.dart';
 import 'package:knit/features/collection_share/infra/sync_store_collection_share_export_repository.dart';
+import 'package:knit/features/collection_share/infra/sync_store_collection_share_import_repository.dart';
 import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_import_controller.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_scope.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_module.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_route_args.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_scope.dart';
@@ -433,6 +436,18 @@ void bootstrap(AppConfig config) {
       shareRepository: const SharePlusCardShareRepository(),
       linkLauncher: const UrlLauncherLinkLauncher(),
     ).controller,
+  );
+
+  // Collection share import (docs/collection_share.md): Settings → Data picks
+  // a .knitc, the share gate below takes one opened from another app; both
+  // preview it, apply its signed ops, refresh home and open the collection.
+  CollectionShareScope.setImportFactory(
+    () => CollectionShareImportController(
+      importRepository: SyncStoreCollectionShareImportRepository(graph: graph),
+      sourcePort: const FilePickerFileSourcePort(),
+      collectionRouteArgs: routeArgs,
+      timelineChannel: timelineChannel,
+    ),
   );
 
   // Share-sheet capture (§4.7): one app-wide receiver collects what other apps

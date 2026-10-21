@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/features/backup/domain/backup_models.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_import_sheet.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_scope.dart';
 import 'package:knit/features/onboard/presentation/onboard_page.dart';
 import 'package:knit/features/settings/presentation/settings_action.dart';
 import 'package:knit/features/settings/presentation/settings_controller.dart';
@@ -141,6 +143,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
           subtitle: Text(l10n.settingsImportSubtitle),
           onTap: () => _request(DataAction.importData),
         ),
+        if (CollectionShareScope.canImport)
+          ListTile(
+            leading: const Icon(Icons.move_to_inbox_outlined),
+            title: Text(l10n.settingsImportCollection),
+            subtitle: Text(l10n.settingsImportCollectionSubtitle),
+            onTap: _importCollection,
+          ),
         const Divider(height: 1),
         _SectionHeader(
           label: l10n.settingsDangerSection,
@@ -166,6 +175,17 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
         ),
       ],
     );
+  }
+
+  /// Pick a `.knitc` someone shared, preview it, import it and open it
+  /// (docs/collection_share.md). A cancelled pick does nothing.
+  Future<void> _importCollection() async {
+    final controller = CollectionShareScope.createImport();
+    if (!await controller.pick() || !mounted) {
+      controller.dispose();
+      return;
+    }
+    await CollectionShareImportSheet.showAndOpen(context, controller);
   }
 
   void _request(DataAction action) =>

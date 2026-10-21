@@ -1268,4 +1268,63 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get shareExportSaved => 'Файл коллекции сохранён';
+
+  @override
+  String get shareImportTitle => 'Импорт коллекции';
+
+  @override
+  String get shareImportReading => 'Читаем файл…';
+
+  @override
+  String shareImportSummary(int count, String handle) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count карточки',
+      many: '$count карточек',
+      few: '$count карточки',
+      one: '1 карточка',
+    );
+    return '$_temp0 · от $handle';
+  }
+
+  @override
+  String get shareImportNoMedia => 'Без медиафайлов';
+
+  @override
+  String get shareImportReadOnlyHint =>
+      'Она будет только для чтения. Позже можно сохранить свою копию.';
+
+  @override
+  String get shareImportOwnHint =>
+      'Это ваша коллекция. Она объединится с той, что на этом устройстве.';
+
+  @override
+  String get shareImportAction => 'Импортировать';
+
+  @override
+  String get shareImportUpdate => 'Обновить';
+
+  @override
+  String get shareImportUnreadable =>
+      'Это не файл коллекции Knit, или он повреждён.';
+
+  @override
+  String get shareImportNewer =>
+      'Этот файл из более новой версии Knit. Обновите приложение, чтобы открыть его.';
+
+  @override
+  String get shareImportRefused =>
+      'Файл не прошёл проверку, поэтому ничего не импортировано.';
+
+  @override
+  String get shareImportFailed =>
+      'Импорт прервался. Импортируйте файл ещё раз, чтобы завершить его.';
+
+  @override
+  String get settingsImportCollection => 'Импорт коллекции';
+
+  @override
+  String get settingsImportCollectionSubtitle =>
+      'Открыть файл .knitc, которым с вами поделились';
 }

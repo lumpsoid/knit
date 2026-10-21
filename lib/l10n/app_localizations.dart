@@ -2155,6 +2155,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collection file saved'**
   String get shareExportSaved;
+
+  /// No description provided for @shareImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import collection'**
+  String get shareImportTitle;
+
+  /// No description provided for @shareImportReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the file…'**
+  String get shareImportReading;
+
+  /// No description provided for @shareImportSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 card} other{{count} cards}} · from {handle}'**
+  String shareImportSummary(int count, String handle);
+
+  /// No description provided for @shareImportNoMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Media not included'**
+  String get shareImportNoMedia;
+
+  /// No description provided for @shareImportReadOnlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It arrives read-only. You can save your own copy later.'**
+  String get shareImportReadOnlyHint;
+
+  /// No description provided for @shareImportOwnHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your own collection. It merges into the one on this device.'**
+  String get shareImportOwnHint;
+
+  /// No description provided for @shareImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get shareImportAction;
+
+  /// No description provided for @shareImportUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get shareImportUpdate;
+
+  /// No description provided for @shareImportUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'This isn\'t a Knit collection file, or it\'s damaged.'**
+  String get shareImportUnreadable;
+
+  /// No description provided for @shareImportNewer.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is from a newer Knit. Update the app to open it.'**
+  String get shareImportNewer;
+
+  /// No description provided for @shareImportRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'This file failed its safety checks, so nothing was imported.'**
+  String get shareImportRefused;
+
+  /// No description provided for @shareImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The import stopped part-way. Import the file again to finish it.'**
+  String get shareImportFailed;
+
+  /// No description provided for @settingsImportCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Import collection'**
+  String get settingsImportCollection;
+
+  /// No description provided for @settingsImportCollectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a .knitc file someone shared with you'**
+  String get settingsImportCollectionSubtitle;
 }
 
 class _AppLocalizationsDelegate

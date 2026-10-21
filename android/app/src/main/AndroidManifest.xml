@@ -45,6 +45,28 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
             </intent-filter>
+            <!-- Collection share files (docs/collection_share.md): opening a
+                 .knitc from another app routes it to the import preview. By
+                 mime first; most senders label it octet-stream, so the
+                 *.knitc path pattern is the fallback. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/vnd.knit.collection+zip" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:pathPattern=".*\\.knitc" />
+                <data android:pathPattern=".*\\..*\\.knitc" />
+                <data android:pathPattern=".*\\..*\\..*\\.knitc" />
+            </intent-filter>
         </activity>
         <!-- Home-screen collection widget: a tile that opens Knit on one
              collection. Placing it runs the configure activity, which hands
