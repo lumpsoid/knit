@@ -36,7 +36,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Link'), findsNothing);
-    expect(find.text('Link to another collection'), findsOneWidget);
+    expect(find.text('Link to a collection or card'), findsOneWidget);
     await tester.tap(find.text('Connection'));
     await tester.pumpAndSettle();
     expect(picked.single, AddBlock.connection);

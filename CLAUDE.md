@@ -319,12 +319,17 @@ the `lib/sync/` core below.
   reloads `FeedWindow.through` it. `CollectionFeed` reveals each new focus once
   its card is loaded. Imported collections offer it too.
 - Collections as hubs (§3, read-side only, no new field). `collection` feed:
-  the pure `CollectionLinkTile.targetOf` picks a card whose whole purpose is
-  linking to a collection (no attachment, one link out, to a collection, text
-  blank or one short label line); the read repo batches `linksOutOf` +
-  `collectionSummaries` for the page into `FeedCard.collectionLink`, and
-  `CardBubble` draws `CollectionLinkTileView` (cover via the image cache, tap
-  writes the Collection carrier and pushes). A deleted target gets no tile.
+  the pure `LinkTile.targetOf` (`domain/link_tile.dart`) picks a card whose
+  whole purpose is linking to a collection or a card (no attachment, one link
+  out, text blank or one short label line). `FeedCard.linkTile` is the sealed
+  `LinkTile`: `CollectionLinkTile` or `CardLinkTile`. The read repo batches
+  `linksOutOf`, then `collectionSummaries` for collection targets and
+  `getMany` (cards, their collections, file names) for card targets.
+  `CardBubble` draws `CollectionLinkTileView` / `CardLinkTileView` over the
+  shared `LinkTileFrame` (image via the image cache). A tap follows
+  `LinkTile.openFrom(here)`: `RevealCardHere` dispatches
+  `CardRevealRequested`, `OpenLinkedCollection` writes the Collection carrier
+  (with `focusCardId` for a card) and pushes. A deleted target gets no tile.
   Timeline: the narrow `TimelineHubReadRepository` (`collectionHubs`) fills
   `TimelineState.hubs`; the row's "in:" line is `TimelineHubLine` (two names,
   then "+N"). `CardPreviewLabel` (`lib/core/previews/`) is the shared
@@ -332,14 +337,14 @@ the `lib/sync/` core below.
 - Connection card (§4.2/§6.4): the "+" sheet (`AddBlockSheet` → `AddBlock`)
   has no URL link block; a bare http(s) URL sent from any composer becomes a
   link card (`CardKind.forText`). Its **Connection** block opens
-  `LinkPickerSheet` with card_links' `NewConnection` pick (collections only, no
-  drilling, never this one) → `ConnectionCardRequested` →
+  `LinkPickerSheet` with card_links' `NewConnection` pick (a collection, never
+  this one, or any card via drilling) → `ConnectionCardRequested(kind, id)` →
   `AddConnectionCardEffect` → `CollectionWriteRepository.addConnectionCard` →
   `SyncStore.createLinkedCard` (text-less `kind=link` card + its `link`, one
-  transaction); the shell then records the link recent. Card Edit carries the
-  card kind (`CardEditRouteArgs.initialKind`), and the pure `CardTextEdit`
-  lets a Connection card save a blank label (→ `kind=link`, no text) and turns
-  a label into a text card.
+  transaction); the shell records a collection target as a link recent. Card
+  Edit carries the card kind (`CardEditRouteArgs.initialKind`), and the pure
+  `CardTextEdit` lets a Connection card (either target) save a blank label
+  (→ `kind=link`, no text) and turns a label into a text card.
 - Settled cards (§3.3): a nullable, synced `card.settled_at` (v5 migration),
   written by `SyncStore.setCardsSettled` on the content clock. The domain's
   `SettleChange` decides settle vs unsettle (all settled → unsettle). The

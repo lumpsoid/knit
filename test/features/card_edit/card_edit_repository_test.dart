@@ -9,6 +9,7 @@ import 'package:knit/features/card_edit/infra/sync_store_card_edit_timeline_prev
 import 'package:knit/features/card_edit/infra/sync_store_card_edit_write_repository.dart';
 import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -77,7 +78,8 @@ void main() {
     final cardId = (await collectionWrite.addConnectionCard(
       collectionId: index,
       position: 'a0',
-      targetCollectionId: trips,
+      targetKind: ConnectedEntityKind.collection,
+      targetId: trips,
     )).getOrThrow();
 
     await cardEditWrite.editCard(
@@ -87,12 +89,12 @@ void main() {
     );
     var card = (await read.loadCollection(index)).getOrThrow().cards.single;
     expect((card.kind, card.text), (CardKind.text, 'Next summer'));
-    expect(card.collectionLink?.caption, 'Next summer');
+    expect(card.linkTile?.caption, 'Next summer');
 
     await cardEditWrite.editCard(cardId: cardId, kind: CardKind.link);
     card = (await read.loadCollection(index)).getOrThrow().cards.single;
     expect((card.kind, card.text), (CardKind.link, null));
-    expect(card.collectionLink?.collectionId, trips);
+    expect((card.linkTile as CollectionLinkTile?)?.collectionId, trips);
   });
 
   test('setCardSettled settles and unsettles, keeping the text', () async {

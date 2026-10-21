@@ -294,6 +294,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get timelinePreviewLink => '🔗 Ссылка';
 
   @override
+  String get timelinePreviewFile => '📎 Файл';
+
+  @override
   String get timeNow => 'сейчас';
 
   @override
@@ -356,7 +359,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionBlockConnection => 'Связь';
 
   @override
-  String get collectionBlockConnectionSubtitle => 'Ссылка на другую коллекцию';
+  String get collectionBlockConnectionSubtitle =>
+      'Ссылка на коллекцию или карточку';
 
   @override
   String get collectionBlockPhoto => 'Фото';
@@ -497,7 +501,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionLinkFinderTitle => 'Создать связь';
 
   @override
-  String get collectionConnectionPickerTitle => 'Связать с коллекцией';
+  String get collectionConnectionPickerTitle =>
+      'Связать с коллекцией или карточкой';
 
   @override
   String get collectionNothingToLink => 'Пока не с чем связывать.';
@@ -1425,6 +1430,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get collectionLinkTileOpen => 'Открыть коллекцию';
+
+  @override
+  String get collectionCardLinkTileOpen => 'Открыть карточку';
+
+  @override
+  String collectionCardLinkTileIn(String title) {
+    return 'в «$title»';
+  }
 
   @override
   String timelineFromHandle(String handle) {

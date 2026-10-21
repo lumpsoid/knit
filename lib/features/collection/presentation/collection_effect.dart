@@ -75,17 +75,19 @@ class AddCardEffect extends CollectionEffect {
 }
 
 /// Append a Connection card at [position] (§4.2): a text-less link block
-/// whose one link out points at [targetCollectionId] (§6.4), card and link in
-/// one write.
+/// whose one link out points at the [targetKind] entity [targetId] (§6.4), a
+/// collection or a card, card and link in one write.
 class AddConnectionCardEffect extends CollectionEffect {
   const AddConnectionCardEffect({
     required this.collectionId,
     required this.position,
-    required this.targetCollectionId,
+    required this.targetKind,
+    required this.targetId,
   });
   final String collectionId;
   final String position;
-  final String targetCollectionId;
+  final ConnectedEntityKind targetKind;
+  final String targetId;
 }
 
 /// Store the already-picked [images] (§7.4.8), then append one image card at

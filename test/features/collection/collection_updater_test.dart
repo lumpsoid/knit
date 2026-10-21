@@ -6,9 +6,9 @@ import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/core/ownership/collection_ownership.dart';
-import 'package:knit/features/collection/domain/collection_link_tile.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_outline.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
@@ -211,14 +211,14 @@ void main() {
       expect(effects.whereType<ShowCoverEffect>().single.attachmentId, 'cov');
     });
 
-    test('a collection-link tile shows its target\'s cover (§4.2)', () {
+    test('a link tile shows its target\'s cover or thumbnail (§4.2)', () {
       final data = dataWith([
         imageCard('c1', 'a0', 'att-1'),
         const FeedCard(
           id: 'c2',
           kind: CardKind.text,
           position: 'a1',
-          collectionLink: CollectionLinkTile(
+          linkTile: CollectionLinkTile(
             collectionId: 'col-2',
             title: 'Trips',
             cardCount: 3,
@@ -229,10 +229,22 @@ void main() {
           id: 'c3',
           kind: CardKind.text,
           position: 'a2',
-          collectionLink: CollectionLinkTile(
+          linkTile: CollectionLinkTile(
             collectionId: 'col-3',
             title: 'House',
             cardCount: 0,
+          ),
+        ),
+        const FeedCard(
+          id: 'c4',
+          kind: CardKind.link,
+          position: 'a3',
+          linkTile: CardLinkTile(
+            cardId: 'k1',
+            cardKind: 'image',
+            collectionId: 'col-3',
+            collectionTitle: 'House',
+            thumbnailAttachmentId: 'thumb-1',
           ),
         ),
       ]);
@@ -243,6 +255,7 @@ void main() {
       expect(effects!.whereType<ShowFeedImagesEffect>().single.attachmentIds, [
         'att-1',
         'cov-2',
+        'thumb-1',
       ]);
     });
 
@@ -383,27 +396,44 @@ void main() {
     test('a picked Connection appends a Connection card at the tail', () {
       final (next, effects) = updater.update(
         ready([card('c1', 'a0')]),
-        const ConnectionCardRequested('trips'),
+        const ConnectionCardRequested(ConnectedEntityKind.collection, 'trips'),
       );
       final effect = effects!.single as AddConnectionCardEffect;
       expect(effect.collectionId, 'col');
-      expect(effect.targetCollectionId, 'trips');
+      expect(effect.targetKind, ConnectedEntityKind.collection);
+      expect(effect.targetId, 'trips');
       expect(effect.position.compareTo('a0') > 0, isTrue);
       expect(next.cards, hasLength(1), reason: 'the feed waits for the resync');
     });
 
-    test('a Connection never points at its own collection', () {
+    test('a picked card makes a Connection card to it, even a sibling', () {
       final (_, effects) = updater.update(
-        ready(const []),
-        const ConnectionCardRequested('col'),
+        ready([card('c1', 'a0')]),
+        const ConnectionCardRequested(ConnectedEntityKind.card, 'c1'),
       );
-      expect(effects, isNull);
+      final effect = effects!.single as AddConnectionCardEffect;
+      expect(effect.targetKind, ConnectedEntityKind.card);
+      expect(effect.targetId, 'c1');
+      expect(effect.position.compareTo('a0') > 0, isTrue);
+    });
+
+    test('a Connection never points at its own collection', () {
+      for (final kind in [
+        ConnectedEntityKind.collection,
+        ConnectedEntityKind.unknown,
+      ]) {
+        final (_, effects) = updater.update(
+          ready(const []),
+          ConnectionCardRequested(kind, 'col'),
+        );
+        expect(effects, isNull);
+      }
     });
 
     test('no Connection card in an imported (read-only) collection', () {
       final (_, effects) = updater.update(
         ready(const []).copyWith(ownership: CollectionOwnership.imported),
-        const ConnectionCardRequested('trips'),
+        const ConnectionCardRequested(ConnectedEntityKind.collection, 'trips'),
       );
       expect(effects, isNull);
     });

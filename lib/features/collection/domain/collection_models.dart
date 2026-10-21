@@ -5,7 +5,7 @@ library;
 
 import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:flutter/foundation.dart';
-import 'package:knit/features/collection/domain/collection_link_tile.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
 
 /// A card's `kind` (spec §6.4). `text` is the everyday quick-capture; `link` is
 /// the "+"-block standalone link card; `image`/`audio`/`file` arrive with
@@ -79,7 +79,7 @@ class FeedCard {
     this.connectionCount = 0,
     this.settledAt,
     this.emphasizedAt,
-    this.collectionLink,
+    this.linkTile,
   });
 
   final String id;
@@ -135,10 +135,10 @@ class FeedCard {
 
   bool get emphasized => emphasizedAt != null && !settled;
 
-  /// The collection this card links to as its whole purpose, as the feed's
-  /// rich tile (§4.2); null for every other card, and when the target is
-  /// deleted (the link is then broken, §8.6.1).
-  final CollectionLinkTile? collectionLink;
+  /// The collection or card this card links to as its whole purpose, as the
+  /// feed's rich tile (§4.2); null for every other card, and when the target
+  /// is deleted (the link is then broken, §8.6.1).
+  final LinkTile? linkTile;
 
   /// The card's capture time, decoded from the millisecond timestamp in the
   /// leading 48 bits of its UUIDv7 [id] (§6.1) — every minted card id is v7, so
@@ -165,7 +165,7 @@ class FeedCard {
     connectionCount: connectionCount,
     settledAt: settledAt,
     emphasizedAt: emphasizedAt,
-    collectionLink: collectionLink,
+    linkTile: linkTile,
   );
 }
 

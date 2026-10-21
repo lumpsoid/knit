@@ -77,11 +77,13 @@ class ComposerSubmitted extends CollectionAction {
   final PickedAudio? audio;
 }
 
-/// The "+" sheet's Connection block picked [targetCollectionId] (§4.2):
-/// append a Connection card pointing at it.
+/// The "+" sheet's Connection block picked the [targetKind] entity
+/// [targetId] — a collection or a card (§4.2): append a Connection card
+/// pointing at it.
 class ConnectionCardRequested extends CollectionAction {
-  const ConnectionCardRequested(this.targetCollectionId);
-  final String targetCollectionId;
+  const ConnectionCardRequested(this.targetKind, this.targetId);
+  final ConnectedEntityKind targetKind;
+  final String targetId;
 }
 
 /// Actions sheet → delete a card (§4.2). Links to it become broken, not gone.

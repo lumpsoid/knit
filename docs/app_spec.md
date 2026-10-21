@@ -45,7 +45,9 @@ can be exported. Search, links, and ownership are solved structurally, not bolte
   links: there is **no hierarchy** in the model (no parent, no nesting, no new field). The UI
   makes it visible read-side: the feed draws such a link as a tile (§4.2) and Home names the
   collections that link to a row (§4.1, derived in §8.6.4). The "+" sheet's Connection block
-  makes such a card in one step (§4.2).
+  makes such a card in one step (§4.2). A Connection card may point at one card instead, as
+  a "see also"; it is drawn as a card tile but does not make a hub (§8.6.4 counts
+  collection targets only).
 
 ### 3.1 Node affordances (the collection-vs-card line)
 
@@ -68,8 +70,8 @@ The data model enforces this: `collection` has `title` + optional `description` 
 
 ### 3.2 Locked model decisions
 
-- **Links are a minimum block, not inline in text.** A link to another collection is
-  created via the "+" add-block menu as a standalone **Connection** card (§4.2); a web link
+- **Links are a minimum block, not inline in text.** A link to another collection or to a
+  card is created via the "+" add-block menu as a standalone **Connection** card (§4.2); a web link
   is a card of its own, made by sending a bare URL.
 - **Typed links (source/part-of/next) dropped** — sugar, hard to present generally. Base is
   one neutral link with an **optional free-text `label`** (the "later if wanted" hook).
@@ -173,11 +175,13 @@ deleted. Archiving takes it off the home timeline without losing anything.
   URL as its text) that opens in the browser; pasting a URL can fire an async
   metadata/thumbnail fetch that fills the card a moment later.
 - **"+" add-block menu** (bottom sheet: Connection · photo · audio · file). **Connection**
-  opens the link picker (§4.4) at its collections level, with its "Recent" row:
-  collections only, no drilling into cards, never this collection; imported collections
+  opens the link picker (§4.4) at its collections level, with its "Recent" row
+  (collections only): link a collection directly, or drill into one, this collection
+  included, and pick a card in it. Never this collection itself; any card, siblings
+  included, since the new card doesn't exist yet. Imported collections and their cards
   are valid targets. Picking one appends a **Connection card** at the feed tail: a
-  `kind=link` card with no text plus its one `link` to that collection, written in one
-  transaction (§6.4 link block), drawn as the collection-link tile below. The target is
+  `kind=link` card with no text plus its one `link` to that collection or card, written in
+  one transaction (§6.4 link block), drawn as the link tile below. A collection target is
   remembered for the Recent row. Photo, audio and file stage an attachment for the
   composer. An imported (read-only) collection has no composer, so no "+".
 - **Optimize size** (opt-in): a staged photo shows its size and an *Optimize size* chip.
@@ -197,17 +201,27 @@ deleted. Archiving takes it off the home timeline without losing anything.
   adds more photos to an image card and removes any one of them (§4.3). The bubble lays them
   out as a grid (one wide, two side by side, three as one big and two small, four or more as
   a 2×2 grid with a "+N" on the last tile); a tap opens the full-screen viewer on that image.
-- **Collection-link tile:** a card whose whole purpose is linking to another collection is
-  drawn as a tile instead of a plain bubble: that collection's cover (or a folder glyph), title,
-  card count and its newest card's one-line preview (muted when settled, like Home). Such a
-  card has no attachment and exactly one link out, to a collection, and its text is blank or
-  one short line (a label, up to 80 characters); a `kind=link` card qualifies only without a
-  URL. The card's text shows above the tile unless it just repeats the title. Card Edit
+- **Link tile:** a card whose whole purpose is linking to another collection or to one card
+  is drawn as a tile instead of a plain bubble. Such a card has no attachment and exactly
+  one link out, to a collection or a card, and its text is blank or one short line (a label,
+  up to 80 characters); a `kind=link` card qualifies only without a URL.
+  - A **collection tile** shows that collection's cover (or a folder glyph), title, card count
+    and its newest card's one-line preview (muted when settled, like Home). A tap opens that
+    collection over this one.
+  - A **card tile** shows that card's first image (or a note glyph), a two-line preview of its
+    text (else its file name, else its kind: "Photo", "File"…), muted when it is settled, and
+    a small "in *Collection*" line. A tap opens its collection over this one, focused on it
+    (the search-hit reveal); a card in this same collection is revealed and highlighted in
+    place instead.
+  Both share one frame (the same translucent ring), told apart by the glyph. The card's text
+  shows above the tile unless it just repeats the title (or the card's preview). Card Edit
   (§4.3) gives such a card a label: the label makes it a text card (a bare URL, a link
-  card), and an emptied label is allowed and makes it a text-less `kind=link` card again. A tap on the
-  tile opens that collection over this one; a tap beside it still opens the actions sheet.
-  If the target is deleted, the card keeps its plain bubble and the broken-link chip (§8.6.1).
-  The tiles of a loaded page are read in batches (one links-out read, one summary read).
+  card), and an emptied label is allowed and makes it a text-less `kind=link` card again. A
+  tap beside the tile still opens the actions sheet. If the target is deleted (for a card,
+  or its collection), the card keeps its plain bubble and the broken-link chip (§8.6.1).
+  The tiles of a loaded page are read in batches: one links-out read, one summary read for
+  the collection targets, and for the card targets one read each of the cards, their
+  collections and their file names.
 - **Tap a card → actions sheet:** edit · link · copy · share · move to collection ·
   settle/unsettle · emphasize/unemphasize (§3.3) · delete. **Move to collection…** runs the
   multi-select Move below for that one card, without entering selection mode. An imported
@@ -244,7 +258,7 @@ deleted. Archiving takes it off the home timeline without losing anything.
 ### 4.3 Card Edit (from the actions sheet)
 Edit text/content; manage that card's images and its links; **Settled** and
 **Emphasized** toggles (§3.3). Saving blank text is refused, except on a Connection card
-(no attachment, one link out to a collection, §4.2): its text is a label, so it may be
+(no attachment, one link out to a collection or a card, §4.2): its text is a label, so it may be
 emptied. *Add photos* picks several from the gallery: on an image card
 they join its images, after the ones it has; on a text card they make it an image card.
 With several images the section shows them as a grid, each with a ✕ that removes just that
@@ -465,7 +479,8 @@ CREATE TABLE attachment (
 
 **Link-cards reconcile cleanly.** A "link block" in the feed is a `card` with `kind='link'`
 and no text (the "+" sheet's Connection card, §4.2); the edge lives in `link` with
-`source` = that card, and the card and its link are created in one transaction. (A
+`source` = that card and `target` = a collection or a card, and the card and its link are
+created in one transaction. (A
 `kind='link'` card *with* text is a web link: its text is the URL, and it has no edge.) The "link" action on an existing content
 card creates a `link` with `source` = that card and **no new card**. Both paths, one edge
 table — which is also why deleting a card yields an orphan marker for free (the `link` row

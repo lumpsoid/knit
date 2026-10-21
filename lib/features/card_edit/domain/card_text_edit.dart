@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:knit/features/collection/domain/collection_link_tile.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
 
 /// What saving a card's text writes (§4.3): the trimmed [text] and, for a
 /// Connection card, the [kind] that text calls for.
@@ -18,8 +18,8 @@ class CardTextEdit {
   /// attachments and live links out, or null when there is nothing to save.
   ///
   /// A blank text is refused, except on a Connection card: a text or link card
-  /// with no attachment whose whole purpose is one link out to a collection
-  /// (the [CollectionLinkTile] shape, whatever its text). Its text is a label,
+  /// with no attachment whose whole purpose is one link out to a collection or
+  /// a card (the [LinkTile] shape, whatever its text). Its text is a label,
   /// never a URL to open, so blank makes it the §6.4 link block again and a
   /// label a text card — still drawn as the tile while short. A pasted bare
   /// URL makes it a link card, as in the composer.
@@ -31,7 +31,7 @@ class CardTextEdit {
   }) {
     final body = text.trim();
     final connection =
-        CollectionLinkTile.targetOf(
+        LinkTile.targetOf(
           kind: kind,
           text: null,
           attachmentIds: attachmentIds,

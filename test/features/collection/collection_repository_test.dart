@@ -4,6 +4,7 @@ import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
@@ -118,7 +119,7 @@ void main() {
     },
   );
 
-  group('collection-link tile (§4.2)', () {
+  group('link tile (§4.2)', () {
     Future<String> addText(String colId, String position, String text) async =>
         (await write.addCard(
           collectionId: colId,
@@ -149,14 +150,16 @@ void main() {
       await linkTo(note, trips);
 
       final cards = (await load(index)).cards;
-      final tile = cards.firstWhere((c) => c.id == label).collectionLink;
+      final tile =
+          cards.firstWhere((c) => c.id == label).linkTile
+              as CollectionLinkTile?;
       expect(tile?.collectionId, trips);
       expect(tile?.title, 'Trips');
       expect(tile?.cardCount, 2);
       expect(tile?.lastCardText, 'Lisbon');
       expect(tile?.caption, isNull, reason: 'the label repeats the title');
       expect(
-        cards.firstWhere((c) => c.id == note).collectionLink,
+        cards.firstWhere((c) => c.id == note).linkTile,
         isNull,
         reason: 'a note is more than a link',
       );
@@ -168,15 +171,82 @@ void main() {
       final cardId = (await write.addConnectionCard(
         collectionId: index,
         position: 'a0',
-        targetCollectionId: trips,
+        targetKind: ConnectedEntityKind.collection,
+        targetId: trips,
       )).getOrThrow();
 
       final card = (await load(index)).cards.single;
       expect(card.id, cardId);
       expect(card.kind, CardKind.link);
       expect(card.text, isNull);
-      expect(card.collectionLink?.collectionId, trips);
-      expect(card.collectionLink?.caption, isNull);
+      final tile = card.linkTile as CollectionLinkTile?;
+      expect(tile?.collectionId, trips);
+      expect(tile?.caption, isNull);
+      expect(card.connectionCount, 1);
+    });
+
+    test('a Connection card to a card renders the card tile', () async {
+      final index = await createCollection('Index');
+      final trips = await createCollection('Trips');
+      final lisbon = await addText(trips, 'a0', 'Lisbon\nin May');
+      final photo = (await write.addCard(
+        collectionId: trips,
+        kind: CardKind.image,
+        position: 'a1',
+        attachmentId: 'att-photo',
+      )).getOrThrow();
+      await store.setCardsSettled([lisbon], settled: true);
+      final toText = (await write.addConnectionCard(
+        collectionId: index,
+        position: 'a0',
+        targetKind: ConnectedEntityKind.card,
+        targetId: lisbon,
+      )).getOrThrow();
+      final toPhoto = (await write.addConnectionCard(
+        collectionId: index,
+        position: 'a1',
+        targetKind: ConnectedEntityKind.card,
+        targetId: photo,
+      )).getOrThrow();
+
+      final cards = (await load(index)).cards;
+      expect(
+        cards.firstWhere((c) => c.id == toText).linkTile,
+        CardLinkTile(
+          cardId: lisbon,
+          cardKind: 'text',
+          collectionId: trips,
+          collectionTitle: 'Trips',
+          preview: 'Lisbon\nin May',
+          settled: true,
+        ),
+      );
+      expect(
+        cards.firstWhere((c) => c.id == toPhoto).linkTile,
+        CardLinkTile(
+          cardId: photo,
+          cardKind: 'image',
+          collectionId: trips,
+          collectionTitle: 'Trips',
+          thumbnailAttachmentId: 'att-photo',
+        ),
+      );
+    });
+
+    test('a deleted target card keeps the plain bubble', () async {
+      final index = await createCollection('Index');
+      final trips = await createCollection('Trips');
+      final lisbon = await addText(trips, 'a0', 'Lisbon');
+      await write.addConnectionCard(
+        collectionId: index,
+        position: 'a0',
+        targetKind: ConnectedEntityKind.card,
+        targetId: lisbon,
+      );
+      await store.delete(EntityType.card, lisbon);
+
+      final card = (await load(index)).cards.single;
+      expect(card.linkTile, isNull);
       expect(card.connectionCount, 1);
     });
 
@@ -188,7 +258,7 @@ void main() {
       await store.delete(EntityType.collection, trips);
 
       final card = (await load(index)).cards.single;
-      expect(card.collectionLink, isNull);
+      expect(card.linkTile, isNull);
       expect(card.connectionCount, 1);
     });
 
@@ -204,7 +274,7 @@ void main() {
         targetId: other,
       );
       final cards = (await load(index)).cards;
-      expect(cards.every((c) => c.collectionLink == null), isTrue);
+      expect(cards.every((c) => c.linkTile == null), isTrue);
     });
   });
 

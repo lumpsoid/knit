@@ -115,6 +115,7 @@
   "timelinePreviewPhoto": "📷 Photo",
   "timelinePreviewAudio": "🎙 Audio",
   "timelinePreviewLink": "🔗 Link",
+  "timelinePreviewFile": "📎 File",
   "timeNow": "now",
   "timeMinutesShort": "{count}m",
   "@timeMinutesShort": {
@@ -150,7 +151,7 @@
   "collectionPhotoCards": "Photo cards",
   "collectionAudioCards": "Audio cards",
   "collectionBlockConnection": "Connection",
-  "collectionBlockConnectionSubtitle": "Link to another collection",
+  "collectionBlockConnectionSubtitle": "Link to a collection or card",
   "collectionBlockPhoto": "Photo",
   "collectionBlockAudio": "Audio",
   "collectionBlockFile": "File",
@@ -202,7 +203,7 @@
   "collectionLoadError": "Could not load this collection.",
   "collectionSaveFailed": "That didn't save. Please try again.",
   "collectionLinkFinderTitle": "Make a link",
-  "collectionConnectionPickerTitle": "Connect to a collection",
+  "collectionConnectionPickerTitle": "Connect to a collection or card",
   "collectionNothingToLink": "Nothing to link to yet.",
   "collectionBackToCollections": "Back to collections",
   "collectionLinkToCollection": "Link to \"{label}\"",
@@ -632,6 +633,13 @@
     }
   },
   "collectionLinkTileOpen": "Open collection",
+  "collectionCardLinkTileOpen": "Open card",
+  "collectionCardLinkTileIn": "in {title}",
+  "@collectionCardLinkTileIn": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
   "timelineFromHandle": "from {handle}",
   "@timelineFromHandle": {
     "placeholders": {

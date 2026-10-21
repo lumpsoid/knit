@@ -584,6 +584,12 @@ abstract class AppLocalizations {
   /// **'🔗 Link'**
   String get timelinePreviewLink;
 
+  /// No description provided for @timelinePreviewFile.
+  ///
+  /// In en, this message translates to:
+  /// **'📎 File'**
+  String get timelinePreviewFile;
+
   /// No description provided for @timeNow.
   ///
   /// In en, this message translates to:
@@ -677,7 +683,7 @@ abstract class AppLocalizations {
   /// No description provided for @collectionBlockConnectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Link to another collection'**
+  /// **'Link to a collection or card'**
   String get collectionBlockConnectionSubtitle;
 
   /// No description provided for @collectionBlockPhoto.
@@ -947,7 +953,7 @@ abstract class AppLocalizations {
   /// No description provided for @collectionConnectionPickerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Connect to a collection'**
+  /// **'Connect to a collection or card'**
   String get collectionConnectionPickerTitle;
 
   /// No description provided for @collectionNothingToLink.
@@ -2413,6 +2419,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open collection'**
   String get collectionLinkTileOpen;
+
+  /// No description provided for @collectionCardLinkTileOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open card'**
+  String get collectionCardLinkTileOpen;
+
+  /// No description provided for @collectionCardLinkTileIn.
+  ///
+  /// In en, this message translates to:
+  /// **'in {title}'**
+  String collectionCardLinkTileIn(String title);
 
   /// No description provided for @timelineFromHandle.
   ///

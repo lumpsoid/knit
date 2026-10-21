@@ -1,16 +1,16 @@
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
-import 'package:knit/features/collection/domain/collection_link_tile.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/sync/sync.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// [CollectionReadRepository] over the graph's [SyncStore]: the header via
 /// [SyncStore.get], the feed as keyset pages via [SyncStore.feedPage] (§8.7),
-/// hydrated with batched attachment, link-count and collection-link reads.
+/// hydrated with batched attachment, link-count and link-tile reads.
 class SyncStoreCollectionReadRepository implements CollectionReadRepository {
   SyncStoreCollectionReadRepository({required AppGraph graph}) : _graph = graph;
 
@@ -163,7 +163,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       ...extraCountIds,
     ]);
 
-    final tiles = await _collectionLinks(store, rows, counts);
+    final tiles = await _linkTiles(store, rows, counts);
 
     final cards = [
       for (final card in rows)
@@ -178,10 +178,12 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
   }
 
   /// The rich tile of each card in [rows] whose whole purpose is linking to a
-  /// live collection (§4.2), by card id — batched: one links-out read for the
-  /// linked cards, and one summary read for their targets. A deleted target
-  /// gets no tile, so the card keeps the plain bubble and its broken chip.
-  Future<Map<String, CollectionLinkTile>> _collectionLinks(
+  /// live collection or card (§4.2), by card id — batched: one links-out read
+  /// for the linked cards, then one summary read for the collection targets
+  /// and a few `getMany` reads for the card targets (their rows, collections
+  /// and file names). A deleted target gets no tile, so the card keeps the
+  /// plain bubble and its broken chip.
+  Future<Map<String, LinkTile>> _linkTiles(
     SyncStore store,
     List<Snapshot> rows,
     Map<String, int> counts,
@@ -200,9 +202,9 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         targetId: link.content[LinkSchema.colTargetId] as String,
       ));
     }
-    final targets = <String, String>{
+    final targets = <String, CardLinkOut>{
       for (final card in linked)
-        card.id: ?CollectionLinkTile.targetOf(
+        card.id: ?LinkTile.targetOf(
           kind: CardKind.fromTag(card.content['kind'] as String?),
           text: card.content['text'] as String?,
           attachmentIds: CardSchema.attachmentIdsOf(card.content),
@@ -210,23 +212,100 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         ),
     };
     if (targets.isEmpty) return const {};
+    Iterable<String> idsOf(ConnectedEntityKind kind) => [
+      for (final t in targets.values)
+        if (t.targetKind == kind) t.targetId,
+    ];
     final summaries = {
-      for (final s in await store.collectionSummaries(targets.values))
+      for (final s in await store.collectionSummaries(
+        idsOf(ConnectedEntityKind.collection),
+      ))
         s.collectionId: s,
     };
+    final cardTargets = await _cardTargets(
+      store,
+      idsOf(ConnectedEntityKind.card),
+    );
+    final tiles = <String, LinkTile>{};
+    for (final card in linked) {
+      final target = targets[card.id];
+      if (target == null) continue;
+      final cardText = card.content['text'] as String?;
+      switch (target.targetKind) {
+        case ConnectedEntityKind.collection:
+          if (summaries[target.targetId] case final summary?) {
+            tiles[card.id] = CollectionLinkTile.of(
+              cardText: cardText,
+              collectionId: summary.collectionId,
+              title: summary.title,
+              cardCount: summary.cardCount,
+              coverAttachmentId: summary.coverAttachmentId,
+              lastCardKind: summary.lastCard?.kind,
+              lastCardText: summary.lastCard?.text,
+              lastCardSettled: summary.lastCard?.settled ?? false,
+            );
+          }
+        case ConnectedEntityKind.card:
+          if (cardTargets[target.targetId] case (
+            final row,
+            final collection,
+            final fileName,
+          )) {
+            final kind = CardKind.fromTag(row.content['kind'] as String?);
+            tiles[card.id] = CardLinkTile.of(
+              cardText: cardText,
+              cardId: row.id,
+              cardKind: kind.tag,
+              collectionId: collection.id,
+              collectionTitle:
+                  collection.content[CollectionSchema.colTitle] as String? ??
+                  '',
+              text: row.content['text'] as String?,
+              fileName: fileName,
+              thumbnailAttachmentId: kind == CardKind.image
+                  ? row.content['attachment_id'] as String?
+                  : null,
+              settled: row.content[CardSchema.colSettledAt] != null,
+            );
+          }
+        case ConnectedEntityKind.unknown:
+          break;
+      }
+    }
+    return tiles;
+  }
+
+  /// The live cards among [cardIds] that sit in a live collection, by id,
+  /// with that collection and (file and audio cards) the attachment's file
+  /// name — three batched reads.
+  static Future<Map<String, (Snapshot, Snapshot, String?)>> _cardTargets(
+    SyncStore store,
+    Iterable<String> cardIds,
+  ) async {
+    final ids = cardIds.toSet();
+    if (ids.isEmpty) return const {};
+    final cards = [
+      for (final c in await store.getMany(EntityType.card, ids))
+        if (!c.deleted) c,
+    ];
+    final collections = {
+      for (final c in await store.getMany(EntityType.collection, {
+        for (final card in cards) card.content['collection_id'] as String,
+      }))
+        if (!c.deleted) c.id: c,
+    };
+    final names = {
+      for (final att in await store.getMany(EntityType.attachment, {
+        for (final card in cards)
+          if (_needsMeta(card)) ?card.content['attachment_id'] as String?,
+      }))
+        if (!att.deleted)
+          att.id: att.content[AttachmentSchema.colName] as String?,
+    };
     return {
-      for (final card in linked)
-        if (summaries[targets[card.id]] case final summary?)
-          card.id: CollectionLinkTile.of(
-            cardText: card.content['text'] as String?,
-            collectionId: summary.collectionId,
-            title: summary.title,
-            cardCount: summary.cardCount,
-            coverAttachmentId: summary.coverAttachmentId,
-            lastCardKind: summary.lastCard?.kind,
-            lastCardText: summary.lastCard?.text,
-            lastCardSettled: summary.lastCard?.settled ?? false,
-          ),
+      for (final card in cards)
+        if (collections[card.content['collection_id']] case final collection?)
+          card.id: (card, collection, names[card.content['attachment_id']]),
     };
   }
 
@@ -239,7 +318,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
     Snapshot card,
     Snapshot? att,
     int? linkCount,
-    CollectionLinkTile? collectionLink,
+    LinkTile? linkTile,
   ) {
     final kind = CardKind.fromTag(card.content['kind'] as String?);
     final withMeta = att != null && _needsMeta(card);
@@ -259,7 +338,7 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       connectionCount: linkCount ?? 0,
       settledAt: card.content[CardSchema.colSettledAt] as int?,
       emphasizedAt: card.content[CardSchema.colEmphasizedAt] as int?,
-      collectionLink: collectionLink,
+      linkTile: linkTile,
     );
   }
 

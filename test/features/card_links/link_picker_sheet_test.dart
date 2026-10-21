@@ -138,13 +138,50 @@ void main() {
       source: const NewConnection(collectionId: 'own'),
     );
 
-    expect(find.text('Connect to a collection'), findsOneWidget);
-    expect(find.text('Own'), findsNothing);
-    expect(find.byIcon(Icons.chevron_right), findsNothing, reason: 'no drill');
+    expect(find.text('Connect to a collection or card'), findsOneWidget);
+    // Its own collection is listed to drill into, but offers no Link.
+    expect(find.widgetWithText(ListTile, 'Own'), findsOneWidget);
+    expect(find.text('Link'), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'Own'), findsNothing);
     expect(find.widgetWithText(ActionChip, 'Other'), findsOneWidget);
+
+    await tester.tap(find.text('Link'));
+    await tester.pumpAndSettle();
+    expect(picked.single?.id, 'other');
+  });
+
+  testWidgets('a new Connection drills in to pick any card, siblings too', (
+    tester,
+  ) async {
+    final picked = await pumpPicker(
+      tester,
+      source: const NewConnection(collectionId: 'own'),
+    );
+
+    await tester.tap(find.widgetWithText(ListTile, 'Own'));
+    await tester.pumpAndSettle();
+    // No "Link to Own" row: the card can't point at its own collection.
+    expect(find.textContaining('Link to'), findsNothing);
+    expect(find.text('Self'), findsOneWidget);
+    await tester.tap(find.text('Sibling'));
+    await tester.pumpAndSettle();
+    expect(picked.single?.kind, ConnectedEntityKind.card);
+    expect(picked.single?.id, 'sib');
+  });
+
+  testWidgets('a new Connection drills into another collection too', (
+    tester,
+  ) async {
+    final picked = await pumpPicker(
+      tester,
+      source: const NewConnection(collectionId: 'own'),
+    );
 
     await tester.tap(find.widgetWithText(ListTile, 'Other'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Link to "Other"'));
+    await tester.pumpAndSettle();
+    expect(picked.single?.kind, ConnectedEntityKind.collection);
     expect(picked.single?.id, 'other');
   });
 }

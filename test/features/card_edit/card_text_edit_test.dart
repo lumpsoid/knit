@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/features/card_edit/domain/card_text_edit.dart';
-import 'package:knit/features/collection/domain/collection_link_tile.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// What saving a card's text writes (§4.3), and the Connection card's blank
@@ -29,7 +29,6 @@ void main() {
     expect(save('  note  '), const CardTextEdit(text: 'note'));
     expect(save('   '), isNull);
     expect(save('', kind: CardKind.link), isNull);
-    expect(save('', linksOut: const [toCard]), isNull);
     expect(save('', linksOut: const [toTrips, toCard]), isNull);
     expect(
       save('', attachmentIds: const ['a'], linksOut: const [toTrips]),
@@ -41,6 +40,16 @@ void main() {
     const block = CardTextEdit(text: null, kind: CardKind.link);
     expect(save('  ', linksOut: const [toTrips]), block);
     expect(save('', kind: CardKind.link, linksOut: const [toTrips]), block);
+  });
+
+  test('a Connection card to a card is one too', () {
+    const block = CardTextEdit(text: null, kind: CardKind.link);
+    expect(save('', linksOut: const [toCard]), block);
+    expect(save('', kind: CardKind.link, linksOut: const [toCard]), block);
+    expect(
+      save(' see this ', kind: CardKind.link, linksOut: const [toCard]),
+      const CardTextEdit(text: 'see this', kind: CardKind.text),
+    );
   });
 
   test('a Connection card\'s label makes it a text card, a URL a link', () {

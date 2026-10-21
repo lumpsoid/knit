@@ -4,6 +4,7 @@ import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/core/recents/domain/recent_targets.dart';
+import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_outline.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
@@ -228,16 +229,19 @@ class CollectionUpdater
           ],
         );
 
-      case ConnectionCardRequested(:final targetCollectionId):
-        // The picker never offers this collection itself (LinkSource rule).
-        if (targetCollectionId == state.collectionId) return (state, null);
+      case ConnectionCardRequested(:final targetKind, :final targetId):
+        // A collection or a card, never this collection itself: the picker's
+        // own rule (NewConnection, after LinkSource).
+        final pick = NewConnection(collectionId: state.collectionId);
+        if (!pick.canLinkTo(targetKind, targetId)) return (state, null);
         return (
           state,
           [
             AddConnectionCardEffect(
               collectionId: state.collectionId,
               position: _appendPosition(state.cards),
-              targetCollectionId: targetCollectionId,
+              targetKind: targetKind,
+              targetId: targetId,
             ),
           ],
         );
@@ -535,12 +539,12 @@ class CollectionUpdater
     return '${DateFormat('yyyy-MM-dd').format(at)}-knit';
   }
 
-  /// Every image of the image cards in [cards], and the cover of each
-  /// collection-link tile (§4.2) — what the feed shows.
+  /// Every image of the image cards in [cards], and each link tile's image (a
+  /// collection's cover, a card's thumbnail, §4.2) — what the feed shows.
   static List<String> _imageAttachments(List<FeedCard> cards) => [
     for (final card in cards) ...[
       ...card.imageIds,
-      ?card.collectionLink?.coverAttachmentId,
+      ?card.linkTile?.imageAttachmentId,
     ],
   ];
 

@@ -1,5 +1,6 @@
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// Narrow write port for the Collection screen (business_logic.md §5). Every op
@@ -23,12 +24,14 @@ abstract interface class CollectionWriteRepository {
   });
 
   /// Append a Connection card at [position] (§4.2): a `link`-kind card with
-  /// no text and one link out to [targetCollectionId] (the §6.4 link block),
-  /// written together in one transaction. Returns the new card id.
+  /// no text and one link out to the [targetKind] entity [targetId], a
+  /// collection or a card (the §6.4 link block), written together in one
+  /// transaction. Returns the new card id.
   Future<Result<String, CollectionFailure>> addConnectionCard({
     required String collectionId,
     required String position,
-    required String targetCollectionId,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
   });
 
   /// Soft-delete a card (§6.1). Links to it become broken chips, never vanish.

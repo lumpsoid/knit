@@ -9,6 +9,7 @@ import 'package:knit/core/recents/recents.dart';
 import 'package:knit/features/collection/domain/card_share_repository.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
 import 'package:knit/features/collection/infra/sync_store_card_move_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_outline_read_repository.dart';
@@ -377,7 +378,8 @@ void main() {
         AddConnectionCardEffect(
           collectionId: index,
           position: 'a0',
-          targetCollectionId: trips,
+          targetKind: ConnectedEntityKind.collection,
+          targetId: trips,
         ),
         dispatch: actions.add,
       );
@@ -395,6 +397,27 @@ void main() {
       ]);
     },
   );
+
+  test('a Connection card to a card links it, but is no recent', () async {
+    final index = (await timelineWrite.createCollection('Index')).getOrThrow();
+    const target = 'card-target';
+    await shell.run(
+      AddConnectionCardEffect(
+        collectionId: index,
+        position: 'a0',
+        targetKind: ConnectedEntityKind.card,
+        targetId: target,
+      ),
+      dispatch: (_) {},
+    );
+
+    final card = (await store.feed(index)).single;
+    final link = (await store.linksOut(card.id)).single;
+    expect(link.content['target_type'], 'card');
+    expect(link.content['target_id'], target);
+    // The "Recent" row lists collections only.
+    expect((await recents.load(RecentPurpose.link)).getOrThrow().ids, isEmpty);
+  });
 
   group('quick input', () {
     test('a saved quick card asks the page to close, then resyncs', () async {

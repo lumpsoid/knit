@@ -29,14 +29,18 @@ sealed class LinkPick {
   /// Whether [collection] is listed at all.
   bool lists(LinkTarget collection) => true;
 
-  /// Whether a listed collection can be opened to pick a card in it.
-  bool get drills => true;
-
   /// Whether the collection [id] itself may be picked.
   bool canLinkToCollection(String id);
 
   /// Whether the card [id] may be picked.
   bool canLinkToCard(String id);
+
+  /// Whether the [kind] entity [id] may be picked.
+  bool canLinkTo(ConnectedEntityKind kind, String id) => switch (kind) {
+    ConnectedEntityKind.collection => canLinkToCollection(id),
+    ConnectedEntityKind.card => canLinkToCard(id),
+    ConnectedEntityKind.unknown => false,
+  };
 }
 
 /// The card a link is being made from, and which targets it may link to: never
@@ -79,10 +83,11 @@ class LinkFromMine extends LinkPick {
   bool canLinkToCard(String id) => id != targetCardId;
 }
 
-/// The "+" sheet's Connection block (§4.2): pick the collection a new
-/// Connection card in [collectionId] will point at. Collections only — no
-/// drilling into cards — and never [collectionId] itself (the [LinkSource]
-/// rule). Imported collections are offered: the link is the linker's own op.
+/// The "+" sheet's Connection block (§4.2): pick the collection or the card a
+/// new Connection card in [collectionId] will point at. Never [collectionId]
+/// itself (the [LinkSource] rule), but any card, its own siblings included:
+/// the new card doesn't exist yet, so it can't be picked. Imported collections
+/// are offered: the link is the linker's own op.
 @immutable
 class NewConnection extends LinkPick {
   const NewConnection({required this.collectionId});
@@ -91,14 +96,8 @@ class NewConnection extends LinkPick {
   final String collectionId;
 
   @override
-  bool lists(LinkTarget collection) => collection.id != collectionId;
-
-  @override
-  bool get drills => false;
-
-  @override
   bool canLinkToCollection(String id) => id != collectionId;
 
   @override
-  bool canLinkToCard(String id) => false;
+  bool canLinkToCard(String id) => true;
 }

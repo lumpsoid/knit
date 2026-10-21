@@ -21,6 +21,7 @@ import 'package:knit/features/collection/domain/link_launcher.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection_details/domain/collection_details.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
@@ -181,18 +182,22 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
       case AddConnectionCardEffect(
         :final collectionId,
         :final position,
-        :final targetCollectionId,
+        :final targetKind,
+        :final targetId,
       ):
         await _runWrite(
           () => _write.addConnectionCard(
             collectionId: collectionId,
             position: position,
-            targetCollectionId: targetCollectionId,
+            targetKind: targetKind,
+            targetId: targetId,
           ),
           'add connection card',
           dispatch,
-          onSuccess: () =>
-              _recordRecent(RecentPurpose.link, targetCollectionId),
+          // The Recent row lists collections only.
+          onSuccess: targetKind == ConnectedEntityKind.collection
+              ? () => _recordRecent(RecentPurpose.link, targetId)
+              : null,
         );
 
       case AddPhotoCardEffect(
