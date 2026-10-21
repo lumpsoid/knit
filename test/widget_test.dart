@@ -6,7 +6,7 @@ import 'package:knit/app/composition.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_scope.dart';
 import 'package:knit/features/backup/infra/argon2_identity_key_cipher.dart';
-import 'package:knit/features/backup/infra/in_memory_backup_ports.dart';
+import 'package:knit/core/files/infra/in_memory_file_ports.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_export_repository.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_import_repository.dart';
 import 'package:knit/features/onboard/infra/sync_store_onboard_identity_read_repository.dart';
@@ -52,7 +52,7 @@ void main() {
         identityReadRepository: SyncStoreOnboardIdentityReadRepository(
           graph: graph,
         ),
-        backupSourcePort: StubBackupSourcePort(),
+        backupSourcePort: StubFileSourcePort(),
         backupImportRepository: SyncStoreBackupImportRepository(
           graph: graph,
           cipher: Argon2IdentityKeyCipher(),
@@ -108,9 +108,9 @@ void main() {
           graph: graph,
           cipher: Argon2IdentityKeyCipher(),
         ),
-        backupDeliveryPort: RecordingBackupDeliveryPort(),
-        backupSavePort: RecordingBackupSavePort(),
-        backupSourcePort: StubBackupSourcePort(),
+        backupDeliveryPort: RecordingFileDeliveryPort(),
+        backupSavePort: RecordingFileSavePort(),
+        backupSourcePort: StubFileSourcePort(),
         timelineChannel: TimelineChannelNotifier(),
       ).controller,
     );

@@ -1181,4 +1181,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get presentPreviousTooltip => 'Previous slide';
+
+  @override
+  String get collectionMenuShareFile => 'Share as file';
+
+  @override
+  String get shareExportTitle => 'Share as file';
+
+  @override
+  String shareExportSummary(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cards',
+      one: '1 card',
+    );
+    return '$title · $_temp0';
+  }
+
+  @override
+  String get shareExportIncludeMedia => 'Include media';
+
+  @override
+  String shareExportMediaSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0 · $size';
+  }
+
+  @override
+  String shareExportSize(String size) {
+    return 'File size: $size';
+  }
+
+  @override
+  String get shareExportHint =>
+      'The recipient sees it read-only, marked as from you, and can save their own copy.';
+
+  @override
+  String get shareExportSend => 'Send';
+
+  @override
+  String get shareExportSave => 'Save to file';
+
+  @override
+  String get shareExportFailed =>
+      'Couldn\'t create the file. Please try again.';
+
+  @override
+  String get shareExportLoadFailed => 'Couldn\'t read this collection.';
+
+  @override
+  String get shareExportSaved => 'Collection file saved';
 }

@@ -6,6 +6,7 @@ import 'package:knit/features/collection/presentation/collection_controller.dart
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_state.dart';
 import 'package:knit/features/collection_present/presentation/present_controller.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
 import 'package:knit/features/collection_present/presentation/present_route_args.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_route_args.dart';
 import 'package:knit/features/connections/presentation/connections_route_args.dart';
@@ -32,6 +33,8 @@ abstract final class CollectionScope {
   static CardLinksController? _cardLinks;
   static PresentController Function()? _presentFactory;
   static PresentRouteArgsWriter? _presentWriter;
+  static CollectionShareExportController Function(String collectionId)?
+  _shareExportFactory;
 
   static void setFactory(CollectionController Function() factory) =>
       _factory = factory;
@@ -46,6 +49,9 @@ abstract final class CollectionScope {
   static void setCardLinks(CardLinksController links) => _cardLinks = links;
   static void setPresentFactory(PresentController Function() factory) =>
       _presentFactory = factory;
+  static void setShareExportFactory(
+    CollectionShareExportController Function(String collectionId) factory,
+  ) => _shareExportFactory = factory;
   static void setPresentRouteArgsWriter(PresentRouteArgsWriter writer) =>
       _presentWriter = writer;
   static void setConnectionsRouteArgsWriter(
@@ -193,6 +199,22 @@ abstract final class CollectionScope {
       );
     }
     return factory();
+  }
+
+  /// Build the "Share as file" controller for [collectionId]; the sheet owns
+  /// and disposes it.
+  static CollectionShareExportController createShareExport(
+    String collectionId,
+  ) {
+    final factory = _shareExportFactory;
+    if (factory == null) {
+      throw StateError(
+        'CollectionScope is not initialized.\n'
+        'Call CollectionScope.setShareExportFactory() before '
+        'createShareExport().',
+      );
+    }
+    return factory(collectionId);
   }
 
   /// The write side of the presentation carrier — the collection to present.

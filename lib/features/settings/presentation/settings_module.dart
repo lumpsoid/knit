@@ -1,12 +1,10 @@
 import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
+import 'package:knit/core/files/domain/domain.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
-import 'package:knit/features/backup/domain/backup_delivery_port.dart';
 import 'package:knit/features/backup/domain/backup_export_repository.dart';
 import 'package:knit/features/backup/domain/backup_import_repository.dart';
-import 'package:knit/features/backup/domain/backup_save_port.dart';
-import 'package:knit/features/backup/domain/backup_source_port.dart';
 import 'package:knit/features/settings/domain/settings_identity_read_repository.dart';
 import 'package:knit/features/settings/domain/settings_identity_reset_repository.dart';
 import 'package:knit/features/settings/domain/settings_read_repository.dart';
@@ -32,9 +30,9 @@ class SettingsModule {
     required SettingsIdentityResetRepository identityResetRepository,
     required BackupExportRepository backupExportRepository,
     required BackupImportRepository backupImportRepository,
-    required BackupDeliveryPort backupDeliveryPort,
-    required BackupSavePort backupSavePort,
-    required BackupSourcePort backupSourcePort,
+    required FileDeliveryPort backupDeliveryPort,
+    required FileSavePort backupSavePort,
+    required FileSourcePort backupSourcePort,
     required TimelineChannelEmitter timelineChannel,
     Logger? logger,
   }) {

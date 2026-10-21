@@ -488,5 +488,17 @@
   "presentLoadFailed": "Не удалось открыть коллекцию",
   "presentSeeAlso": "См. также",
   "presentNextTooltip": "Следующий слайд",
-  "presentPreviousTooltip": "Предыдущий слайд"
+  "presentPreviousTooltip": "Предыдущий слайд",
+  "collectionMenuShareFile": "Поделиться файлом",
+  "shareExportTitle": "Поделиться файлом",
+  "shareExportSummary": "{title} · {count, plural, =1{1 карточка} few{{count} карточки} many{{count} карточек} other{{count} карточки}}",
+  "shareExportIncludeMedia": "Включить медиафайлы",
+  "shareExportMediaSummary": "{count, plural, =1{1 файл} few{{count} файла} many{{count} файлов} other{{count} файла}} · {size}",
+  "shareExportSize": "Размер файла: {size}",
+  "shareExportHint": "Получатель увидит её только для чтения, с пометкой, что она от вас, и сможет сохранить свою копию.",
+  "shareExportSend": "Отправить",
+  "shareExportSave": "Сохранить в файл",
+  "shareExportFailed": "Не удалось создать файл. Попробуйте ещё раз.",
+  "shareExportLoadFailed": "Не удалось прочитать коллекцию.",
+  "shareExportSaved": "Файл коллекции сохранён"
 }

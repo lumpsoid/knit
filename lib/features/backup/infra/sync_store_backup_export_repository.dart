@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:result_dart/result_dart.dart';
 import 'package:knit/app/app_graph.dart';
+import 'package:knit/core/files/domain/outgoing_file.dart';
 import 'package:knit/features/backup/domain/backup_export_repository.dart';
 import 'package:knit/features/backup/domain/backup_failure.dart';
-import 'package:knit/features/backup/domain/backup_models.dart';
 import 'package:knit/features/backup/domain/identity_key_cipher.dart';
 import 'package:knit/features/backup/infra/backup_archive_codec.dart';
 import 'package:knit/sync/sync.dart';
@@ -37,7 +37,7 @@ class SyncStoreBackupExportRepository implements BackupExportRepository {
   final DateTime Function() _now;
 
   @override
-  Future<Result<BackupArchive, BackupFailure>> exportAll(
+  Future<Result<OutgoingFile, BackupFailure>> exportAll(
     String passphrase,
   ) async {
     try {
@@ -76,9 +76,11 @@ class SyncStoreBackupExportRepository implements BackupExportRepository {
       );
       final shortAuthor = author.length >= 8 ? author.substring(0, 8) : author;
       return Ok(
-        BackupArchive(
+        OutgoingFile(
           bytes: bytes,
           fileName: 'knit-backup-$shortAuthor-$stampMs.zip',
+          mimeType: 'application/zip',
+          extension: 'zip',
         ),
       );
     } catch (e, st) {

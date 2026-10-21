@@ -3,7 +3,7 @@ import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:knit/core/fcis_flutter/fcis_flutter.dart';
 import 'package:knit/features/backup/domain/backup_import_repository.dart';
-import 'package:knit/features/backup/domain/backup_source_port.dart';
+import 'package:knit/core/files/domain/domain.dart';
 import 'package:knit/features/onboard/domain/onboard_identity_read_repository.dart';
 import 'package:knit/features/onboard/domain/onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
@@ -20,7 +20,7 @@ class OnboardModule {
   OnboardModule({
     required OnboardRepository repository,
     required OnboardIdentityReadRepository identityReadRepository,
-    required BackupSourcePort backupSourcePort,
+    required FileSourcePort backupSourcePort,
     required BackupImportRepository backupImportRepository,
     Logger? logger,
   }) {

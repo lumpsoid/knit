@@ -525,5 +525,34 @@
   "presentLoadFailed": "Couldn't open this collection",
   "presentSeeAlso": "See also",
   "presentNextTooltip": "Next slide",
-  "presentPreviousTooltip": "Previous slide"
+  "presentPreviousTooltip": "Previous slide",
+  "collectionMenuShareFile": "Share as file",
+  "shareExportTitle": "Share as file",
+  "shareExportSummary": "{title} · {count, plural, =1{1 card} other{{count} cards}}",
+  "@shareExportSummary": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "shareExportIncludeMedia": "Include media",
+  "shareExportMediaSummary": "{count, plural, =1{1 file} other{{count} files}} · {size}",
+  "@shareExportMediaSummary": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "size": { "type": "String" }
+    }
+  },
+  "shareExportSize": "File size: {size}",
+  "@shareExportSize": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "shareExportHint": "The recipient sees it read-only, marked as from you, and can save their own copy.",
+  "shareExportSend": "Send",
+  "shareExportSave": "Save to file",
+  "shareExportFailed": "Couldn't create the file. Please try again.",
+  "shareExportLoadFailed": "Couldn't read this collection.",
+  "shareExportSaved": "Collection file saved"
 }

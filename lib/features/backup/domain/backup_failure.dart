@@ -28,21 +28,6 @@ class BackupCorruptArchiveFailure extends BackupFailure {
   const BackupCorruptArchiveFailure(super.error, [super.stackTrace]);
 }
 
-/// Handing the bundle to the OS share sheet failed.
-class BackupDeliveryFailure extends BackupFailure {
-  const BackupDeliveryFailure(super.error, [super.stackTrace]);
-}
-
-/// Saving the bundle to a user-chosen file failed.
-class BackupSaveFailure extends BackupFailure {
-  const BackupSaveFailure(super.error, [super.stackTrace]);
-}
-
-/// Picking an archive to restore failed (the file picker errored).
-class BackupSourceFailure extends BackupFailure {
-  const BackupSourceFailure(super.error, [super.stackTrace]);
-}
-
 /// The passphrase doesn't open the keypair sealed in the bundle (or the sealed
 /// key was tampered with — the two can't be told apart).
 class BackupWrongPassphraseFailure extends BackupFailure {

@@ -2083,6 +2083,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Previous slide'**
   String get presentPreviousTooltip;
+
+  /// No description provided for @collectionMenuShareFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Share as file'**
+  String get collectionMenuShareFile;
+
+  /// No description provided for @shareExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share as file'**
+  String get shareExportTitle;
+
+  /// No description provided for @shareExportSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} · {count, plural, =1{1 card} other{{count} cards}}'**
+  String shareExportSummary(String title, int count);
+
+  /// No description provided for @shareExportIncludeMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Include media'**
+  String get shareExportIncludeMedia;
+
+  /// No description provided for @shareExportMediaSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file} other{{count} files}} · {size}'**
+  String shareExportMediaSummary(int count, String size);
+
+  /// No description provided for @shareExportSize.
+  ///
+  /// In en, this message translates to:
+  /// **'File size: {size}'**
+  String shareExportSize(String size);
+
+  /// No description provided for @shareExportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The recipient sees it read-only, marked as from you, and can save their own copy.'**
+  String get shareExportHint;
+
+  /// No description provided for @shareExportSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get shareExportSend;
+
+  /// No description provided for @shareExportSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to file'**
+  String get shareExportSave;
+
+  /// No description provided for @shareExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the file. Please try again.'**
+  String get shareExportFailed;
+
+  /// No description provided for @shareExportLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read this collection.'**
+  String get shareExportLoadFailed;
+
+  /// No description provided for @shareExportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection file saved'**
+  String get shareExportSaved;
 }
 
 class _AppLocalizationsDelegate

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-enum CollectionMenuAction { present, reorder, delete }
+enum CollectionMenuAction { present, reorder, shareFile, delete }
 
-/// The Collection app bar's ⋮ sheet: Present (§4.9), Reorder (§4.2) and
-/// Delete.
+/// The Collection app bar's ⋮ sheet: Present (§4.9), Reorder (§4.2), Share
+/// as file (docs/collection_share.md) and Delete.
 class CollectionMenuSheet extends StatelessWidget {
   const CollectionMenuSheet({
     super.key,
@@ -39,6 +39,12 @@ class CollectionMenuSheet extends StatelessWidget {
               onTap: () =>
                   Navigator.of(context).pop(CollectionMenuAction.reorder),
             ),
+          ListTile(
+            leading: const Icon(Icons.ios_share),
+            title: Text(l10n.collectionMenuShareFile),
+            onTap: () =>
+                Navigator.of(context).pop(CollectionMenuAction.shareFile),
+          ),
           ListTile(
             leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
             title: Text(

@@ -1,3 +1,5 @@
+import 'package:knit/app/app_graph.dart';
+import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/features/collection_share/domain/domain.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -77,3 +79,8 @@ Future<CollectionShareBundle> bundleOf(
     blobs: const {},
   );
 }
+
+/// An [AppGraph] over [store] and a fresh in-memory blob store.
+AppGraph graphOf(SyncStore store) => AppGraph()
+  ..bindStore(store)
+  ..bindBlobStore(InMemoryAttachmentBlobStore());

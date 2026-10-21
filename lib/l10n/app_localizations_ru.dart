@@ -1208,4 +1208,64 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get presentPreviousTooltip => 'Предыдущий слайд';
+
+  @override
+  String get collectionMenuShareFile => 'Поделиться файлом';
+
+  @override
+  String get shareExportTitle => 'Поделиться файлом';
+
+  @override
+  String shareExportSummary(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count карточки',
+      many: '$count карточек',
+      few: '$count карточки',
+      one: '1 карточка',
+    );
+    return '$title · $_temp0';
+  }
+
+  @override
+  String get shareExportIncludeMedia => 'Включить медиафайлы';
+
+  @override
+  String shareExportMediaSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count файла',
+      many: '$count файлов',
+      few: '$count файла',
+      one: '1 файл',
+    );
+    return '$_temp0 · $size';
+  }
+
+  @override
+  String shareExportSize(String size) {
+    return 'Размер файла: $size';
+  }
+
+  @override
+  String get shareExportHint =>
+      'Получатель увидит её только для чтения, с пометкой, что она от вас, и сможет сохранить свою копию.';
+
+  @override
+  String get shareExportSend => 'Отправить';
+
+  @override
+  String get shareExportSave => 'Сохранить в файл';
+
+  @override
+  String get shareExportFailed =>
+      'Не удалось создать файл. Попробуйте ещё раз.';
+
+  @override
+  String get shareExportLoadFailed => 'Не удалось прочитать коллекцию.';
+
+  @override
+  String get shareExportSaved => 'Файл коллекции сохранён';
 }

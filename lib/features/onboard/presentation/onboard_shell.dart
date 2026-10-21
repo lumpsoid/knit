@@ -7,7 +7,7 @@ import 'package:result_dart/result_dart.dart';
 import 'package:knit/features/backup/domain/backup_failure.dart';
 import 'package:knit/features/backup/domain/backup_import_repository.dart';
 import 'package:knit/features/backup/domain/backup_models.dart';
-import 'package:knit/features/backup/domain/backup_source_port.dart';
+import 'package:knit/core/files/domain/domain.dart';
 import 'package:knit/features/onboard/domain/onboard_identity_read_repository.dart';
 import 'package:knit/features/onboard/domain/onboard_repository.dart';
 import 'package:knit/features/onboard/presentation/onboard_action.dart';
@@ -24,7 +24,7 @@ class OnboardShell extends Shell<OnboardEffect, OnboardAction> {
   OnboardShell({
     required OnboardRepository repository,
     required OnboardIdentityReadRepository identityReadRepository,
-    required BackupSourcePort backupSourcePort,
+    required FileSourcePort backupSourcePort,
     required BackupImportRepository backupImportRepository,
     required EffectEmitter<OnboardUiEffect> effectEmitter,
     required Logger logger,
@@ -37,7 +37,7 @@ class OnboardShell extends Shell<OnboardEffect, OnboardAction> {
 
   final OnboardRepository _repository;
   final OnboardIdentityReadRepository _identityRead;
-  final BackupSourcePort _source;
+  final FileSourcePort _source;
   final BackupImportRepository _import;
   final EffectEmitter<OnboardUiEffect> _effectEmitter;
   final Logger _log;
@@ -68,7 +68,7 @@ class OnboardShell extends Shell<OnboardEffect, OnboardAction> {
   }
 
   Future<void> _pickBackup(void Function(OnboardAction) dispatch) async {
-    final picked = await _source.pickArchive();
+    final picked = await _source.pick(extensions: const ['zip']);
     final Uint8List bytes;
     switch (picked) {
       case Ok(value: null):

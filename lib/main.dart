@@ -9,11 +9,9 @@ import 'package:knit/app/app_config.dart';
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/app/composition.dart';
 import 'package:knit/core/attachments/attachments.dart';
+import 'package:knit/core/files/infra/infra.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/features/backup/infra/argon2_identity_key_cipher.dart';
-import 'package:knit/features/backup/infra/file_picker_backup_save_port.dart';
-import 'package:knit/features/backup/infra/file_picker_backup_source_port.dart';
-import 'package:knit/features/backup/infra/share_plus_backup_delivery_port.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_export_repository.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_import_repository.dart';
 import 'package:knit/features/app_launch/presentation/app_launch_module.dart';
@@ -48,6 +46,8 @@ import 'package:knit/features/collection_present/infra/sync_store_present_read_r
 import 'package:knit/features/collection_present/infra/wakelock_plus_screen_awake.dart';
 import 'package:knit/features/collection_present/presentation/present_controller.dart';
 import 'package:knit/features/collection_present/presentation/present_route_args.dart';
+import 'package:knit/features/collection_share/infra/sync_store_collection_share_export_repository.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_module.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_route_args.dart';
 import 'package:knit/features/collection_media/presentation/collection_media_scope.dart';
@@ -151,7 +151,7 @@ void bootstrap(AppConfig config) {
       ),
       // "Restore from backup" on the welcome step: pick a bundle, unseal its
       // keypair with the passphrase, replay it.
-      backupSourcePort: const FilePickerBackupSourcePort(),
+      backupSourcePort: const FilePickerFileSourcePort(),
       backupImportRepository: backupImportRepository,
     ).controller,
   );
@@ -206,9 +206,9 @@ void bootstrap(AppConfig config) {
         cipher: identityCipher,
       ),
       backupImportRepository: backupImportRepository,
-      backupDeliveryPort: const SharePlusBackupDeliveryPort(),
-      backupSavePort: const FilePickerBackupSavePort(),
-      backupSourcePort: const FilePickerBackupSourcePort(),
+      backupDeliveryPort: const SharePlusFileDeliveryPort(),
+      backupSavePort: const FilePickerFileSavePort(),
+      backupSourcePort: const FilePickerFileSourcePort(),
       // A restore or wipe changes the home feed — emit into the Timeline channel.
       timelineChannel: timelineChannel,
     ).controller,
@@ -375,6 +375,16 @@ void bootstrap(AppConfig config) {
       linkLauncher: const UrlLauncherLinkLauncher(),
       connectionsRouteArgs: connectionsRouteArgs,
       screenAwake: const WakelockPlusScreenAwake(),
+    ),
+  );
+  // Collection share by file (docs/collection_share.md), from the same ⋮
+  // sheet: the collection's signed ops (and media) as a .knitc to send or save.
+  CollectionScope.setShareExportFactory(
+    (collectionId) => CollectionShareExportController(
+      collectionId: collectionId,
+      exportRepository: SyncStoreCollectionShareExportRepository(graph: graph),
+      deliveryPort: const SharePlusFileDeliveryPort(),
+      savePort: const FilePickerFileSavePort(),
     ),
   );
   ConnectionsScope.setFactory(

@@ -4,13 +4,11 @@ import 'package:effect_emitter/effect_emitter.dart';
 import 'package:fcis_core/fcis_core.dart';
 import 'package:logging/logging.dart';
 import 'package:result_dart/result_dart.dart';
-import 'package:knit/features/backup/domain/backup_delivery_port.dart';
+import 'package:knit/core/files/domain/domain.dart';
 import 'package:knit/features/backup/domain/backup_export_repository.dart';
 import 'package:knit/features/backup/domain/backup_failure.dart';
 import 'package:knit/features/backup/domain/backup_import_repository.dart';
 import 'package:knit/features/backup/domain/backup_models.dart';
-import 'package:knit/features/backup/domain/backup_save_port.dart';
-import 'package:knit/features/backup/domain/backup_source_port.dart';
 import 'package:knit/features/settings/domain/identity_reset_confirmation.dart';
 import 'package:knit/features/settings/domain/settings_identity_read_repository.dart';
 import 'package:knit/features/settings/domain/settings_identity_reset_repository.dart';
@@ -41,9 +39,9 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
     required SettingsIdentityResetRepository identityResetRepository,
     required BackupExportRepository backupExportRepository,
     required BackupImportRepository backupImportRepository,
-    required BackupDeliveryPort backupDeliveryPort,
-    required BackupSavePort backupSavePort,
-    required BackupSourcePort backupSourcePort,
+    required FileDeliveryPort backupDeliveryPort,
+    required FileSavePort backupSavePort,
+    required FileSourcePort backupSourcePort,
     required EffectEmitter<SettingsUiEffect> effectEmitter,
     required TimelineChannelEmitter timelineChannel,
     required Logger logger,
@@ -68,9 +66,9 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
   final SettingsIdentityResetRepository _identityReset;
   final BackupExportRepository _export;
   final BackupImportRepository _import;
-  final BackupDeliveryPort _delivery;
-  final BackupSavePort _save;
-  final BackupSourcePort _source;
+  final FileDeliveryPort _delivery;
+  final FileSavePort _save;
+  final FileSourcePort _source;
   final EffectEmitter<SettingsUiEffect> _effectEmitter;
   final TimelineChannelEmitter _timelineChannel;
   final Logger _log;
@@ -152,7 +150,7 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
     dispatch(const DataActionFinished());
   }
 
-  Future<void> _deliverShare(BackupArchive archive) async {
+  Future<void> _deliverShare(OutgoingFile archive) async {
     final shared = await _delivery.share(archive);
     switch (shared) {
       case Ok():
@@ -167,7 +165,7 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
     }
   }
 
-  Future<void> _deliverSave(BackupArchive archive) async {
+  Future<void> _deliverSave(OutgoingFile archive) async {
     final result = await _save.save(archive);
     switch (result) {
       case Ok(value: final didSave):
@@ -190,7 +188,7 @@ class SettingsShell extends Shell<SettingsEffect, SettingsAction> {
   /// the user confirms replacing the device. A cancelled pick is silent.
   /// Always clears the spinner via [DataActionFinished].
   Future<void> _runImport(void Function(SettingsAction) dispatch) async {
-    final picked = await _source.pickArchive();
+    final picked = await _source.pick(extensions: const ['zip']);
     switch (picked) {
       case Ok(value: final bytes):
         if (bytes != null) await _planRestore(bytes, dispatch);

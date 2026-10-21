@@ -8,7 +8,7 @@ import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/attachments/attachments.dart';
 import 'package:knit/features/backup/domain/backup_models.dart';
 import 'package:knit/features/backup/infra/argon2_identity_key_cipher.dart';
-import 'package:knit/features/backup/infra/in_memory_backup_ports.dart';
+import 'package:knit/core/files/infra/in_memory_file_ports.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_export_repository.dart';
 import 'package:knit/features/backup/infra/sync_store_backup_import_repository.dart';
 import 'package:knit/features/settings/domain/app_preferences.dart';
@@ -62,9 +62,9 @@ Future<List<int>> _otherIdentityBackup() async {
 
 void main() {
   late AppGraph graph;
-  late RecordingBackupDeliveryPort delivery;
-  late RecordingBackupSavePort save;
-  late StubBackupSourcePort source;
+  late RecordingFileDeliveryPort delivery;
+  late RecordingFileSavePort save;
+  late StubFileSourcePort source;
   late EffectEmitter<SettingsUiEffect> emitter;
   late List<SettingsUiEffect> uiEffects;
   late List<SettingsAction> dispatched;
@@ -78,9 +78,9 @@ void main() {
       ..bindBlobStore(InMemoryAttachmentBlobStore());
     await graph.store.open();
 
-    delivery = RecordingBackupDeliveryPort();
-    save = RecordingBackupSavePort();
-    source = StubBackupSourcePort();
+    delivery = RecordingFileDeliveryPort();
+    save = RecordingFileSavePort();
+    source = StubFileSourcePort();
     emitter = EffectEmitter<SettingsUiEffect>();
     uiEffects = [];
     emitter.attach(uiEffects.add);

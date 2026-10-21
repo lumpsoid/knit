@@ -36,6 +36,8 @@ import 'package:knit/features/collection/presentation/widgets/selection_action_b
 import 'package:knit/features/collection/presentation/widgets/text_prompt_dialog.dart';
 import 'package:knit/features/collection/presentation/widgets/title_morph.dart';
 import 'package:knit/features/collection_present/presentation/present_page.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_export_controller.dart';
+import 'package:knit/features/collection_share/presentation/collection_share_export_sheet.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/presentation/connections_page.dart';
 import 'package:knit/features/new_collection/new_collection.dart';
@@ -244,9 +246,24 @@ class _CollectionPageState extends State<CollectionPage> {
         await _openPresent(state.collectionId);
       case CollectionMenuAction.reorder:
         _controller.dispatch(const StartReorder());
+      case CollectionMenuAction.shareFile:
+        await _openShareFile(state.collectionId);
       case CollectionMenuAction.delete:
         await _confirmDeleteCollection(state.collectionId);
     }
+  }
+
+  /// The "Share as file" sheet (docs/collection_share.md "Export"); a saved
+  /// file is confirmed, a sent one speaks for itself.
+  Future<void> _openShareFile(String collectionId) async {
+    final outcome = await CollectionShareExportSheet.show(
+      context,
+      CollectionScope.createShareExport(collectionId),
+    );
+    if (outcome != ShareExportOutcome.saved || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).shareExportSaved)),
+    );
   }
 
   /// Ask before deleting this collection, then delete it (the page closes).

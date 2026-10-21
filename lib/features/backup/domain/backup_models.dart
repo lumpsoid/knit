@@ -1,14 +1,5 @@
 import 'dart:typed_data';
 
-/// A finished backup bundle ready to hand to the OS share sheet: the zip
-/// [bytes] and the suggested [fileName] (e.g. `knit-backup-<author8>-<ms>.zip`).
-class BackupArchive {
-  const BackupArchive({required this.bytes, required this.fileName});
-
-  final Uint8List bytes;
-  final String fileName;
-}
-
 /// The outcome of restoring a bundle — surfaced to the user so a partial or
 /// already-applied restore is honest rather than silent.
 ///
