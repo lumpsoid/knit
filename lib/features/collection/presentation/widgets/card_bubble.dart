@@ -65,7 +65,7 @@ class CardBubble extends StatelessWidget {
 
   /// Opens a link card's URL in the browser; null for every other kind and for
   /// label-less link cards (a tap then falls through to [onTap], the
-  /// card-actions sheet).
+  /// card-actions sheet, so Delete stays reachable).
   final VoidCallback? onLinkTap;
 
   /// The shared player snapshot for a playable audio card, so its chip flips to

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
-enum CardAction { edit, link, copy, share, settle, emphasize }
+enum CardAction { edit, delete, link, copy, share, settle, emphasize }
 
 class CardActionsSheet extends StatelessWidget {
   const CardActionsSheet({
@@ -23,6 +23,7 @@ class CardActionsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Wrap(
@@ -67,6 +68,14 @@ class CardActionsSheet extends StatelessWidget {
                   : l10n.collectionActionEmphasize,
             ),
             onTap: () => Navigator.of(context).pop(CardAction.emphasize),
+          ),
+          ListTile(
+            leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+            title: Text(
+              l10n.collectionActionDelete,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+            onTap: () => Navigator.of(context).pop(CardAction.delete),
           ),
         ],
       ),
