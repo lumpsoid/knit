@@ -23,38 +23,40 @@ class CardEditUpdater
         :final collectionId,
         :final initialText,
         :final initialAttachmentId,
+        :final initialMoreAttachmentIds,
         :final initialAttachmentKind,
         :final initialFileName,
         :final initialFileSize,
         :final initialSettled,
         :final initialEmphasized,
       ):
-        // An image attachment shows through the shared image cache; audio/file
-        // render straight from the metadata the carrier passed.
-        final isImage = initialAttachmentKind == CardKind.image;
+        // Images show through the shared image cache; audio/file render
+        // straight from the metadata the carrier passed.
+        final next = state.copyWith(
+          status: CardEditStatus.editing,
+          cardId: cardId,
+          initialText: initialText,
+          linksLoading: true,
+          attachmentId: initialAttachmentId,
+          moreAttachmentIds: initialMoreAttachmentIds,
+          attachmentKind: initialAttachmentKind,
+          attachmentName: initialFileName,
+          attachmentSize: initialFileSize,
+          attachmentBusy: false,
+          settled: initialSettled,
+          settledBusy: false,
+          emphasized: initialEmphasized && !initialSettled,
+          emphasizedBusy: false,
+        );
         return (
-          state.copyWith(
-            status: CardEditStatus.editing,
-            cardId: cardId,
-            initialText: initialText,
-            linksLoading: true,
-            attachmentId: initialAttachmentId,
-            attachmentKind: initialAttachmentKind,
-            attachmentName: initialFileName,
-            attachmentSize: initialFileSize,
-            attachmentBusy: false,
-            settled: initialSettled,
-            settledBusy: false,
-            emphasized: initialEmphasized && !initialSettled,
-            emphasizedBusy: false,
-          ),
+          next,
           [
             LoadLinksEffect(cardId),
             LoadTimelinePreviewEffect(
               cardId: cardId,
               collectionId: collectionId,
             ),
-            ShowImageEffect(isImage ? initialAttachmentId : null),
+            ShowImageEffect(next.imageIds),
           ],
         );
 
@@ -107,74 +109,91 @@ class CardEditUpdater
       // --- attachment -------------------------------------------------------
 
       case PickImageRequested():
+        if (state.attachmentBusy) return (state, null);
+        // New photos join an image card's images; on any other card they
+        // take the place of what it had.
+        final isImage = state.attachmentKind == CardKind.image;
         return (
           state.copyWith(attachmentBusy: true),
           [
             PickImageEffect(
               cardId: state.cardId,
-              previousAttachmentId: state.attachmentId,
+              keptImageIds: state.imageIds,
+              replacedAttachmentId: isImage ? null : state.attachmentId,
+            ),
+          ],
+        );
+
+      case RemoveImageRequested(:final attachmentId):
+        final images = state.imageIds;
+        if (state.attachmentBusy || !images.contains(attachmentId)) {
+          return (state, null);
+        }
+        return (
+          state.copyWith(attachmentBusy: true),
+          [
+            RemoveImageEffect(
+              cardId: state.cardId,
+              remainingIds: [
+                for (final id in images)
+                  if (id != attachmentId) id,
+              ],
+              removedId: attachmentId,
             ),
           ],
         );
 
       case PickFileRequested():
+        if (state.attachmentBusy) return (state, null);
         return (
           state.copyWith(attachmentBusy: true),
           [
             PickFileEffect(
               cardId: state.cardId,
-              previousAttachmentId: state.attachmentId,
+              previousAttachmentIds: state.attachmentIds,
             ),
           ],
         );
 
       case OptimizeImageRequested():
-        final attachmentId = state.attachmentId;
-        if (state.attachmentBusy ||
-            attachmentId == null ||
-            state.attachmentKind != CardKind.image) {
-          return (state, null);
-        }
+        final images = state.imageIds;
+        if (state.attachmentBusy || images.isEmpty) return (state, null);
         return (
           state.copyWith(attachmentBusy: true, optimizingImage: true),
-          [
-            OptimizeImageEffect(
-              cardId: state.cardId,
-              attachmentId: attachmentId,
-            ),
-          ],
+          [OptimizeImageEffect(cardId: state.cardId, attachmentIds: images)],
         );
 
       case RemoveAttachmentRequested():
+        if (state.attachmentBusy) return (state, null);
         return (
           state.copyWith(attachmentBusy: true),
           [
             RemoveAttachmentEffect(
               cardId: state.cardId,
-              previousAttachmentId: state.attachmentId,
+              previousAttachmentIds: state.attachmentIds,
             ),
           ],
         );
 
       case AttachmentResolved(
         :final attachmentId,
+        :final moreAttachmentIds,
         :final kind,
         :final name,
         :final size,
       ):
+        final resolved = state.copyWith(
+          attachmentId: attachmentId,
+          moreAttachmentIds: moreAttachmentIds,
+          attachmentKind: kind,
+          attachmentName: name,
+          attachmentSize: size,
+          attachmentBusy: false,
+          optimizingImage: false,
+        );
         return (
-          state.copyWith(
-            attachmentId: attachmentId,
-            attachmentKind: kind,
-            attachmentName: name,
-            attachmentSize: size,
-            attachmentBusy: false,
-            optimizingImage: false,
-          ),
-          [
-            ShowImageEffect(kind == CardKind.image ? attachmentId : null),
-            ...?_refreshTimeline(state),
-          ],
+          resolved,
+          [ShowImageEffect(resolved.imageIds), ...?_refreshTimeline(state)],
         );
 
       case AttachmentEditEnded():

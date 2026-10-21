@@ -176,22 +176,61 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
       // --- attachment -----------------------------------------------------
 
-      case ShowImageEffect(:final attachmentId):
-        await _images.show(this, [?attachmentId]);
+      case ShowImageEffect(:final attachmentIds):
+        await _images.show(this, attachmentIds);
 
       case ReleaseImageEffect():
         _images.release(this);
 
-      case PickImageEffect(:final cardId, :final previousAttachmentId):
-        await _pickImageAndAttach(cardId, previousAttachmentId, dispatch);
+      case PickImageEffect(
+        :final cardId,
+        :final keptImageIds,
+        :final replacedAttachmentId,
+      ):
+        await _pickImagesAndAttach(
+          cardId,
+          keptImageIds,
+          replacedAttachmentId,
+          dispatch,
+        );
 
-      case PickFileEffect(:final cardId, :final previousAttachmentId):
-        await _pickFileAndAttach(cardId, previousAttachmentId, dispatch);
+      case RemoveImageEffect(
+        :final cardId,
+        :final remainingIds,
+        :final removedId,
+      ):
+        final result = remainingIds.isEmpty
+            ? await _write.removeCardAttachment(cardId: cardId)
+            : await _write.setCardImages(
+                cardId: cardId,
+                attachmentIds: remainingIds,
+              );
+        if (result.isFailure) {
+          final failure = result.error!;
+          _log.severe(
+            'Remove card image failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          _failAttachment(dispatch);
+          return;
+        }
+        await _gcAttachment(removedId);
+        dispatch(
+          AttachmentResolved(
+            attachmentId: remainingIds.firstOrNull,
+            moreAttachmentIds: remainingIds.skip(1).toList(),
+            kind: remainingIds.isEmpty ? null : CardKind.image,
+          ),
+        );
 
-      case OptimizeImageEffect(:final cardId, :final attachmentId):
-        await _optimizeImage(cardId, attachmentId, dispatch);
+      case PickFileEffect(:final cardId, :final previousAttachmentIds):
+        await _pickFileAndAttach(cardId, previousAttachmentIds, dispatch);
 
-      case RemoveAttachmentEffect(:final cardId, :final previousAttachmentId):
+      case OptimizeImageEffect(:final cardId, :final attachmentIds):
+        await _optimizeImages(cardId, attachmentIds, dispatch);
+
+      case RemoveAttachmentEffect(:final cardId, :final previousAttachmentIds):
         final result = await _write.removeCardAttachment(cardId: cardId);
         if (result.isFailure) {
           final failure = result.error!;
@@ -205,7 +244,9 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
           );
           dispatch(const AttachmentEditEnded());
         } else {
-          await _gcAttachment(previousAttachmentId);
+          for (final id in previousAttachmentIds) {
+            await _gcAttachment(id);
+          }
           dispatch(const AttachmentResolved(attachmentId: null));
         }
     }
@@ -227,95 +268,156 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
     });
   }
 
-  /// Pick a photo → store it → point the card at the new image → GC the one it
-  /// replaced. Any abort (cancelled pick, store/write failure) ends the busy
-  /// state without changing the card.
-  Future<void> _pickImageAndAttach(
+  /// Pick photos → store each → make the card an image card holding
+  /// [keptImageIds] then them → GC the attachment they replaced. Any abort
+  /// (cancelled pick, store/write failure) ends the busy state without
+  /// changing the card; photos already stored for it are dropped again.
+  Future<void> _pickImagesAndAttach(
     String cardId,
-    String? previousAttachmentId,
+    List<String> keptImageIds,
+    String? replacedAttachmentId,
     void Function(CardEditAction) dispatch,
   ) async {
-    final picked = await _picker.pickImage();
-    if (picked == null) {
+    final picked = await _picker.pickImages();
+    if (picked.isEmpty) {
       dispatch(const AttachmentEditEnded()); // cancelled
       return;
     }
 
-    final created = await _attachmentWrite.createFromPicked(picked);
-    if (created.isFailure) {
-      _log.severe('Store picked image failed', created.error);
+    final added = <String>[];
+    for (final image in picked) {
+      final created = await _attachmentWrite.createFromPicked(image);
+      if (created.isFailure) {
+        _log.severe('Store picked image failed', created.error);
+        for (final id in added) {
+          await _gcAttachment(id);
+        }
+        _failAttachment(dispatch);
+        return;
+      }
+      added.add(created.getOrThrow());
+      // The bytes are in hand: seed the shared cache so no page re-reads them.
+      _images.put(added.last, image.bytes);
+    }
+    final images = [...keptImageIds, ...added];
+    final attached = await _write.setCardImages(
+      cardId: cardId,
+      attachmentIds: images,
+    );
+    if (attached.isFailure) {
+      final failure = attached.error!;
+      _log.severe('Add card images failed', failure.error, failure.stackTrace);
+      for (final id in added) {
+        await _gcAttachment(id);
+      }
       _failAttachment(dispatch);
       return;
     }
-    await _attach(
-      cardId: cardId,
-      attachmentId: created.getOrThrow(),
-      kind: CardKind.image,
-      bytes: picked.bytes,
-      previousAttachmentId: previousAttachmentId,
-      dispatch: dispatch,
+    await _gcAttachment(replacedAttachmentId);
+    dispatch(
+      AttachmentResolved(
+        attachmentId: images.first,
+        moreAttachmentIds: images.sublist(1),
+        kind: CardKind.image,
+      ),
     );
   }
 
-  /// Read the card's image → shrink it → store the copy → point the card at it
-  /// → GC the original. Nothing to gain says so and leaves the card as it is.
-  Future<void> _optimizeImage(
+  /// Read each of the card's images → shrink it → store the copy; then point
+  /// the card at the copies (same order) and GC the originals they replace.
+  /// An image with nothing to gain stays; when none gets smaller, say so and
+  /// leave the card as it is.
+  Future<void> _optimizeImages(
     String cardId,
-    String attachmentId,
+    List<String> attachmentIds,
     void Function(CardEditAction) dispatch,
   ) async {
-    final read = await _attachmentRead.bytesOf(attachmentId);
-    if (read.isFailure) {
-      _log.severe('Read image to optimize failed', read.error);
-      _failAttachment(dispatch);
-      return;
+    final images = <String>[];
+    final replaced = <String>[];
+    var fromBytes = 0;
+    var toBytes = 0;
+    for (final attachmentId in attachmentIds) {
+      final read = await _attachmentRead.bytesOf(attachmentId);
+      if (read.isFailure) {
+        _log.severe('Read image to optimize failed', read.error);
+        for (final id in images) {
+          if (!attachmentIds.contains(id)) await _gcAttachment(id);
+        }
+        _failAttachment(dispatch);
+        return;
+      }
+      final original = read.getOrThrow();
+      PickedImage? optimized;
+      try {
+        optimized = await _optimizer.optimize(
+          PickedImage(bytes: original.bytes, mime: original.mime),
+        );
+      } catch (e, s) {
+        _log.severe('Optimize image failed', e, s);
+        optimized = null;
+      }
+      final created = optimized == null
+          ? null
+          : await _attachmentWrite.createFromPicked(optimized);
+      if (optimized == null || created == null || created.isFailure) {
+        if (created != null) {
+          _log.severe('Store optimized image failed', created.error);
+        }
+        images.add(attachmentId);
+        continue;
+      }
+      final copyId = created.getOrThrow();
+      _images.put(copyId, optimized.bytes);
+      images.add(copyId);
+      replaced.add(attachmentId);
+      fromBytes += original.bytes.length;
+      toBytes += optimized.bytes.length;
     }
-    final original = read.getOrThrow();
-    PickedImage? optimized;
-    try {
-      optimized = await _optimizer.optimize(
-        PickedImage(bytes: original.bytes, mime: original.mime),
-      );
-    } catch (e, s) {
-      _log.severe('Optimize image failed', e, s);
-      optimized = null;
-    }
-    if (optimized == null) {
+
+    if (replaced.isEmpty) {
       _effectEmitter.push(
         const CardEditShowMessageUiEffect(CardEditMessage.imageNotSmaller),
       );
       dispatch(const AttachmentEditEnded());
       return;
     }
-
-    final created = await _attachmentWrite.createFromPicked(optimized);
-    if (created.isFailure) {
-      _log.severe('Store optimized image failed', created.error);
+    final attached = await _write.setCardImages(
+      cardId: cardId,
+      attachmentIds: images,
+    );
+    if (attached.isFailure) {
+      final failure = attached.error!;
+      _log.severe(
+        'Attach optimized images failed',
+        failure.error,
+        failure.stackTrace,
+      );
+      for (final id in images) {
+        if (!attachmentIds.contains(id)) await _gcAttachment(id);
+      }
       _failAttachment(dispatch);
       return;
     }
-    final attached = await _attach(
-      cardId: cardId,
-      attachmentId: created.getOrThrow(),
-      kind: CardKind.image,
-      bytes: optimized.bytes,
-      previousAttachmentId: attachmentId,
-      dispatch: dispatch,
-    );
-    if (!attached) return;
-    _effectEmitter.push(
-      CardEditImageOptimizedUiEffect(
-        fromBytes: original.bytes.length,
-        toBytes: optimized.bytes.length,
+    for (final id in replaced) {
+      await _gcAttachment(id);
+    }
+    dispatch(
+      AttachmentResolved(
+        attachmentId: images.first,
+        moreAttachmentIds: images.sublist(1),
+        kind: CardKind.image,
       ),
+    );
+    _effectEmitter.push(
+      CardEditImageOptimizedUiEffect(fromBytes: fromBytes, toBytes: toBytes),
     );
   }
 
   /// Pick any file → classify it by its mime (§4.2) → store it as the matching
-  /// kind → point the card at it → GC the one it replaced.
+  /// kind → point the card at it → GC the ones it replaced.
   Future<void> _pickFileAndAttach(
     String cardId,
-    String? previousAttachmentId,
+    List<String> previousAttachmentIds,
     void Function(CardEditAction) dispatch,
   ) async {
     final file = await _filePicker.pickFile();
@@ -348,19 +450,19 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
       bytes: kind == CardKind.image ? file.bytes : null,
       name: kind == CardKind.file ? file.name : null,
       size: file.bytes.length,
-      previousAttachmentId: previousAttachmentId,
+      previousAttachmentIds: previousAttachmentIds,
       dispatch: dispatch,
     );
   }
 
-  /// Point [cardId] at the freshly stored [attachmentId] of [kind], GC the one
-  /// it replaced, and resolve the section with the rendered representation.
-  /// Returns whether the card now points at it.
-  Future<bool> _attach({
+  /// Point [cardId] at the freshly stored [attachmentId] of [kind], GC the
+  /// ones it replaced, and resolve the section with the rendered
+  /// representation.
+  Future<void> _attach({
     required String cardId,
     required String attachmentId,
     required CardKind kind,
-    required String? previousAttachmentId,
+    required List<String> previousAttachmentIds,
     required void Function(CardEditAction) dispatch,
     Uint8List? bytes,
     String? name,
@@ -379,11 +481,11 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         failure.stackTrace,
       );
       _failAttachment(dispatch);
-      return false;
+      return;
     }
 
-    if (previousAttachmentId != null && previousAttachmentId != attachmentId) {
-      await _gcAttachment(previousAttachmentId);
+    for (final previous in previousAttachmentIds) {
+      if (previous != attachmentId) await _gcAttachment(previous);
     }
     // An image's bytes are in hand: seed the shared cache so no page re-reads
     // them.
@@ -396,7 +498,6 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         size: size,
       ),
     );
-    return true;
   }
 
   /// Surface a write failure and clear the in-flight flag, leaving the card's

@@ -39,7 +39,10 @@ void main() {
       expect(effects!.whereType<LoadLinksEffect>().single.cardId, 'c1');
       final preview = effects.whereType<LoadTimelinePreviewEffect>().single;
       expect((preview.cardId, preview.collectionId), ('c1', 'col-1'));
-      expect(effects.whereType<ShowImageEffect>().single.attachmentId, isNull);
+      expect(
+        effects.whereType<ShowImageEffect>().single.attachmentIds,
+        isEmpty,
+      );
     });
 
     test('shows an image attachment through the image cache', () {
@@ -56,10 +59,9 @@ void main() {
       expect(next.attachmentId, 'att-1');
       expect(next.attachmentKind, CardKind.image);
       expect(next.attachmentBusy, isFalse);
-      expect(
-        effects!.whereType<ShowImageEffect>().single.attachmentId,
+      expect(effects!.whereType<ShowImageEffect>().single.attachmentIds, [
         'att-1',
-      );
+      ]);
     });
 
     test('renders an audio/file attachment from metadata without a load', () {
@@ -80,7 +82,10 @@ void main() {
       expect(next.attachmentName, 'report.pdf');
       expect(next.attachmentSize, 2048);
       expect(next.attachmentBusy, isFalse); // no image to show
-      expect(effects!.whereType<ShowImageEffect>().single.attachmentId, isNull);
+      expect(
+        effects!.whereType<ShowImageEffect>().single.attachmentIds,
+        isEmpty,
+      );
     });
   });
 
@@ -169,18 +174,76 @@ void main() {
   });
 
   group('attachment', () {
-    test('PickImageRequested carries the previous attachment for GC', () {
-      const state = CardEditState(cardId: 'c1', attachmentId: 'old');
+    test('PickImageRequested on a file card replaces the file', () {
+      const state = CardEditState(
+        cardId: 'c1',
+        attachmentId: 'old',
+        attachmentKind: CardKind.file,
+      );
       final (next, effects) = updater.update(state, const PickImageRequested());
       expect(next.attachmentBusy, isTrue);
-      expect((effects!.single as PickImageEffect).previousAttachmentId, 'old');
+      final effect = effects!.single as PickImageEffect;
+      expect(effect.replacedAttachmentId, 'old');
+      expect(effect.keptImageIds, isEmpty);
     });
 
-    test('PickFileRequested carries the previous attachment for GC', () {
-      const state = CardEditState(cardId: 'c1', attachmentId: 'old');
+    test('PickImageRequested on an image card keeps its images', () {
+      const state = CardEditState(
+        cardId: 'c1',
+        attachmentId: 'a1',
+        moreAttachmentIds: ['a2'],
+        attachmentKind: CardKind.image,
+      );
+      final (_, effects) = updater.update(state, const PickImageRequested());
+      final effect = effects!.single as PickImageEffect;
+      expect(effect.keptImageIds, ['a1', 'a2']);
+      expect(effect.replacedAttachmentId, isNull);
+    });
+
+    test('RemoveImageRequested drops one image, keeping the order', () {
+      const state = CardEditState(
+        cardId: 'c1',
+        attachmentId: 'a1',
+        moreAttachmentIds: ['a2', 'a3'],
+        attachmentKind: CardKind.image,
+      );
+      final (next, effects) = updater.update(
+        state,
+        const RemoveImageRequested('a2'),
+      );
+      expect(next.attachmentBusy, isTrue);
+      final effect = effects!.single as RemoveImageEffect;
+      expect(effect.remainingIds, ['a1', 'a3']);
+      expect(effect.removedId, 'a2');
+    });
+
+    test('RemoveImageRequested for an image the card lacks is a no-op', () {
+      const state = CardEditState(
+        cardId: 'c1',
+        attachmentId: 'a1',
+        attachmentKind: CardKind.image,
+      );
+      final (next, effects) = updater.update(
+        state,
+        const RemoveImageRequested('zz'),
+      );
+      expect(next, same(state));
+      expect(effects, isNull);
+    });
+
+    test('PickFileRequested carries every previous attachment for GC', () {
+      const state = CardEditState(
+        cardId: 'c1',
+        attachmentId: 'old',
+        moreAttachmentIds: ['old-2'],
+        attachmentKind: CardKind.image,
+      );
       final (next, effects) = updater.update(state, const PickFileRequested());
       expect(next.attachmentBusy, isTrue);
-      expect((effects!.single as PickFileEffect).previousAttachmentId, 'old');
+      expect((effects!.single as PickFileEffect).previousAttachmentIds, [
+        'old',
+        'old-2',
+      ]);
     });
 
     test(
@@ -193,8 +256,8 @@ void main() {
         );
         expect(next.attachmentBusy, isTrue);
         expect(
-          (effects!.single as RemoveAttachmentEffect).previousAttachmentId,
-          'old',
+          (effects!.single as RemoveAttachmentEffect).previousAttachmentIds,
+          ['old'],
         );
       },
     );
@@ -208,7 +271,26 @@ void main() {
       expect(next.attachmentId, 'new');
       expect(next.attachmentKind, CardKind.image);
       expect(next.attachmentBusy, isFalse);
-      expect(effects!.whereType<ShowImageEffect>().single.attachmentId, 'new');
+      expect(effects!.whereType<ShowImageEffect>().single.attachmentIds, [
+        'new',
+      ]);
+    });
+
+    test('AttachmentResolved with several images shows them all', () {
+      const state = CardEditState(cardId: 'c1', attachmentBusy: true);
+      final (next, effects) = updater.update(
+        state,
+        const AttachmentResolved(
+          attachmentId: 'a1',
+          moreAttachmentIds: ['a2'],
+          kind: CardKind.image,
+        ),
+      );
+      expect(next.imageIds, ['a1', 'a2']);
+      expect(effects!.whereType<ShowImageEffect>().single.attachmentIds, [
+        'a1',
+        'a2',
+      ]);
     });
 
     test('AttachmentResolved with a file fills name/size, no image', () {
@@ -226,7 +308,10 @@ void main() {
       expect(next.attachmentName, 'a.zip');
       expect(next.attachmentSize, 10);
       expect(next.attachmentBusy, isFalse);
-      expect(effects!.whereType<ShowImageEffect>().single.attachmentId, isNull);
+      expect(
+        effects!.whereType<ShowImageEffect>().single.attachmentIds,
+        isEmpty,
+      );
     });
 
     test('AttachmentResolved to null removes the attachment', () {
@@ -243,7 +328,10 @@ void main() {
       expect(next.attachmentId, isNull);
       expect(next.attachmentKind, isNull);
       expect(next.attachmentBusy, isFalse);
-      expect(effects!.whereType<ShowImageEffect>().single.attachmentId, isNull);
+      expect(
+        effects!.whereType<ShowImageEffect>().single.attachmentIds,
+        isEmpty,
+      );
     });
 
     test('AttachmentEditEnded just drops the busy flag', () {
@@ -482,7 +570,8 @@ void main() {
       expect(next.attachmentBusy, isTrue);
       expect(next.optimizingImage, isTrue);
       final effect = effects!.single as OptimizeImageEffect;
-      expect((effect.cardId, effect.attachmentId), ('c1', 'a1'));
+      expect(effect.cardId, 'c1');
+      expect(effect.attachmentIds, ['a1']);
     });
 
     test('the phase ends however the edit ends', () {

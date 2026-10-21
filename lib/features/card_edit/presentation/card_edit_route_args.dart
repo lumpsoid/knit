@@ -22,6 +22,10 @@ abstract interface class CardEditRouteArgs {
   /// the attachment section without a second read.
   String? get initialAttachmentId;
 
+  /// An image card's further images after [initialAttachmentId], in order
+  /// (§4.2); empty otherwise.
+  List<String> get initialMoreAttachmentIds;
+
   /// The current attachment's [CardKind] (`image`/`audio`/`file`), so the page
   /// renders the right representation without re-deriving it; null when the card
   /// has no attachment.
@@ -46,6 +50,7 @@ abstract interface class CardEditRouteArgsWriter {
     required String collectionId,
     required String initialText,
     String? initialAttachmentId,
+    List<String> initialMoreAttachmentIds,
     CardKind? initialAttachmentKind,
     String? initialFileName,
     int? initialFileSize,
@@ -65,6 +70,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
   String _collectionId = '';
   String _initialText = '';
   String? _initialAttachmentId;
+  List<String> _initialMoreAttachmentIds = const [];
   CardKind? _initialAttachmentKind;
   String? _initialFileName;
   int? _initialFileSize;
@@ -82,6 +88,9 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
 
   @override
   String? get initialAttachmentId => _initialAttachmentId;
+
+  @override
+  List<String> get initialMoreAttachmentIds => _initialMoreAttachmentIds;
 
   @override
   CardKind? get initialAttachmentKind => _initialAttachmentKind;
@@ -104,6 +113,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     required String collectionId,
     required String initialText,
     String? initialAttachmentId,
+    List<String> initialMoreAttachmentIds = const [],
     CardKind? initialAttachmentKind,
     String? initialFileName,
     int? initialFileSize,
@@ -114,6 +124,7 @@ class InMemoryCardEditRouteArgsStore implements CardEditRouteArgsStore {
     _collectionId = collectionId;
     _initialText = initialText;
     _initialAttachmentId = initialAttachmentId;
+    _initialMoreAttachmentIds = initialMoreAttachmentIds;
     _initialAttachmentKind = initialAttachmentKind;
     _initialFileName = initialFileName;
     _initialFileSize = initialFileSize;

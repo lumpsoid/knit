@@ -255,6 +255,7 @@
   "cardEditAttachment": "Вложение",
   "cardEditReplace": "Заменить",
   "cardEditRemove": "Убрать",
+  "cardEditRemoveAll": "Убрать все",
   "cardEditOptimize": "Сжать",
   "cardEditImageNotSmaller": "Это фото не получится уменьшить.",
   "cardEditImageOptimized": "Фото сжато: {from} → {to}",

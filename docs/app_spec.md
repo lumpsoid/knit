@@ -188,12 +188,16 @@ deleted. Archiving takes it off the home timeline without losing anything.
   collection-edit page** to edit title, description, and add/replace/remove the cover image.
 
 ### 4.3 Card Edit (from the actions sheet)
-Edit text/content; manage that card's image and its links; **Settled** and
-**Emphasized** toggles (§3.3). An image card also offers **Optimize**: the same rules as
-the composer's *Optimize size* (§4.2) swap the image for a smaller copy (a new attachment;
-the original is dropped; the section shows the same "Optimizing photo…" phase while it
-runs), and a snackbar says what it saved — or that the photo can't be
-made smaller, leaving it as it is.
+Edit text/content; manage that card's images and its links; **Settled** and
+**Emphasized** toggles (§3.3). *Add photos* picks several from the gallery: on an image card
+they join its images, after the ones it has; on a text card they make it an image card.
+With several images the section shows them as a grid, each with a ✕ that removes just that
+one (removing the last leaves a text card); *Remove all* drops them together, and *Replace*
+swaps them all for one picked file. An image card also offers **Optimize**: the same rules as
+the composer's *Optimize size* (§4.2) swap each image for a smaller copy (a new attachment,
+in the same place; the original is dropped; the section shows the same "Optimizing photo…"
+phase while it runs), and a snackbar says what it saved — or that the photos can't be made
+smaller, leaving them as they are.
 
 ### 4.4 Connections view
 A card's links-out + linked-from (backlinks), each tappable to jump; breadcrumb back-stack

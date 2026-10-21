@@ -473,6 +473,7 @@ class _CollectionPageState extends State<CollectionPage> {
       collectionId: _controller.stateHolder.value.collectionId,
       initialText: card.text ?? '',
       initialAttachmentId: card.attachmentId,
+      initialMoreAttachmentIds: card.moreAttachmentIds,
       initialAttachmentKind: card.attachmentId == null ? null : card.kind,
       initialFileName: card.fileName,
       initialFileSize: card.fileSize,

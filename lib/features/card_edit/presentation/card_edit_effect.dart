@@ -69,12 +69,12 @@ class RemoveLinkEffect extends CardEditEffect {
 
 // --- attachment (subtask 4) ------------------------------------------------
 
-/// The section shows the *image* [attachmentId] (null = no image): hand it to
-/// the shared image cache, which loads it if it isn't held yet. Audio/file
-/// attachments render from their metadata, so they show no image.
+/// The section shows the *images* [attachmentIds] (empty = no image): hand
+/// them to the shared image cache, which loads those it doesn't hold yet.
+/// Audio/file attachments render from their metadata, so they show no image.
 class ShowImageEffect extends CardEditEffect {
-  const ShowImageEffect(this.attachmentId);
-  final String? attachmentId;
+  const ShowImageEffect(this.attachmentIds);
+  final List<String> attachmentIds;
 }
 
 /// The page left: let the shared image cache drop its image.
@@ -82,42 +82,63 @@ class ReleaseImageEffect extends CardEditEffect {
   const ReleaseImageEffect();
 }
 
-/// Pick a photo (gallery/camera), store it, point [cardId] at the new image
-/// attachment, and GC the [previousAttachmentId] it replaced (if any).
+/// Pick photos from the gallery, store them, and make [cardId] an image card
+/// holding [keptImageIds] followed by them (§4.2). [replacedAttachmentId] is
+/// a non-image attachment the photos take the place of, GC'd once they do.
 class PickImageEffect extends CardEditEffect {
   const PickImageEffect({
     required this.cardId,
-    required this.previousAttachmentId,
+    this.keptImageIds = const [],
+    this.replacedAttachmentId,
   });
   final String cardId;
-  final String? previousAttachmentId;
+  final List<String> keptImageIds;
+  final String? replacedAttachmentId;
+}
+
+/// Drop [removedId] from [cardId]'s images, leaving [remainingIds] (empty
+/// makes it a text card), and GC it.
+class RemoveImageEffect extends CardEditEffect {
+  const RemoveImageEffect({
+    required this.cardId,
+    required this.remainingIds,
+    required this.removedId,
+  });
+  final String cardId;
+  final List<String> remainingIds;
+  final String removedId;
 }
 
 /// Pick any file, store it (routed to image/audio/file by its mime, §4.2), point
-/// [cardId] at the new attachment, and GC the [previousAttachmentId] (if any).
+/// [cardId] at the new attachment in place of all it had, and GC the
+/// [previousAttachmentIds].
 class PickFileEffect extends CardEditEffect {
   const PickFileEffect({
     required this.cardId,
-    required this.previousAttachmentId,
+    this.previousAttachmentIds = const [],
   });
   final String cardId;
-  final String? previousAttachmentId;
+  final List<String> previousAttachmentIds;
 }
 
-/// Shrink [cardId]'s image [attachmentId], store the smaller copy, point the
-/// card at it, and GC the original.
+/// Shrink each of [cardId]'s images [attachmentIds], store the smaller copies,
+/// point the card at them (in the same order), and GC the originals they
+/// replace. An image with nothing to gain stays as it is.
 class OptimizeImageEffect extends CardEditEffect {
-  const OptimizeImageEffect({required this.cardId, required this.attachmentId});
+  const OptimizeImageEffect({
+    required this.cardId,
+    required this.attachmentIds,
+  });
   final String cardId;
-  final String attachmentId;
+  final List<String> attachmentIds;
 }
 
-/// Clear [cardId]'s attachment and GC the [previousAttachmentId].
+/// Clear [cardId]'s attachment and GC the [previousAttachmentIds].
 class RemoveAttachmentEffect extends CardEditEffect {
   const RemoveAttachmentEffect({
     required this.cardId,
-    required this.previousAttachmentId,
+    this.previousAttachmentIds = const [],
   });
   final String cardId;
-  final String? previousAttachmentId;
+  final List<String> previousAttachmentIds;
 }

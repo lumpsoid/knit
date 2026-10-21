@@ -33,6 +33,22 @@ class SyncStoreCardEditWriteRepository implements CardEditWriteRepository {
     await _graph.store.edit(EntityType.card, cardId, {
       'kind': kind.tag,
       'attachment_id': attachmentId,
+      CardSchema.colMoreAttachmentIds: null,
+    });
+    return cardId;
+  });
+
+  @override
+  Future<Result<String, CardEditFailure>> setCardImages({
+    required String cardId,
+    required List<String> attachmentIds,
+  }) => _write(() async {
+    await _graph.store.edit(EntityType.card, cardId, {
+      'kind': CardKind.image.tag,
+      'attachment_id': attachmentIds.first,
+      CardSchema.colMoreAttachmentIds: CardSchema.encodeMoreAttachmentIds(
+        attachmentIds.skip(1),
+      ),
     });
     return cardId;
   });
@@ -62,6 +78,7 @@ class SyncStoreCardEditWriteRepository implements CardEditWriteRepository {
     await _graph.store.edit(EntityType.card, cardId, {
       'kind': 'text',
       'attachment_id': null,
+      CardSchema.colMoreAttachmentIds: null,
     });
     return cardId;
   });

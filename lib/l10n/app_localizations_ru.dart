@@ -644,6 +644,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cardEditRemove => 'Убрать';
 
   @override
+  String get cardEditRemoveAll => 'Убрать все';
+
+  @override
   String get cardEditOptimize => 'Сжать';
 
   @override

@@ -14,13 +14,22 @@ abstract interface class CardEditWriteRepository {
   });
 
   /// Attach (or replace) the card's attachment (§7.4.3): set `attachment_id` and
-  /// flip the card `kind` to match [kind] (`image`/`audio`/`file`). The bytes
-  /// were already captured into the signed `attachment` record + blob by the
-  /// attachments foundation; this only points the card at it.
+  /// flip the card `kind` to match [kind] (`image`/`audio`/`file`), dropping
+  /// any further images. The bytes were already captured into the signed
+  /// `attachment` record + blob by the attachments foundation; this only
+  /// points the card at it.
   Future<Result<String, CardEditFailure>> setCardAttachment({
     required String cardId,
     required String attachmentId,
     required CardKind kind,
+  });
+
+  /// Make the card an image card holding [attachmentIds] in order (§4.2): the
+  /// first in `attachment_id`, the rest in `more_attachment_ids`. Must not be
+  /// empty — removing the last image is [removeCardAttachment].
+  Future<Result<String, CardEditFailure>> setCardImages({
+    required String cardId,
+    required List<String> attachmentIds,
   });
 
   /// Settle (or, with [settled] false, unsettle) the card (§3.3) — a content
@@ -37,8 +46,8 @@ abstract interface class CardEditWriteRepository {
     required bool emphasized,
   });
 
-  /// Remove the card's attachment: clear `attachment_id` and flip `kind` back to
-  /// `text`. The `attachment` record itself is GC'd separately (ref-counted).
+  /// Remove the card's attachment: clear `attachment_id` (and any further
+  /// images) and flip `kind` back to `text`. The `attachment` record itself is GC'd separately (ref-counted).
   Future<Result<String, CardEditFailure>> removeCardAttachment({
     required String cardId,
   });

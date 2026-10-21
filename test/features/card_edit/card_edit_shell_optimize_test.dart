@@ -36,7 +36,12 @@ class _UnusedTargets with _Unused implements LinkTargetsReadRepository {}
 
 class _UnusedLinksWrite with _Unused implements CardLinksWriteRepository {}
 
-class _UnusedImagePicker with _Unused implements ImagePickerPort {}
+class _ImagePicker with _Unused implements ImagePickerPort {
+  List<PickedImage> next = const [];
+
+  @override
+  Future<List<PickedImage>> pickImages() async => next;
+}
 
 class _UnusedFilePicker with _Unused implements FilePickerPort {}
 
@@ -47,6 +52,25 @@ class _Channel implements TimelineChannelEmitter {
 
 class _Write with _Unused implements CardEditWriteRepository {
   final attached = <(String, String, CardKind)>[];
+  final images = <(String, List<String>)>[];
+  final removed = <String>[];
+
+  @override
+  Future<Result<String, CardEditFailure>> setCardImages({
+    required String cardId,
+    required List<String> attachmentIds,
+  }) async {
+    images.add((cardId, attachmentIds));
+    return Ok(cardId);
+  }
+
+  @override
+  Future<Result<String, CardEditFailure>> removeCardAttachment({
+    required String cardId,
+  }) async {
+    removed.add(cardId);
+    return Ok(cardId);
+  }
 
   @override
   Future<Result<String, CardEditFailure>> setCardAttachment({
@@ -96,10 +120,14 @@ class _Optimizer implements ImageOptimizerPort {
   PickedImage? next;
   PickedImage? seen;
 
+  /// Per-input results by first byte, overriding [next].
+  final byFirstByte = <int, PickedImage?>{};
+
   @override
   Future<PickedImage?> optimize(PickedImage image) async {
     seen = image;
-    return next;
+    final key = image.bytes.first;
+    return byFirstByte.containsKey(key) ? byFirstByte[key] : next;
   }
 }
 
@@ -114,6 +142,7 @@ void main() {
   late _AttachmentRead read;
   late _AttachmentWrite attachmentWrite;
   late _Optimizer optimizer;
+  late _ImagePicker picker;
   late AttachmentImageCache images;
   late List<CardEditUiEffect> uiEffects;
   late List<CardEditAction> dispatched;
@@ -125,6 +154,7 @@ void main() {
       ..bytes['a1'] = AttachmentBytes(bytes: original, mime: 'image/png');
     attachmentWrite = _AttachmentWrite();
     optimizer = _Optimizer();
+    picker = _ImagePicker();
     images = AttachmentImageCache(attachmentReadRepository: read);
     uiEffects = [];
     dispatched = [];
@@ -141,7 +171,7 @@ void main() {
       imageCache: images,
       attachmentReadRepository: read,
       attachmentWriteRepository: attachmentWrite,
-      imagePicker: _UnusedImagePicker(),
+      imagePicker: picker,
       imageOptimizer: optimizer,
       filePicker: _UnusedFilePicker(),
       effectEmitter: emitter,
@@ -149,8 +179,8 @@ void main() {
     );
   });
 
-  Future<void> optimize() => shell.run(
-    const OptimizeImageEffect(cardId: 'c1', attachmentId: 'a1'),
+  Future<void> optimize([List<String> ids = const ['a1']]) => shell.run(
+    OptimizeImageEffect(cardId: 'c1', attachmentIds: ids),
     dispatch: dispatched.add,
   );
 
@@ -161,7 +191,8 @@ void main() {
     expect(optimizer.seen!.bytes, original);
     expect(optimizer.seen!.mime, 'image/png');
     expect(attachmentWrite.created.single, same(smaller));
-    expect(write.attached.single, ('c1', 'a-new-1', CardKind.image));
+    expect(write.images.single.$1, 'c1');
+    expect(write.images.single.$2, ['a-new-1']);
     expect(attachmentWrite.deleted, ['a1']);
     expect(images.state.of('a-new-1'), smaller.bytes);
     final resolved = dispatched.single as AttachmentResolved;
@@ -175,7 +206,7 @@ void main() {
     await optimize();
 
     expect(attachmentWrite.created, isEmpty);
-    expect(write.attached, isEmpty);
+    expect(write.images, isEmpty);
     expect(attachmentWrite.deleted, isEmpty);
     expect(dispatched.single, isA<AttachmentEditEnded>());
     expect(
@@ -189,11 +220,100 @@ void main() {
     await optimize();
 
     expect(optimizer.seen, isNull);
-    expect(write.attached, isEmpty);
+    expect(write.images, isEmpty);
     expect(dispatched.single, isA<AttachmentEditEnded>());
     expect(
       (uiEffects.single as CardEditShowMessageUiEffect).message,
       CardEditMessage.saveFailed,
     );
+  });
+
+  test('several images: each that shrinks is swapped, in place', () async {
+    final second = Uint8List.fromList(List.filled(50, 9));
+    read.bytes['a2'] = AttachmentBytes(bytes: second, mime: 'image/png');
+    optimizer.byFirstByte[7] = null; // a1: nothing to gain
+    optimizer.byFirstByte[9] = smaller; // a2 shrinks
+    await optimize(['a1', 'a2']);
+
+    expect(write.images.single.$1, 'c1');
+    expect(write.images.single.$2, ['a1', 'a-new-1']);
+    expect(attachmentWrite.deleted, ['a2']);
+    final resolved = dispatched.single as AttachmentResolved;
+    expect(resolved.attachmentId, 'a1');
+    expect(resolved.moreAttachmentIds, ['a-new-1']);
+    final saved = uiEffects.single as CardEditImageOptimizedUiEffect;
+    expect((saved.fromBytes, saved.toBytes), (50, 2));
+  });
+
+  group('add / remove photos', () {
+    final p1 = PickedImage(bytes: Uint8List.fromList([1]), mime: 'image/png');
+    final p2 = PickedImage(bytes: Uint8List.fromList([2]), mime: 'image/png');
+
+    test('picked photos join the card\'s images, in order', () async {
+      picker.next = [p1, p2];
+      await shell.run(
+        const PickImageEffect(cardId: 'c1', keptImageIds: ['a1']),
+        dispatch: dispatched.add,
+      );
+      expect(write.images.single.$1, 'c1');
+      expect(write.images.single.$2, ['a1', 'a-new-1', 'a-new-2']);
+      expect(attachmentWrite.deleted, isEmpty);
+      final resolved = dispatched.single as AttachmentResolved;
+      expect(resolved.kind, CardKind.image);
+      expect(resolved.moreAttachmentIds, ['a-new-1', 'a-new-2']);
+    });
+
+    test('photos on a file card take its place and drop the file', () async {
+      picker.next = [p1];
+      await shell.run(
+        const PickImageEffect(cardId: 'c1', replacedAttachmentId: 'f1'),
+        dispatch: dispatched.add,
+      );
+      expect(write.images.single.$1, 'c1');
+      expect(write.images.single.$2, ['a-new-1']);
+      expect(attachmentWrite.deleted, ['f1']);
+    });
+
+    test('a cancelled pick changes nothing', () async {
+      await shell.run(
+        const PickImageEffect(cardId: 'c1', keptImageIds: ['a1']),
+        dispatch: dispatched.add,
+      );
+      expect(write.images, isEmpty);
+      expect(dispatched.single, isA<AttachmentEditEnded>());
+    });
+
+    test('removing one image keeps the rest and drops it', () async {
+      await shell.run(
+        const RemoveImageEffect(
+          cardId: 'c1',
+          remainingIds: ['a1', 'a3'],
+          removedId: 'a2',
+        ),
+        dispatch: dispatched.add,
+      );
+      expect(write.images.single.$1, 'c1');
+      expect(write.images.single.$2, ['a1', 'a3']);
+      expect(attachmentWrite.deleted, ['a2']);
+      final resolved = dispatched.single as AttachmentResolved;
+      expect(resolved.attachmentId, 'a1');
+      expect(resolved.moreAttachmentIds, ['a3']);
+    });
+
+    test('removing the last image leaves a text card', () async {
+      await shell.run(
+        const RemoveImageEffect(
+          cardId: 'c1',
+          remainingIds: [],
+          removedId: 'a1',
+        ),
+        dispatch: dispatched.add,
+      );
+      expect(write.removed, ['c1']);
+      expect(attachmentWrite.deleted, ['a1']);
+      final resolved = dispatched.single as AttachmentResolved;
+      expect(resolved.attachmentId, isNull);
+      expect(resolved.kind, isNull);
+    });
   });
 }

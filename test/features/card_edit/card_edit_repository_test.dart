@@ -199,6 +199,48 @@ void main() {
       },
     );
 
+    test(
+      'setCardImages keeps several images in order; a file drops them',
+      () async {
+        final colA = (await timelineWrite.createCollection('A')).getOrThrow();
+        final cardId = await newCard(colA, 'note');
+        final attachmentWrite = SyncStoreAttachmentWriteRepository(
+          graph: graph,
+          ids: ids,
+        );
+        final a1 = (await attachmentWrite.createFromPicked(
+          png([1]),
+        )).getOrThrow();
+        final a2 = (await attachmentWrite.createFromPicked(
+          png([2]),
+        )).getOrThrow();
+        final a3 = (await attachmentWrite.createFromPicked(
+          png([3]),
+        )).getOrThrow();
+
+        await cardEditWrite.setCardImages(
+          cardId: cardId,
+          attachmentIds: [a1, a2, a3],
+        );
+        final card = (await read.loadCollection(
+          colA,
+        )).getOrThrow().cards.single;
+        expect(card.kind, CardKind.image);
+        expect(card.imageIds, [a1, a2, a3]);
+        expect(card.text, 'note');
+
+        await cardEditWrite.setCardAttachment(
+          cardId: cardId,
+          attachmentId: a1,
+          kind: CardKind.file,
+        );
+        final file = (await read.loadCollection(
+          colA,
+        )).getOrThrow().cards.single;
+        expect(file.attachmentIds, [a1]);
+      },
+    );
+
     test('setCardAttachment can flip a card to a file attachment', () async {
       final colA = (await timelineWrite.createCollection('A')).getOrThrow();
       final cardId = await newCard(colA, 'note');

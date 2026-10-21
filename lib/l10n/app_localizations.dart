@@ -1127,7 +1127,7 @@ abstract class AppLocalizations {
   /// No description provided for @cardEditAddPhoto.
   ///
   /// In en, this message translates to:
-  /// **'Add photo'**
+  /// **'Add photos'**
   String get cardEditAddPhoto;
 
   /// No description provided for @cardEditAttachFile.
@@ -1153,6 +1153,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove'**
   String get cardEditRemove;
+
+  /// No description provided for @cardEditRemoveAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all'**
+  String get cardEditRemoveAll;
 
   /// No description provided for @cardEditOptimize.
   ///

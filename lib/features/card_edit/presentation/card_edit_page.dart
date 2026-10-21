@@ -45,6 +45,7 @@ class _CardEditPageState extends State<CardEditPage> {
           collectionId: args.collectionId,
           initialText: args.initialText,
           initialAttachmentId: args.initialAttachmentId,
+          initialMoreAttachmentIds: args.initialMoreAttachmentIds,
           initialAttachmentKind: args.initialAttachmentKind,
           initialFileName: args.initialFileName,
           initialFileSize: args.initialFileSize,
@@ -140,11 +141,14 @@ class _CardEditPageState extends State<CardEditPage> {
             children: [
               _AttachmentSection(
                 state: state,
-                imageBytes: state.attachmentKind == CardKind.image
-                    ? CardEditScope.images.of(state.attachmentId!)
-                    : null,
+                images: [
+                  for (final id in state.imageIds) CardEditScope.images.of(id),
+                ],
                 onPickImage: () =>
                     _controller.dispatch(const PickImageRequested()),
+                onRemoveImage: (index) => _controller.dispatch(
+                  RemoveImageRequested(state.imageIds[index]),
+                ),
                 onPickFile: () =>
                     _controller.dispatch(const PickFileRequested()),
                 onOptimizeImage: () =>
@@ -208,15 +212,18 @@ class _CardEditPageState extends State<CardEditPage> {
 // --- attachment section ------------------------------------------------------
 
 /// The card's attachment manager (§4.3, subtask 4). With no attachment it offers
-/// two adds — a photo (gallery/camera) and any file (routed to image/audio/file
-/// by mime). With one, it renders the right representation (image thumbnail,
-/// audio chip, or file chip) over Replace (any file) + Remove, and an image
-/// also offers Optimize (swap it for a smaller copy).
+/// two adds — photos (from the gallery, several at once) and any file (routed
+/// to image/audio/file by mime). With one, it renders the right representation
+/// (the images, an audio chip, or a file chip) over Replace (any file) +
+/// Remove. An image card also offers Add photos (more images on the same card,
+/// §4.2) and Optimize (swap its images for smaller copies), and with several
+/// images each has its own ✕.
 class _AttachmentSection extends StatelessWidget {
   const _AttachmentSection({
     required this.state,
-    required this.imageBytes,
+    required this.images,
     required this.onPickImage,
+    required this.onRemoveImage,
     required this.onPickFile,
     required this.onOptimizeImage,
     required this.onRemove,
@@ -224,10 +231,11 @@ class _AttachmentSection extends StatelessWidget {
 
   final CardEditState state;
 
-  /// The image attachment's decoded bytes from the shared cache; null for
-  /// audio/file attachments and while loading.
-  final Uint8List? imageBytes;
+  /// An image card's images, decoded from the shared cache (null while
+  /// loading); empty for audio/file attachments.
+  final List<Uint8List?> images;
   final VoidCallback onPickImage;
+  final ValueChanged<int> onRemoveImage;
   final VoidCallback onPickFile;
   final VoidCallback onOptimizeImage;
   final VoidCallback onRemove;
@@ -266,25 +274,35 @@ class _AttachmentSection extends StatelessWidget {
         ],
       );
     }
+    final isImage = state.attachmentKind == CardKind.image;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _AttachmentPreview(state: state, imageBytes: imageBytes),
+        if (images.length > 1)
+          _ImageGrid(images: images, onRemove: onRemoveImage)
+        else
+          _AttachmentPreview(state: state, imageBytes: images.firstOrNull),
         const SizedBox(height: 8),
         Row(
           children: [
             // Replace with any file type — the file picker routes by mime, so a
-            // card's attachment can switch kind (image → audio, etc.). Replace
-            // and Optimize wrap on a narrow screen rather than squeeze Remove.
+            // card's attachment can switch kind (image → audio, etc.). The
+            // adds wrap on a narrow screen rather than squeeze Remove.
             Expanded(
               child: Wrap(
                 children: [
+                  if (isImage)
+                    TextButton.icon(
+                      onPressed: onPickImage,
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      label: Text(l10n.cardEditAddPhoto),
+                    ),
                   TextButton.icon(
                     onPressed: onPickFile,
                     icon: const Icon(Icons.swap_horiz),
                     label: Text(l10n.cardEditReplace),
                   ),
-                  if (state.attachmentKind == CardKind.image)
+                  if (isImage)
                     TextButton.icon(
                       onPressed: onOptimizeImage,
                       icon: const Icon(Icons.compress),
@@ -300,7 +318,9 @@ class _AttachmentSection extends StatelessWidget {
                 color: Theme.of(context).colorScheme.error,
               ),
               label: Text(
-                l10n.cardEditRemove,
+                images.length > 1
+                    ? l10n.cardEditRemoveAll
+                    : l10n.cardEditRemove,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
@@ -339,6 +359,59 @@ class _OptimizingImage extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// An image card's several images (§4.2) as a grid of square thumbnails, in
+/// order, each with a ✕ that removes it from the card.
+class _ImageGrid extends StatelessWidget {
+  const _ImageGrid({required this.images, required this.onRemove});
+
+  final List<Uint8List?> images;
+  final ValueChanged<int> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return GridView.count(
+      crossAxisCount: 3,
+      mainAxisSpacing: 6,
+      crossAxisSpacing: 6,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        for (final (index, bytes) in images.indexed)
+          Stack(
+            fit: StackFit.expand,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: AttachmentImage(bytes: bytes),
+              ),
+              Positioned(
+                top: 2,
+                right: 2,
+                child: Material(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.8),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => onRemove(index),
+                    child: Tooltip(
+                      message: l10n.actionRemove,
+                      child: const Padding(
+                        padding: EdgeInsets.all(2),
+                        child: Icon(Icons.close, size: 18),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }

@@ -614,7 +614,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cardEditHint => 'Edit this card…';
 
   @override
-  String get cardEditAddPhoto => 'Add photo';
+  String get cardEditAddPhoto => 'Add photos';
 
   @override
   String get cardEditAttachFile => 'Attach file';
@@ -627,6 +627,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardEditRemove => 'Remove';
+
+  @override
+  String get cardEditRemoveAll => 'Remove all';
 
   @override
   String get cardEditOptimize => 'Optimize';

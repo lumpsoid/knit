@@ -18,6 +18,7 @@ class CardEditState {
     this.links = const [],
     this.linksLoading = false,
     this.attachmentId,
+    this.moreAttachmentIds = const [],
     this.attachmentKind,
     this.attachmentName,
     this.attachmentSize,
@@ -38,8 +39,20 @@ class CardEditState {
   final List<ConnectionItem> links;
   final bool linksLoading;
 
-  /// The card's current attachment id (§7.4.3); null when it has none.
+  /// The card's current attachment id (§7.4.3); null when it has none. For an
+  /// image card, its first image.
   final String? attachmentId;
+
+  /// An image card's further images after [attachmentId], in order (§4.2).
+  final List<String> moreAttachmentIds;
+
+  /// The images an image card shows, in order; empty for other kinds.
+  List<String> get imageIds => attachmentKind == CardKind.image
+      ? [?attachmentId, ...moreAttachmentIds]
+      : const [];
+
+  /// Every attachment the card points at.
+  List<String> get attachmentIds => [?attachmentId, ...moreAttachmentIds];
 
   /// The current attachment's kind (`image`/`audio`/`file`); drives which
   /// representation the section renders. Null when the card has no attachment.
@@ -91,6 +104,7 @@ class CardEditState {
     List<ConnectionItem>? links,
     bool? linksLoading,
     Object? attachmentId = _unset,
+    List<String>? moreAttachmentIds,
     Object? attachmentKind = _unset,
     Object? attachmentName = _unset,
     Object? attachmentSize = _unset,
@@ -110,6 +124,7 @@ class CardEditState {
     attachmentId: attachmentId == _unset
         ? this.attachmentId
         : attachmentId as String?,
+    moreAttachmentIds: moreAttachmentIds ?? this.moreAttachmentIds,
     attachmentKind: attachmentKind == _unset
         ? this.attachmentKind
         : attachmentKind as CardKind?,

@@ -17,6 +17,7 @@ class ViewAttached extends CardEditAction {
     required this.collectionId,
     required this.initialText,
     required this.initialAttachmentId,
+    this.initialMoreAttachmentIds = const [],
     this.initialAttachmentKind,
     this.initialFileName,
     this.initialFileSize,
@@ -27,6 +28,7 @@ class ViewAttached extends CardEditAction {
   final String collectionId;
   final String initialText;
   final String? initialAttachmentId;
+  final List<String> initialMoreAttachmentIds;
   final CardKind? initialAttachmentKind;
   final String? initialFileName;
   final int? initialFileSize;
@@ -89,10 +91,18 @@ class LinksChanged extends CardEditAction {
 
 // --- attachment (subtask 4) ------------------------------------------------
 
-/// Add or replace the card's attachment with a *photo* — opens the image picker
-/// (gallery/camera), stores the bytes, points the card at the new attachment.
+/// Add *photos* — opens the gallery picker (several at once), stores the
+/// bytes, and adds them after an image card's images (§4.2); a card with no
+/// attachment becomes an image card.
 class PickImageRequested extends CardEditAction {
   const PickImageRequested();
+}
+
+/// Remove one image, [attachmentId], from an image card; removing its last
+/// image leaves a text card.
+class RemoveImageRequested extends CardEditAction {
+  const RemoveImageRequested(this.attachmentId);
+  final String attachmentId;
 }
 
 /// Add or replace the card's attachment with *any file* — opens the platform
@@ -101,7 +111,7 @@ class PickFileRequested extends CardEditAction {
   const PickFileRequested();
 }
 
-/// Swap the card's image for a smaller copy (the opt-in "Optimize size").
+/// Swap the card's images for smaller copies (the opt-in "Optimize size").
 class OptimizeImageRequested extends CardEditAction {
   const OptimizeImageRequested();
 }
@@ -112,17 +122,19 @@ class RemoveAttachmentRequested extends CardEditAction {
 }
 
 /// The card's attachment settled to [attachmentId] (null = removed) after a
-/// pick/remove, carrying the resolved [kind] and a file's [name]/[size] for its
-/// chip (an image's bytes are in the shared image cache), so the section never
-/// needs a follow-up reload.
+/// pick/remove, carrying an image card's [moreAttachmentIds], the resolved
+/// [kind] and a file's [name]/[size] for its chip (an image's bytes are in the
+/// shared image cache), so the section never needs a follow-up reload.
 class AttachmentResolved extends CardEditAction {
   const AttachmentResolved({
     this.attachmentId,
+    this.moreAttachmentIds = const [],
     this.kind,
     this.name,
     this.size,
   });
   final String? attachmentId;
+  final List<String> moreAttachmentIds;
   final CardKind? kind;
   final String? name;
   final int? size;

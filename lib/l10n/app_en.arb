@@ -260,11 +260,12 @@
 
   "cardEditTitle": "Edit card",
   "cardEditHint": "Edit this card…",
-  "cardEditAddPhoto": "Add photo",
+  "cardEditAddPhoto": "Add photos",
   "cardEditAttachFile": "Attach file",
   "cardEditAttachment": "Attachment",
   "cardEditReplace": "Replace",
   "cardEditRemove": "Remove",
+  "cardEditRemoveAll": "Remove all",
   "cardEditOptimize": "Optimize",
   "cardEditImageNotSmaller": "This photo can't be made smaller.",
   "cardEditImageOptimized": "Photo optimized: {from} → {to}",
