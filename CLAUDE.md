@@ -336,6 +336,17 @@ the `lib/sync/` core below.
   and Connections remove links through it. The `LinkSource` rule (no self-link,
   no link to the card's own collection) lives in its domain.
 
+- `collection_present` (§4.9, lightweight) presents a collection as slides. The
+  Collection app bar's ⋮ sheet (`CollectionMenuSheet`: Present, Reorder) writes
+  the `PresentRouteArgs` carrier and pushes `PresentPage` over a
+  `PresentController` from `CollectionScope.createPresent()`. The pure
+  `SlidePlanner` makes the `SlideDeck`: a title slide, then an image run or an
+  emphasized heading opens each slide, settled cards left out.
+  `SyncStorePresentReadRepository` reads the whole feed with each card's live
+  links. The resume slide is device-local (`shared_preferences`, keyed by
+  the slide's first card id). `SlideScroll` turns the vertical `PageView` when long
+  notes overscroll. `ScreenAwakePort` (`wakelock_plus`) keeps the screen on.
+
 - `collection_widget` (lightweight, **Android only**) is the home-screen widget
   that opens Knit on one collection. Native side (`android/.../knit/`):
   `CollectionWidgetProvider` draws a title tile from SharedPreferences

@@ -153,6 +153,7 @@ deleted. Archiving takes it off the home timeline without losing anything.
   **finder sheet** (search cards / collections / existing link objects).
 - **Tap a card → actions sheet:** edit · link · copy · share · settle/unsettle · emphasize/unemphasize (§3.3) ·
   delete.
+- **⋮ menu** in the app bar opens a sheet with **Present** (§4.9) and **Reorder**.
 - **Reorder mode** — drag-to-reorder, a *state of this screen*, not a separate screen.
   **Reorder applies only to cards within this collection**; there is no reordering on Home.
 - **Multi-select mode** — long-press a card to select it; while selecting, a tap toggles a
@@ -211,6 +212,38 @@ Opens "pick/create collection" (not an in-app screen).
   of the value. **Transclusion** and heavy **graph filtering** are "later, only if used,"
   pure read-side over `link`, no schema change.
 - **Sync indicator:** a small pending/synced marker so offline never feels broken.
+
+### 4.9 Presenting a collection
+A collection can be shown to someone else as a sequence of full-screen slides, for
+material that reads like a walk-through: a city route with a photo and the history of
+each place. **Present** in the Collection screen's ⋮ sheet opens it from the start.
+
+- **Slides are planned from the feed**, read-only:
+  - slide 0 is a **title slide**: the cover, title and description;
+  - **settled cards are left out** (§3.3);
+  - a run of consecutive **images opens a slide**, and the cards after it join that
+    slide until the next image;
+  - an **emphasized card opens a slide** as its heading. If it directly follows a
+    slide's images it heads them instead, and images directly after a lone heading
+    join it. This splits a text-only collection into sections;
+  - cards before any image or heading form a text slide.
+- **Navigation:** slides sit one above the next and are swiped vertically. A slide's
+  notes scroll first when they are long; pulling past their end turns the slide.
+  Arrow keys, Page Up/Down and Space turn slides too. A tap shows or hides a thin
+  overlay with close, the position (`4 / 12`), a progress bar and previous / next.
+- **Layout:** a slide's images are pinned at the top (on the left in landscape). Several
+  images form a horizontal carousel with dots. Image captions sit under the photo and
+  notes sit on their own panel, so text never covers a photo. Tapping a photo opens the
+  full-screen viewer with pinch, double-tap zoom and drag-to-pan. A slide without
+  images gives its notes the whole page in larger type.
+- **Card kinds:** text is shown as body text, and an emphasized card as a heading with a
+  warm bar. Audio, link and file cards are inline chips (play, open in the browser,
+  name). A card's live links in either direction are **"See also"** chips: a card on
+  another slide jumps there, anything else opens Connections (§4.4).
+- **Resume:** the slide last shown is remembered **per device** (like pins: not synced,
+  not signed), by its first card's id. The title slide then offers "Continue from slide
+  N". Returning to the title slide forgets it.
+- **While presenting** the system bars are hidden and the screen stays on.
 
 ## 5. Identity
 
