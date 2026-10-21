@@ -172,13 +172,15 @@ the `lib/sync/` core below.
 ### `lib/sync/storage/` — sync persistence (abstracted: sqflite + in-memory)
 - `change_log/` — the durable signed-op log (§6.6). `ChangeLogSchema`,
   `PersistedOp` (row model + `OpKind`/`SyncOrigin` enums, `fromDb`/`toDb`,
-  `toSnapshot`), `ChangeLogStorage` interface; sqflite + in-memory impls.
+  `toSnapshot`), `ChangeLogStorage` interface (incl. the entity-scoped
+  `readForEntities` / `deleteForEntities`); sqflite + in-memory impls.
 - `device_clock/` — the single-row device HLC (§6.7). `DeviceClockSchema`,
   `DeviceClockStorage` (`load`/`save`/`clear` an `Hlc`); both impls.
 - `projection/` — the materialized entity tables (§6.3/§6.4). `EnvelopeColumns`
   + the five entity schemas + `ProjectionTables`; `ProjectionStorage`
   (`get`/`getMany`/`upsert`/`readAll`/`feed`/`feedPage` (newest-first keyset
-  page)/`backlinks`/`linkCounts` (batched)/`clear`); `ProjectionRowMapper`
+  page)/`backlinks`/`linkCounts` (batched)/`deleteMany`/`clear`);
+  `ProjectionRowMapper`
   (`Snapshot` ↔ typed row); both impls.
 - `sync_store.dart` — `SyncStore`: the persistent orchestrator tying all three
   storages to the merge-core through a `UnitOfWork`. `applyRemote` (dedup → skew
@@ -187,6 +189,13 @@ the `lib/sync/` core below.
   dev/tests. `open({ensureSchema, provisionIdentity})` — prod lets the migrator
   own the schema and defers identity to onboarding; `hasIdentity` /
   `provisionIdentity` are the onboarding gate + the explicit "Generate" step.
+  Collection share by file: `shareSet` (a collection's winning signed ops +
+  its authors' profiles), `purgeCollection` (an imported collection's rows
+  *and* log ops in one txn, so rebuild agrees; refuses an own one) and
+  `forkCollection` (a `ForkPlan` as own entities in one txn).
+- `share/` — the pure halves of that: `ShareScope` (which entities a
+  collection's share covers), `ShareSetSelector` (content + placement winner
+  per entity, by the merge comparators), `ShareSet`, `ForkPlan`.
 
 ### `lib/sync/storage/derivations/` — read-time derivations (§8.6, pure)
 - `broken_link.dart` (`BrokenLinkResolver`, §8.6.1/2), `home_timeline.dart`
@@ -215,6 +224,13 @@ the `lib/sync/` core below.
   it to `Logger('knit.<feature>')`, tests pass their own), logging catches as
   `severe`; `main.dart` drains `Logger.root.onRecord` to the console (other
   consumers can subscribe to react).
+- `files/` — files in and out: the `FileDeliveryPort` (share_plus) /
+  `FileSavePort` / `FileSourcePort` (file_picker) over `OutgoingFile`, shared
+  by the backup and the collection share, plus `LogArchive`, the signed-log
+  zip layout (manifest + `log.jsonl` + `blobs/<hash>`) both codecs use.
+- `ownership/` — `CollectionOwnership.of(createdBy, me)` (own vs imported,
+  read-only) and `ArchiveTarget` (signed vs local archive). The one place
+  keys are compared; controllers, updaters and repositories ask it.
 
 ### `lib/features/<feature>/` — features
 - `domain/` (ports + models + failures) + `infra/` (impls over `AppGraph.store`)
@@ -300,6 +316,23 @@ the `lib/sync/` core below.
   outside or an empty title shrink it back. The pure `SimilarCollectionFinder`
   (search's folding) flags a title like an existing collection, and the line
   then offers that one instead ("Open" / "Save there").
+- `collection_share` (lightweight; design `docs/collection_share.md`, spec
+  §10.8) sends one collection as a `.knitc` file. Export: Collection ⋮ →
+  "Share as file" → `CollectionShareExportSheet` (size, Include media) →
+  send or save. Import: Settings → Data → "Import collection", an opened
+  `.knitc` (Android VIEW filter) or a shared one (the share-capture gate
+  routes it) → `CollectionShareImportController` → the pure
+  `CollectionShareImportPolicy` validates the whole file (signatures,
+  owner, scope, the foreign-overwrite rule) → preview sheet → every op via
+  `applyRemote` → open it. A collection whose `created_by` is someone else's
+  is **read-only** everywhere: no composer / reorder / selection / header
+  edit (the Collection updater drops writes), a read-only card sheet
+  (Connections, Copy, "Link from my card…" = card_links' `LinkFromMine`),
+  a "from nickname#fp" Timeline line, a local-only archive flag
+  (`LocalArchiveRepository`), excluded from move / share-capture targets,
+  no widget quick input. Its ⋮ sheet offers Save a copy
+  (`ForkPlanner` → `forkCollection`) and Remove (`purgeCollection` + blob GC)
+  through the app-wide `ImportedCollectionController`.
 - `share_capture` (§4.7, lightweight, **Android only**) takes text, photos and
   files shared from other apps (`receive_sharing_intent`; `ACTION_SEND` /
   `SEND_MULTIPLE` filters, activity `singleTask`). The app-wide

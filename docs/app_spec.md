@@ -211,9 +211,12 @@ so deep wandering doesn't lose you. Can later grow into a graph view (read-side 
   - **Reset identity** erases the data *and* the keypair and returns to onboarding. The
     user must type their nickname to confirm, or choose "Back up first".
   - **Wipe data** still erases the content but keeps the keypair and profile.
+  - **Import collection** opens a `.knitc` collection file someone shared (§10.8).
 
 ### 4.6 Share flow (sheet)
 Publish a collection or card to a relay as read-only or shared. **(Designed in §10.)**
+Until the relay lands, a collection travels as a file: Collection ⋮ → **Share as file**
+(built, §10.8; design in `docs/collection_share.md`).
 
 ### 4.7 Share-sheet capture (system entry point)
 Opens "pick/create collection" (not an in-app screen).
@@ -1111,6 +1114,27 @@ already exists.**
   log + dedup + `relay_seq`; still never parses or trusts `payload`. Push rejection reasons:
   `bad_token`, `revoked`, `expired`, `no_push_scope`, `bad_challenge`, `bad_sig` (optional).
 - **Live delivery (optional)** — the WebSocket upgrade over pull polling; same auth/handshake.
+
+### 10.8 File share (built; the offline transport)
+A collection can be sent as a **file** with no relay: `<title>.knitc`
+(`application/vnd.knit.collection+zip`), the backup's zip shape with its own format tag.
+Full design: **`docs/collection_share.md`**.
+- **Payload** — the sender's signed ops **verbatim**, winning ops only: per entity the
+  content winner (+ a card's placement winner), tombstones included, plus each author's
+  `profile`. Never re-signed. **Include media** (default on) adds the blobs.
+- **Import** = the §10.5 *subscription*: the whole file is validated first (signatures,
+  author = owner, scope, and no op may target a local id with a different `created_by`),
+  then every op goes through `applyRemote` (`remote/acked`). Same ids, so a newer file
+  updates the copy by LWW and an older one changes nothing. Your own file is a mini-restore.
+- **Read-only** is derived: `collection.created_by ≠` this device's key. No composer,
+  reorder, selection or header edit; Archive is a local-only flag; it is never a move or
+  share-capture target, but it can be linked to and presented.
+- **Save a copy** = the §10.5 fork (new ids, intra-set links rewritten, attachments keep
+  their `content_hash`). The local "forked from" marker is deferred.
+- **Remove** = a local purge of the rows *and* their `change_log` ops (so §8.9 rebuild
+  agrees) and of unreferenced blobs. Nothing is signed; a re-import restores it.
+- When the relay lands it replaces the file as the transport; the read-only model, fork and
+  purge stay. A file is a snapshot and cannot be revoked (the §10.6 honesty).
 
 ---
 

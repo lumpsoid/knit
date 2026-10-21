@@ -171,6 +171,23 @@ ChangeNotifier state), plus additions to the sync core.
 6. Save a copy + Remove.
 7. Spec: §4.6 points here; add §10.8 "File share"; update CLAUDE.md.
 
+## As built
+
+The build follows the order above. Where the code landed differs from the plan:
+
+- The pure share scoping lives in the sync core, next to the store that uses it:
+  `ShareScope` and `ShareSetSelector` (`lib/sync/storage/share/`), with `ForkPlan`.
+  The feature's `ForkPlanner` produces the plan.
+- `CollectionOwnership` and `ArchiveTarget` live in `lib/core/ownership/`, since six
+  features ask them.
+- The policy also refuses a file whose envelope hints (entity type and id) disagree
+  with the payload, and a non-profile op whose `created_by` is not the owner. Purge
+  and the log reads go by the hint, so they must match.
+- The home-screen widget hides its ✎ quick input for an imported collection (a
+  `quickInput` flag on the published tile, kept by the Android store).
+- The Timeline's long-press sheet offers no Delete for an imported collection; Remove
+  lives in the Collection ⋮ sheet.
+
 ## Known limits
 
 - **A card the sender moved out of `C`** stays on the recipient's side, frozen
