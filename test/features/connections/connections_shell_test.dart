@@ -48,27 +48,39 @@ class _UnusedTargets implements LinkTargetsReadRepository {
   Future<Result<List<LinkTarget>, CardLinksFailure>> loadCards(
     String collectionId,
   ) => throw UnimplementedError();
+
+  @override
+  Future<Result<LinkedTargets, CardLinksFailure>> loadLinkedTargets(
+    String cardId,
+  ) => throw UnimplementedError();
 }
 
 class _FakeLinkWrite implements CardLinksWriteRepository {
   _FakeLinkWrite({this.fail = false});
   final bool fail;
   final added = <(String, ConnectedEntityKind, String)>[];
+  final sourceKinds = <ConnectedEntityKind>[];
+  final removed = <String>[];
 
   @override
   Future<Result<String, CardLinksFailure>> addLink({
-    required String sourceCardId,
+    required ConnectedEntityKind sourceKind,
+    required String sourceId,
     required ConnectedEntityKind targetKind,
     required String targetId,
   }) async {
     if (fail) return const Failure(CardLinksWriteFailure('disk full'));
-    added.add((sourceCardId, targetKind, targetId));
+    added.add((sourceId, targetKind, targetId));
+    sourceKinds.add(sourceKind);
     return const Ok('link-1');
   }
 
   @override
-  Future<Result<String, CardLinksFailure>> removeLink(String linkId) =>
-      throw UnimplementedError();
+  Future<Result<String, CardLinksFailure>> removeLink(String linkId) async {
+    if (fail) return const Failure(CardLinksWriteFailure('disk full'));
+    removed.add(linkId);
+    return Ok(linkId);
+  }
 }
 
 void main() {
@@ -168,5 +180,63 @@ void main() {
       ConnectionsMessage.linkFailed,
     );
     expect(dispatched.single, isA<ReloadRequested>());
+  });
+
+  group('Remove + Undo (§4.4)', () {
+    const ends = LinkEnds(
+      sourceKind: ConnectedEntityKind.collection,
+      sourceId: 'hub',
+      targetKind: ConnectedEntityKind.card,
+      targetId: 'c9',
+    );
+
+    test('Remove deletes the link, offers Undo, then re-reads', () async {
+      final write = _FakeLinkWrite();
+      final dispatched = <ConnectionsAction>[];
+      await shell(write: write).run(
+        const RemoveLinkEffect(linkId: 'l1', ends: ends),
+        dispatch: dispatched.add,
+      );
+      expect(write.removed, ['l1']);
+      expect((uiEffects.single as ConnectionsLinkRemovedUiEffect).ends, ends);
+      expect(dispatched.single, isA<ReloadRequested>());
+    });
+
+    test('a failed Remove says so, offers no Undo, and re-reads', () async {
+      final dispatched = <ConnectionsAction>[];
+      await shell(write: _FakeLinkWrite(fail: true)).run(
+        const RemoveLinkEffect(linkId: 'l1', ends: ends),
+        dispatch: dispatched.add,
+      );
+      expect(
+        (uiEffects.single as ConnectionsShowMessageUiEffect).message,
+        ConnectionsMessage.removeFailed,
+      );
+      expect(dispatched.single, isA<ReloadRequested>());
+    });
+
+    test('Undo links the same two ends again, then re-reads', () async {
+      final write = _FakeLinkWrite();
+      final dispatched = <ConnectionsAction>[];
+      await shell(
+        write: write,
+      ).run(const RestoreLinkEffect(ends), dispatch: dispatched.add);
+      expect(write.added.single, ('hub', ConnectedEntityKind.card, 'c9'));
+      expect(write.sourceKinds.single, ConnectedEntityKind.collection);
+      expect(uiEffects, isEmpty);
+      expect(dispatched.single, isA<ReloadRequested>());
+    });
+
+    test('a failed Undo says so', () async {
+      final dispatched = <ConnectionsAction>[];
+      await shell(
+        write: _FakeLinkWrite(fail: true),
+      ).run(const RestoreLinkEffect(ends), dispatch: dispatched.add);
+      expect(
+        (uiEffects.single as ConnectionsShowMessageUiEffect).message,
+        ConnectionsMessage.linkFailed,
+      );
+      expect(dispatched.single, isA<ReloadRequested>());
+    });
   });
 }

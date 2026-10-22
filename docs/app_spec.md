@@ -282,7 +282,17 @@ after the links, so it never holds them up. A card's view has no such section.
 The **link picker** (a card's "Make a link", Card Edit) lists the collections — link to one
 directly, or drill in to pick a card. A **Recent** row at its top offers up to 3 collections
 last linked to, by the same device-local rule as Move's (§4.2), and only those the card may
-link to (never its own collection); a tap links to that collection.
+link to (never its own collection); a tap links to that collection. Targets the card already
+links to — collections, cards, Recent chips — show a ✓ ("Linked"); tapping one again removes
+that link (the same signed delete as Card Edit's). The "+" Connection block has no source
+card yet, so it shows no ✓.
+
+**Managing links.** On the Connections view, each live links-out row has a ⋮ with **Remove**,
+and so does each backlink whose source is the user's own card or collection (never an
+imported, read-only source; an imported focus's links-out have none). Remove deletes the
+link and its duplicates (§6.4), then a snackbar offers **Undo**, which links the same two
+ends again; the view re-reads either way. A broken link keeps its chip's **Clear** instead.
+Removing a Connection card's only link leaves the card as an empty link card.
 
 ### 4.5 Settings
 - **Sync / Relay** (subpage): relay ip/domain field + "Check connectivity" button; shows
@@ -487,6 +497,14 @@ table — which is also why deleting a card yields an orphan marker for free (th
 survives pointing at a tombstoned node; detected at read time).
 
 **Backlinks are derived, never stored:** `SELECT * FROM link WHERE target_id=B AND deleted=0`.
+
+**One link per pair.** Two live links with the same source and the same target (`label`
+aside) say the same thing, so a local link write is a no-op when the pair is already linked.
+Links still have their own ids, so concurrent devices (or older data) can leave duplicates;
+every read treats them as one, the oldest standing (earliest `created_at`, then the smaller
+id — the same pick on every device): links-out, backlinks, link counts, hubs, Connection-card
+tiles, Present. Removing a link deletes every live duplicate of its pair in one transaction,
+so it doesn't come back. A read-time rule only (§8.6); no wire change.
 
 **Home-timeline fields** (last-card preview, card count, last-updated) are a **local view**,
 not authoritative columns — recomputed locally, never synced/signed (§8.6.3).

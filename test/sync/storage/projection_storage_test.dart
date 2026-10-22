@@ -158,26 +158,6 @@ void main() {
         expect(got.map((s) => s.id).toSet(), {'x', 'y'});
       });
 
-      test('linkCounts = linksOut + backlinks per id, live only', () async {
-        await store.upsert(
-          link(id: 'l1', sourceId: 'card-1', targetId: 'col-1', hlcMs: 1),
-        );
-        await store.upsert(
-          link(id: 'l2', sourceId: 'card-2', targetId: 'card-1', hlcMs: 1),
-        );
-        await store.upsert(
-          link(
-            id: 'l3',
-            sourceId: 'card-1',
-            targetId: 'col-2',
-            hlcMs: 1,
-            deleted: true,
-          ),
-        );
-        final counts = await store.linkCounts(['card-1', 'card-2', 'card-9']);
-        expect(counts, {'card-1': 2, 'card-2': 1});
-      });
-
       test('backlinks: live links to a target only (spec §8.6.2)', () async {
         await store.upsert(link(id: 'l1', targetId: 'col-1', hlcMs: 1));
         await store.upsert(

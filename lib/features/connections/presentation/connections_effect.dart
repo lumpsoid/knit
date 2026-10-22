@@ -19,6 +19,20 @@ class ClearLinkEffect extends ConnectionsEffect {
   final String linkId;
 }
 
+/// Remove the link [linkId] and its pair's duplicates (§4.4/§6.4); [ends]
+/// is what an Undo re-links.
+class RemoveLinkEffect extends ConnectionsEffect {
+  const RemoveLinkEffect({required this.linkId, required this.ends});
+  final String linkId;
+  final LinkEnds ends;
+}
+
+/// Re-create a removed link between [ends] (the snackbar's Undo).
+class RestoreLinkEffect extends ConnectionsEffect {
+  const RestoreLinkEffect(this.ends);
+  final LinkEnds ends;
+}
+
 /// Find the unlinked mentions of the collection [collectionId] titled [title]
 /// (§8.6.5) — a separate step, after its links have rendered.
 class LoadMentionsEffect extends ConnectionsEffect {

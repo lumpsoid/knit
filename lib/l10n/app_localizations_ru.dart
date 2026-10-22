@@ -60,6 +60,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionUnarchive => 'Вернуть из архива';
 
   @override
+  String get actionUndo => 'Отменить';
+
+  @override
   String get labelUntitled => 'Без названия';
 
   @override
@@ -519,6 +522,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionNoCardsToLink => 'Здесь нет карточек для связи.';
 
   @override
+  String get linkPickerLinked => 'Связано';
+
+  @override
   String get collectionOrACardInIt => 'Или карточку в ней';
 
   @override
@@ -755,6 +761,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get connectionsLinkFailed => 'Не удалось связать. Попробуйте ещё раз.';
+
+  @override
+  String get connectionsLinkActions => 'Действия со связью';
+
+  @override
+  String get connectionsRemoveLink => 'Убрать связь';
+
+  @override
+  String get connectionsLinkRemoved => 'Связь убрана';
+
+  @override
+  String get connectionsRemoveFailed =>
+      'Не удалось убрать. Попробуйте ещё раз.';
 
   @override
   String get profileTitle => 'Профиль';

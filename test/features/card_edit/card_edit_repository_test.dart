@@ -123,12 +123,14 @@ void main() {
         final targetCard = await newCard(colB, 'target card');
 
         await linksWrite.addLink(
-          sourceCardId: source,
+          sourceKind: ConnectedEntityKind.card,
+          sourceId: source,
           targetKind: ConnectedEntityKind.collection,
           targetId: colB,
         );
         await linksWrite.addLink(
-          sourceCardId: source,
+          sourceKind: ConnectedEntityKind.card,
+          sourceId: source,
           targetKind: ConnectedEntityKind.card,
           targetId: targetCard,
         );
@@ -162,7 +164,8 @@ void main() {
       final targetCard = await newCard(colB, 'doomed');
 
       await linksWrite.addLink(
-        sourceCardId: source,
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: source,
         targetKind: ConnectedEntityKind.card,
         targetId: targetCard,
       );
@@ -177,7 +180,8 @@ void main() {
       final colA = (await timelineWrite.createCollection('A')).getOrThrow();
       final source = await newCard(colA, 'source');
       final linkId = (await linksWrite.addLink(
-        sourceCardId: source,
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: source,
         targetKind: ConnectedEntityKind.collection,
         targetId: colA,
       )).getOrThrow();

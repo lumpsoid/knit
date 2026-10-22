@@ -151,35 +151,6 @@ class SqfliteProjectionStorage implements ProjectionStorage {
     }
   }
 
-  @override
-  Future<Map<String, int>> linkCounts(
-    Iterable<String> entityIds, {
-    StorageContext? ctx,
-  }) async {
-    final db = _exec(ctx);
-    final counts = <String, int>{};
-    // Each chunk binds its ids twice (source side + target side).
-    for (final chunk in _chunks(entityIds.toSet().toList(), _maxInArgs ~/ 2)) {
-      final marks = _marks(chunk.length);
-      final rows = await db.rawQuery(
-        'SELECT eid, COUNT(*) AS n FROM ('
-        'SELECT ${LinkSchema.colSourceId} AS eid FROM ${LinkSchema.table} '
-        'WHERE ${EnvelopeColumns.colDeleted} = 0 '
-        'AND ${LinkSchema.colSourceId} IN ($marks) '
-        'UNION ALL '
-        'SELECT ${LinkSchema.colTargetId} AS eid FROM ${LinkSchema.table} '
-        'WHERE ${EnvelopeColumns.colDeleted} = 0 '
-        'AND ${LinkSchema.colTargetId} IN ($marks)'
-        ') GROUP BY eid',
-        [...chunk, ...chunk],
-      );
-      for (final r in rows) {
-        counts[r['eid']! as String] = r['n']! as int;
-      }
-    }
-    return counts;
-  }
-
   /// Bound-parameter budget per `IN (…)` query — under SQLite's historic
   /// 999-variable limit, which older Android builds still enforce.
   static const int _maxInArgs = 800;

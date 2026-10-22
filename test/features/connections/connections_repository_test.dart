@@ -55,7 +55,8 @@ void main() {
       text: 'see recipes',
     )).getOrThrow();
     await links.addLink(
-      sourceCardId: card,
+      sourceKind: ConnectedEntityKind.card,
+      sourceId: card,
       targetKind: ConnectedEntityKind.collection,
       targetId: b,
     );
@@ -146,5 +147,83 @@ void main() {
       'does-not-exist',
     );
     expect(result.isFailure, isTrue);
+  });
+
+  group('ownership and duplicates (§4.4/§6.4)', () {
+    /// Seeds the projection with a collection someone else made (imported,
+    /// read-only), holding the card 'theirs' linked to [targetId].
+    Future<void> importedLinkTo(String targetId) async {
+      Snapshot row(EntityType type, String id, Map<String, Object?> content) =>
+          Snapshot(
+            type: type,
+            id: id,
+            author: 'someone',
+            createdBy: 'someone',
+            createdAt: 1,
+            hlc: const Hlc(1, 0),
+            deleted: false,
+            sig: 'sig-$id',
+            placement: type == EntityType.card ? const Hlc(1, 0) : null,
+            position: type == EntityType.card ? 'a0' : null,
+            content: content,
+          );
+      await store.projection.upsert(
+        row(EntityType.collection, 'imp', {'title': 'Imported'}),
+      );
+      await store.projection.upsert(
+        row(EntityType.card, 'theirs', {
+          'collection_id': 'imp',
+          'kind': 'text',
+          'text': 'their note',
+        }),
+      );
+      await store.projection.upsert(
+        row(EntityType.link, 'their-link', {
+          'source_type': 'card',
+          'source_id': 'theirs',
+          'target_type': 'collection',
+          'target_id': targetId,
+          'label': null,
+        }),
+      );
+    }
+
+    test('own links are removable both ways', () async {
+      final g = await linkedGraph();
+      final out = (await connections(ConnectedEntityKind.card, g.card));
+      expect(out.outgoing.single.removable, isTrue);
+      final back = await connections(ConnectedEntityKind.collection, g.b);
+      expect(back.incoming.single.removable, isTrue);
+    });
+
+    test('a link from an imported card is never removable', () async {
+      final g = await linkedGraph();
+      await importedLinkTo(g.b);
+
+      final back = await connections(ConnectedEntityKind.collection, g.b);
+      final byId = {for (final i in back.incoming) i.otherId: i};
+      expect(byId['theirs']!.removable, isFalse);
+      expect(byId[g.card]!.removable, isTrue);
+      final theirs = await connections(ConnectedEntityKind.card, 'theirs');
+      expect(theirs.outgoing.single.removable, isFalse);
+    });
+
+    test('linking a pair twice is one link, read once', () async {
+      final g = await linkedGraph();
+      final again = (await links.addLink(
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: g.card,
+        targetKind: ConnectedEntityKind.collection,
+        targetId: g.b,
+      )).getOrThrow();
+      expect(again, g.link);
+      expect((await connections(ConnectedEntityKind.card, g.card)).outgoing, [
+        isA<ConnectionItem>(),
+      ]);
+      expect(
+        (await connections(ConnectedEntityKind.collection, g.b)).incoming,
+        hasLength(1),
+      );
+    });
   });
 }

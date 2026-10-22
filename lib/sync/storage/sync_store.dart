@@ -129,20 +129,32 @@ class SyncStore {
   Future<List<Snapshot>> getMany(EntityType type, Iterable<String> ids) =>
       projection.getMany(type, ids);
 
-  /// Live link count (links-out + backlinks) per id in [entityIds], batched.
-  Future<Map<String, int>> linkCounts(Iterable<String> entityIds) =>
-      projection.linkCounts(entityIds);
+  // Every link read below is one row per (source, target) pair (§6.4,
+  // [distinctLinks]): duplicates from concurrent devices or older data read as
+  // the oldest of them.
 
-  Future<List<Snapshot>> backlinks(String targetId) =>
-      projection.backlinks(targetId);
+  /// Live link count (links-out + backlinks) per id in [entityIds], batched —
+  /// a pair counted once ([countLinks]).
+  Future<Map<String, int>> linkCounts(Iterable<String> entityIds) async {
+    final ids = entityIds.toSet();
+    if (ids.isEmpty) return const {};
+    return countLinks([
+      ...await projection.linksOutOf(ids),
+      ...await projection.backlinksTo(ids),
+    ], ids);
+  }
+
+  /// Live links pointing at [targetId] — the backlinks (spec §8.6.2).
+  Future<List<Snapshot>> backlinks(String targetId) async =>
+      distinctLinks(await projection.backlinks(targetId));
 
   /// Live links originating at [sourceId] — forward connections (spec §4.4).
-  Future<List<Snapshot>> linksOut(String sourceId) =>
-      projection.linksOut(sourceId);
+  Future<List<Snapshot>> linksOut(String sourceId) async =>
+      distinctLinks(await projection.linksOut(sourceId));
 
   /// Live links originating at any of [sourceIds] — [linksOut] batched.
-  Future<List<Snapshot>> linksOutOf(Iterable<String> sourceIds) =>
-      projection.linksOutOf(sourceIds);
+  Future<List<Snapshot>> linksOutOf(Iterable<String> sourceIds) async =>
+      distinctLinks(await projection.linksOutOf(sourceIds));
 
   /// The §8.6.3 home-row summaries of just [collectionIds] (the live ones
   /// among them; deleted or missing ids are absent), in home order — two
@@ -166,7 +178,7 @@ class SyncStore {
   ) async {
     final ids = collectionIds.toSet();
     if (ids.isEmpty) return const {};
-    final links = await projection.backlinksTo(ids);
+    final links = distinctLinks(await projection.backlinksTo(ids));
     final cardIds = {
       for (final l in links)
         if (l.content['source_type'] == EntityType.card.name)
@@ -510,6 +522,100 @@ class SyncStore {
         );
       }
       await deviceClock.save(_clock.now, ctx: ctx);
+      return ops;
+    });
+  }
+
+  /// Link the [sourceType] entity [sourceId] to the [targetType] entity
+  /// [targetId] — one link per pair (§6.4): when a live link already joins
+  /// them, nothing is written and its id comes back; otherwise a new neutral
+  /// link [linkId] is created. The check and the write share one transaction.
+  /// Returns the id of the link that joins the pair.
+  Future<String> createLink({
+    required String linkId,
+    required EntityType sourceType,
+    required String sourceId,
+    required EntityType targetType,
+    required String targetId,
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    final pair = LinkPair(
+      sourceType: sourceType.name,
+      sourceId: sourceId,
+      targetType: targetType.name,
+      targetId: targetId,
+    );
+    return _unitOfWork.run((ctx) async {
+      for (final link in distinctLinks(
+        await projection.linksOut(sourceId, ctx: ctx),
+      )) {
+        if (LinkPair.of(link) == pair) return link.id;
+      }
+      await _writeOne(
+        ctx: ctx,
+        identity: identity,
+        now: now,
+        type: EntityType.link,
+        id: linkId,
+        build: _creation(EntityType.link, linkId, {
+          'source_type': pair.sourceType,
+          'source_id': sourceId,
+          'target_type': pair.targetType,
+          'target_id': targetId,
+          'label': null,
+        }, null),
+      );
+      await deviceClock.save(_clock.now, ctx: ctx);
+      return linkId;
+    });
+  }
+
+  /// Remove the link [linkId] and every live duplicate of its pair (§6.4) —
+  /// a signed delete each, all in **one** transaction, so a duplicate can't
+  /// make the link reappear. Both endpoints are left untouched. Returns the
+  /// ops ([linkId]'s first when it was live).
+  Future<List<PersistedOp>> deleteLink(
+    String linkId, {
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    return _unitOfWork.run((ctx) async {
+      final link = _require(
+        await projection.get(EntityType.link, linkId, ctx: ctx),
+        'delete',
+        EntityType.link,
+        linkId,
+      );
+      final doomed = [
+        if (!link.deleted) link.id,
+        for (final other in await projection.linksOut(
+          link.content['source_id'] as String,
+          ctx: ctx,
+        ))
+          if (other.id != link.id && isDuplicateLink(other, link)) other.id,
+      ];
+      final ops = <PersistedOp>[];
+      for (final id in doomed) {
+        ops.add(
+          await _writeOne(
+            ctx: ctx,
+            identity: identity,
+            now: now,
+            type: EntityType.link,
+            id: id,
+            build: (stamp, prior, author) => prior!.copyWith(
+              author: author,
+              hlc: stamp, // content-dimension event (§6.9)
+              deleted: true,
+              sig: '',
+            ),
+          ),
+        );
+      }
+      if (ops.isNotEmpty) await deviceClock.save(_clock.now, ctx: ctx);
       return ops;
     });
   }

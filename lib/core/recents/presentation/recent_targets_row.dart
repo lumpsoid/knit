@@ -4,15 +4,18 @@ import 'package:knit/l10n/app_localizations.dart';
 /// A picker's "Recent" row (§4.2/§4.4): a small heading over one chip per
 /// recently used collection, most recent first. Takes the chips' [labels]
 /// (already display-ready) and reports a tap by its index through
-/// [onSelected]. Builds nothing when [labels] is empty.
+/// [onSelected]. The indexes in [checked] show a ✓ instead of the history
+/// icon. Builds nothing when [labels] is empty.
 class RecentTargetsRow extends StatelessWidget {
   const RecentTargetsRow({
     super.key,
     required this.labels,
     required this.onSelected,
+    this.checked = const {},
   });
 
   final List<String> labels;
+  final Set<int> checked;
   final ValueChanged<int> onSelected;
 
   @override
@@ -38,7 +41,10 @@ class RecentTargetsRow extends StatelessWidget {
             children: [
               for (var i = 0; i < labels.length; i++)
                 ActionChip(
-                  avatar: const Icon(Icons.history, size: 18),
+                  avatar: Icon(
+                    checked.contains(i) ? Icons.check : Icons.history,
+                    size: 18,
+                  ),
                   label: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 160),
                     child: Text(

@@ -10,7 +10,7 @@ import 'package:knit/features/connections/presentation/connections_state.dart';
 /// loaded payload refines the current crumb's title to the entity's real label.
 /// A collection focus then loads its "Mentioned in" list (§8.6.5) as a second
 /// step; a Link takes the row out at once and re-reads, so it reappears as a
-/// backlink.
+/// backlink. Remove (a removable row only) and its Undo write, then re-read.
 class ConnectionsUpdater
     implements Updater<ConnectionsState, ConnectionsAction, ConnectionsEffect> {
   const ConnectionsUpdater();
@@ -100,6 +100,17 @@ class ConnectionsUpdater
 
       case ClearLinkRequested(:final linkId):
         return (state, [ClearLinkEffect(linkId)]);
+
+      case RemoveLinkRequested(:final item):
+        final data = state.data;
+        if (data == null || !item.removable) return (state, null);
+        return (
+          state,
+          [RemoveLinkEffect(linkId: item.linkId, ends: data.endsOf(item))],
+        );
+
+      case UndoRemoveLinkRequested(:final ends):
+        return (state, [RestoreLinkEffect(ends)]);
 
       case DeactivateFeature():
         return (state, null);

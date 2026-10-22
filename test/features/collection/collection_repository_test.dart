@@ -100,7 +100,8 @@ void main() {
       )).getOrThrow();
 
       await linkWrite.addLink(
-        sourceCardId: cardId,
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: cardId,
         targetKind: ConnectedEntityKind.collection,
         targetId: otherId,
       );
@@ -130,7 +131,8 @@ void main() {
 
     Future<void> linkTo(String cardId, String colId) async =>
         (await linkWrite.addLink(
-          sourceCardId: cardId,
+          sourceKind: ConnectedEntityKind.card,
+          sourceId: cardId,
           targetKind: ConnectedEntityKind.collection,
           targetId: colId,
         )).getOrThrow();
@@ -269,7 +271,8 @@ void main() {
       final other = await addText(index, 'a1', 'other');
       await linkTo(label, trips);
       await linkWrite.addLink(
-        sourceCardId: label,
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: label,
         targetKind: ConnectedEntityKind.card,
         targetId: other,
       );
@@ -294,7 +297,8 @@ void main() {
     )).getOrThrow();
 
     await linkWrite.addLink(
-      sourceCardId: src,
+      sourceKind: ConnectedEntityKind.card,
+      sourceId: src,
       targetKind: ConnectedEntityKind.card,
       targetId: dst,
     );
@@ -330,7 +334,8 @@ void main() {
       // Link source → target. Both ends show the link once: the source via its
       // link-out, the target via its backlink. Neither is double-counted.
       await linkWrite.addLink(
-        sourceCardId: src,
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: src,
         targetKind: ConnectedEntityKind.card,
         targetId: dst,
       );
@@ -359,7 +364,8 @@ void main() {
       expect((await load(otherId)).connectionCount, 0);
 
       await linkWrite.addLink(
-        sourceCardId: cardId,
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: cardId,
         targetKind: ConnectedEntityKind.collection,
         targetId: otherId,
       );
@@ -492,12 +498,14 @@ void main() {
         final a = all.cards[5].id;
         final b = all.cards[6].id;
         await linkWrite.addLink(
-          sourceCardId: a,
+          sourceKind: ConnectedEntityKind.card,
+          sourceId: a,
           targetKind: ConnectedEntityKind.card,
           targetId: b,
         );
         await linkWrite.addLink(
-          sourceCardId: b,
+          sourceKind: ConnectedEntityKind.card,
+          sourceId: b,
           targetKind: ConnectedEntityKind.collection,
           targetId: colId,
         );

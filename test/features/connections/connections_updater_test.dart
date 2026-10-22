@@ -16,6 +16,7 @@ void main() {
     String otherId = 'other',
     bool broken = false,
     String? label = 'Other',
+    bool ownSource = false,
   }) => ConnectionItem(
     linkId: linkId,
     direction: direction,
@@ -23,6 +24,7 @@ void main() {
     otherId: otherId,
     broken: broken,
     label: label,
+    ownSource: ownSource,
   );
 
   ConnectionsData data({
@@ -193,6 +195,84 @@ void main() {
       const ClearLinkRequested('l1'),
     );
     expect((effects!.single as ClearLinkEffect).linkId, 'l1');
+  });
+
+  group('Remove + Undo (§4.4)', () {
+    test('a removable link out is removed; Undo re-links focus → far end', () {
+      final out = item(
+        'l1',
+        direction: ConnectionDirection.outgoing,
+        otherKind: ConnectedEntityKind.card,
+        otherId: 'c9',
+        ownSource: true,
+      );
+      final state = ConnectionsState(
+        status: ConnectionsStatus.ready,
+        data: data(outgoing: [out]),
+      );
+      final (next, effects) = updater.update(state, RemoveLinkRequested(out));
+      expect(next, same(state));
+      final effect = effects!.single as RemoveLinkEffect;
+      expect(effect.linkId, 'l1');
+      expect(
+        effect.ends,
+        const LinkEnds(
+          sourceKind: ConnectedEntityKind.collection,
+          sourceId: 'root',
+          targetKind: ConnectedEntityKind.card,
+          targetId: 'c9',
+        ),
+      );
+
+      final (_, undo) = updater.update(
+        state,
+        UndoRemoveLinkRequested(effect.ends),
+      );
+      expect((undo!.single as RestoreLinkEffect).ends, effect.ends);
+    });
+
+    test('a backlink from an own card: its source is the far end', () {
+      final back = item(
+        'l2',
+        direction: ConnectionDirection.incoming,
+        otherKind: ConnectedEntityKind.card,
+        otherId: 'mine',
+        ownSource: true,
+      );
+      final (_, effects) = updater.update(
+        ConnectionsState(data: data(incoming: [back])),
+        RemoveLinkRequested(back),
+      );
+      expect(
+        (effects!.single as RemoveLinkEffect).ends,
+        const LinkEnds(
+          sourceKind: ConnectedEntityKind.card,
+          sourceId: 'mine',
+          targetKind: ConnectedEntityKind.collection,
+          targetId: 'root',
+        ),
+      );
+    });
+
+    test('an imported source, or a broken link, is not removable', () {
+      final foreign = item('l3', direction: ConnectionDirection.incoming);
+      final broken = item(
+        'l4',
+        direction: ConnectionDirection.outgoing,
+        broken: true,
+        ownSource: true,
+      );
+      expect(foreign.removable, isFalse);
+      expect(broken.removable, isFalse);
+      final state = ConnectionsState(
+        data: data(outgoing: [broken], incoming: [foreign]),
+      );
+      for (final row in [foreign, broken]) {
+        final (next, effects) = updater.update(state, RemoveLinkRequested(row));
+        expect(next, same(state));
+        expect(effects, isNull);
+      }
+    });
   });
 
   group('Mentioned in (§8.6.5)', () {

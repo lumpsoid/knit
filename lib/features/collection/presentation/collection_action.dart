@@ -137,6 +137,12 @@ class LinkRequested extends CollectionAction {
   final String targetId;
 }
 
+/// Finder → a ✓ target tapped again: remove the link [linkId] (§4.4).
+class UnlinkRequested extends CollectionAction {
+  const UnlinkRequested(this.linkId);
+  final String linkId;
+}
+
 /// Enter / leave drag-to-reorder mode (§4.2).
 class StartReorder extends CollectionAction {
   const StartReorder();

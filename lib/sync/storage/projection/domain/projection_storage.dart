@@ -61,14 +61,6 @@ abstract class ProjectionStorage {
     StorageContext? ctx,
   });
 
-  /// For each of [entityIds], how many live links it takes part in — links-out
-  /// plus backlinks, i.e. `linksOut(id).length + backlinks(id).length` — in one
-  /// batched read. Ids with no live link are absent (read as zero).
-  Future<Map<String, int>> linkCounts(
-    Iterable<String> entityIds, {
-    StorageContext? ctx,
-  });
-
   /// Live links pointing at [targetId] — the backlink query (spec §8.6.2).
   /// Endpoint liveness (the broken-link chip, §8.6.1) is resolved by the caller.
   Future<List<Snapshot>> backlinks(String targetId, {StorageContext? ctx});

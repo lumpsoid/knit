@@ -60,6 +60,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionUnarchive => 'Unarchive';
 
   @override
+  String get actionUndo => 'Undo';
+
+  @override
   String get labelUntitled => 'Untitled';
 
   @override
@@ -512,6 +515,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionNoCardsToLink => 'No cards here to link to.';
 
   @override
+  String get linkPickerLinked => 'Linked';
+
+  @override
   String get collectionOrACardInIt => 'Or a card in it';
 
   @override
@@ -739,6 +745,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectionsLinkFailed => 'That didn\'t link. Please try again.';
+
+  @override
+  String get connectionsLinkActions => 'Link actions';
+
+  @override
+  String get connectionsRemoveLink => 'Remove link';
+
+  @override
+  String get connectionsLinkRemoved => 'Link removed';
+
+  @override
+  String get connectionsRemoveFailed =>
+      'That didn\'t remove. Please try again.';
 
   @override
   String get profileTitle => 'Profile';

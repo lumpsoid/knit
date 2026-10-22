@@ -103,9 +103,14 @@ class _CardEditPageState extends State<CardEditPage> {
       source: LinkSource(cardId: args.cardId, collectionId: args.collectionId),
     );
     if (option == null || !mounted) return;
-    _controller.dispatch(
-      AddLinkRequested(targetKind: option.kind, targetId: option.id),
-    );
+    _controller.dispatch(switch (option) {
+      LinkTargetPicked(:final target) => AddLinkRequested(
+        targetKind: target.kind,
+        targetId: target.id,
+      ),
+      // A ✓ target tapped again: the same remove as a link row's.
+      LinkTargetUnpicked(:final linkId) => RemoveLinkRequested(linkId),
+    });
   }
 
   @override

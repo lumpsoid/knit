@@ -57,6 +57,19 @@ class ClearLinkRequested extends ConnectionsAction {
   final String linkId;
 }
 
+/// A row's ⋮ → Remove: delete its link, every duplicate of the pair with it
+/// (§4.4/§6.4). Only a [ConnectionItem.removable] row offers it.
+class RemoveLinkRequested extends ConnectionsAction {
+  const RemoveLinkRequested(this.item);
+  final ConnectionItem item;
+}
+
+/// The "Link removed" snackbar's Undo → link the same two ends again.
+class UndoRemoveLinkRequested extends ConnectionsAction {
+  const UndoRemoveLinkRequested(this.ends);
+  final LinkEnds ends;
+}
+
 /// The "Mentioned in" rows (§4.4, §8.6.5) for the collection [collectionId],
 /// read after its links. Dropped when the focus has moved on since.
 class MentionsLoaded extends ConnectionsAction {

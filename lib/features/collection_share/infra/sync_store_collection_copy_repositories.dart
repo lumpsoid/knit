@@ -31,11 +31,12 @@ class SyncStoreCollectionForkRepository implements CollectionForkRepository {
       }
       final cards = await store.feed(collectionId);
       final sources = {collectionId, for (final c in cards) c.id};
-      final links = [
+      // One link per pair (§6.4): a duplicate is not copied into the fork.
+      final links = distinctLinks([
         for (final l in await store.readAll(EntityType.link))
           if (!l.deleted && sources.contains(l.content[LinkSchema.colSourceId]))
             l,
-      ];
+      ]);
       final attachmentIds = {
         ?collection.content[CollectionSchema.colCoverAttachmentId] as String?,
         for (final c in cards) ...CardSchema.attachmentIdsOf(c.content),

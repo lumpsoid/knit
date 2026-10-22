@@ -24,8 +24,8 @@ sealed class LinkTile {
 
   /// The node a card links to *as its whole purpose* — a collection or a card
   /// — or null when the card is anything more (§4.2). That card has no
-  /// attachment and exactly one live link out, to a collection or a card; its
-  /// text is blank or one short line (a label, up to [maxLabelLength]
+  /// attachment and exactly one live link out, to a collection or a card
+  /// (duplicates of one pair are one link, §6.4); its text is blank or one short line (a label, up to [maxLabelLength]
   /// characters). A link card qualifies only without text, since its text is
   /// the URL it opens. Whether the target is still live is the caller's to
   /// check: a broken one gets no tile.
@@ -35,8 +35,9 @@ sealed class LinkTile {
     required List<String> attachmentIds,
     required List<CardLinkOut> linksOut,
   }) {
-    if (attachmentIds.isNotEmpty || linksOut.length != 1) return null;
-    final link = linksOut.single;
+    final distinct = linksOut.toSet();
+    if (attachmentIds.isNotEmpty || distinct.length != 1) return null;
+    final link = distinct.single;
     if (link.targetKind == ConnectedEntityKind.unknown) return null;
     final label = text?.trim() ?? '';
     final isLabel = switch (kind) {

@@ -6,15 +6,19 @@ import 'package:result_dart/result_dart.dart';
 /// one signed local write (§8.5). Links are neutral (no label here) and point
 /// at a generic entity: [ConnectedEntityKind.collection] or a card.
 abstract interface class CardLinksWriteRepository {
-  /// Create a link from [sourceCardId] to the [targetKind] entity [targetId].
-  /// Returns the new link's id.
+  /// Create a link from the [sourceKind] entity [sourceId] (a card, or for an
+  /// Undo of a collection's link, a collection) to the [targetKind] entity
+  /// [targetId].
+  /// One link per pair (§6.4): when one already joins them, nothing is written.
+  /// Returns the id of the link that joins them.
   Future<Result<String, CardLinksFailure>> addLink({
-    required String sourceCardId,
+    required ConnectedEntityKind sourceKind,
+    required String sourceId,
     required ConnectedEntityKind targetKind,
     required String targetId,
   });
 
-  /// Delete the link [linkId] — both endpoints are left untouched. Also how a
-  /// broken link (§8.6.1) is cleared.
+  /// Delete the link [linkId] and every duplicate of its pair (§6.4) — both
+  /// endpoints are left untouched. Also how a broken link (§8.6.1) is cleared.
   Future<Result<String, CardLinksFailure>> removeLink(String linkId);
 }

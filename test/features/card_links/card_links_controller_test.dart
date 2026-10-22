@@ -21,6 +21,9 @@ class _FakeRead implements LinkTargetsReadRepository {
   Map<String, List<LinkTarget>> cards = {
     'col-1': [_card('c1'), _card('c2')],
   };
+  Map<(ConnectedEntityKind, String), String> linked = {};
+  bool failLinked = false;
+  final linkedReads = <String>[];
   bool fail = false;
   int collectionReads = 0;
   final Map<String, int> cardReads = {};
@@ -32,6 +35,15 @@ class _FakeRead implements LinkTargetsReadRepository {
     await gate?.future;
     if (fail) return Failure(CardLinksReadFailure(StateError('boom')));
     return Ok(collections);
+  }
+
+  @override
+  Future<Result<LinkedTargets, CardLinksFailure>> loadLinkedTargets(
+    String cardId,
+  ) async {
+    linkedReads.add(cardId);
+    if (failLinked) return Failure(CardLinksReadFailure(StateError('boom')));
+    return Ok(LinkedTargets(linked));
   }
 
   @override
@@ -51,12 +63,13 @@ class _FakeWrite implements CardLinksWriteRepository {
 
   @override
   Future<Result<String, CardLinksFailure>> addLink({
-    required String sourceCardId,
+    required ConnectedEntityKind sourceKind,
+    required String sourceId,
     required ConnectedEntityKind targetKind,
     required String targetId,
   }) async {
     if (fail) return Failure(CardLinksWriteFailure(StateError('boom')));
-    added.add((sourceCardId, targetKind, targetId));
+    added.add((sourceId, targetKind, targetId));
     return const Ok('link-1');
   }
 
@@ -138,6 +151,43 @@ void main() {
     });
   });
 
+  group('✓ linked targets', () {
+    test('the source card\'s links mark ✓ and toggle to unlink', () async {
+      read.linked = {(ConnectedEntityKind.collection, 'col-2'): 'l-2'};
+      await controller.openPicker(source);
+      expect(read.linkedReads, ['c1']);
+      expect(controller.state.isLinked(_col('col-2')), isTrue);
+      expect(controller.state.isLinked(_card('c2')), isFalse);
+
+      final unpick = controller.state.choose(_col('col-2'));
+      expect(unpick, isA<LinkTargetUnpicked>());
+      expect((unpick as LinkTargetUnpicked).linkId, 'l-2');
+      expect(controller.state.choose(_card('c2')), isA<LinkTargetPicked>());
+    });
+
+    test('no source card (a new Connection), no checks read', () async {
+      read.linked = {(ConnectedEntityKind.collection, 'col-2'): 'l-2'};
+      await controller.openPicker(const NewConnection(collectionId: 'col-1'));
+      expect(read.linkedReads, isEmpty);
+      expect(controller.state.isLinked(_col('col-2')), isFalse);
+    });
+
+    test('a failed read shows no ✓, the list still loads', () async {
+      read.failLinked = true;
+      await controller.openPicker(source);
+      expect(controller.state.collections, hasLength(2));
+      expect(controller.state.isLinked(_col('col-2')), isFalse);
+    });
+
+    test('a new session forgets the last one\'s checks', () async {
+      read.linked = {(ConnectedEntityKind.collection, 'col-2'): 'l-2'};
+      await controller.openPicker(source);
+      read.linked = {};
+      await controller.openPicker(source);
+      expect(controller.state.isLinked(_col('col-2')), isFalse);
+    });
+  });
+
   group('recent row', () {
     test('lists recent collections the source may link to', () async {
       read.collections = [_col('col-1'), _col('col-2'), _col('col-3')];
@@ -182,7 +232,7 @@ void main() {
   group('writes', () {
     test('link adds a link from the source card to the target', () async {
       final result = await controller.link(
-        sourceCardId: 'c1',
+        sourceId: 'c1',
         targetKind: ConnectedEntityKind.card,
         targetId: 'c9',
       );
@@ -192,7 +242,7 @@ void main() {
 
     test('a link to a collection is remembered as recent', () async {
       await controller.link(
-        sourceCardId: 'c1',
+        sourceId: 'c1',
         targetKind: ConnectedEntityKind.collection,
         targetId: 'col-2',
       );
@@ -203,13 +253,13 @@ void main() {
 
     test('a card link or a failed link remembers nothing', () async {
       await controller.link(
-        sourceCardId: 'c1',
+        sourceId: 'c1',
         targetKind: ConnectedEntityKind.card,
         targetId: 'c9',
       );
       write.fail = true;
       await controller.link(
-        sourceCardId: 'c1',
+        sourceId: 'c1',
         targetKind: ConnectedEntityKind.collection,
         targetId: 'col-2',
       );

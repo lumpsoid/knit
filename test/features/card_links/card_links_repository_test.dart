@@ -77,7 +77,8 @@ void main() {
     final card = await newCard(col, 'see recipes', 'a0');
 
     final linkId = (await links.addLink(
-      sourceCardId: card,
+      sourceKind: ConnectedEntityKind.card,
+      sourceId: card,
       targetKind: ConnectedEntityKind.collection,
       targetId: other,
     )).getOrThrow();

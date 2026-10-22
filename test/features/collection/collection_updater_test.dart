@@ -622,6 +622,14 @@ void main() {
         ('c1', ConnectedEntityKind.card, 'c9'),
       );
     });
+
+    test('a ✓ target tapped again emits UnlinkEffect for its link', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const UnlinkRequested('l1'),
+      );
+      expect((effects!.single as UnlinkEffect).linkId, 'l1');
+    });
   });
 
   group('share', () {

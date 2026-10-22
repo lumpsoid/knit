@@ -200,6 +200,12 @@ abstract class AppLocalizations {
   /// **'Unarchive'**
   String get actionUnarchive;
 
+  /// No description provided for @actionUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get actionUndo;
+
   /// No description provided for @labelUntitled.
   ///
   /// In en, this message translates to:
@@ -980,6 +986,12 @@ abstract class AppLocalizations {
   /// **'No cards here to link to.'**
   String get collectionNoCardsToLink;
 
+  /// No description provided for @linkPickerLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked'**
+  String get linkPickerLinked;
+
   /// No description provided for @collectionOrACardInIt.
   ///
   /// In en, this message translates to:
@@ -1351,6 +1363,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That didn\'t link. Please try again.'**
   String get connectionsLinkFailed;
+
+  /// No description provided for @connectionsLinkActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Link actions'**
+  String get connectionsLinkActions;
+
+  /// No description provided for @connectionsRemoveLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove link'**
+  String get connectionsRemoveLink;
+
+  /// No description provided for @connectionsLinkRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Link removed'**
+  String get connectionsLinkRemoved;
+
+  /// No description provided for @connectionsRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t remove. Please try again.'**
+  String get connectionsRemoveFailed;
 
   /// No description provided for @profileTitle.
   ///

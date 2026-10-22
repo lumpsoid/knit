@@ -1,4 +1,5 @@
 import 'package:knit/app/app_graph.dart';
+import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/connections/domain/connections_failure.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/connections/domain/connections_read_repository.dart';
@@ -10,7 +11,9 @@ import 'package:result_dart/result_dart.dart';
 /// (§8.6.2). Each far endpoint's liveness is the canonical §8.6.1 derivation —
 /// [SyncStore.linkStatus] (the [BrokenLinkResolver]) — so the broken-or-not
 /// rule lives in one place, not re-implemented here. The far endpoint's label
-/// is read from the projection only when it is live.
+/// is read from the projection only when it is live, and so is whether the
+/// link's source is this identity's own ([CollectionOwnership]) — the focus
+/// for a link out, the far end for a backlink — so its link may be removed.
 class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
   SyncStoreConnectionsReadRepository({required AppGraph graph})
     : _graph = graph;
@@ -29,17 +32,29 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
         return const Failure(ConnectionsLoadFailure('entity not found'));
       }
 
+      final me = await store.authorPubkey();
+      final focusOwn = await _own(store, focus, me);
       final outgoing = <ConnectionItem>[];
       for (final link in await store.linksOut(id)) {
         outgoing.add(
-          await _item(store, link, direction: ConnectionDirection.outgoing),
+          await _item(
+            store,
+            link,
+            direction: ConnectionDirection.outgoing,
+            ownSource: (_) async => focusOwn,
+          ),
         );
       }
 
       final incoming = <ConnectionItem>[];
       for (final link in await store.backlinks(id)) {
         incoming.add(
-          await _item(store, link, direction: ConnectionDirection.incoming),
+          await _item(
+            store,
+            link,
+            direction: ConnectionDirection.incoming,
+            ownSource: (source) => _own(store, source, me),
+          ),
         );
       }
 
@@ -59,11 +74,13 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
 
   /// Build one connection. The *far* endpoint is the target for an outgoing link
   /// and the source for a backlink (§8.6.2); its brokenness comes from the
-  /// resolver and its label from the projection (only when live).
+  /// resolver and its label from the projection (only when live). [ownSource]
+  /// tells, given the live far end, whether the link's source is own.
   Future<ConnectionItem> _item(
     SyncStore store,
     Snapshot link, {
     required ConnectionDirection direction,
+    required Future<bool> Function(Snapshot other) ownSource,
   }) async {
     final status = await store.linkStatus(link);
     final outgoing = direction == ConnectionDirection.outgoing;
@@ -87,7 +104,21 @@ class SyncStoreConnectionsReadRepository implements ConnectionsReadRepository {
       openCollectionId: other == null
           ? null
           : _openCollectionId(otherKind, other),
+      ownSource: other != null && await ownSource(other),
     );
+  }
+
+  /// Whether [entity] is this identity's ([me]) own: a collection by its
+  /// `created_by`, a card by its collection's (docs/collection_share.md).
+  Future<bool> _own(SyncStore store, Snapshot entity, String me) async {
+    final collection = entity.type == EntityType.card
+        ? await store.get(
+            EntityType.collection,
+            entity.content[CardSchema.colCollectionId] as String,
+          )
+        : entity;
+    return collection != null &&
+        CollectionOwnership.of(collection.createdBy, me).canEdit;
   }
 
   /// The collection to open so [other] can be seen inside it (§4.2): a collection

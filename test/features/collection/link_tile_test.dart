@@ -63,8 +63,13 @@ void main() {
       expect(targetOf(linksOut: const []), isNull);
       expect(targetOf(linksOut: const [toUnknown]), isNull);
       expect(targetOf(linksOut: const [toTrips, toCard]), isNull);
-      expect(targetOf(linksOut: const [toCard, toCard]), isNull);
-      expect(targetOf(linksOut: const [toTrips, toTrips]), isNull);
+    });
+
+    test('duplicate links to one target are one link: still a tile', () {
+      // One link per pair (§6.4): duplicates read as one.
+      expect(targetOf(linksOut: const [toCard, toCard]), toCard);
+      expect(targetOf(linksOut: const [toTrips, toTrips]), toTrips);
+      expect(targetOf(linksOut: const [toTrips, toTrips, toCard]), isNull);
     });
   });
 

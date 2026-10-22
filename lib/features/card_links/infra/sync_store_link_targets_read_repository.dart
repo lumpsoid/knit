@@ -9,7 +9,8 @@ import 'package:result_dart/result_dart.dart';
 
 /// [LinkTargetsReadRepository] over the graph's [SyncStore]: the collections
 /// via [SyncStore.readAll], a collection's cards via [SyncStore.feed] — one
-/// level per call, as the picker drills.
+/// level per call, as the picker drills — and a card's linked targets via
+/// [SyncStore.linksOut] (one per pair, §6.4).
 class SyncStoreLinkTargetsReadRepository implements LinkTargetsReadRepository {
   SyncStoreLinkTargetsReadRepository({required AppGraph graph})
     : _graph = graph;
@@ -48,8 +49,21 @@ class SyncStoreLinkTargetsReadRepository implements LinkTargetsReadRepository {
     ];
   });
 
-  Future<Result<List<LinkTarget>, CardLinksFailure>> _read(
-    Future<List<LinkTarget>> Function() op,
+  @override
+  Future<Result<LinkedTargets, CardLinksFailure>> loadLinkedTargets(
+    String cardId,
+  ) => _read(() async {
+    return LinkedTargets({
+      for (final link in await _graph.store.linksOut(cardId))
+        (
+          ConnectedEntityKind.fromTag(link.content['target_type'] as String?),
+          link.content['target_id'] as String,
+        ): link.id,
+    });
+  });
+
+  Future<Result<T, CardLinksFailure>> _read<T extends Object>(
+    Future<T> Function() op,
   ) async {
     try {
       return Ok(await op());

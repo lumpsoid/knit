@@ -17,6 +17,8 @@ import 'package:knit/features/connections/presentation/connections_ui_effect.dar
 /// the shared card links, then re-reads the focus (via [ReloadRequested]) so the projection — not an optimistic guess —
 /// is the source of truth. So does linking an unlinked mention; the mentions
 /// themselves are the pure [UnlinkedMentionFinder]'s pick over the read corpus.
+/// Removing a link (and its Undo) writes the same way, then re-reads; a
+/// removal also raises the "Link removed" snackbar that carries the Undo.
 class ConnectionsShell extends Shell<ConnectionsEffect, ConnectionsAction> {
   ConnectionsShell({
     required ConnectionsReadRepository readRepository,
@@ -76,7 +78,7 @@ class ConnectionsShell extends Shell<ConnectionsEffect, ConnectionsAction> {
 
       case LinkMentionEffect(:final cardId, :final collectionId):
         final result = await _cardLinks.link(
-          sourceCardId: cardId,
+          sourceId: cardId,
           targetKind: ConnectedEntityKind.collection,
           targetId: collectionId,
         );
@@ -91,6 +93,44 @@ class ConnectionsShell extends Shell<ConnectionsEffect, ConnectionsAction> {
           );
           dispatch(const ReloadRequested());
         });
+
+      case RemoveLinkEffect(:final linkId, :final ends):
+        final result = await _cardLinks.unlink(linkId);
+        result.onTap(
+          (_) => _effectEmitter.push(ConnectionsLinkRemovedUiEffect(ends)),
+          (failure) {
+            _log.severe(
+              'Connections remove-link failed',
+              failure.error,
+              failure.stackTrace,
+            );
+            _effectEmitter.push(
+              const ConnectionsShowMessageUiEffect(
+                ConnectionsMessage.removeFailed,
+              ),
+            );
+          },
+        );
+        dispatch(const ReloadRequested());
+
+      case RestoreLinkEffect(:final ends):
+        final result = await _cardLinks.link(
+          sourceKind: ends.sourceKind,
+          sourceId: ends.sourceId,
+          targetKind: ends.targetKind,
+          targetId: ends.targetId,
+        );
+        result.onFailure((failure) {
+          _log.severe(
+            'Connections undo-remove failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          _effectEmitter.push(
+            const ConnectionsShowMessageUiEffect(ConnectionsMessage.linkFailed),
+          );
+        });
+        dispatch(const ReloadRequested());
 
       case ClearLinkEffect(:final linkId):
         final result = await _cardLinks.unlink(linkId);

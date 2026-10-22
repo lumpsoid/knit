@@ -19,6 +19,7 @@
   "actionUnpin": "Открепить",
   "actionArchive": "В архив",
   "actionUnarchive": "Вернуть из архива",
+  "actionUndo": "Отменить",
 
   "labelUntitled": "Без названия",
   "labelEmptyNote": "Пустая заметка",
@@ -203,6 +204,7 @@
     }
   },
   "collectionNoCardsToLink": "Здесь нет карточек для связи.",
+  "linkPickerLinked": "Связано",
   "collectionOrACardInIt": "Или карточку в ней",
 
   "collectionDescriptionEmpty": "Без описания",
@@ -299,6 +301,10 @@
   "connectionsMentionedIn": "Упоминается в",
   "connectionsMentionsMore": "ещё {count}",
   "connectionsLinkFailed": "Не удалось связать. Попробуйте ещё раз.",
+  "connectionsLinkActions": "Действия со связью",
+  "connectionsRemoveLink": "Убрать связь",
+  "connectionsLinkRemoved": "Связь убрана",
+  "connectionsRemoveFailed": "Не удалось убрать. Попробуйте ещё раз.",
 
   "profileTitle": "Профиль",
   "profileNicknameLabel": "Никнейм",

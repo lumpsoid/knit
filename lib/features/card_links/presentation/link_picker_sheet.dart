@@ -11,8 +11,9 @@ import 'package:knit/l10n/app_localizations.dart';
 /// open: browse the collections, link to one directly (the "Recent" row offers
 /// the ones last linked to), or drill into one to pick a card in it. Renders
 /// the shared [CardLinksState]; drilling asks for a collection's cards
-/// through [onOpenCollection]. Pops the picked
-/// [LinkTarget] (null when dismissed).
+/// through [onOpenCollection]. A target the source card already links to shows
+/// a ✓, and tapping it again picks its removal. Pops the [LinkPickerChoice]
+/// (null when dismissed).
 class LinkPickerSheet extends StatefulWidget {
   const LinkPickerSheet({
     super.key,
@@ -23,14 +24,15 @@ class LinkPickerSheet extends StatefulWidget {
   final CardLinksState state;
   final ValueChanged<String> onOpenCollection;
 
-  /// Open the picker for [source] over [links] and return the picked target.
-  static Future<LinkTarget?> show(
+  /// Open the picker for [source] over [links] and return the choice: a
+  /// target to link, or a ✓ one to unlink.
+  static Future<LinkPickerChoice?> show(
     BuildContext context, {
     required CardLinksController links,
     required LinkPick source,
   }) {
     unawaited(links.openPicker(source));
-    return showModalBottomSheet<LinkTarget>(
+    return showModalBottomSheet<LinkPickerChoice>(
       context: context,
       isScrollControlled: true,
       builder: (_) => LinkPickerSheet(
@@ -52,6 +54,10 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
     setState(() => _drilledId = collection.id);
     widget.onOpenCollection(collection.id);
   }
+
+  /// Pop what tapping [target] means: link it, or unlink a ✓ one.
+  void _choose(LinkTarget target) =>
+      Navigator.of(context).pop(widget.state.choose(target));
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +100,11 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
         }),
         RecentTargetsRow(
           labels: [for (final c in recents) _collectionLabel(l10n, c)],
-          onSelected: (i) => Navigator.of(context).pop(recents[i]),
+          checked: {
+            for (var i = 0; i < recents.length; i++)
+              if (state.isLinked(recents[i])) i,
+          },
+          onSelected: (i) => _choose(recents[i]),
         ),
         for (final c in collections)
           ListTile(
@@ -107,9 +117,15 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (state.canLinkToCollection(c.id))
+                if (state.isLinked(c))
+                  TextButton.icon(
+                    onPressed: () => _choose(c),
+                    icon: const Icon(Icons.check),
+                    label: Text(l10n.linkPickerLinked),
+                  )
+                else if (state.canLinkToCollection(c.id))
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(c),
+                    onPressed: () => _choose(c),
                     child: Text(l10n.actionLink),
                   ),
                 IconButton(
@@ -149,7 +165,10 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            onTap: () => Navigator.of(context).pop(collection),
+            trailing: state.isLinked(collection)
+                ? Icon(Icons.check, semanticLabel: l10n.linkPickerLinked)
+                : null,
+            onTap: () => _choose(collection),
           ),
         if (cards == null)
           const _SheetSpinner()
@@ -170,7 +189,10 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              onTap: () => Navigator.of(context).pop(card),
+              trailing: state.isLinked(card)
+                  ? Icon(Icons.check, semanticLabel: l10n.linkPickerLinked)
+                  : null,
+              onTap: () => _choose(card),
             ),
         ],
       ],

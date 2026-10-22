@@ -13,6 +13,20 @@ import 'package:knit/l10n/app_localizations.dart';
 import 'package:result_dart/result_dart.dart';
 
 class _Read implements LinkTargetsReadRepository {
+  _Read([this.linked = const {}]);
+
+  /// The source card's links, by target id (the ✓ marks).
+  final Map<(ConnectedEntityKind, String), String> linked;
+  final linkedReads = <String>[];
+
+  @override
+  Future<Result<LinkedTargets, CardLinksFailure>> loadLinkedTargets(
+    String cardId,
+  ) async {
+    linkedReads.add(cardId);
+    return Ok(LinkedTargets(linked));
+  }
+
   @override
   Future<Result<List<LinkTarget>, CardLinksFailure>> loadCollections() async =>
       const Ok([
@@ -40,7 +54,8 @@ class _Read implements LinkTargetsReadRepository {
 class _UnusedWrite implements CardLinksWriteRepository {
   @override
   Future<Result<String, CardLinksFailure>> addLink({
-    required String sourceCardId,
+    required ConnectedEntityKind sourceKind,
+    required String sourceId,
     required ConnectedEntityKind targetKind,
     required String targetId,
   }) => throw UnimplementedError();
@@ -53,19 +68,20 @@ class _UnusedWrite implements CardLinksWriteRepository {
 void main() {
   /// Pump a button that opens the picker for the card 'self' of 'own', and
   /// record what it pops into the returned list.
-  Future<List<LinkTarget?>> pumpPicker(
+  Future<List<LinkPickerChoice?>> pumpPicker(
     WidgetTester tester, {
     InMemoryRecentTargetsRepository? recents,
     LinkPick source = const LinkSource(cardId: 'self', collectionId: 'own'),
+    _Read? read,
   }) async {
     final store = recents ?? InMemoryRecentTargetsRepository();
     final links = CardLinksController(
-      readRepository: _Read(),
+      readRepository: read ?? _Read(),
       writeRepository: _UnusedWrite(),
       recentsReadRepository: store,
       recentsWriteRepository: store,
     );
-    final picked = <LinkTarget?>[];
+    final picked = <LinkPickerChoice?>[];
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [
@@ -105,7 +121,7 @@ void main() {
     await tester.tap(find.text('Sibling'));
     await tester.pumpAndSettle();
 
-    expect(picked.single?.id, 'sib');
+    expect(picked.single?.target.id, 'sib');
   });
 
   testWidgets('the Recent row skips the own collection and links on tap', (
@@ -123,7 +139,7 @@ void main() {
 
     await tester.tap(chip);
     await tester.pumpAndSettle();
-    expect(picked.single?.id, 'other');
+    expect(picked.single?.target.id, 'other');
   });
 
   testWidgets('a new Connection picks a collection, never its own', (
@@ -147,7 +163,7 @@ void main() {
 
     await tester.tap(find.text('Link'));
     await tester.pumpAndSettle();
-    expect(picked.single?.id, 'other');
+    expect(picked.single?.target.id, 'other');
   });
 
   testWidgets('a new Connection drills in to pick any card, siblings too', (
@@ -165,8 +181,8 @@ void main() {
     expect(find.text('Self'), findsOneWidget);
     await tester.tap(find.text('Sibling'));
     await tester.pumpAndSettle();
-    expect(picked.single?.kind, ConnectedEntityKind.card);
-    expect(picked.single?.id, 'sib');
+    expect(picked.single?.target.kind, ConnectedEntityKind.card);
+    expect(picked.single?.target.id, 'sib');
   });
 
   testWidgets('a new Connection drills into another collection too', (
@@ -181,7 +197,75 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Link to "Other"'));
     await tester.pumpAndSettle();
-    expect(picked.single?.kind, ConnectedEntityKind.collection);
-    expect(picked.single?.id, 'other');
+    expect(picked.single?.target.kind, ConnectedEntityKind.collection);
+    expect(picked.single?.target.id, 'other');
+  });
+
+  group('✓ toggles', () {
+    const linked = {
+      (ConnectedEntityKind.collection, 'other'): 'l-other',
+      (ConnectedEntityKind.card, 'sib'): 'l-sib',
+    };
+
+    testWidgets('a linked collection shows ✓ and unpicks its link', (
+      tester,
+    ) async {
+      final recents = InMemoryRecentTargetsRepository({
+        RecentPurpose.link: ['other'],
+      });
+      final picked = await pumpPicker(
+        tester,
+        recents: recents,
+        read: _Read(linked),
+      );
+
+      expect(find.text('Link'), findsNothing);
+      expect(find.text('Linked'), findsOneWidget);
+      final chip = find.widgetWithText(ActionChip, 'Other');
+      expect(
+        find.descendant(of: chip, matching: find.byIcon(Icons.check)),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Linked'));
+      await tester.pumpAndSettle();
+      final choice = picked.single! as LinkTargetUnpicked;
+      expect(choice.target.id, 'other');
+      expect(choice.linkId, 'l-other');
+    });
+
+    testWidgets('a linked card shows ✓ and unpicks; others still pick', (
+      tester,
+    ) async {
+      final picked = await pumpPicker(tester, read: _Read(linked));
+
+      await tester.tap(find.text('Own'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.widgetWithText(ListTile, 'Sibling'),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Sibling'));
+      await tester.pumpAndSettle();
+      expect((picked.single! as LinkTargetUnpicked).linkId, 'l-sib');
+    });
+
+    testWidgets('a new Connection has no source card, so no ✓', (tester) async {
+      final read = _Read(linked);
+      final picked = await pumpPicker(
+        tester,
+        read: read,
+        source: const NewConnection(collectionId: 'own'),
+      );
+
+      expect(read.linkedReads, isEmpty);
+      expect(find.text('Linked'), findsNothing);
+      await tester.tap(find.text('Link'));
+      await tester.pumpAndSettle();
+      expect(picked.single, isA<LinkTargetPicked>());
+    });
   });
 }

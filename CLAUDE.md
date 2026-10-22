@@ -179,7 +179,7 @@ the `lib/sync/` core below.
 - `projection/` — the materialized entity tables (§6.3/§6.4). `EnvelopeColumns`
   + the five entity schemas + `ProjectionTables`; `ProjectionStorage`
   (`get`/`getMany`/`upsert`/`readAll`/`feed`/`feedPage` (newest-first keyset
-  page)/`backlinks`/`linkCounts` (batched)/`linksOutOf`/`backlinksTo`/
+  page)/`backlinks`/`linksOutOf`/`backlinksTo`/
   `liveCardsIn` (batched)/`deleteMany`/`clear`);
   `ProjectionRowMapper`
   (`Snapshot` ↔ typed row); both impls.
@@ -202,9 +202,14 @@ the `lib/sync/` core below.
 - `broken_link.dart` (`BrokenLinkResolver`, §8.6.1/2), `home_timeline.dart`
   (`buildHomeTimeline` → `CollectionSummary`/`CardPreview`, §8.6.3),
   `collection_hubs.dart` (`buildCollectionHubs` → `CollectionHub`, §8.6.4: the
-  live collections linking to each one). Never synced/signed; surfaced via
+  live collections linking to each one), `link_pairs.dart` (§6.4 one link per
+  pair: `LinkPair`, `isDuplicateLink`, `distinctLinks` keeps the oldest of
+  duplicates, `countLinks`). Never synced/signed; surfaced via
   `SyncStore.linkStatus` / `linksOut` / `homeTimeline` / `collectionSummaries`
-  (just some home rows, batched) / `collectionHubs`.
+  (just some home rows, batched) / `collectionHubs`. Every `SyncStore` link read
+  (`linksOut`/`backlinks`/`linksOutOf`/`linkCounts`/hubs) goes through
+  `distinctLinks`; `SyncStore.createLink` is a no-op on a linked pair and
+  `deleteLink` deletes the pair's every duplicate (one txn each).
 
 ### `lib/app/` — composition root (composition.md)
 - `app_config.dart` — immutable `AppConfig` graph selector (`AppEnvironment`
@@ -254,6 +259,10 @@ the `lib/sync/` core below.
   second step: the narrow `MentionReadRepository` reads the corpus (like
   Search), the pure `UnlinkedMentionFinder` picks the own cards elsewhere
   naming the title without linking, and Link writes through `CardLinksController`.
+  A removable row (`ConnectionItem.removable`: a live link from an own source,
+  by `CollectionOwnership`) has a ⋮ → Remove (`RemoveLinkEffect`) → a
+  `ConnectionsLinkRemovedUiEffect` snackbar whose Undo re-links the
+  `LinkEnds` (`RestoreLinkEffect`).
   `sync_status` (§4.8/§6.6) is a read-only feature with **no page**:
   its view is `SyncStatusIndicator`, an app-bar marker over one app-wide
   `SyncStatusScope` controller reading `pendingCount()`. Only the Timeline app
@@ -443,7 +452,12 @@ the `lib/sync/` core below.
   + `CardLinksState` + the one `LinkPickerSheet` (lazy two-level picker).
   Collection and Card Edit open the picker and add links through it; Card Edit
   and Connections remove links through it. The `LinkSource` rule (no self-link,
-  no link to the card's own collection) lives in its domain.
+  no link to the card's own collection) lives in its domain. The picker marks
+  the source card's linked targets ✓ (`LinkedTargets`, read when
+  `LinkPick.linkedFrom` is set — `LinkSource` only) and pops a
+  `LinkPickerChoice`: `LinkTargetPicked`, or `LinkTargetUnpicked(linkId)` for a
+  ✓ target tapped again (Collection: `UnlinkRequested`; Card Edit:
+  `RemoveLinkRequested`).
 - `lib/core/recents/` — the pickers' "Recent" rows (§4.2/§4.4): the pure
   `RecentTargets` MRU (5 kept, 3 shown, `among` drops what the picker wouldn't
   offer) per `RecentPurpose` (move / link), behind narrow

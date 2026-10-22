@@ -13,7 +13,9 @@ import 'package:knit/features/connections/presentation/connections_ui_effect.dar
 /// (backlinks), each live one tappable to jump (pushing a breadcrumb), each
 /// broken one rendered as a §8.6.1 chip that offers "clear" but never vanishes.
 /// A collection focus adds "Mentioned in" (§8.6.5): cards elsewhere that name
-/// it without linking, each with a Link button.
+/// it without linking, each with a Link button. A live link from one of the
+/// user's own cards or collections has a ⋮ with Remove, undoable from the
+/// snackbar.
 class ConnectionsPage extends StatefulWidget {
   const ConnectionsPage({super.key});
 
@@ -66,10 +68,43 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
           ConnectionsMessage.linkFailed => AppLocalizations.of(
             context,
           ).connectionsLinkFailed,
+          ConnectionsMessage.removeFailed => AppLocalizations.of(
+            context,
+          ).connectionsRemoveFailed,
         };
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(text)));
+      case ConnectionsLinkRemovedUiEffect(:final ends):
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.connectionsLinkRemoved),
+            action: SnackBarAction(
+              label: l10n.actionUndo,
+              onPressed: () =>
+                  _controller.dispatch(UndoRemoveLinkRequested(ends)),
+            ),
+          ),
+        );
+    }
+  }
+
+  /// A removable row's ⋮ (§4.4): a sheet with Remove, which deletes the link
+  /// (every duplicate of the pair) — the snackbar then offers Undo.
+  Future<void> _openLinkActions(ConnectionItem item) async {
+    final remove = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: ListTile(
+          leading: const Icon(Icons.link_off),
+          title: Text(AppLocalizations.of(ctx).connectionsRemoveLink),
+          onTap: () => Navigator.of(ctx).pop(true),
+        ),
+      ),
+    );
+    if (remove == true && mounted) {
+      _controller.dispatch(RemoveLinkRequested(item));
     }
   }
 
@@ -191,6 +226,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
                 onOpen: item.openCollectionId == null
                     ? null
                     : () => _openInCollection(item),
+                onMore: item.removable ? () => _openLinkActions(item) : null,
               ),
           ],
           if (data.incoming.isNotEmpty) ...[
@@ -203,6 +239,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
                 onOpen: item.openCollectionId == null
                     ? null
                     : () => _openInCollection(item),
+                onMore: item.removable ? () => _openLinkActions(item) : null,
               ),
           ],
           if (mentions != null && !mentions.isEmpty) ...[
@@ -314,14 +351,16 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// One connection row. A live one is a tappable tile that jumps; a broken one is
-/// the §8.6.1 chip — error-styled, not tappable, with a "Clear" affordance.
+/// One connection row. A live one is a tappable tile that jumps, with a ⋮
+/// ([onMore]) when its link may be removed; a broken one is the §8.6.1 chip —
+/// error-styled, not tappable, with a "Clear" affordance.
 class _ConnectionTile extends StatelessWidget {
   const _ConnectionTile({
     required this.item,
     required this.onJump,
     required this.onClear,
     this.onOpen,
+    this.onMore,
   });
 
   final ConnectionItem item;
@@ -331,6 +370,10 @@ class _ConnectionTile extends StatelessWidget {
   /// Open the endpoint inside its collection (§4.2); null when it can't be
   /// located (a broken endpoint, or one with no resolvable collection).
   final VoidCallback? onOpen;
+
+  /// Open the link's actions (Remove); null when it can't be removed (an
+  /// imported source).
+  final VoidCallback? onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -367,6 +410,12 @@ class _ConnectionTile extends StatelessWidget {
               icon: const Icon(Icons.open_in_new),
               tooltip: l10n.connectionsOpen,
               onPressed: onOpen,
+            ),
+          if (onMore != null)
+            IconButton(
+              icon: const Icon(Icons.more_vert),
+              tooltip: l10n.connectionsLinkActions,
+              onPressed: onMore,
             ),
           const Icon(Icons.chevron_right),
         ],

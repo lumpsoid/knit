@@ -93,6 +93,15 @@ void main() {
     expect((await recipient.feed('trip')), hasLength(3));
   });
 
+  test('Save a copy copies one link per pair (§6.4)', () async {
+    final link = (await recipient.linksOut('c1')).single;
+    await recipient.projection.upsert(link.copyWith(id: 'dup'));
+    final copyId = await controller.saveCopy('trip');
+
+    final first = (await recipient.feed(copyId!)).first;
+    expect(await recipient.projection.linksOut(first.id), hasLength(1));
+  });
+
   test(
     'Remove purges the collection, its blobs and its archive flag',
     () async {

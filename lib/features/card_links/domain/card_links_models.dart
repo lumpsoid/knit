@@ -29,6 +29,10 @@ sealed class LinkPick {
   /// Whether [collection] is listed at all.
   bool lists(LinkTarget collection) => true;
 
+  /// The card whose live links out the picker marks ✓ (and toggles off); null
+  /// ⇒ no checks.
+  String? get linkedFrom => null;
+
   /// Whether the collection [id] itself may be picked.
   bool canLinkToCollection(String id);
 
@@ -61,6 +65,9 @@ class LinkSource extends LinkPick {
 
   @override
   bool canLinkToCard(String id) => id != cardId;
+
+  @override
+  String? get linkedFrom => cardId;
 }
 
 /// "Link from my card…" on a card of an imported collection: pick one of
@@ -100,4 +107,49 @@ class NewConnection extends LinkPick {
 
   @override
   bool canLinkToCard(String id) => true;
+}
+
+/// The targets a card already links to (§4.4), each with the id of the link
+/// that joins them — one per pair (§6.4). Marks the picker's ✓ and decides
+/// what a tap does: a linked target unlinks, any other links.
+@immutable
+class LinkedTargets {
+  const LinkedTargets([this._linkIds = const {}]);
+
+  /// The link id per linked target, keyed by its kind and id.
+  final Map<(ConnectedEntityKind, String), String> _linkIds;
+
+  /// The id of the link to [target], or null when not linked.
+  String? linkIdTo(LinkTarget target) => _linkIds[(target.kind, target.id)];
+
+  /// Whether the card already links to [target].
+  bool has(LinkTarget target) => linkIdTo(target) != null;
+
+  /// What tapping [target] in the picker means: unlink a linked one, link any
+  /// other.
+  LinkPickerChoice toggle(LinkTarget target) => switch (linkIdTo(target)) {
+    final linkId? => LinkTargetUnpicked(target, linkId),
+    null => LinkTargetPicked(target),
+  };
+}
+
+/// What the link picker returns (§4.4): a target to link, or a linked one
+/// tapped again to remove its link.
+@immutable
+sealed class LinkPickerChoice {
+  const LinkPickerChoice(this.target);
+
+  final LinkTarget target;
+}
+
+/// Link to [target].
+final class LinkTargetPicked extends LinkPickerChoice {
+  const LinkTargetPicked(super.target);
+}
+
+/// Remove the link [linkId] to the already linked [target].
+final class LinkTargetUnpicked extends LinkPickerChoice {
+  const LinkTargetUnpicked(super.target, this.linkId);
+
+  final String linkId;
 }

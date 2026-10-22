@@ -330,7 +330,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         await _runWrite(
           () async =>
               (await _cardLinks.link(
-                sourceCardId: cardId,
+                sourceId: cardId,
                 targetKind: targetKind,
                 targetId: targetId,
               )).fold(
@@ -338,6 +338,16 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
                 (f) => Failure(CollectionWriteFailure(f.error, f.stackTrace)),
               ),
           'create link',
+          dispatch,
+        );
+
+      case UnlinkEffect(:final linkId):
+        await _runWrite(
+          () async => (await _cardLinks.unlink(linkId)).fold(
+            Ok.new,
+            (f) => Failure(CollectionWriteFailure(f.error, f.stackTrace)),
+          ),
+          'remove link',
           dispatch,
         );
 

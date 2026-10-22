@@ -238,6 +238,13 @@ class LinkEffect extends CollectionEffect {
   final String targetId;
 }
 
+/// Remove the link [linkId] and its pair's duplicates (§4.4/§6.4), through
+/// the shared card links.
+class UnlinkEffect extends CollectionEffect {
+  const UnlinkEffect(this.linkId);
+  final String linkId;
+}
+
 /// Load every live collection for the move picker, and the ones recently
 /// moved into.
 class LoadMoveTargetsEffect extends CollectionEffect {

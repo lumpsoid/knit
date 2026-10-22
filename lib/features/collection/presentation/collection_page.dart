@@ -201,8 +201,11 @@ class _CollectionPageState extends State<CollectionPage> {
         collectionId: _controller.stateHolder.value.collectionId,
       ),
     );
-    if (picked == null || !mounted) return;
-    _controller.dispatch(ConnectionCardRequested(picked.kind, picked.id));
+    // A new card has no links yet, so the choice is always a pick.
+    if (picked is! LinkTargetPicked || !mounted) return;
+    _controller.dispatch(
+      ConnectionCardRequested(picked.target.kind, picked.target.id),
+    );
   }
 
   Future<void> _openCardActions(FeedCard card) async {
@@ -609,7 +612,8 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   /// Open the shared link picker for [card]: link directly to a collection or
-  /// drill in to pick any card (§4.4); each level loads lazily.
+  /// drill in to pick any card (§4.4); each level loads lazily. A ✓ target
+  /// tapped again unlinks it.
   /// "Link from my card…" on an imported card: pick one of the user's own
   /// cards and link it to [card] — the link is their own signed op.
   Future<void> _linkFromMine(FeedCard card) async {
@@ -618,10 +622,10 @@ class _CollectionPageState extends State<CollectionPage> {
       links: CollectionScope.cardLinks,
       source: LinkFromMine(targetCardId: card.id),
     );
-    if (picked == null || !mounted) return;
+    if (picked is! LinkTargetPicked || !mounted) return;
     _controller.dispatch(
       LinkRequested(
-        cardId: picked.id,
+        cardId: picked.target.id,
         targetKind: ConnectedEntityKind.card,
         targetId: card.id,
       ),
@@ -638,13 +642,14 @@ class _CollectionPageState extends State<CollectionPage> {
       ),
     );
     if (picked == null || !mounted) return;
-    _controller.dispatch(
-      LinkRequested(
+    _controller.dispatch(switch (picked) {
+      LinkTargetPicked(:final target) => LinkRequested(
         cardId: card.id,
-        targetKind: picked.kind,
-        targetId: picked.id,
+        targetKind: target.kind,
+        targetId: target.id,
       ),
-    );
+      LinkTargetUnpicked(:final linkId) => UnlinkRequested(linkId),
+    });
   }
 
   /// Hand the collection to the Collection Edit carrier (cross_feature.md §2),

@@ -168,7 +168,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
 
       case AddLinkEffect(:final cardId, :final targetKind, :final targetId):
         final result = await _cardLinks.link(
-          sourceCardId: cardId,
+          sourceId: cardId,
           targetKind: targetKind,
           targetId: targetId,
         );

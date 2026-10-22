@@ -86,27 +86,6 @@ class InMemoryProjectionStorage implements ProjectionStorage {
   }
 
   @override
-  Future<Map<String, int>> linkCounts(
-    Iterable<String> entityIds, {
-    StorageContext? ctx,
-  }) async {
-    final wanted = entityIds.toSet();
-    final counts = <String, int>{};
-    void bump(Object? id) {
-      if (id is String && wanted.contains(id)) {
-        counts[id] = (counts[id] ?? 0) + 1;
-      }
-    }
-
-    for (final link in _tables[EntityType.link]!.values) {
-      if (link.deleted) continue;
-      bump(link.content['source_id']);
-      bump(link.content['target_id']);
-    }
-    return counts;
-  }
-
-  @override
   Future<List<Snapshot>> backlinks(
     String targetId, {
     StorageContext? ctx,

@@ -292,6 +292,9 @@ class CollectionUpdater
           ],
         );
 
+      case UnlinkRequested(:final linkId):
+        return (state, [UnlinkEffect(linkId)]);
+
       case StartReorder():
         // The two modes are exclusive: reordering drops the selection.
         return (

@@ -4,12 +4,14 @@ import 'package:knit/features/card_links/domain/card_links_models.dart';
 
 /// The link picker's state (§4.4) — a [ChangeNotifier] the shared
 /// [CardLinksController] owns and mutates, and the picker sheet listens to.
-/// One picking session at a time: the [source] pick, the collections level and
-/// each drilled collection's cards, loaded lazily and cached for the session.
+/// One picking session at a time: the [source] pick, the collections level,
+/// the targets the source card already links to, and each drilled
+/// collection's cards, loaded lazily and cached for the session.
 class CardLinksState extends ChangeNotifier {
   LinkPick? _source;
   List<LinkTarget>? _collections;
   RecentTargets _recents = const RecentTargets();
+  LinkedTargets _linked = const LinkedTargets();
   final Map<String, List<LinkTarget>> _cards = {};
 
   /// What the session picks; null before a picker has opened.
@@ -60,6 +62,12 @@ class CardLinksState extends ChangeNotifier {
     ];
   }
 
+  /// Whether the source card already links to [target] — its ✓ (§4.4).
+  bool isLinked(LinkTarget target) => _linked.has(target);
+
+  /// What tapping [target] means: unlink a ✓ one, link any other.
+  LinkPickerChoice choose(LinkTarget target) => _linked.toggle(target);
+
   /// Whether the [source] may link to the collection [id] itself.
   bool canLinkToCollection(String id) =>
       _source?.canLinkToCollection(id) ?? true;
@@ -70,6 +78,7 @@ class CardLinksState extends ChangeNotifier {
     _source = source;
     _collections = null;
     _recents = const RecentTargets();
+    _linked = const LinkedTargets();
     _cards.clear();
     notifyListeners();
   }
@@ -77,9 +86,11 @@ class CardLinksState extends ChangeNotifier {
   void showCollections(
     List<LinkTarget> collections, {
     RecentTargets recents = const RecentTargets(),
+    LinkedTargets linked = const LinkedTargets(),
   }) {
     _collections = collections;
     _recents = recents;
+    _linked = linked;
     notifyListeners();
   }
 

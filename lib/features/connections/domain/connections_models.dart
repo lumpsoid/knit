@@ -3,6 +3,8 @@
 /// layer and shared widgets never reach into the merge core.
 library;
 
+import 'package:flutter/foundation.dart';
+
 /// The kind of entity a connection touches (spec §4.4). Presentation-level
 /// mirror of the sync-core `EntityType`, kept primitive so the UI never imports
 /// the merge core. Only collections and cards participate as link endpoints in
@@ -41,6 +43,7 @@ class ConnectionItem {
     required this.broken,
     this.label,
     this.openCollectionId,
+    this.ownSource = false,
   });
 
   /// The `link` entity id — the handle the "clear" action removes.
@@ -63,6 +66,43 @@ class ConnectionItem {
   /// collection that holds it. Null when it can't be resolved (broken, or an
   /// unknown endpoint kind) — the View then shows no "open" affordance.
   final String? openCollectionId;
+
+  /// The link's source is this identity's own — an own collection, or a card
+  /// in one (`CollectionOwnership`) — so its link may be removed. Never for
+  /// an imported, read-only source; read for a live link only (false when
+  /// [broken]).
+  final bool ownSource;
+
+  /// Whether the row offers Remove (§4.4): a live link from an own source. A
+  /// broken one offers the §8.6.1 clear instead.
+  bool get removable => ownSource && !broken;
+}
+
+/// The two ends of a link — what an Undo re-links after a Remove (§4.4).
+@immutable
+class LinkEnds {
+  const LinkEnds({
+    required this.sourceKind,
+    required this.sourceId,
+    required this.targetKind,
+    required this.targetId,
+  });
+
+  final ConnectedEntityKind sourceKind;
+  final String sourceId;
+  final ConnectedEntityKind targetKind;
+  final String targetId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is LinkEnds &&
+      other.sourceKind == sourceKind &&
+      other.sourceId == sourceId &&
+      other.targetKind == targetKind &&
+      other.targetId == targetId;
+
+  @override
+  int get hashCode => Object.hash(sourceKind, sourceId, targetKind, targetId);
 }
 
 /// A breadcrumb entry — one hop in the §4.4 back-stack so deep wandering doesn't
@@ -102,4 +142,21 @@ class ConnectionsData {
   final List<ConnectionItem> incoming;
 
   bool get isEmpty => outgoing.isEmpty && incoming.isEmpty;
+
+  /// The ends of [item]'s link: the focus is its source for a link out, its
+  /// target for a backlink (§8.6.2).
+  LinkEnds endsOf(ConnectionItem item) => switch (item.direction) {
+    ConnectionDirection.outgoing => LinkEnds(
+      sourceKind: focusKind,
+      sourceId: focusId,
+      targetKind: item.otherKind,
+      targetId: item.otherId,
+    ),
+    ConnectionDirection.incoming => LinkEnds(
+      sourceKind: item.otherKind,
+      sourceId: item.otherId,
+      targetKind: focusKind,
+      targetId: focusId,
+    ),
+  };
 }

@@ -11,8 +11,9 @@ import 'package:result_dart/result_dart.dart';
 
 /// The shared, app-wide owner of card links (§4.4): the link picker the
 /// Collection screen and the Card Edit page both open, and every link write —
-/// adding one (Collection, Card Edit) and removing one (Card Edit, and the
-/// Connections view clearing a broken link).
+/// adding one (Collection, Card Edit, Connections' Undo) and removing one
+/// (Card Edit, the picker's ✓ toggle, and the Connections view's Remove and
+/// broken-link clear).
 ///
 /// The picker reads one level at a time into [state]. Each write returns its
 /// [Result] so the calling feature can react (resync, message). A link to a
@@ -43,12 +44,22 @@ class CardLinksController {
   int _session = 0;
 
   /// Open the picker for [source]: start a fresh session and load the
-  /// collections level with the recently linked ones. A failed read shows an
-  /// empty list; failed recents show no "Recent" row.
+  /// collections level with the recently linked ones, and the targets the
+  /// source card already links to (the ✓ marks). A failed read shows an
+  /// empty list; failed recents show no "Recent" row, failed links no ✓.
   Future<void> openPicker(LinkPick source) async {
     final session = ++_session;
     state.startPicking(source);
     final recents = await _recentsRead.load(RecentPurpose.link);
+    final linkedFrom = source.linkedFrom;
+    final linked = linkedFrom == null
+        ? const LinkedTargets()
+        : (await _read.loadLinkedTargets(linkedFrom)).fold((linked) => linked, (
+            failure,
+          ) {
+            _log.warning('Linked targets load failed', failure.error);
+            return const LinkedTargets();
+          });
     final result = await _read.loadCollections();
     if (session != _session) return;
     state.showCollections(
@@ -64,6 +75,7 @@ class CardLinksController {
         _log.warning('Recent link targets load failed', failure.error);
         return const RecentTargets();
       }),
+      linked: linked,
     );
   }
 
@@ -86,15 +98,19 @@ class CardLinksController {
     );
   }
 
-  /// Link [sourceCardId] to the [targetKind] entity [targetId]. A collection
-  /// linked to is remembered as recent once the link is written.
+  /// Link the [sourceKind] entity [sourceId] — a card unless an Undo restores
+  /// a collection's link — to the [targetKind] entity [targetId]; a pair
+  /// already linked stays as it is (§6.4). A collection linked to is
+  /// remembered as recent once the link is written.
   Future<Result<String, CardLinksFailure>> link({
-    required String sourceCardId,
+    ConnectedEntityKind sourceKind = ConnectedEntityKind.card,
+    required String sourceId,
     required ConnectedEntityKind targetKind,
     required String targetId,
   }) async {
     final result = await _write.addLink(
-      sourceCardId: sourceCardId,
+      sourceKind: sourceKind,
+      sourceId: sourceId,
       targetKind: targetKind,
       targetId: targetId,
     );
@@ -108,7 +124,9 @@ class CardLinksController {
     return result;
   }
 
-  /// Remove the link [linkId] (also clears a broken link, §8.6.1).
+  /// Remove the link [linkId] and its pair's duplicates (§6.4) — Card Edit, a
+  /// ✓ target tapped in the picker, the Connections view's Remove, and
+  /// clearing a broken link (§8.6.1).
   Future<Result<String, CardLinksFailure>> unlink(String linkId) =>
       _write.removeLink(linkId);
 }

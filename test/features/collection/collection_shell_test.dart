@@ -419,6 +419,37 @@ void main() {
     expect((await recents.load(RecentPurpose.link)).getOrThrow().ids, isEmpty);
   });
 
+  test(
+    'unlinking a Connection card keeps the card, empty, and resyncs',
+    () async {
+      final index = (await timelineWrite.createCollection(
+        'Index',
+      )).getOrThrow();
+      final trips = (await timelineWrite.createCollection(
+        'Trips',
+      )).getOrThrow();
+      await shell.run(
+        AddConnectionCardEffect(
+          collectionId: index,
+          position: 'a0',
+          targetKind: ConnectedEntityKind.collection,
+          targetId: trips,
+        ),
+        dispatch: (_) {},
+      );
+      final card = (await store.feed(index)).single;
+      final link = (await store.linksOut(card.id)).single;
+
+      final actions = <CollectionAction>[];
+      await shell.run(UnlinkEffect(link.id), dispatch: actions.add);
+
+      expect(await store.linksOut(card.id), isEmpty);
+      expect((await store.feed(index)).single.id, card.id);
+      expect(actions.single, isA<ReloadRequested>());
+      expect(uiEffects, isEmpty);
+    },
+  );
+
   group('quick input', () {
     test('a saved quick card asks the page to close, then resyncs', () async {
       final col = (await timelineWrite.createCollection('Inbox')).getOrThrow();
