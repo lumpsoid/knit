@@ -161,12 +161,16 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
     // [extraCountIds] (§4.4) — no per-card query, however large the window.
     // A card's links out become its tile or chips; its backlinks its badge.
     final ids = [for (final card in rows) card.id, ...extraCountIds];
+    // Links made in the same millisecond tie on createdAt, and a v7 id's
+    // random tail would order them arbitrarily: the HLC keeps write order.
     final links = [...await store.linksOutOf(ids)]
-      ..sort(
-        (a, b) => a.createdAt != b.createdAt
-            ? a.createdAt.compareTo(b.createdAt)
-            : a.id.compareTo(b.id),
-      );
+      ..sort((a, b) {
+        if (a.createdAt != b.createdAt) {
+          return a.createdAt.compareTo(b.createdAt);
+        }
+        final byClock = a.hlc.compareTo(b.hlc);
+        return byClock != 0 ? byClock : a.id.compareTo(b.id);
+      });
     final backlinks = await store.backlinkCounts(ids);
     final linksOut = <String, List<CardLinkOut>>{};
     for (final link in links) {
