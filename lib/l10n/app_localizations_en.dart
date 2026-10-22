@@ -331,15 +331,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionConnectionsTooltip => 'Connections';
 
   @override
-  String collectionCardConnections(int count) {
+  String collectionCardBacklinks(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count connections',
-      one: '1 connection',
+      other: 'Linked from $count places',
+      one: 'Linked from 1 place',
     );
     return '$_temp0';
   }
+
+  @override
+  String linkTo(String name) {
+    return '→ $name';
+  }
+
+  @override
+  String get linkChipUnavailable => '→ unavailable';
+
+  @override
+  String linkChipMore(int count) {
+    return '+$count';
+  }
+
+  @override
+  String linkChipMoreLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more links',
+      one: '1 more link',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get linkArchived => 'Archived';
 
   @override
   String collectionComingSoon(String feature) {

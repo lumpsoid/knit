@@ -84,12 +84,20 @@ class TimelineCollectionTile extends StatelessWidget {
       TextSpan(
         children: [
           // A settled newest card (§3.3) previews muted, like its bubble.
+          // A Connection card names its target instead (§4.1).
           TextSpan(
-            text: CardPreviewLabel.of(
-              l10n,
-              kind: summary.lastCard?.kind,
-              text: summary.lastCard?.text,
-            ),
+            text: switch (summary.lastCard?.linkTarget) {
+              final target? => CardPreviewLabel.linkTo(
+                l10n,
+                cardKind: target.cardKind,
+                name: target.name,
+              ),
+              null => CardPreviewLabel.of(
+                l10n,
+                kind: summary.lastCard?.kind,
+                text: summary.lastCard?.text,
+              ),
+            },
             style: summary.lastCard?.settled == true
                 ? TextStyle(
                     color: SettledPalette.previewText(theme.colorScheme),

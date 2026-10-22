@@ -200,14 +200,16 @@ the `lib/sync/` core below.
 
 ### `lib/sync/storage/derivations/` — read-time derivations (§8.6, pure)
 - `broken_link.dart` (`BrokenLinkResolver`, §8.6.1/2), `home_timeline.dart`
-  (`buildHomeTimeline` → `CollectionSummary`/`CardPreview`, §8.6.3),
+  (`buildHomeTimeline` → `CollectionSummary`/`CardPreview`, §8.6.3; a
+  preview's `linkTarget` is attached by the Timeline reader, below),
   `collection_hubs.dart` (`buildCollectionHubs` → `CollectionHub`, §8.6.4: the
   live collections linking to each one), `link_pairs.dart` (§6.4 one link per
   pair: `LinkPair`, `isDuplicateLink`, `distinctLinks` keeps the oldest of
-  duplicates, `countLinks`). Never synced/signed; surfaced via
+  duplicates, `countLinks`, `countBacklinks`). Never synced/signed; surfaced via
   `SyncStore.linkStatus` / `linksOut` / `homeTimeline` / `collectionSummaries`
   (just some home rows, batched) / `collectionHubs`. Every `SyncStore` link read
-  (`linksOut`/`backlinks`/`linksOutOf`/`linkCounts`/hubs) goes through
+  (`linksOut`/`backlinks`/`linksOutOf`/`linkCounts`/`backlinkCounts`/hubs)
+  goes through
   `distinctLinks`; `SyncStore.createLink` is a no-op on a linked pair and
   `deleteLink` deletes the pair's every duplicate (one txn each).
 
@@ -339,10 +341,28 @@ the `lib/sync/` core below.
   `LinkTile.openFrom(here)`: `RevealCardHere` dispatches
   `CardRevealRequested`, `OpenLinkedCollection` writes the Collection carrier
   (with `focusCardId` for a card) and pushes. A deleted target gets no tile.
+  A tile's `archived` (target collection, or target card's) draws the frame's
+  muted "Archived" marker.
   Timeline: the narrow `TimelineHubReadRepository` (`collectionHubs`) fills
   `TimelineState.hubs`; the row's "in:" line is `TimelineHubLine` (two names,
   then "+N"). `CardPreviewLabel` (`lib/core/previews/`) is the shared
-  newest-card preview text.
+  newest-card preview text; its `linkTo` is the one "→ Trips" label (Home
+  preview and link chips). `SyncStoreTimelineRepository` attaches a
+  Connection card's target to its `CardPreview.linkTarget` (one `linksOutOf`
+  read, one `getMany` of the target cards) through the pure
+  `TimelineConnectionPreview` (`LinkTile.targetOf` again); a gone target
+  keeps the generic label.
+- Link chips + backlinks badge (§4.2). The read repo reads `linksOutOf` and
+  `SyncStore.backlinkCounts` once for the whole page (the collection's own
+  count rides along). `FeedCard.linkChips` is the card's links out as the
+  pure sealed `LinkChip` (`domain/link_chip.dart`: `CollectionLinkChip` /
+  `CardLinkChip` / `BrokenLinkChip`; `LinkChip.allOf` gives none when a tile
+  stands for the link, live targets first). `LinkChipRow` caps them at 2 plus
+  "+N". `FeedCard.backlinkCount` feeds the "← N" `CardBacklinksBadge`. The
+  page draws both in `CardLinkChips` (wrap + ellipsize, no shadow) and
+  follows a tap through `LinkChip.openFrom`; `ShowCardConnections` (broken,
+  "+N") opens the card's Connections. Multi-select's `IgnorePointer` makes
+  them inert; reorder rows don't draw them.
 - Connection card (§4.2/§6.4): the "+" sheet (`AddBlockSheet` → `AddBlock`)
   has no URL link block; a bare http(s) URL sent from any composer becomes a
   link card (`CardKind.forText`). Its **Connection** block opens

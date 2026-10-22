@@ -144,6 +144,14 @@ class SyncStore {
     ], ids);
   }
 
+  /// Live backlink count (links *into* it) per id in [entityIds], batched —
+  /// a pair counted once ([countBacklinks]).
+  Future<Map<String, int>> backlinkCounts(Iterable<String> entityIds) async {
+    final ids = entityIds.toSet();
+    if (ids.isEmpty) return const {};
+    return countBacklinks(await projection.backlinksTo(ids), ids);
+  }
+
   /// Live links pointing at [targetId] — the backlinks (spec §8.6.2).
   Future<List<Snapshot>> backlinks(String targetId) async =>
       distinctLinks(await projection.backlinks(targetId));

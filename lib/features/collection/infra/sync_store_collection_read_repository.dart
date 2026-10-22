@@ -3,6 +3,7 @@ import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
+import 'package:knit/features/collection/domain/link_chip.dart';
 import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/sync/sync.dart';
@@ -10,7 +11,7 @@ import 'package:result_dart/result_dart.dart';
 
 /// [CollectionReadRepository] over the graph's [SyncStore]: the header via
 /// [SyncStore.get], the feed as keyset pages via [SyncStore.feedPage] (§8.7),
-/// hydrated with batched attachment, link-count and link-tile reads.
+/// hydrated with batched attachment, link and backlink-count reads.
 class SyncStoreCollectionReadRepository implements CollectionReadRepository {
   SyncStoreCollectionReadRepository({required AppGraph graph}) : _graph = graph;
 
@@ -33,8 +34,8 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         await store.authorPubkey(),
       );
       final (rows, boundary) = await _readWindow(store, id, window);
-      // One batched link-count read covers every card *and* the collection
-      // itself (§4.4) — no per-card query, however large the window.
+      // The batched link reads cover every card *and* the collection itself
+      // (§4.4) — no per-card query, however large the window.
       final (cards, counts) = await _hydrate(store, rows, extraCountIds: [id]);
 
       return Ok(
@@ -134,8 +135,9 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
       : (rows, null);
 
   /// Map newest-first card rows to [FeedCard]s in feed order (oldest → newest),
-  /// resolving file/audio metadata and link counts in batched reads. Returns
-  /// the counts too, which include [extraCountIds] (e.g. the collection).
+  /// resolving file/audio metadata, backlink counts, link tiles and link chips
+  /// in batched reads. Returns the link count (links-out plus backlinks) of
+  /// each of [extraCountIds] too (e.g. the collection).
   Future<(List<FeedCard>, Map<String, int>)> _hydrate(
     SyncStore store,
     List<Snapshot> rowsNewestFirst, {
@@ -155,46 +157,19 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         if (!att.deleted) att.id: att,
     };
 
-    // Every link each card takes part in, both directions (§4.4): links-out
-    // plus backlinks, so the receiving end also shows it's connected. The sets
-    // are disjoint per card, so a single link is never double-counted.
-    final counts = await store.linkCounts([
-      for (final card in rows) card.id,
-      ...extraCountIds,
-    ]);
-
-    final tiles = await _linkTiles(store, rows, counts);
-
-    final cards = [
-      for (final card in rows)
-        _feedCard(
-          card,
-          meta[card.content['attachment_id']],
-          counts[card.id],
-          tiles[card.id],
-        ),
-    ];
-    return (cards, counts);
-  }
-
-  /// The rich tile of each card in [rows] whose whole purpose is linking to a
-  /// live collection or card (§4.2), by card id — batched: one links-out read
-  /// for the linked cards, then one summary read for the collection targets
-  /// and a few `getMany` reads for the card targets (their rows, collections
-  /// and file names). A deleted target gets no tile, so the card keeps the
-  /// plain bubble and its broken chip.
-  Future<Map<String, LinkTile>> _linkTiles(
-    SyncStore store,
-    List<Snapshot> rows,
-    Map<String, int> counts,
-  ) async {
-    final linked = [
-      for (final card in rows)
-        if ((counts[card.id] ?? 0) > 0) card,
-    ];
-    if (linked.isEmpty) return const {};
+    // One links-out read and one backlink-count read cover every card *and*
+    // [extraCountIds] (§4.4) — no per-card query, however large the window.
+    // A card's links out become its tile or chips; its backlinks its badge.
+    final ids = [for (final card in rows) card.id, ...extraCountIds];
+    final links = [...await store.linksOutOf(ids)]
+      ..sort(
+        (a, b) => a.createdAt != b.createdAt
+            ? a.createdAt.compareTo(b.createdAt)
+            : a.id.compareTo(b.id),
+      );
+    final backlinks = await store.backlinkCounts(ids);
     final linksOut = <String, List<CardLinkOut>>{};
-    for (final link in await store.linksOutOf([for (final c in linked) c.id])) {
+    for (final link in links) {
       (linksOut[link.content[LinkSchema.colSourceId] as String] ??= []).add((
         targetKind: ConnectedEntityKind.fromTag(
           link.content[LinkSchema.colTargetType] as String?,
@@ -202,38 +177,102 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
         targetId: link.content[LinkSchema.colTargetId] as String,
       ));
     }
+
+    final views = await _linkViews(store, rows, linksOut);
+
+    final cards = [
+      for (final card in rows)
+        _feedCard(
+          card,
+          meta[card.content['attachment_id']],
+          backlinks[card.id],
+          views.tiles[card.id],
+          views.chips[card.id] ?? const [],
+        ),
+    ];
+    return (
+      cards,
+      {
+        for (final id in extraCountIds)
+          id: (linksOut[id]?.length ?? 0) + (backlinks[id] ?? 0),
+      },
+    );
+  }
+
+  /// The rich tile of each card in [rows] whose whole purpose is linking to a
+  /// live collection or card (§4.2), and the link chips of every other linked
+  /// card, by card id — batched over [linksOut] (by source id): one row read
+  /// and one summary read (tiles only) for the collection targets, and a few
+  /// `getMany` reads for the card targets (their rows, collections and file
+  /// names). A deleted target gets no tile, so the card keeps the plain bubble
+  /// and a broken chip.
+  Future<_LinkViews> _linkViews(
+    SyncStore store,
+    List<Snapshot> rows,
+    Map<String, List<CardLinkOut>> linksOut,
+  ) async {
+    final linked = [
+      for (final card in rows)
+        if (linksOut[card.id]?.isNotEmpty ?? false) card,
+    ];
+    if (linked.isEmpty) return _noLinkViews;
     final targets = <String, CardLinkOut>{
       for (final card in linked)
         card.id: ?LinkTile.targetOf(
           kind: CardKind.fromTag(card.content['kind'] as String?),
           text: card.content['text'] as String?,
           attachmentIds: CardSchema.attachmentIdsOf(card.content),
-          linksOut: linksOut[card.id] ?? const [],
+          linksOut: linksOut[card.id]!,
         ),
     };
-    if (targets.isEmpty) return const {};
-    Iterable<String> idsOf(ConnectedEntityKind kind) => [
-      for (final t in targets.values)
-        if (t.targetKind == kind) t.targetId,
-    ];
+    Set<String> idsOf(ConnectedEntityKind kind, Iterable<CardLinkOut> links) =>
+        {
+          for (final t in links)
+            if (t.targetKind == kind) t.targetId,
+        };
+    final allLinks = [for (final card in linked) ...linksOut[card.id]!];
+    final collections = <String, LinkedCollection>{
+      for (final c in await store.getMany(
+        EntityType.collection,
+        idsOf(ConnectedEntityKind.collection, allLinks),
+      ))
+        if (!c.deleted)
+          c.id: (
+            title: c.content[CollectionSchema.colTitle] as String? ?? '',
+            archived: c.content[CollectionSchema.colArchivedAt] != null,
+          ),
+    };
     final summaries = {
       for (final s in await store.collectionSummaries(
-        idsOf(ConnectedEntityKind.collection),
+        idsOf(ConnectedEntityKind.collection, targets.values),
       ))
         s.collectionId: s,
     };
     final cardTargets = await _cardTargets(
       store,
-      idsOf(ConnectedEntityKind.card),
+      idsOf(ConnectedEntityKind.card, allLinks),
     );
+    final linkedCards = <String, LinkedCard>{
+      for (final (row, collection, fileName) in cardTargets.values)
+        row.id: (
+          kind: CardKind.fromTag(row.content['kind'] as String?).tag,
+          preview: CardLinkTile.previewOf(
+            CardKind.fromTag(row.content['kind'] as String?),
+            row.content['text'] as String?,
+            fileName,
+          ),
+          collectionId: collection.id,
+          archived: collection.content[CollectionSchema.colArchivedAt] != null,
+        ),
+    };
     final tiles = <String, LinkTile>{};
+    final chips = <String, List<LinkChip>>{};
     for (final card in linked) {
-      final target = targets[card.id];
-      if (target == null) continue;
       final cardText = card.content['text'] as String?;
-      switch (target.targetKind) {
+      final target = targets[card.id];
+      switch (target?.targetKind) {
         case ConnectedEntityKind.collection:
-          if (summaries[target.targetId] case final summary?) {
+          if (summaries[target!.targetId] case final summary?) {
             tiles[card.id] = CollectionLinkTile.of(
               cardText: cardText,
               collectionId: summary.collectionId,
@@ -243,10 +282,11 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
               lastCardKind: summary.lastCard?.kind,
               lastCardText: summary.lastCard?.text,
               lastCardSettled: summary.lastCard?.settled ?? false,
+              archived: summary.archived,
             );
           }
         case ConnectedEntityKind.card:
-          if (cardTargets[target.targetId] case (
+          if (cardTargets[target!.targetId] case (
             final row,
             final collection,
             final fileName,
@@ -266,13 +306,22 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
                   ? row.content['attachment_id'] as String?
                   : null,
               settled: row.content[CardSchema.colSettledAt] != null,
+              archived:
+                  collection.content[CollectionSchema.colArchivedAt] != null,
             );
           }
-        case ConnectedEntityKind.unknown:
+        case ConnectedEntityKind.unknown || null:
           break;
       }
+      final cardChips = LinkChip.allOf(
+        linksOut: linksOut[card.id]!,
+        hasTile: tiles.containsKey(card.id),
+        collections: collections,
+        cards: linkedCards,
+      );
+      if (cardChips.isNotEmpty) chips[card.id] = cardChips;
     }
-    return tiles;
+    return (tiles: tiles, chips: chips);
   }
 
   /// The live cards among [cardIds] that sit in a live collection, by id,
@@ -317,8 +366,9 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
   static FeedCard _feedCard(
     Snapshot card,
     Snapshot? att,
-    int? linkCount,
+    int? backlinkCount,
     LinkTile? linkTile,
+    List<LinkChip> linkChips,
   ) {
     final kind = CardKind.fromTag(card.content['kind'] as String?);
     final withMeta = att != null && _needsMeta(card);
@@ -335,10 +385,11 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
           ? att.content[AttachmentSchema.colName] as String?
           : null,
       fileSize: withMeta ? att.content[AttachmentSchema.colSize] as int? : null,
-      connectionCount: linkCount ?? 0,
+      backlinkCount: backlinkCount ?? 0,
       settledAt: card.content[CardSchema.colSettledAt] as int?,
       emphasizedAt: card.content[CardSchema.colEmphasizedAt] as int?,
       linkTile: linkTile,
+      linkChips: linkChips,
     );
   }
 
@@ -373,3 +424,11 @@ class SyncStoreCollectionReadRepository implements CollectionReadRepository {
     }
   }
 }
+
+/// The tiles and chips of a loaded page's linked cards, by card id.
+typedef _LinkViews = ({
+  Map<String, LinkTile> tiles,
+  Map<String, List<LinkChip>> chips,
+});
+
+const _LinkViews _noLinkViews = (tiles: {}, chips: {});

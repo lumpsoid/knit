@@ -96,6 +96,23 @@ Map<String, int> countLinks(
   return counts;
 }
 
+/// For each of [entityIds], how many distinct live links point *at* it — its
+/// backlinks, a pair counted once (§6.4). Ids with none are absent (zero).
+Map<String, int> countBacklinks(
+  Iterable<Snapshot> links,
+  Iterable<String> entityIds,
+) {
+  final wanted = entityIds.toSet();
+  final counts = <String, int>{};
+  for (final link in distinctLinks(links)) {
+    final id = link.content['target_id'];
+    if (id is String && wanted.contains(id)) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
 bool _older(Snapshot a, Snapshot b) => a.createdAt != b.createdAt
     ? a.createdAt < b.createdAt
     : a.id.compareTo(b.id) < 0;

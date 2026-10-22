@@ -10,6 +10,7 @@ import 'package:knit/features/card_edit/presentation/card_edit_page.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/presentation/link_picker_sheet.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/link_chip.dart';
 import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/collection_edit/presentation/collection_edit_page.dart';
 import 'package:knit/features/audio_playback/presentation/audio_mini_player.dart';
@@ -25,7 +26,8 @@ import 'package:knit/features/collection/presentation/widgets/add_block_sheet.da
 import 'package:knit/features/collection/presentation/widgets/card_actions_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/card_bubble.dart';
 import 'package:knit/features/collection/presentation/widgets/card_image_grid.dart';
-import 'package:knit/features/collection/presentation/widgets/card_connections_badge.dart';
+import 'package:knit/features/collection/presentation/widgets/card_backlinks_badge.dart';
+import 'package:knit/features/collection/presentation/widgets/card_link_chips.dart';
 import 'package:knit/features/collection/presentation/widgets/card_reorder_row.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_composer.dart';
 import 'package:knit/features/collection/presentation/widgets/composer_previews.dart';
@@ -986,15 +988,16 @@ class _CollectionPageState extends State<CollectionPage> {
     );
   }
 
-  /// The tile of a card that links to a collection or a card as its whole
+  /// The tile of [card] when it links to a collection or a card as its whole
   /// purpose (§4.2): the target's image from the shared image cache, its
   /// summary, and a tap that opens it.
-  Widget? _linkTile(LinkTile? link) {
+  Widget? _linkTile(FeedCard card) {
+    final link = card.linkTile;
     if (link == null) return null;
     final l10n = AppLocalizations.of(context);
     final imageId = link.imageAttachmentId;
     final image = imageId == null ? null : CollectionScope.images.of(imageId);
-    void onTap() => _openLinkTile(link);
+    void onTap() => _followLink(link.openFrom(_hereId), card);
     return switch (link) {
       CollectionLinkTile() => CollectionLinkTileView(
         title: link.title,
@@ -1007,6 +1010,7 @@ class _CollectionPageState extends State<CollectionPage> {
         previewSettled: link.lastCardSettled,
         coverBytes: image,
         caption: link.caption,
+        archived: link.archived,
         onTap: onTap,
       ),
       CardLinkTile() => CardLinkTileView(
@@ -1015,15 +1019,70 @@ class _CollectionPageState extends State<CollectionPage> {
         settled: link.settled,
         thumbnailBytes: image,
         caption: link.caption,
+        archived: link.archived,
         onTap: onTap,
       ),
     };
   }
 
-  /// Follow a tapped tile: a card in this feed is revealed in place; anything
-  /// else opens over this one (back returns here), focused on its card.
-  void _openLinkTile(LinkTile link) {
-    switch (link.openFrom(_controller.stateHolder.value.collectionId)) {
+  String get _hereId => _controller.stateHolder.value.collectionId;
+
+  /// The chips for [card]'s links out (§4.2), at most [LinkChipRow.maxShown]
+  /// then a "+N", each labelled and wired to where it goes.
+  List<LinkChipView> _linkChips(AppLocalizations l10n, FeedCard card) {
+    final row = LinkChipRow.of(card.linkChips);
+    LinkChipView view(LinkChip chip) {
+      void onTap() => _followLink(chip.openFrom(_hereId), card);
+      return switch (chip) {
+        CollectionLinkChip(:final title, :final archived) => _chipView(
+          l10n,
+          CardPreviewLabel.linkTo(l10n, name: title),
+          archived: archived,
+          onTap: onTap,
+        ),
+        CardLinkChip(:final cardKind, :final preview, :final archived) =>
+          _chipView(
+            l10n,
+            CardPreviewLabel.linkTo(l10n, cardKind: cardKind, name: preview),
+            archived: archived,
+            onTap: onTap,
+          ),
+        BrokenLinkChip() => LinkChipView(
+          label: l10n.linkChipUnavailable,
+          muted: true,
+          onTap: onTap,
+        ),
+      };
+    }
+
+    return [
+      for (final chip in row.shown) view(chip),
+      if (row.more > 0)
+        LinkChipView(
+          label: l10n.linkChipMore(row.more),
+          semanticLabel: l10n.linkChipMoreLabel(row.more),
+          onTap: () => _followLink(LinkChipRow.moreOpen, card),
+        ),
+    ];
+  }
+
+  static LinkChipView _chipView(
+    AppLocalizations l10n,
+    String label, {
+    required bool archived,
+    required VoidCallback onTap,
+  }) => LinkChipView(
+    label: label,
+    archived: archived,
+    semanticLabel: archived ? '$label, ${l10n.linkArchived}' : null,
+    onTap: onTap,
+  );
+
+  /// Follow a tapped tile or chip of [card]: a card in this feed is revealed
+  /// in place; a collection or a card elsewhere opens over this one (back
+  /// returns here), focused on its card; the rest open [card]'s Connections.
+  void _followLink(LinkTileOpen open, FeedCard card) {
+    switch (open) {
       case RevealCardHere(:final cardId):
         _controller.dispatch(CardRevealRequested(cardId));
       case OpenLinkedCollection(:final collectionId, :final focusCardId):
@@ -1032,8 +1091,16 @@ class _CollectionPageState extends State<CollectionPage> {
           focusCardId: focusCardId,
         );
         Navigator.of(context).push(CollectionPage.route());
+      case ShowCardConnections():
+        _openCardConnections(card);
     }
   }
+
+  void _openCardConnections(FeedCard card) => _openConnections(
+    kind: ConnectedEntityKind.card,
+    id: card.id,
+    title: _cardLabel(AppLocalizations.of(context), card),
+  );
 
   /// One feed row for [card]: its bubble, plus a connections badge when linked.
   /// A non-empty [selection] (the selected card ids) puts the row in
@@ -1075,25 +1142,28 @@ class _CollectionPageState extends State<CollectionPage> {
       onToggleAudio: audioId == null
           ? null
           : () => unawaited(_playback.toggle(card.id, audioId)),
-      linkTile: _linkTile(card.linkTile),
+      linkTile: _linkTile(card),
     );
-    // A card with links-out (§4.4) gets a count badge under its bubble;
-    // tapping it opens the Connections page focused on that card — the
-    // same destination as the actions sheet's "Connections".
-    final item = card.connectionCount == 0
+    // Under the bubble (§4.2): a chip per link out (the tile stands for a
+    // Connection card's), then a "←" badge counting the links into the card;
+    // the badge opens the Connections page focused on that card — the same
+    // destination as the actions sheet's "Connections".
+    final chips = _linkChips(AppLocalizations.of(context), card);
+    final item = chips.isEmpty && card.backlinkCount == 0
         ? bubble
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               bubble,
-              CardConnectionsBadge(
-                count: card.connectionCount,
-                onTap: () => _openConnections(
-                  kind: ConnectedEntityKind.card,
-                  id: card.id,
-                  title: _cardLabel(AppLocalizations.of(context), card),
-                ),
+              CardLinkChips(
+                chips: chips,
+                trailing: card.backlinkCount == 0
+                    ? null
+                    : CardBacklinksBadge(
+                        count: card.backlinkCount,
+                        onTap: () => _openCardConnections(card),
+                      ),
               ),
             ],
           );

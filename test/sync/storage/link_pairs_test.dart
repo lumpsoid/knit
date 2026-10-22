@@ -62,6 +62,18 @@ void main() {
       );
       expect(counts, {'card-1': 2, 'col-1': 1});
     });
+
+    test('countBacklinks counts only the links in, a pair once', () {
+      final counts = countBacklinks(
+        [
+          link(id: 'a', hlcMs: 1),
+          link(id: 'b', hlcMs: 1),
+          link(id: 'c', sourceId: 'card-2', targetId: 'card-1', hlcMs: 1),
+        ],
+        ['card-1', 'col-1', 'card-2'],
+      );
+      expect(counts, {'card-1': 1, 'col-1': 1});
+    });
   });
 
   Future<void> seed(SyncStore store) async {
@@ -107,6 +119,10 @@ void main() {
     expect((await store.backlinks('there')).single.id, 'l1');
     expect(await store.linkCounts(['c1', 'there', 'c2']), {
       'c1': 2,
+      'there': 1,
+      'c2': 1,
+    });
+    expect(await store.backlinkCounts(['c1', 'there', 'c2']), {
       'there': 1,
       'c2': 1,
     });

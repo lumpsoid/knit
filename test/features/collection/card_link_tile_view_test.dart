@@ -58,6 +58,38 @@ void main() {
     );
   });
 
+  testWidgets('an archived collection shows the Archived marker', (
+    tester,
+  ) async {
+    await tester.pumpWidget(tile());
+    expect(find.text('Archived'), findsNothing);
+    await tester.pumpWidget(
+      host(
+        CardLinkTileView(
+          preview: 'Lisbon in May',
+          collectionTitle: 'Trips',
+          thumbnailBytes: null,
+          archived: true,
+          onTap: () {},
+        ),
+      ),
+    );
+    expect(find.text('Archived'), findsOneWidget);
+    await tester.pumpWidget(
+      host(
+        CollectionLinkTileView(
+          title: 'Trips',
+          cardCount: 1,
+          preview: 'x',
+          coverBytes: null,
+          archived: true,
+          onTap: () {},
+        ),
+      ),
+    );
+    expect(find.text('Archived'), findsOneWidget);
+  });
+
   testWidgets('shares the collection tile\'s ring', (tester) async {
     await tester.pumpWidget(tile(caption: 'Where we met'));
     final cardRing = tester.widget<DecoratedBox>(

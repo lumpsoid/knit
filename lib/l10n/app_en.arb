@@ -137,12 +137,32 @@
   "collectionAddBlockTooltip": "Add block",
   "collectionSendTooltip": "Send",
   "collectionConnectionsTooltip": "Connections",
-  "collectionCardConnections": "{count, plural, =1{1 connection} other{{count} connections}}",
-  "@collectionCardConnections": {
+  "collectionCardBacklinks": "{count, plural, =1{Linked from 1 place} other{Linked from {count} places}}",
+  "@collectionCardBacklinks": {
     "placeholders": {
       "count": { "type": "int" }
     }
   },
+  "linkTo": "→ {name}",
+  "@linkTo": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkChipUnavailable": "→ unavailable",
+  "linkChipMore": "+{count}",
+  "@linkChipMore": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "linkChipMoreLabel": "{count, plural, =1{1 more link} other{{count} more links}}",
+  "@linkChipMoreLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "linkArchived": "Archived",
   "collectionComingSoon": "{feature} — coming soon",
   "@collectionComingSoon": {
     "placeholders": {

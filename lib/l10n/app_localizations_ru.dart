@@ -336,16 +336,44 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionConnectionsTooltip => 'Связи';
 
   @override
-  String collectionCardConnections(int count) {
+  String collectionCardBacklinks(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count связей',
-      few: '$count связи',
-      one: '1 связь',
+      other: 'Ссылаются из $count мест',
+      few: 'Ссылаются из $count мест',
+      one: 'Ссылаются из 1 места',
     );
     return '$_temp0';
   }
+
+  @override
+  String linkTo(String name) {
+    return '→ $name';
+  }
+
+  @override
+  String get linkChipUnavailable => '→ недоступно';
+
+  @override
+  String linkChipMore(int count) {
+    return '+$count';
+  }
+
+  @override
+  String linkChipMoreLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ещё $count связей',
+      few: 'Ещё $count связи',
+      one: 'Ещё 1 связь',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get linkArchived => 'В архиве';
 
   @override
   String collectionComingSoon(String feature) {

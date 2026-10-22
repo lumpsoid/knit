@@ -19,6 +19,7 @@ class CollectionLinkTileView extends StatelessWidget {
     required this.onTap,
     this.previewSettled = false,
     this.caption,
+    this.archived = false,
   });
 
   /// The linked collection's title (blank ⇒ shown as untitled).
@@ -39,6 +40,10 @@ class CollectionLinkTileView extends StatelessWidget {
   final String? caption;
   final VoidCallback onTap;
 
+  /// Whether the linked collection (or the linked card's collection) is
+  /// archived (§3.4): the tile shows a small "Archived" marker.
+  final bool archived;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -52,6 +57,7 @@ class CollectionLinkTileView extends StatelessWidget {
       glyph: Icons.folder_outlined,
       semanticLabel: l10n.collectionLinkTileOpen,
       caption: caption,
+      archived: archived,
       onTap: onTap,
       lines: [
         Text(

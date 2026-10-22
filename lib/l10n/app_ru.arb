@@ -134,12 +134,22 @@
   "collectionAddBlockTooltip": "Добавить блок",
   "collectionSendTooltip": "Отправить",
   "collectionConnectionsTooltip": "Связи",
-  "collectionCardConnections": "{count, plural, =1{1 связь} few{{count} связи} other{{count} связей}}",
-  "@collectionCardConnections": {
+  "collectionCardBacklinks": "{count, plural, =1{Ссылаются из 1 места} few{Ссылаются из {count} мест} other{Ссылаются из {count} мест}}",
+  "@collectionCardBacklinks": {
     "placeholders": {
       "count": { "type": "int" }
     }
   },
+  "linkTo": "→ {name}",
+  "linkChipUnavailable": "→ недоступно",
+  "linkChipMore": "+{count}",
+  "linkChipMoreLabel": "{count, plural, =1{Ещё 1 связь} few{Ещё {count} связи} other{Ещё {count} связей}}",
+  "@linkChipMoreLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "linkArchived": "В архиве",
   "collectionComingSoon": "{feature} — скоро",
   "@collectionComingSoon": {
     "placeholders": {

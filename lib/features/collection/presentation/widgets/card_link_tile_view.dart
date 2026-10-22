@@ -19,6 +19,7 @@ class CardLinkTileView extends StatelessWidget {
     required this.onTap,
     this.settled = false,
     this.caption,
+    this.archived = false,
   });
 
   /// The linked card's text, file name or kind label, already labelled.
@@ -38,6 +39,10 @@ class CardLinkTileView extends StatelessWidget {
   final String? caption;
   final VoidCallback onTap;
 
+  /// Whether the linked collection (or the linked card's collection) is
+  /// archived (§3.4): the tile shows a small "Archived" marker.
+  final bool archived;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -52,6 +57,7 @@ class CardLinkTileView extends StatelessWidget {
       glyph: Icons.sticky_note_2_outlined,
       semanticLabel: l10n.collectionCardLinkTileOpen,
       caption: caption,
+      archived: archived,
       onTap: onTap,
       lines: [
         Text(

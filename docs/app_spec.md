@@ -138,6 +138,10 @@ deleted. Archiving takes it off the home timeline without losing anything.
 - Vertical list of **collections**, **sorted latest-updated first (descending)** — recency
   order, like a messenger's chat list. **Not reorderable.**
 - Each row shows: cover image (if set), title, last-card preview, card count, last-updated.
+  When the newest card is a Connection card (§4.2), the preview names its target: "→ Trips"
+  for a collection, "→" and the first line of a card (else its kind, "→ Photo"). If the
+  target is gone it falls back to the generic "🔗 Link". The target is resolved on read in
+  two batched reads (the newest cards' links out, then the target cards).
 - **"in:" line:** under the preview, a small muted line names the collections that link to this
   one (§3, §8.6.4): "in: House · Trips", at most two names, then "+N". A collection counts
   once however many of its links point here, from itself or from its cards; the row's own
@@ -218,10 +222,28 @@ deleted. Archiving takes it off the home timeline without losing anything.
   (§4.3) gives such a card a label: the label makes it a text card (a bare URL, a link
   card), and an emptied label is allowed and makes it a text-less `kind=link` card again. A
   tap beside the tile still opens the actions sheet. If the target is deleted (for a card,
-  or its collection), the card keeps its plain bubble and the broken-link chip (§8.6.1).
-  The tiles of a loaded page are read in batches: one links-out read, one summary read for
-  the collection targets, and for the card targets one read each of the cards, their
-  collections and their file names.
+  or its collection), the card keeps its plain bubble and the "→ unavailable" chip below.
+  A tile whose target collection (or the target card's collection) is archived (§3.4)
+  shows a small muted **Archived** marker.
+- **Link chips:** any other card that links out shows small chips under its bubble, one
+  per link: "→ Trips" for a collection, "→" and the first line of a card (else its file
+  name or kind). At most 2 show, live targets first; the rest fold into a "+N" chip that
+  opens the card's Connections (§4.4). A tap follows the chip like a tile: a collection
+  opens, a card in this collection is revealed in place, a card elsewhere opens its
+  collection focused on it. A deleted target (or a card whose collection is deleted) shows
+  a muted "→ unavailable" chip that opens Connections, where the link can be cleared
+  (§8.6.1). A chip to an archived collection, or to a card in one, is muted with an archive
+  glyph. Chips wrap and ellipsize to the feed's width. Imported collections show them too;
+  in multi-select they are inert, and reorder mode hides them.
+- **Backlinks badge:** a card that other cards or collections link *to* shows a small "← N"
+  badge after its chips (N = its backlinks, one per pair, §6.4); a tap opens its
+  Connections. The badge never counts the card's own links out — those are its chips, or
+  its tile — so a card-to-card link reads once at each end: a chip on the source, a badge
+  on the target. A Connection card shows its tile and, if linked to, the badge.
+  The tiles and chips of a loaded page are read in batches: one links-out read and one
+  backlink-count read for every card, then one read of the collection targets, one summary
+  read for the tiles' collection targets, and for the card targets one read each of the
+  cards, their collections and their file names.
 - **Tap a card → actions sheet:** edit · link · copy · share · move to collection ·
   settle/unsettle · emphasize/unemphasize (§3.3) · delete. **Move to collection…** runs the
   multi-select Move below for that one card, without entering selection mode. An imported
@@ -271,7 +293,8 @@ smaller, leaving them as they are.
 
 ### 4.4 Connections view
 A card's links-out + linked-from (backlinks), each tappable to jump; breadcrumb back-stack
-so deep wandering doesn't lose you. Can later grow into a graph view (read-side only).
+so deep wandering doesn't lose you. In the feed, a card's broken-link chip, its "+N" link
+chip and its "← N" backlinks badge (§4.2) open this view. Can later grow into a graph view (read-side only).
 A collection's view adds **Mentioned in** below links-out and backlinks: live cards in other
 (own) collections whose text names the collection's title but don't link to it yet (§8.6.5),
 newest first, at most 20 with a "+N more". Each row shows the card's text around the mention

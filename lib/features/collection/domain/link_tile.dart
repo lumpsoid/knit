@@ -17,7 +17,7 @@ typedef CardLinkOut = ({ConnectedEntityKind targetKind, String targetId});
 /// [CardLinkTile]. Primitives only (widgets.md §1).
 @immutable
 sealed class LinkTile {
-  const LinkTile({this.caption});
+  const LinkTile({this.caption, this.archived = false});
 
   /// The longest card text that still reads as the tile's label, not a note.
   static const int maxLabelLength = 80;
@@ -52,6 +52,10 @@ sealed class LinkTile {
   /// target's name; null when blank or the same (ignoring case).
   final String? caption;
 
+  /// Whether the target collection (or the target card's collection) is
+  /// archived (§3.4): the tile then shows a small muted "Archived" marker.
+  final bool archived;
+
   /// The image the tile shows (a collection's cover, a card's first image),
   /// or null.
   String? get imageAttachmentId;
@@ -80,6 +84,7 @@ final class CollectionLinkTile extends LinkTile {
     this.lastCardText,
     this.lastCardSettled = false,
     super.caption,
+    super.archived,
   });
 
   /// The tile for a card whose text is [cardText], pointing at a collection
@@ -94,6 +99,7 @@ final class CollectionLinkTile extends LinkTile {
     String? lastCardKind,
     String? lastCardText,
     bool lastCardSettled = false,
+    bool archived = false,
   }) => CollectionLinkTile(
     collectionId: collectionId,
     title: title,
@@ -103,6 +109,7 @@ final class CollectionLinkTile extends LinkTile {
     lastCardText: lastCardText,
     lastCardSettled: lastCardSettled,
     caption: LinkTile._captionOf(cardText, title),
+    archived: archived,
   );
 
   final String collectionId;
@@ -135,7 +142,8 @@ final class CollectionLinkTile extends LinkTile {
       other.lastCardKind == lastCardKind &&
       other.lastCardText == lastCardText &&
       other.lastCardSettled == lastCardSettled &&
-      other.caption == caption;
+      other.caption == caption &&
+      other.archived == archived;
 
   @override
   int get hashCode => Object.hash(
@@ -147,6 +155,7 @@ final class CollectionLinkTile extends LinkTile {
     lastCardText,
     lastCardSettled,
     caption,
+    archived,
   );
 }
 
@@ -162,6 +171,7 @@ final class CardLinkTile extends LinkTile {
     this.thumbnailAttachmentId,
     this.settled = false,
     super.caption,
+    super.archived,
   });
 
   /// The tile for a card whose text is [cardText], pointing at the card
@@ -178,8 +188,9 @@ final class CardLinkTile extends LinkTile {
     String? fileName,
     String? thumbnailAttachmentId,
     bool settled = false,
+    bool archived = false,
   }) {
-    final preview = _previewOf(CardKind.fromTag(cardKind), text, fileName);
+    final preview = previewOf(CardKind.fromTag(cardKind), text, fileName);
     return CardLinkTile(
       cardId: cardId,
       cardKind: cardKind,
@@ -189,6 +200,7 @@ final class CardLinkTile extends LinkTile {
       thumbnailAttachmentId: thumbnailAttachmentId,
       settled: settled,
       caption: LinkTile._captionOf(cardText, preview),
+      archived: archived,
     );
   }
 
@@ -222,7 +234,9 @@ final class CardLinkTile extends LinkTile {
       ? RevealCardHere(cardId)
       : OpenLinkedCollection(collectionId, focusCardId: cardId);
 
-  static String? _previewOf(CardKind kind, String? text, String? fileName) {
+  /// A linked card's preview: its trimmed text, else (file and audio cards)
+  /// its file name; null ⇒ shown by its kind label.
+  static String? previewOf(CardKind kind, String? text, String? fileName) {
     final body = text?.trim() ?? '';
     if (body.isNotEmpty) return body;
     final name = fileName?.trim() ?? '';
@@ -241,7 +255,8 @@ final class CardLinkTile extends LinkTile {
       other.preview == preview &&
       other.thumbnailAttachmentId == thumbnailAttachmentId &&
       other.settled == settled &&
-      other.caption == caption;
+      other.caption == caption &&
+      other.archived == archived;
 
   @override
   int get hashCode => Object.hash(
@@ -253,10 +268,11 @@ final class CardLinkTile extends LinkTile {
     thumbnailAttachmentId,
     settled,
     caption,
+    archived,
   );
 }
 
-/// Where a tapped [LinkTile] goes (§4.2).
+/// Where a tapped [LinkTile] or link chip goes (§4.2).
 @immutable
 sealed class LinkTileOpen {
   const LinkTileOpen();
@@ -289,4 +305,16 @@ final class OpenLinkedCollection extends LinkTileOpen {
 
   @override
   int get hashCode => Object.hash(collectionId, focusCardId);
+}
+
+/// Open the Connections view of the card whose link was tapped: a broken
+/// link's chip, or the "+N" chip of more links than fit (§4.2).
+final class ShowCardConnections extends LinkTileOpen {
+  const ShowCardConnections();
+
+  @override
+  bool operator ==(Object other) => other is ShowCardConnections;
+
+  @override
+  int get hashCode => (ShowCardConnections).hashCode;
 }

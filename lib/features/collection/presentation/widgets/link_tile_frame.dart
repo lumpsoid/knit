@@ -2,11 +2,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:knit/core/attachments/presentation/attachment_image.dart';
+import 'package:knit/l10n/app_localizations.dart';
 
 /// The frame both Connection-card tiles share in the feed (§4.2): a solid,
 /// translucent ring around a square image (or [glyph]), the tile's [lines]
-/// and a chevron, with the card's own [caption] above when it has one. A tap
-/// anywhere on the ring calls [onTap]. Takes primitives only (widgets.md §1).
+/// and a chevron, with the card's own [caption] above when it has one. An
+/// [archived] target adds a small muted "Archived" marker under the lines. A
+/// tap anywhere on the ring calls [onTap]. Takes primitives only
+/// (widgets.md §1).
 class LinkTileFrame extends StatelessWidget {
   const LinkTileFrame({
     super.key,
@@ -16,6 +19,7 @@ class LinkTileFrame extends StatelessWidget {
     required this.semanticLabel,
     required this.onTap,
     this.caption,
+    this.archived = false,
   });
 
   /// Decoded image bytes; null when there is none or they haven't loaded.
@@ -32,6 +36,9 @@ class LinkTileFrame extends StatelessWidget {
 
   /// The card's own text, when it says more than the target's name.
   final String? caption;
+
+  /// Whether the target (or its collection) is archived (§3.4).
+  final bool archived;
   final VoidCallback onTap;
 
   static const double _imageSize = 48;
@@ -39,7 +46,8 @@ class LinkTileFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final tile = ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: _maxWidth),
       child: DecoratedBox(
@@ -62,7 +70,10 @@ class LinkTileFrame extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
-                  children: lines,
+                  children: [
+                    ...lines,
+                    if (archived) _archivedMarker(context, theme),
+                  ],
                 ),
               ),
               const SizedBox(width: 4),
@@ -90,6 +101,24 @@ class LinkTileFrame extends StatelessWidget {
         const SizedBox(height: 8),
         link,
       ],
+    );
+  }
+
+  Widget _archivedMarker(BuildContext context, ThemeData theme) {
+    final color = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8);
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.inventory_2_outlined, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            AppLocalizations.of(context).linkArchived,
+            style: theme.textTheme.labelSmall?.copyWith(color: color),
+          ),
+        ],
+      ),
     );
   }
 

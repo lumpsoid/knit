@@ -5,6 +5,7 @@ library;
 
 import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:flutter/foundation.dart';
+import 'package:knit/features/collection/domain/link_chip.dart';
 import 'package:knit/features/collection/domain/link_tile.dart';
 
 /// A card's `kind` (spec §6.4). `text` is the everyday quick-capture; `link` is
@@ -76,10 +77,11 @@ class FeedCard {
     this.moreAttachmentIds = const [],
     this.fileName,
     this.fileSize,
-    this.connectionCount = 0,
+    this.backlinkCount = 0,
     this.settledAt,
     this.emphasizedAt,
     this.linkTile,
+    this.linkChips = const [],
   });
 
   final String id;
@@ -114,13 +116,12 @@ class FeedCard {
   final String? fileName;
   final int? fileSize;
 
-  /// How many links (§4.4) this card takes part in, counting both directions —
-  /// links-out (made *from* this card) and backlinks (made *to* it) — so both
-  /// ends of a link surface a badge. A read-time derivation shown under the
-  /// bubble so the user can see, at a glance, which cards are woven into the
-  /// graph. The two directions are disjoint per card, so a single link is never
-  /// double-counted. Zero ⇒ no badge is shown.
-  final int connectionCount;
+  /// How many links (§4.4) point *at* this card — its backlinks, a pair
+  /// counted once (§6.4). Shown under the bubble as a "←" badge that opens
+  /// Connections; the card's own links out show as [linkChips] (or its
+  /// [linkTile]), so a card-to-card link reads once at each end. Zero ⇒ no
+  /// badge.
+  final int backlinkCount;
 
   /// When the card was settled (§3.3), in ms; null while it is live. A settled
   /// card stays in the feed, drawn quieter.
@@ -139,6 +140,10 @@ class FeedCard {
   /// feed's rich tile (§4.2); null for every other card, and when the target
   /// is deleted (the link is then broken, §8.6.1).
   final LinkTile? linkTile;
+
+  /// The card's links out as chips under its bubble (§4.2), live targets
+  /// first; empty when it has none or when [linkTile] stands for its link.
+  final List<LinkChip> linkChips;
 
   /// The card's capture time, decoded from the millisecond timestamp in the
   /// leading 48 bits of its UUIDv7 [id] (§6.1) — every minted card id is v7, so
@@ -162,10 +167,11 @@ class FeedCard {
     moreAttachmentIds: moreAttachmentIds,
     fileName: fileName,
     fileSize: fileSize,
-    connectionCount: connectionCount,
+    backlinkCount: backlinkCount,
     settledAt: settledAt,
     emphasizedAt: emphasizedAt,
     linkTile: linkTile,
+    linkChips: linkChips,
   );
 }
 
@@ -273,8 +279,8 @@ class CollectionData {
   final FeedCursor? olderBoundary;
 
   /// How many links (§4.4) the collection *itself* takes part in — links-out
-  /// plus backlinks (things linked to it), counted once each like a card's
-  /// [FeedCard.connectionCount]. Surfaced on the title card; zero ⇒ no badge.
+  /// plus backlinks (things linked to it), a pair counted once (§6.4).
+  /// Surfaced on the title card; zero ⇒ no badge.
   final int connectionCount;
 }
 

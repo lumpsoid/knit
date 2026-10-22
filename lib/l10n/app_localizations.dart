@@ -656,11 +656,41 @@ abstract class AppLocalizations {
   /// **'Connections'**
   String get collectionConnectionsTooltip;
 
-  /// No description provided for @collectionCardConnections.
+  /// No description provided for @collectionCardBacklinks.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 connection} other{{count} connections}}'**
-  String collectionCardConnections(int count);
+  /// **'{count, plural, =1{Linked from 1 place} other{Linked from {count} places}}'**
+  String collectionCardBacklinks(int count);
+
+  /// No description provided for @linkTo.
+  ///
+  /// In en, this message translates to:
+  /// **'→ {name}'**
+  String linkTo(String name);
+
+  /// No description provided for @linkChipUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'→ unavailable'**
+  String get linkChipUnavailable;
+
+  /// No description provided for @linkChipMore.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count}'**
+  String linkChipMore(int count);
+
+  /// No description provided for @linkChipMoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more link} other{{count} more links}}'**
+  String linkChipMoreLabel(int count);
+
+  /// No description provided for @linkArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get linkArchived;
 
   /// No description provided for @collectionComingSoon.
   ///

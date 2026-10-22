@@ -4,6 +4,7 @@ import 'package:knit/core/ids/uuid_id_generator.dart';
 import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/link_chip.dart';
 import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_write_repository.dart';
@@ -184,7 +185,8 @@ void main() {
       final tile = card.linkTile as CollectionLinkTile?;
       expect(tile?.collectionId, trips);
       expect(tile?.caption, isNull);
-      expect(card.connectionCount, 1);
+      expect(card.linkChips, isEmpty, reason: 'the tile stands for its link');
+      expect(card.backlinkCount, 0);
     });
 
     test('a Connection card to a card renders the card tile', () async {
@@ -249,7 +251,7 @@ void main() {
 
       final card = (await load(index)).cards.single;
       expect(card.linkTile, isNull);
-      expect(card.connectionCount, 1);
+      expect(card.linkChips, [const BrokenLinkChip()]);
     });
 
     test('a deleted target keeps the plain bubble (broken link)', () async {
@@ -261,7 +263,33 @@ void main() {
 
       final card = (await load(index)).cards.single;
       expect(card.linkTile, isNull);
-      expect(card.connectionCount, 1);
+      expect(card.linkChips, [const BrokenLinkChip()]);
+      expect(card.backlinkCount, 0);
+    });
+
+    test('an archived target collection marks the tile', () async {
+      final index = await createCollection('Index');
+      final trips = await createCollection('Trips');
+      final lisbon = await addText(trips, 'a0', 'Lisbon');
+      final toTrips = await addText(index, 'a0', 'Trips');
+      await linkTo(toTrips, trips);
+      final toLisbon = (await write.addConnectionCard(
+        collectionId: index,
+        position: 'a1',
+        targetKind: ConnectedEntityKind.card,
+        targetId: lisbon,
+      )).getOrThrow();
+      await store.setCollectionArchived(trips, archived: true);
+
+      final cards = (await load(index)).cards;
+      expect(
+        cards.firstWhere((c) => c.id == toTrips).linkTile?.archived,
+        isTrue,
+      );
+      expect(
+        cards.firstWhere((c) => c.id == toLisbon).linkTile?.archived,
+        isTrue,
+      );
     });
 
     test('a card linking to a collection and a card gets none', () async {
@@ -278,6 +306,93 @@ void main() {
       );
       final cards = (await load(index)).cards;
       expect(cards.every((c) => c.linkTile == null), isTrue);
+    });
+  });
+
+  group('link chips and backlinks (§4.2)', () {
+    Future<String> addText(String colId, String position, String text) async =>
+        (await write.addCard(
+          collectionId: colId,
+          kind: CardKind.text,
+          position: position,
+          text: text,
+        )).getOrThrow();
+
+    Future<void> link(
+      String cardId,
+      ConnectedEntityKind kind,
+      String targetId,
+    ) async => (await linkWrite.addLink(
+      sourceKind: ConnectedEntityKind.card,
+      sourceId: cardId,
+      targetKind: kind,
+      targetId: targetId,
+    )).getOrThrow();
+
+    test('a note gets a chip per link out, live targets first', () async {
+      final index = await createCollection('Index');
+      final trips = await createCollection('Trips');
+      final gone = await createCollection('Gone');
+      final lisbon = await addText(trips, 'a0', 'Lisbon\nin May');
+      final file = (await write.addCard(
+        collectionId: trips,
+        kind: CardKind.file,
+        position: 'a1',
+        attachmentId: 'att-file',
+      )).getOrThrow();
+      final note = await addText(index, 'a0', 'A long note, linking out.');
+      await link(note, ConnectedEntityKind.collection, gone);
+      await link(note, ConnectedEntityKind.collection, trips);
+      await link(note, ConnectedEntityKind.card, lisbon);
+      await link(note, ConnectedEntityKind.card, file);
+      await store.delete(EntityType.collection, gone);
+      await store.setCollectionArchived(trips, archived: true);
+
+      final card = (await load(index)).cards.single;
+      expect(card.linkTile, isNull);
+      expect(card.linkChips, [
+        CollectionLinkChip(collectionId: trips, title: 'Trips', archived: true),
+        CardLinkChip(
+          cardId: lisbon,
+          cardKind: 'text',
+          collectionId: trips,
+          preview: 'Lisbon\nin May',
+          archived: true,
+        ),
+        CardLinkChip(
+          cardId: file,
+          cardKind: 'file',
+          collectionId: trips,
+          archived: true,
+        ),
+        const BrokenLinkChip(),
+      ]);
+    });
+
+    test('a card-to-card link reads once: a chip out, a badge in', () async {
+      final colId = await createCollection('Espresso');
+      // Two lines: a note, not a label, so it keeps its bubble and chips.
+      final src = await addText(colId, 'a0', 'source\nsee below');
+      final dst = await addText(colId, 'a1', 'target');
+
+      var cards = (await load(colId)).cards;
+      expect(cards.map((c) => c.backlinkCount), [0, 0]);
+      expect(cards.every((c) => c.linkChips.isEmpty), isTrue);
+
+      await link(src, ConnectedEntityKind.card, dst);
+      cards = (await load(colId)).cards;
+      final byId = {for (final c in cards) c.id: c};
+      expect(byId[src]!.linkChips, [
+        CardLinkChip(
+          cardId: dst,
+          cardKind: 'text',
+          collectionId: colId,
+          preview: 'target',
+        ),
+      ]);
+      expect(byId[src]!.backlinkCount, 0);
+      expect(byId[dst]!.linkChips, isEmpty);
+      expect(byId[dst]!.backlinkCount, 1);
     });
   });
 
@@ -309,43 +424,6 @@ void main() {
     // The target card now has a backlink from the source card.
     expect(await store.backlinks(dst), hasLength(1));
   });
-
-  test(
-    'connectionCount counts links at both ends, without double-counting',
-    () async {
-      final colId = await createCollection('Espresso');
-      final src = (await write.addCard(
-        collectionId: colId,
-        kind: CardKind.text,
-        position: 'a0',
-        text: 'source',
-      )).getOrThrow();
-      final dst = (await write.addCard(
-        collectionId: colId,
-        kind: CardKind.text,
-        position: 'a1',
-        text: 'target',
-      )).getOrThrow();
-
-      // No links yet → no badge for either card.
-      var cards = (await load(colId)).cards;
-      expect(cards.map((c) => c.connectionCount), [0, 0]);
-
-      // Link source → target. Both ends show the link once: the source via its
-      // link-out, the target via its backlink. Neither is double-counted.
-      await linkWrite.addLink(
-        sourceKind: ConnectedEntityKind.card,
-        sourceId: src,
-        targetKind: ConnectedEntityKind.card,
-        targetId: dst,
-      );
-      cards = (await load(colId)).cards;
-      expect(
-        {for (final c in cards) c.id: c.connectionCount},
-        {src: 1, dst: 1},
-      );
-    },
-  );
 
   test(
     'collection connectionCount counts links to the collection itself',
@@ -491,28 +569,28 @@ void main() {
       expect(data.cards.map((c) => c.text), ['c4', 'c5', 'c6']);
     });
 
-    test(
-      'batched link counts match per-card links in both directions',
-      () async {
-        final all = await loadWindow(const FeedWindow.all());
-        final a = all.cards[5].id;
-        final b = all.cards[6].id;
-        await linkWrite.addLink(
-          sourceKind: ConnectedEntityKind.card,
-          sourceId: a,
-          targetKind: ConnectedEntityKind.card,
-          targetId: b,
-        );
-        await linkWrite.addLink(
-          sourceKind: ConnectedEntityKind.card,
-          sourceId: b,
-          targetKind: ConnectedEntityKind.collection,
-          targetId: colId,
-        );
-        final data = await loadWindow(const FeedWindow.latest(2));
-        expect(data.cards.map((c) => c.connectionCount), [1, 2]);
-        expect(data.connectionCount, 1);
-      },
-    );
+    test('batched backlink counts and chips match per-card links', () async {
+      final all = await loadWindow(const FeedWindow.all());
+      final a = all.cards[5].id;
+      final b = all.cards[6].id;
+      await linkWrite.addLink(
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: a,
+        targetKind: ConnectedEntityKind.card,
+        targetId: b,
+      );
+      await linkWrite.addLink(
+        sourceKind: ConnectedEntityKind.card,
+        sourceId: b,
+        targetKind: ConnectedEntityKind.collection,
+        targetId: colId,
+      );
+      final data = await loadWindow(const FeedWindow.latest(2));
+      expect(data.cards.map((c) => c.backlinkCount), [0, 1]);
+      // Short labels with one link each: their tiles stand for the links.
+      expect(data.cards.map((c) => c.linkTile != null), [true, true]);
+      expect(data.cards.every((c) => c.linkChips.isEmpty), isTrue);
+      expect(data.connectionCount, 1);
+    });
   });
 }

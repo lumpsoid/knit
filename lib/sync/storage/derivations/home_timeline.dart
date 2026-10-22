@@ -15,7 +15,16 @@ import 'package:knit/sync/snapshot.dart';
 /// §8.6.3). Carries the card [kind] and (for text cards) its [text]; the UI maps
 /// a non-text kind to a summary like "Photo"/"Audio"/"Link".
 class CardPreview {
-  const CardPreview({required this.kind, this.text, this.settled = false});
+  const CardPreview({
+    required this.id,
+    required this.kind,
+    this.text,
+    this.settled = false,
+    this.linkTarget,
+  });
+
+  /// The card's id.
+  final String id;
 
   /// `kind` — `text` | `image` | `audio` | `link` | … (spec §6.4).
   final String kind;
@@ -26,11 +35,39 @@ class CardPreview {
   /// Whether the card is settled (spec §3.3); the row then shows it muted.
   final bool settled;
 
+  /// What the card points at when it is a Connection card (§4.1/§4.2) whose
+  /// target is live, so the row reads "→ Trips"; null otherwise. Not part of
+  /// this derivation: the reader resolves it in a batched read and attaches it
+  /// with [withLinkTarget].
+  final LinkTargetPreview? linkTarget;
+
   factory CardPreview.of(Snapshot card) => CardPreview(
+    id: card.id,
     kind: card.content['kind'] as String,
     text: card.content['text'] as String?,
     settled: card.content['settled_at'] != null,
   );
+
+  /// This preview naming [target] as the Connection card's target.
+  CardPreview withLinkTarget(LinkTargetPreview target) => CardPreview(
+    id: id,
+    kind: kind,
+    text: text,
+    settled: settled,
+    linkTarget: target,
+  );
+}
+
+/// The live target of a Connection card, as its preview names it (§4.1): a
+/// collection by its title, or a card by its text, else its kind.
+class LinkTargetPreview {
+  const LinkTargetPreview({this.cardKind, this.name});
+
+  /// The target card's `kind` tag; null when the target is a collection.
+  final String? cardKind;
+
+  /// The collection's title, or the card's text; null/blank when it has none.
+  final String? name;
 }
 
 /// One row of the home timeline (spec §8.6.3) — a collection plus its derived
@@ -47,6 +84,19 @@ class CollectionSummary {
     this.archived = false,
     this.createdBy = '',
   });
+
+  /// This row with [lastCard] in place of its preview.
+  CollectionSummary withLastCard(CardPreview lastCard) => CollectionSummary(
+    collectionId: collectionId,
+    title: title,
+    description: description,
+    coverAttachmentId: coverAttachmentId,
+    cardCount: cardCount,
+    lastCard: lastCard,
+    lastUpdated: lastUpdated,
+    archived: archived,
+    createdBy: createdBy,
+  );
 
   final String collectionId;
   final String title;
