@@ -1,4 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' hide SearchController;
+import 'package:knit/features/card_links/domain/card_links_models.dart';
+import 'package:knit/features/card_links/presentation/card_links_controller.dart';
+import 'package:knit/features/card_links/presentation/link_picker_sheet.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/collection/presentation/collection_page.dart';
 import 'package:knit/features/search/domain/search_filter.dart';
 import 'package:knit/features/search/domain/search_models.dart';
@@ -8,9 +14,11 @@ import 'package:knit/l10n/app_localizations.dart';
 
 /// Full-screen search (§3.2/§4.1): type a query, submit it from the keyboard,
 /// and get every matching collection and card ranked most relevant first,
-/// narrowed by the filter chips (kind, settled, archived). Opened from a
-/// collection (§4.2) it searches only that collection's cards, under an
-/// "In: <title>" chip whose ✕ widens it to everything.
+/// narrowed by the filter chips (kind, settled, archived, linked to). Opened
+/// from a collection (§4.2) it searches only that collection's cards, under an
+/// "In: <title>" chip whose ✕ widens it to everything. With a "Linked to…"
+/// target set, an empty query lists everything linked to it, newest first —
+/// opened that way ("Find linked cards"), it shows the list at once.
 ///
 /// Tapping a hit opens its collection (scrolled to the card for a card hit);
 /// Back returns here with the results intact. A hit inside the collection the
@@ -38,6 +46,12 @@ class _SearchPageState extends State<SearchPage> {
   SearchController get _controller => widget.controller;
 
   @override
+  void initState() {
+    super.initState();
+    unawaited(_controller.start());
+  }
+
+  @override
   void dispose() {
     _field.dispose();
     _controller.dispose();
@@ -58,10 +72,47 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  /// The "Linked to…" chip: pick a collection or a card in the shared link
+  /// picker, the chosen ones checked; a tap toggles it in the filter.
+  Future<void> _pickLinkedTo(CardLinksController links) async {
+    final choice = await LinkPickerSheet.show(
+      context,
+      links: links,
+      source: LinkFilterPick(
+        chosen: {
+          for (final t in _controller.state.filter.linkedTo)
+            (_connectedKind(t.kind), t.id),
+        },
+      ),
+    );
+    final target = switch (choice) {
+      LinkTargetPicked(:final target) => target,
+      LinkTargetUnpicked(:final target) => target,
+      _ => null,
+    };
+    if (target == null || !mounted) return;
+    _controller.toggleLinkedTo(
+      SearchLinkTarget(
+        kind: target.kind == ConnectedEntityKind.collection
+            ? SearchHitKind.collection
+            : SearchHitKind.card,
+        id: target.id,
+        label: target.label,
+      ),
+    );
+  }
+
+  static ConnectedEntityKind _connectedKind(SearchHitKind kind) =>
+      switch (kind) {
+        SearchHitKind.collection => ConnectedEntityKind.collection,
+        SearchHitKind.card => ConnectedEntityKind.card,
+      };
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final state = _controller.state;
+    final links = _controller.links;
     return ListenableBuilder(
       listenable: state,
       builder: (context, _) {
@@ -109,6 +160,20 @@ class _SearchPageState extends State<SearchPage> {
                 onSettled: _controller.cycleSettled,
                 onArchived: _controller.setIncludeArchived,
               ),
+              if (links != null)
+                _LinkedToBar(
+                  targets: [
+                    for (final t in state.filter.linkedTo)
+                      (
+                        label: t.label,
+                        isCollection: t.kind == SearchHitKind.collection,
+                      ),
+                  ],
+                  onPick: () => _pickLinkedTo(links),
+                  onRemove: (i) => _controller.toggleLinkedTo(
+                    state.filter.linkedTo.elementAt(i),
+                  ),
+                ),
               Expanded(child: _body(l10n, state)),
             ],
           ),
@@ -137,7 +202,9 @@ class _SearchPageState extends State<SearchPage> {
         return hits.isEmpty
             ? _Message(
                 icon: Icons.search_off,
-                text: l10n.searchNoResults(state.query),
+                text: state.query.trim().isEmpty
+                    ? l10n.searchNothingLinked
+                    : l10n.searchNoResults(state.query),
               )
             : ListView.builder(
                 keyboardDismissBehavior:
@@ -284,6 +351,66 @@ class _FilterBar extends StatelessWidget {
   }
 }
 
+/// The "Linked to…" row (§4.1): the chip that opens the link picker, then
+/// one removable "→ <label>" chip per chosen target, in the order chosen.
+class _LinkedToBar extends StatelessWidget {
+  const _LinkedToBar({
+    required this.targets,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  final List<({String label, bool isCollection})> targets;
+  final VoidCallback onPick;
+
+  /// The ✕ on the target at this index.
+  final ValueChanged<int> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          ActionChip(
+            avatar: const Icon(Icons.link, size: 18),
+            label: Text(l10n.searchLinkedTo),
+            onPressed: onPick,
+          ),
+          for (var i = 0; i < targets.length; i++)
+            InputChip(
+              avatar: Icon(
+                targets[i].isCollection
+                    ? Icons.workspaces_outline
+                    : Icons.sticky_note_2_outlined,
+                size: 18,
+              ),
+              label: Text(
+                l10n.searchLinkedToChip(
+                  targets[i].label.trim().isEmpty
+                      ? (targets[i].isCollection
+                            ? l10n.labelUntitled
+                            : l10n.labelEmptyNote)
+                      : targets[i].label.trim(),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              selected: true,
+              showCheckmark: false,
+              onPressed: onPick,
+              onDeleted: () => onRemove(i),
+              deleteButtonTooltipMessage: l10n.searchLinkedToRemove,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// One result row. A collection hit shows its title, plus the matched snippet
 /// when the match was in its description or a link label; a card hit shows the
 /// matched snippet and the collection it lives in. A hit in an archived
@@ -301,7 +428,22 @@ class _HitTile extends StatelessWidget {
         ? l10n.labelUntitled
         : hit.collectionTitle;
     final isCollection = hit.kind == SearchHitKind.collection;
-    final snippet = _HighlightedText(text: hit.snippet, ranges: hit.ranges);
+    // A browsed hit (no query) with no text — an untitled collection, a bare
+    // photo — still needs a line.
+    final Widget snippet = hit.snippet.isEmpty
+        ? Text(
+            isCollection
+                ? collectionTitle
+                : switch (SearchCardKind.fromTag(hit.cardKind)) {
+                    SearchCardKind.text => l10n.labelEmptyNote,
+                    SearchCardKind.image => l10n.searchKindImage,
+                    SearchCardKind.link => l10n.searchKindLink,
+                    SearchCardKind.file => l10n.searchKindFile,
+                    SearchCardKind.audio => l10n.searchKindAudio,
+                  },
+            maxLines: 1,
+          )
+        : _HighlightedText(text: hit.snippet, ranges: hit.ranges);
     return ListTile(
       leading: Icon(_iconFor(hit)),
       title: isCollection

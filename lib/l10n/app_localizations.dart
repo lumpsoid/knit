@@ -1022,6 +1022,24 @@ abstract class AppLocalizations {
   /// **'Linked'**
   String get linkPickerLinked;
 
+  /// No description provided for @linkPickerChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose'**
+  String get linkPickerChoose;
+
+  /// No description provided for @linkPickerChosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen'**
+  String get linkPickerChosen;
+
+  /// No description provided for @linkPickerChooseCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose “{label}”'**
+  String linkPickerChooseCollection(String label);
+
   /// No description provided for @linkPickerNewCollection.
   ///
   /// In en, this message translates to:
@@ -2006,6 +2024,30 @@ abstract class AppLocalizations {
   /// **'Archived'**
   String get searchIncludeArchived;
 
+  /// No description provided for @searchLinkedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to…'**
+  String get searchLinkedTo;
+
+  /// No description provided for @searchLinkedToChip.
+  ///
+  /// In en, this message translates to:
+  /// **'→ {label}'**
+  String searchLinkedToChip(String label);
+
+  /// No description provided for @searchLinkedToRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from filter'**
+  String get searchLinkedToRemove;
+
+  /// No description provided for @searchNothingLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing linked matches'**
+  String get searchNothingLinked;
+
   /// No description provided for @searchInCollection.
   ///
   /// In en, this message translates to:
@@ -2245,6 +2287,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search in collection'**
   String get collectionMenuSearch;
+
+  /// No description provided for @collectionMenuFindLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Find linked cards'**
+  String get collectionMenuFindLinked;
 
   /// No description provided for @collectionOutlineTitle.
   ///

@@ -31,6 +31,8 @@ SearchDocument _doc(
   String collection = 'col',
   bool settled = false,
   bool archived = false,
+  int updatedAtMs = 0,
+  Set<String> linksOut = const {},
 }) => SearchDocument(
   kind: kind,
   id: id,
@@ -44,10 +46,11 @@ SearchDocument _doc(
       text,
     ),
   ],
-  updatedAtMs: 0,
+  updatedAtMs: updatedAtMs,
   cardKind: kind == SearchHitKind.card ? 'text' : null,
   settled: settled,
   archived: archived,
+  linksOut: linksOut,
 );
 
 SearchHit _hit(String id, String collectionId) => SearchHit(
@@ -293,5 +296,132 @@ void main() {
     );
     expect(routeArgs.collectionId, 'col-1');
     expect(routeArgs.focusCardId, isNull);
+  });
+
+  group('linked to (§4.1)', () {
+    const veg = SearchLinkTarget(
+      kind: SearchHitKind.collection,
+      id: 'veg',
+      label: 'Vegetarian',
+    );
+    const quick = SearchLinkTarget(
+      kind: SearchHitKind.collection,
+      id: 'quick',
+      label: 'Quick',
+    );
+    final tagged = [
+      _doc(
+        'soup',
+        SearchHitKind.card,
+        'tea soup',
+        updatedAtMs: 1,
+        linksOut: {'veg', 'quick'},
+      ),
+      _doc(
+        'salad',
+        SearchHitKind.card,
+        'salad',
+        updatedAtMs: 3,
+        linksOut: {'veg'},
+      ),
+      _doc(
+        'steak',
+        SearchHitKind.card,
+        'tea steak',
+        updatedAtMs: 2,
+        linksOut: {'quick'},
+      ),
+      _doc(
+        'menus',
+        SearchHitKind.collection,
+        'Menus',
+        updatedAtMs: 4,
+        linksOut: {'veg'},
+      ),
+    ];
+    List<String> hitIds(SearchController c) =>
+        c.state.hits.map((h) => h.id).toList();
+
+    test(
+      'an empty query browses what links to the target, newest first',
+      () async {
+        controller.toggleLinkedTo(veg);
+        expect(controller.state.status, SearchStatus.loading);
+        read.pending.single.complete(Ok(tagged));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.state.status, SearchStatus.ready);
+        expect(controller.state.query, isEmpty);
+        expect(hitIds(controller), ['menus', 'salad', 'soup']);
+      },
+    );
+
+    test('adding and removing targets re-runs without re-reading', () async {
+      controller.toggleLinkedTo(veg);
+      read.pending.single.complete(Ok(tagged));
+      await Future<void>.delayed(Duration.zero);
+
+      controller.toggleLinkedTo(quick);
+      expect(hitIds(controller), ['soup']);
+      controller.toggleLinkedTo(veg);
+      expect(hitIds(controller), ['steak', 'soup']);
+      expect(read.pending, hasLength(1));
+
+      // The last target gone, an empty query has nothing to show.
+      controller.toggleLinkedTo(quick);
+      expect(controller.state.status, SearchStatus.idle);
+      expect(controller.state.hits, isEmpty);
+
+      // ...and a target back browses the held documents again.
+      controller.toggleLinkedTo(quick);
+      expect(hitIds(controller), ['steak', 'soup']);
+      expect(read.pending, hasLength(1));
+    });
+
+    test('with a query, the targets narrow the ranked hits', () async {
+      final done = controller.submit('tea');
+      read.pending.single.complete(Ok(tagged));
+      await done;
+      expect(hitIds(controller), unorderedEquals(['soup', 'steak']));
+
+      controller.toggleLinkedTo(veg);
+      expect(hitIds(controller), ['soup']);
+      expect(controller.state.query, 'tea');
+      expect(read.pending, hasLength(1));
+    });
+
+    test('clearing the query keeps browsing the targets', () async {
+      controller.toggleLinkedTo(veg);
+      read.pending.single.complete(Ok(tagged));
+      await Future<void>.delayed(Duration.zero);
+
+      final cleared = controller.submit('');
+      read.pending.last.complete(Ok(tagged));
+      await cleared;
+      expect(hitIds(controller), ['menus', 'salad', 'soup']);
+    });
+
+    test(
+      'opened pre-filtered ("Find linked cards"), start browses at once',
+      () async {
+        final linked = SearchController(
+          readRepository: read,
+          collectionRouteArgs: routeArgs,
+          filter: SearchFilter(linkedTo: {veg}),
+          logger: Logger('test.search'),
+        );
+        addTearDown(linked.dispose);
+        final started = linked.start();
+        read.pending.single.complete(Ok(tagged));
+        await started;
+        expect(hitIds(linked), ['menus', 'salad', 'soup']);
+      },
+    );
+
+    test('start without a target waits for a query', () async {
+      await controller.start();
+      expect(read.pending, isEmpty);
+      expect(controller.state.status, SearchStatus.idle);
+    });
   });
 }

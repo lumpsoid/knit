@@ -39,6 +39,7 @@ import 'package:knit/features/collection/presentation/widgets/collection_link_ti
 import 'package:knit/features/collection/presentation/widgets/collection_menu_sheet.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_outline_sheet.dart';
 import 'package:knit/features/search/domain/search_filter.dart';
+import 'package:knit/features/search/domain/search_models.dart';
 import 'package:knit/features/search/presentation/search_page.dart';
 import 'package:knit/features/collection/presentation/widgets/read_only_footer.dart';
 import 'package:knit/features/collection/presentation/widgets/collection_title_card.dart';
@@ -289,7 +290,8 @@ class _CollectionPageState extends State<CollectionPage> {
     }
   }
 
-  /// The app bar's ⋮ sheet: search in the collection, present it (§4.9), open
+  /// The app bar's ⋮ sheet: search in the collection, find what links to it,
+  /// present it (§4.9), open
   /// its outline, reorder or delete it.
   Future<void> _openMenu(CollectionState state) async {
     final action = await showModalBottomSheet<CollectionMenuAction>(
@@ -304,6 +306,8 @@ class _CollectionPageState extends State<CollectionPage> {
     switch (action) {
       case CollectionMenuAction.search:
         await _openSearch(state.collectionId);
+      case CollectionMenuAction.findLinked:
+        await _openFindLinked(state.collectionId);
       case CollectionMenuAction.present:
         await _openPresent(state.collectionId);
       case CollectionMenuAction.outline:
@@ -350,9 +354,29 @@ class _CollectionPageState extends State<CollectionPage> {
     );
     final cardId = await Navigator.of(
       context,
-    ).push(SearchPage.route(CollectionScope.createSearch(scope)));
+    ).push(SearchPage.route(CollectionScope.createSearch(scope: scope)));
     if (cardId == null || !mounted) return;
     _controller.dispatch(CardRevealRequested(cardId));
+  }
+
+  /// "Find linked cards" (§4.1): everything that links to this collection —
+  /// the members of a collection used as a tag — listed at once, newest
+  /// first, in a global search whose "Linked to…" filter names it. A query
+  /// or more targets narrow it there; a hit opens its own collection.
+  Future<void> _openFindLinked(String collectionId) async {
+    final filter = SearchFilter(
+      linkedTo: {
+        SearchLinkTarget(
+          kind: SearchHitKind.collection,
+          id: collectionId,
+          label:
+              CollectionScope.collectionDetails.of(collectionId)?.title ?? '',
+        ),
+      },
+    );
+    await Navigator.of(
+      context,
+    ).push(SearchPage.route(CollectionScope.createSearch(filter: filter)));
   }
 
   /// "Save a copy" of an imported collection (§10.5 fork): the copy opens in

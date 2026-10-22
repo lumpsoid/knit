@@ -45,7 +45,8 @@ class CardLinksController {
 
   /// Open the picker for [source]: start a fresh session and load the
   /// collections level with the recently linked ones, and the targets the
-  /// source card already links to (the ✓ marks). A failed read shows an
+  /// source card already links to (the ✓ marks) — or the source's preset
+  /// [LinkPick.checked] ones. A failed read shows an
   /// empty list; failed recents show no "Recent" row, failed links no ✓.
   Future<void> openPicker(LinkPick source) async {
     final session = ++_session;
@@ -53,7 +54,7 @@ class CardLinksController {
     final recents = await _recentsRead.load(RecentPurpose.link);
     final linkedFrom = source.linkedFrom;
     final linked = linkedFrom == null
-        ? const LinkedTargets()
+        ? source.checked
         : (await _read.loadLinkedTargets(linkedFrom)).fold((linked) => linked, (
             failure,
           ) {

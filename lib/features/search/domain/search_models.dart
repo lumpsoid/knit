@@ -44,6 +44,7 @@ class SearchDocument {
     this.cardKind,
     this.settled = false,
     this.archived = false,
+    this.linksOut = const {},
   });
 
   final SearchHitKind kind;
@@ -65,6 +66,10 @@ class SearchDocument {
   /// Whether the collection the hit opens is archived (§3.4). Archived
   /// collections stay searchable; the row just says so.
   final bool archived;
+
+  /// The ids of the collections and cards this entity has a live link out to
+  /// (§6.4) — what the "Linked to…" filter matches on.
+  final Set<String> linksOut;
 }
 
 /// A highlighted stretch of a [SearchHit.snippet], `[start, end)` in UTF-16

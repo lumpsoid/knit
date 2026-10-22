@@ -553,6 +553,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get linkPickerLinked => 'Связано';
 
   @override
+  String get linkPickerChoose => 'Выбрать';
+
+  @override
+  String get linkPickerChosen => 'Выбрано';
+
+  @override
+  String linkPickerChooseCollection(String label) {
+    return 'Выбрать «$label»';
+  }
+
+  @override
   String get linkPickerNewCollection => 'Новая коллекция';
 
   @override
@@ -1146,6 +1157,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get searchIncludeArchived => 'В архиве';
 
   @override
+  String get searchLinkedTo => 'Связано с…';
+
+  @override
+  String searchLinkedToChip(String label) {
+    return '→ $label';
+  }
+
+  @override
+  String get searchLinkedToRemove => 'Убрать из фильтра';
+
+  @override
+  String get searchNothingLinked => 'Ничего связанного не найдено';
+
+  @override
   String searchInCollection(String title) {
     return 'в «$title»';
   }
@@ -1327,6 +1352,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get collectionMenuSearch => 'Поиск в коллекции';
+
+  @override
+  String get collectionMenuFindLinked => 'Найти связанные карточки';
 
   @override
   String get collectionOutlineTitle => 'Оглавление';

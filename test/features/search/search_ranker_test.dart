@@ -174,4 +174,38 @@ void main() {
     expect(byId['k']!.archived, isTrue);
     expect(byId['c']!.archived, isFalse);
   });
+
+  group('browse (no query, §4.1)', () {
+    test('lists every document newest first, ties by id', () {
+      final hits = ranker.browse([
+        card('old', 'a', updatedAtMs: 1),
+        collection('new', 'Tag', updatedAtMs: 3),
+        card('b', 'b', updatedAtMs: 2),
+        card('a', 'a', updatedAtMs: 2),
+      ]);
+      expect(hits.map((h) => h.id), ['new', 'a', 'b', 'old']);
+    });
+
+    test('a hit shows the start of its strongest text, unhighlighted', () {
+      final hits = ranker.browse([
+        collection('col', 'Recipes', description: 'all of them'),
+        card('long', 'x' * 200),
+        SearchDocument(
+          kind: SearchHitKind.card,
+          id: 'photo',
+          collectionId: 'col',
+          collectionTitle: 'Col',
+          texts: const [],
+          updatedAtMs: 0,
+          cardKind: 'image',
+        ),
+      ]);
+      expect(hits[0].snippet, 'Recipes');
+      expect(hits[0].field, SearchField.collectionTitle);
+      expect(hits[0].ranges, isEmpty);
+      expect(hits[1].snippet, '${'x' * SearchRanker.snippetLength}…');
+      expect(hits[2].snippet, isEmpty);
+      expect(hits[2].field, SearchField.cardText);
+    });
+  });
 }

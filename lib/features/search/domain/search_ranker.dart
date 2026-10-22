@@ -166,6 +166,47 @@ class SearchRanker {
     return [for (final s in scored) _toHit(s.doc, s.match)];
   }
 
+  /// Every one of [documents] as a hit, newest first (the [rank] recency
+  /// tie-break, then id) — the query-less browse of a "Linked to…" filter
+  /// (§4.1). Nothing matched, so a hit's snippet is the start of its
+  /// strongest text (title, card text, then the rest) with no ranges; a
+  /// document with no text gets an empty one.
+  List<SearchHit> browse(List<SearchDocument> documents) {
+    final sorted = [...documents]
+      ..sort((a, b) {
+        final byRecency = b.updatedAtMs.compareTo(a.updatedAtMs);
+        if (byRecency != 0) return byRecency;
+        return a.id.compareTo(b.id);
+      });
+    return [for (final doc in sorted) _browseHit(doc)];
+  }
+
+  SearchHit _browseHit(SearchDocument doc) {
+    SearchText? lead;
+    for (final text in doc.texts) {
+      if (lead == null || text.field.tier < lead.field.tier) lead = text;
+    }
+    final text = (lead?.text ?? '').replaceAll(_anyWhitespace, ' ').trim();
+    final snippet = text.length > snippetLength
+        ? '${text.substring(0, snippetLength).trimRight()}…'
+        : text;
+    return SearchHit(
+      kind: doc.kind,
+      id: doc.id,
+      collectionId: doc.collectionId,
+      collectionTitle: doc.collectionTitle,
+      field:
+          lead?.field ??
+          (doc.kind == SearchHitKind.collection
+              ? SearchField.collectionTitle
+              : SearchField.cardText),
+      snippet: snippet,
+      ranges: const [],
+      cardKind: doc.cardKind,
+      archived: doc.archived,
+    );
+  }
+
   _FieldMatch? _matchText(SearchQuery query, SearchText text) {
     final folded = SearchNormalizer.normalize(text.text);
     final ranges = <MatchRange>[];

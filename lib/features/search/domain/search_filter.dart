@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:knit/features/search/domain/search_models.dart';
 
 /// A card kind the Kind chips filter on (§3.1). [tag] is the card's `kind`.
@@ -49,19 +50,45 @@ class SearchScope {
       doc.kind == SearchHitKind.card && doc.collectionId == collectionId;
 }
 
+/// A collection or a card the "Linked to…" filter asks for (§3.2/§4.1):
+/// documents that link out to it. Collections and cards used as tags or
+/// categories are such targets. Equal by [kind] and [id]; [label] is the
+/// chip's text.
+@immutable
+class SearchLinkTarget {
+  const SearchLinkTarget({
+    required this.kind,
+    required this.id,
+    required this.label,
+  });
+
+  final SearchHitKind kind;
+  final String id;
+  final String label;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SearchLinkTarget && other.kind == kind && other.id == id;
+
+  @override
+  int get hashCode => Object.hash(kind, id);
+}
+
 /// One search session's filters (§3.2/§4.1), applied to the documents before
 /// they are ranked. Not persisted. The defaults admit everything: all result
 /// types, no kind chip (all kinds), any settled state, archived included
 /// (§3.4: search still offers archived collections).
 ///
-/// A collection document obeys only [type] and [includeArchived], and is
-/// hidden while any kind chip is on (a collection has no card kind).
+/// A collection document obeys only [type], [includeArchived] and
+/// [linkedTo], and is hidden while any kind chip is on (a collection has no
+/// card kind).
 class SearchFilter {
   const SearchFilter({
     this.type = SearchResultType.all,
     this.kinds = const {},
     this.settled = SettledFilter.any,
     this.includeArchived = true,
+    this.linkedTo = const {},
   });
 
   final SearchResultType type;
@@ -71,16 +98,29 @@ class SearchFilter {
   final SettledFilter settled;
   final bool includeArchived;
 
+  /// The targets a document must link out to — every one of them (AND), so
+  /// two tags narrow to what carries both. Empty asks for nothing. Each
+  /// document is judged on its own links: a collection's cards don't inherit
+  /// the collection's.
+  final Set<SearchLinkTarget> linkedTo;
+
+  /// Whether an empty query still lists documents: with a "Linked to…"
+  /// target set, search browses everything linked to it (newest first)
+  /// instead of waiting for words.
+  bool get browsesWithoutQuery => linkedTo.isNotEmpty;
+
   SearchFilter copyWith({
     SearchResultType? type,
     Set<SearchCardKind>? kinds,
     SettledFilter? settled,
     bool? includeArchived,
+    Set<SearchLinkTarget>? linkedTo,
   }) => SearchFilter(
     type: type ?? this.type,
     kinds: kinds ?? this.kinds,
     settled: settled ?? this.settled,
     includeArchived: includeArchived ?? this.includeArchived,
+    linkedTo: linkedTo ?? this.linkedTo,
   );
 
   /// This filter with [kind] turned on, or off when it already is.
@@ -88,8 +128,17 @@ class SearchFilter {
     kinds: kinds.contains(kind) ? ({...kinds}..remove(kind)) : {...kinds, kind},
   );
 
+  /// This filter with [target] added to [linkedTo], or removed when it
+  /// already is there.
+  SearchFilter toggleLinkedTo(SearchLinkTarget target) => copyWith(
+    linkedTo: linkedTo.contains(target)
+        ? ({...linkedTo}..remove(target))
+        : {...linkedTo, target},
+  );
+
   bool admits(SearchDocument doc) {
     if (!includeArchived && doc.archived) return false;
+    if (!linkedTo.every((t) => doc.linksOut.contains(t.id))) return false;
     switch (doc.kind) {
       case SearchHitKind.collection:
         return type != SearchResultType.cards && kinds.isEmpty;

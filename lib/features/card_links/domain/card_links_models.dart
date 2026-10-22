@@ -30,8 +30,11 @@ sealed class LinkPick {
   bool lists(LinkTarget collection) => true;
 
   /// The card whose live links out the picker marks ✓ (and toggles off); null
-  /// ⇒ no checks.
+  /// ⇒ no checks but [checked].
   String? get linkedFrom => null;
+
+  /// The targets marked ✓ from the start, with no card's links behind them.
+  LinkedTargets get checked => const LinkedTargets();
 
   /// Whether the collections level offers "New collection" (§4.4): link to a
   /// collection made on the fly. Only where a collection may be the target.
@@ -152,6 +155,30 @@ class LinkSelection extends LinkPick {
       sourcesFor(ConnectedEntityKind.card, id).isNotEmpty;
 }
 
+/// Search's "Linked to…" chip (§4.1): pick a collection or a card to filter
+/// by. Nothing is linked, so every listed entity may be picked — imported ones
+/// and their cards too — and no new collection is offered. The targets
+/// already in the filter ([chosen], by kind and id) show ✓; tapping any
+/// target toggles it in the filter.
+@immutable
+class LinkFilterPick extends LinkPick {
+  const LinkFilterPick({this.chosen = const {}});
+
+  final Set<(ConnectedEntityKind, String)> chosen;
+
+  @override
+  bool get offersNewCollection => false;
+
+  @override
+  LinkedTargets get checked => LinkedTargets.marked(chosen);
+
+  @override
+  bool canLinkToCollection(String id) => true;
+
+  @override
+  bool canLinkToCard(String id) => true;
+}
+
 /// What a batched link write did (§6.4): the target linked to (a collection
 /// made on the fly gets its new id here) and how many links it wrote — pairs
 /// already linked are skipped, so it can be fewer than asked, even zero.
@@ -176,6 +203,13 @@ class LinksAdded {
 @immutable
 class LinkedTargets {
   const LinkedTargets([this._linkIds = const {}]);
+
+  /// [targets] checked with no link behind them — a search filter's chosen
+  /// targets ([LinkFilterPick]). Tapping one comes back as a
+  /// [LinkTargetUnpicked] with an empty link id: there is nothing to remove,
+  /// only the target to drop from the filter.
+  LinkedTargets.marked(Iterable<(ConnectedEntityKind, String)> targets)
+    : _linkIds = {for (final t in targets) t: ''};
 
   /// The link id per linked target, keyed by its kind and id.
   final Map<(ConnectedEntityKind, String), String> _linkIds;

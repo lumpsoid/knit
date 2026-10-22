@@ -8,8 +8,10 @@ import 'package:result_dart/result_dart.dart';
 /// [SearchReadRepository] over the graph's [SyncStore]: flattens every live
 /// collection (title, description) and every live card of a live collection
 /// (text, attachment file name) into a [SearchDocument]. A live link's label is
-/// searchable on its *source* entity — the card or collection it was made from.
-/// Tombstoned rows never surface; archived ones do, flagged (§3.4).
+/// searchable on its *source* entity — the card or collection it was made from
+/// — and its target is among the source's [SearchDocument.linksOut]; all links
+/// come from one batched read. Tombstoned rows never surface; archived ones
+/// do, flagged (§3.4).
 class SyncStoreSearchReadRepository implements SearchReadRepository {
   SyncStoreSearchReadRepository({required AppGraph graph}) : _graph = graph;
 
@@ -27,11 +29,25 @@ class SyncStoreSearchReadRepository implements SearchReadRepository {
         for (final a in await store.readAll(EntityType.attachment))
           if (!a.deleted) a.id: a.content[AttachmentSchema.colName] as String?,
       };
+      final cards = [
+        for (final card in await store.readAll(EntityType.card))
+          if (!card.deleted &&
+              collections.containsKey(card.content['collection_id']))
+            card,
+      ];
+      // One batched read of every document's live links out, one per pair
+      // (§6.4): their labels are searchable, their targets feed "Linked to…".
       final labelsBySource = <String, List<String>>{};
-      for (final link in await store.readAll(EntityType.link)) {
+      final linksOut = <String, Set<String>>{};
+      for (final link in await store.linksOutOf([
+        ...collections.keys,
+        for (final card in cards) card.id,
+      ])) {
+        final sourceId = link.content['source_id'] as String;
+        (linksOut[sourceId] ??= {}).add(link.content['target_id'] as String);
         final label = link.content['label'] as String?;
-        if (link.deleted || label == null || label.trim().isEmpty) continue;
-        (labelsBySource[link.content['source_id'] as String] ??= []).add(label);
+        if (label == null || label.trim().isEmpty) continue;
+        (labelsBySource[sourceId] ??= []).add(label);
       }
 
       List<SearchText> labelsOf(String id) => [
@@ -58,14 +74,13 @@ class SyncStoreSearchReadRepository implements SearchReadRepository {
             ],
             updatedAtMs: col.hlc.ms,
             archived: _isArchived(col),
+            linksOut: linksOut[col.id] ?? const {},
           ),
         );
       }
 
-      for (final card in await store.readAll(EntityType.card)) {
-        if (card.deleted) continue;
-        final col = collections[card.content['collection_id'] as String?];
-        if (col == null) continue;
+      for (final card in cards) {
+        final col = collections[card.content['collection_id'] as String]!;
         final text = card.content['text'] as String?;
         final fileName = fileNames[card.content['attachment_id'] as String?];
         documents.add(
@@ -85,6 +100,7 @@ class SyncStoreSearchReadRepository implements SearchReadRepository {
             cardKind: card.content['kind'] as String?,
             settled: card.content[CardSchema.colSettledAt] != null,
             archived: _isArchived(col),
+            linksOut: linksOut[card.id] ?? const {},
           ),
         );
       }

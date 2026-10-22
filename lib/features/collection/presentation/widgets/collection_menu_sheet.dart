@@ -3,6 +3,7 @@ import 'package:knit/l10n/app_localizations.dart';
 
 enum CollectionMenuAction {
   search,
+  findLinked,
   present,
   outline,
   reorder,
@@ -12,10 +13,11 @@ enum CollectionMenuAction {
   remove,
 }
 
-/// The Collection app bar's ⋮ sheet: Search in collection, Present (§4.9),
-/// Outline and Reorder (§4.2), Share as file (docs/collection_share.md) and
-/// Delete. An imported collection offers Search, Present, Outline, Save a copy,
-/// Share as file (re-shared verbatim) and Remove instead.
+/// The Collection app bar's ⋮ sheet: Search in collection, Find linked cards
+/// (§4.1), Present (§4.9), Outline and Reorder (§4.2), Share as file
+/// (docs/collection_share.md) and Delete. An imported collection offers
+/// Search, Find linked cards, Present, Outline, Save a copy, Share as file
+/// (re-shared verbatim) and Remove instead.
 class CollectionMenuSheet extends StatelessWidget {
   const CollectionMenuSheet({
     super.key,
@@ -46,6 +48,12 @@ class CollectionMenuSheet extends StatelessWidget {
             leading: const Icon(Icons.search),
             title: Text(l10n.collectionMenuSearch),
             onTap: () => Navigator.of(context).pop(CollectionMenuAction.search),
+          ),
+          ListTile(
+            leading: const Icon(Icons.manage_search),
+            title: Text(l10n.collectionMenuFindLinked),
+            onTap: () =>
+                Navigator.of(context).pop(CollectionMenuAction.findLinked),
           ),
           ListTile(
             leading: const Icon(Icons.slideshow_outlined),

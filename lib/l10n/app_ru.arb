@@ -215,6 +215,14 @@
   },
   "collectionNoCardsToLink": "Здесь нет карточек для связи.",
   "linkPickerLinked": "Связано",
+  "linkPickerChoose": "Выбрать",
+  "linkPickerChosen": "Выбрано",
+  "linkPickerChooseCollection": "Выбрать «{label}»",
+  "@linkPickerChooseCollection": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "linkPickerNewCollection": "Новая коллекция",
   "linkPickerLinkThere": "Связать с ней",
   "collectionLinkSelectedTitle": "{count, plural, =1{Связать 1 карточку с…} few{Связать {count} карточки с…} many{Связать {count} карточек с…} other{Связать {count} карточки с…}}",
@@ -459,6 +467,15 @@
   "searchSettledLive": "Только живые",
   "searchSettledOnly": "Только приглушённые",
   "searchIncludeArchived": "В архиве",
+  "searchLinkedTo": "Связано с…",
+  "searchLinkedToChip": "→ {label}",
+  "@searchLinkedToChip": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "searchLinkedToRemove": "Убрать из фильтра",
+  "searchNothingLinked": "Ничего связанного не найдено",
   "searchInCollection": "в «{title}»",
   "collectionSelectedCount": "Выбрано: {count}",
   "@collectionSelectedCount": {
@@ -537,6 +554,7 @@
   "collectionMenuPresent": "Показать",
   "collectionMenuOutline": "Оглавление",
   "collectionMenuSearch": "Поиск в коллекции",
+  "collectionMenuFindLinked": "Найти связанные карточки",
   "collectionOutlineTitle": "Оглавление",
   "collectionOutlineEmpty": "Заголовков пока нет. Выделите карточку, чтобы сделать её заголовком: она появится здесь и откроет слайд при показе.",
   "collectionOutlineError": "Не удалось загрузить оглавление.",

@@ -143,4 +143,59 @@ void main() {
     expect(docs['c2']!.settled, isFalse);
     expect(docs['col']!.settled, isFalse);
   });
+
+  group('links out ("Linked to…", §4.1)', () {
+    Future<void> link(
+      String id,
+      String sourceType,
+      String sourceId,
+      String targetType,
+      String targetId,
+    ) => store.create(EntityType.link, id, {
+      'source_type': sourceType,
+      'source_id': sourceId,
+      'target_type': targetType,
+      'target_id': targetId,
+      'label': null,
+    });
+
+    test('every document carries its live link-out targets', () async {
+      await addCollection('veg', 'Vegetarian');
+      await addCollection('quick', 'Quick');
+      await addCollection('recipes', 'Recipes');
+      await addCard('soup', 'recipes', text: 'Soup');
+      await addCard('stew', 'recipes', text: 'Stew');
+      await link('l1', 'card', 'soup', 'collection', 'veg');
+      await link('l2', 'card', 'soup', 'collection', 'quick');
+      await link('l3', 'card', 'soup', 'card', 'stew');
+      await link('l4', 'collection', 'recipes', 'collection', 'veg');
+      await link('l5', 'card', 'stew', 'collection', 'quick');
+      await store.delete(EntityType.link, 'l5');
+
+      final docs = await load();
+      expect(docs['soup']!.linksOut, {'veg', 'quick', 'stew'});
+      expect(docs['recipes']!.linksOut, {'veg'});
+      expect(docs['stew']!.linksOut, isEmpty);
+      expect(docs['veg']!.linksOut, isEmpty);
+    });
+
+    test('a pair linked twice reads as one link, one label', () async {
+      await addCollection('veg', 'Vegetarian');
+      await addCollection('recipes', 'Recipes');
+      await addCard('soup', 'recipes', text: 'Soup');
+      for (final id in ['l1', 'l2']) {
+        await store.create(EntityType.link, id, {
+          'source_type': 'card',
+          'source_id': 'soup',
+          'target_type': 'collection',
+          'target_id': 'veg',
+          'label': 'tag',
+        });
+      }
+
+      final soup = (await load())['soup']!;
+      expect(soup.linksOut, {'veg'});
+      expect(textsOf(soup)[SearchField.linkLabel], ['tag']);
+    });
+  });
 }

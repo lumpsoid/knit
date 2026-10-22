@@ -78,6 +78,9 @@ The data model enforces this: `collection` has `title` + optional `description` 
   Backlinks stay (not sugar).
 - **Search is embedded, not a tab** — a search icon in the home top bar opens a full-screen
   search-as-you-type overlay. The app is shallow; search is a tool, not a place.
+- **Tags are links, not a separate concept.** A collection (or a card) linked to from many
+  items acts as their tag or category; search's **Linked to…** filter (§4.1) asks for them,
+  several tags at once meaning *all* of them.
 - **Identity = an on-device cryptographic keypair**, not a server username (see §5).
 
 ### 3.3 Settled cards
@@ -158,6 +161,15 @@ deleted. Archiving takes it off the home timeline without losing anything.
   default, §3.4). Collection hits obey only the type and Archived chips, and hide while any
   Kind chip is on. Changing a chip re-filters the last submitted query at once, without a new
   submit.
+- **Linked to…** (§3.2 tags): a chip opens the link picker (§4.4) to pick a collection or a
+  card; chosen ones show ✓ there and a tap toggles them. Each chosen target shows as a
+  removable "→ <title>" chip. A hit must have a live link **out** to **every** target (AND):
+  Vegetarian + Quick = what links to both. Each document is judged on its own links — a
+  collection passes when it links to them itself; its cards don't inherit that. With a target
+  set and an **empty query**, search lists every match, newest first ("everything tagged X");
+  with a query, the targets narrow the ranked hits like the other chips. Works in a scoped
+  search too. The documents' links come from one batched read with the corpus; changing
+  targets re-filters it without a reload.
 - **Pinned collections:** long-press a row → actions sheet → **Pin / Unpin**. Pinned
   collections sit in a **"Pinned"** section above a **"Recent"** section; both keep the
   recency order, with no cap on pins. Headers appear only once something is pinned. Pins are a
@@ -253,8 +265,11 @@ deleted. Archiving takes it off the home timeline without losing anything.
   settle/unsettle · emphasize/unemphasize (§3.3) · delete. **Move to collection…** runs the
   multi-select Move below for that one card, without entering selection mode. An imported
   (read-only) collection's sheet doesn't offer it.
-- **⋮ menu** in the app bar opens a sheet with **Search in collection**, **Present** (§4.9),
-  **Outline** and **Reorder**. **Search in collection** opens the same search (§4.1) narrowed
+- **⋮ menu** in the app bar opens a sheet with **Search in collection**, **Find linked
+  cards**, **Present** (§4.9), **Outline** and **Reorder**. **Find linked cards** opens a
+  global search (§4.1) with an empty query and a "→ <this collection>" **Linked to…** filter,
+  listing at once everything linked to it — the members of a collection used as a tag; more
+  targets or a query narrow it there. **Search in collection** opens the same search (§4.1) narrowed
   to this collection: an "In: <title>" chip under the field, only its cards ranked (no
   collection hits), the Kind and Settled chips. The chip's ✕ widens it to everything. A hit in
   this collection goes back to this screen and reveals the card like an Outline entry; a hit

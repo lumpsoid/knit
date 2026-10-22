@@ -8,11 +8,13 @@ enum SearchStatus { idle, loading, ready, failed }
 /// mutates, and the page listens to. [hits] holds the ranked hits for the last
 /// submitted [query], already narrowed by [filter] and [scope].
 class SearchState extends ChangeNotifier {
-  SearchState({SearchScope? scope}) : _scope = scope;
+  SearchState({SearchScope? scope, SearchFilter filter = const SearchFilter()})
+    : _scope = scope,
+      _filter = filter;
 
   SearchStatus _status = SearchStatus.idle;
   String _query = '';
-  SearchFilter _filter = const SearchFilter();
+  SearchFilter _filter;
   SearchScope? _scope;
   List<SearchHit> _hits = const [];
 

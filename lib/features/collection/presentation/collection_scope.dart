@@ -35,7 +35,8 @@ abstract final class CollectionScope {
   static AttachmentImageCacheState? _images;
   static CardLinksController? _cardLinks;
   static PresentController Function()? _presentFactory;
-  static SearchController Function(SearchScope scope)? _searchFactory;
+  static SearchController Function({SearchScope? scope, SearchFilter? filter})?
+  _searchFactory;
   static PresentRouteArgsWriter? _presentWriter;
   static CollectionShareExportController Function(String collectionId)?
   _shareExportFactory;
@@ -55,7 +56,8 @@ abstract final class CollectionScope {
   static void setPresentFactory(PresentController Function() factory) =>
       _presentFactory = factory;
   static void setSearchFactory(
-    SearchController Function(SearchScope scope) factory,
+    SearchController Function({SearchScope? scope, SearchFilter? filter})
+    factory,
   ) => _searchFactory = factory;
   static void setImportedActions(ImportedCollectionController controller) =>
       _importedActions = controller;
@@ -211,9 +213,13 @@ abstract final class CollectionScope {
     return factory();
   }
 
-  /// A new Search controller narrowed to [scope] — the ⋮ menu's search in
-  /// this collection (§4.2); the Search page owns and disposes it.
-  static SearchController createSearch(SearchScope scope) {
+  /// A new Search controller — narrowed to [scope] (the ⋮ menu's search in
+  /// this collection, §4.2) or pre-filtered by [filter] (its "Find linked
+  /// cards": what links to it, §4.1); the Search page owns and disposes it.
+  static SearchController createSearch({
+    SearchScope? scope,
+    SearchFilter? filter,
+  }) {
     final factory = _searchFactory;
     if (factory == null) {
       throw StateError(
@@ -221,7 +227,7 @@ abstract final class CollectionScope {
         'Call CollectionScope.setSearchFactory() before createSearch().',
       );
     }
-    return factory(scope);
+    return factory(scope: scope, filter: filter);
   }
 
   /// Build the "Share as file" controller for [collectionId]; the sheet owns

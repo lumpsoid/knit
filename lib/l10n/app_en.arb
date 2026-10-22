@@ -235,6 +235,14 @@
   },
   "collectionNoCardsToLink": "No cards here to link to.",
   "linkPickerLinked": "Linked",
+  "linkPickerChoose": "Choose",
+  "linkPickerChosen": "Chosen",
+  "linkPickerChooseCollection": "Choose “{label}”",
+  "@linkPickerChooseCollection": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
   "linkPickerNewCollection": "New collection",
   "linkPickerLinkThere": "Link there",
   "collectionLinkSelectedTitle": "{count, plural, =1{Link 1 card to…} other{Link {count} cards to…}}",
@@ -500,6 +508,15 @@
   "searchSettledLive": "Live only",
   "searchSettledOnly": "Settled only",
   "searchIncludeArchived": "Archived",
+  "searchLinkedTo": "Linked to…",
+  "searchLinkedToChip": "→ {label}",
+  "@searchLinkedToChip": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "searchLinkedToRemove": "Remove from filter",
+  "searchNothingLinked": "Nothing linked matches",
   "searchInCollection": "in {title}",
   "@searchInCollection": {
     "placeholders": {
@@ -583,6 +600,7 @@
   "collectionMenuPresent": "Present",
   "collectionMenuOutline": "Outline",
   "collectionMenuSearch": "Search in collection",
+  "collectionMenuFindLinked": "Find linked cards",
   "collectionOutlineTitle": "Outline",
   "collectionOutlineEmpty": "No headings yet. Emphasize a card to make it a heading: it shows up here, and opens a slide when you present.",
   "collectionOutlineError": "Couldn't load the outline.",

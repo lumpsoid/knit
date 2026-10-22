@@ -8,6 +8,7 @@ SearchDocument _card(
   String collection = 'col',
   bool settled = false,
   bool archived = false,
+  Set<String> linksOut = const {},
 }) => SearchDocument(
   kind: SearchHitKind.card,
   id: id,
@@ -18,18 +19,34 @@ SearchDocument _card(
   cardKind: kind,
   settled: settled,
   archived: archived,
+  linksOut: linksOut,
 );
 
-SearchDocument _collection(String id, {bool archived = false}) =>
-    SearchDocument(
-      kind: SearchHitKind.collection,
-      id: id,
-      collectionId: id,
-      collectionTitle: 'Col',
-      texts: const [],
-      updatedAtMs: 0,
-      archived: archived,
-    );
+SearchDocument _collection(
+  String id, {
+  bool archived = false,
+  Set<String> linksOut = const {},
+}) => SearchDocument(
+  kind: SearchHitKind.collection,
+  id: id,
+  collectionId: id,
+  collectionTitle: 'Col',
+  texts: const [],
+  updatedAtMs: 0,
+  archived: archived,
+  linksOut: linksOut,
+);
+
+const _veg = SearchLinkTarget(
+  kind: SearchHitKind.collection,
+  id: 'veg',
+  label: 'Vegetarian',
+);
+const _quick = SearchLinkTarget(
+  kind: SearchHitKind.collection,
+  id: 'quick',
+  label: 'Quick',
+);
 
 SearchHit _hit(String id, String collectionId, SearchHitKind kind) => SearchHit(
   kind: kind,
@@ -174,6 +191,58 @@ void main() {
         SearchDestination.of(_hit('c', 'col', SearchHitKind.card)),
         isA<OpenCollection>(),
       );
+    });
+  });
+
+  group('linked to (§4.1)', () {
+    final docs = [
+      _card('both', linksOut: {'veg', 'quick', 'other'}),
+      _card('veg-only', linksOut: {'veg'}),
+      _card('none'),
+      _collection('tagged', linksOut: {'veg'}),
+      // The collection is tagged, its card is not: judged on its own links.
+      _card('in-tagged', collection: 'tagged'),
+    ];
+    List<String> ids(SearchFilter f) => [for (final d in f.narrow(docs)) d.id];
+
+    test('none set admits everything and does not browse', () {
+      const f = SearchFilter();
+      expect(ids(f), hasLength(docs.length));
+      expect(f.browsesWithoutQuery, isFalse);
+    });
+
+    test('one target keeps the cards and collections linking to it', () {
+      final f = const SearchFilter().toggleLinkedTo(_veg);
+      expect(ids(f), ['both', 'veg-only', 'tagged']);
+      expect(f.browsesWithoutQuery, isTrue);
+    });
+
+    test('several targets combine with AND', () {
+      final f = const SearchFilter()
+          .toggleLinkedTo(_veg)
+          .toggleLinkedTo(_quick);
+      expect(ids(f), ['both']);
+    });
+
+    test('toggling a target again removes it; equality is kind and id', () {
+      final f = const SearchFilter()
+          .toggleLinkedTo(_veg)
+          .toggleLinkedTo(
+            const SearchLinkTarget(
+              kind: SearchHitKind.collection,
+              id: 'veg',
+              label: 'renamed',
+            ),
+          );
+      expect(f.linkedTo, isEmpty);
+      expect(f.browsesWithoutQuery, isFalse);
+    });
+
+    test('combines with the other filters', () {
+      final f = const SearchFilter(
+        type: SearchResultType.cards,
+      ).toggleLinkedTo(_veg);
+      expect(ids(f), ['both', 'veg-only']);
     });
   });
 }

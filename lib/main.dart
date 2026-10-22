@@ -243,16 +243,6 @@ void bootstrap(AppConfig config) {
   CollectionScope.setRouteArgs(routeArgs);
   // ...and writes it itself to open the collection a selection moved into.
   CollectionScope.setCollectionRouteArgsWriter(routeArgs);
-  // Search (§3.2/§4.1), opened from the Timeline app bar, or from a
-  // collection's ⋮ menu narrowed to it (§4.2): a fresh controller per page; a
-  // tapped hit writes the same carrier (with the card to reveal).
-  SearchController newSearch({SearchScope? scope}) => SearchController(
-    readRepository: SyncStoreSearchReadRepository(graph: graph),
-    collectionRouteArgs: routeArgs,
-    scope: scope,
-  );
-  TimelineScope.setSearchFactory(newSearch);
-  CollectionScope.setSearchFactory((scope) => newSearch(scope: scope));
   // The Connections view writes the same carrier to open a connected item
   // inside its collection (§4.2/§4.4) before navigating to the Collection page.
   ConnectionsScope.setCollectionRouteArgsWriter(routeArgs);
@@ -326,6 +316,21 @@ void bootstrap(AppConfig config) {
   );
   CollectionScope.setCardLinks(cardLinks);
   CardEditScope.setCardLinks(cardLinks);
+  // Search (§3.2/§4.1), opened from the Timeline app bar, or from a
+  // collection's ⋮ menu narrowed to it (§4.2) or pre-filtered to what links to
+  // it ("Find linked cards"): a fresh controller per page; a tapped hit writes
+  // the same carrier (with the card to reveal). Its "Linked to…" chip opens
+  // the shared link picker.
+  SearchController newSearch({SearchScope? scope, SearchFilter? filter}) =>
+      SearchController(
+        readRepository: SyncStoreSearchReadRepository(graph: graph),
+        collectionRouteArgs: routeArgs,
+        links: cardLinks,
+        scope: scope,
+        filter: filter ?? const SearchFilter(),
+      );
+  TimelineScope.setSearchFactory(newSearch);
+  CollectionScope.setSearchFactory(newSearch);
 
   // Pinned collections (§4.1): a device-local view preference, persisted in
   // shared_preferences like Settings — never synced or signed.

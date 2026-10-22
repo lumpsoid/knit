@@ -405,4 +405,40 @@ void main() {
       expect(find.text('Sibling'), findsOneWidget);
     });
   });
+
+  group('search "Linked to…" filter', () {
+    const filter = LinkFilterPick(
+      chosen: {(ConnectedEntityKind.collection, 'other')},
+    );
+
+    testWidgets('chosen targets show ✓ and toggle; nothing is excluded', (
+      tester,
+    ) async {
+      final read = _Read();
+      final picked = await pumpPicker(tester, read: read, source: filter);
+
+      expect(find.text('Linked to…'), findsOneWidget);
+      expect(read.linkedReads, isEmpty);
+      expect(find.text('New collection'), findsNothing);
+      expect(find.text('Chosen'), findsOneWidget); // Other
+      expect(find.text('Choose'), findsOneWidget); // Own, the "source" none
+      await tester.tap(find.text('Chosen'));
+      await tester.pumpAndSettle();
+      expect((picked.single! as LinkTargetUnpicked).target.id, 'other');
+    });
+
+    testWidgets('drills in to pick any card, the collection too', (
+      tester,
+    ) async {
+      final picked = await pumpPicker(tester, source: filter);
+
+      await tester.tap(find.widgetWithText(ListTile, 'Own'));
+      await tester.pumpAndSettle();
+      expect(find.text('Choose “Own”'), findsOneWidget);
+      expect(find.text('Self'), findsOneWidget);
+      await tester.tap(find.text('Self'));
+      await tester.pumpAndSettle();
+      expect((picked.single! as LinkTargetPicked).target.id, 'self');
+    });
+  });
 }

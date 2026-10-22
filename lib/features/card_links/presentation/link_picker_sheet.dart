@@ -16,7 +16,8 @@ import 'package:knit/l10n/app_localizations.dart';
 /// a ✓, and tapping it again picks its removal. Pops the [LinkPickerChoice]
 /// (null when dismissed). With [onNewCollection], the collections level leads
 /// with a "New collection" row: tapping it closes the sheet and reports the
-/// row's global rect.
+/// row's global rect. Search's "Linked to…" chip opens it to pick filter
+/// targets ([LinkFilterPick]): its ✓ marks the chosen ones.
 class LinkPickerSheet extends StatefulWidget {
   const LinkPickerSheet({
     super.key,
@@ -134,6 +135,7 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
     if (collections == null) return const _SheetSpinner();
     final recents = state.recentCollections;
     final onNew = widget.onNewCollection;
+    final filtering = state.source is LinkFilterPick;
     final nothingToLink = Padding(
       padding: const EdgeInsets.all(24),
       child: Text(l10n.collectionNothingToLink),
@@ -149,6 +151,7 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
           LinkSelection(:final cardIds) => l10n.collectionLinkSelectedTitle(
             cardIds.length,
           ),
+          LinkFilterPick() => l10n.searchLinkedTo,
           _ => l10n.collectionLinkFinderTitle,
         }),
         RecentTargetsRow(
@@ -191,12 +194,16 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
                   TextButton.icon(
                     onPressed: () => _choose(c),
                     icon: const Icon(Icons.check),
-                    label: Text(l10n.linkPickerLinked),
+                    label: Text(
+                      filtering ? l10n.linkPickerChosen : l10n.linkPickerLinked,
+                    ),
                   )
                 else if (state.canLinkToCollection(c.id))
                   TextButton(
                     onPressed: () => _choose(c),
-                    child: Text(l10n.actionLink),
+                    child: Text(
+                      filtering ? l10n.linkPickerChoose : l10n.actionLink,
+                    ),
                   ),
                 IconButton(
                   tooltip: l10n.actionOpen,
@@ -229,7 +236,9 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
           ListTile(
             leading: const Icon(Icons.workspaces_outline),
             title: Text(
-              l10n.collectionLinkToCollection(
+              (state.source is LinkFilterPick
+                  ? l10n.linkPickerChooseCollection
+                  : l10n.collectionLinkToCollection)(
                 _collectionLabel(l10n, collection),
               ),
               maxLines: 1,

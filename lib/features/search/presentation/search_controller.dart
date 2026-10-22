@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
+import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection/presentation/collection_route_args.dart';
 import 'package:knit/features/search/domain/search_filter.dart';
 import 'package:knit/features/search/domain/search_models.dart';
@@ -13,13 +14,16 @@ import 'package:knit/features/search/presentation/search_state.dart';
 /// keeps the result in [state], and writes the tapped hit into the Collection
 /// route-args carrier. A [scope] (§4.2: opened from a collection) narrows the
 /// search to that collection's cards until it is cleared, and remains the
-/// origin a hit inside it returns to. One per page instance — the page
-/// disposes it.
+/// origin a hit inside it returns to. A "Linked to…" [filter] lists what links
+/// to its targets even with no query ([start]: the "Find linked cards" entry).
+/// One per page instance — the page disposes it.
 class SearchController {
   SearchController({
     required SearchReadRepository readRepository,
     required CollectionRouteArgsWriter collectionRouteArgs,
+    this.links,
     SearchScope? scope,
+    SearchFilter filter = const SearchFilter(),
     SearchRanker ranker = const SearchRanker(),
     Logger? logger,
   }) : _read = readRepository,
@@ -27,7 +31,11 @@ class SearchController {
        _origin = scope,
        _ranker = ranker,
        _log = logger ?? Logger('knit.search'),
-       state = SearchState(scope: scope);
+       state = SearchState(scope: scope, filter: filter);
+
+  /// The shared link picker the "Linked to…" chip opens (§4.4); null hides
+  /// the chip.
+  final CardLinksController? links;
 
   final SearchReadRepository _read;
   final CollectionRouteArgsWriter _routeArgs;
@@ -44,10 +52,17 @@ class SearchController {
   /// Guards against an older, slower search overwriting a newer one.
   int _requestToken = 0;
 
-  /// Search for [query]. A blank query clears the results.
+  /// Run what the page opened with: a "Linked to…" filter lists its matches
+  /// right away; otherwise search waits for a query.
+  Future<void> start() async {
+    if (state.filter.browsesWithoutQuery) await submit('');
+  }
+
+  /// Search for [query]. A blank query clears the results — unless a
+  /// "Linked to…" filter is set, which then lists every match (§4.1).
   Future<void> submit(String query) async {
     final token = ++_requestToken;
-    if (query.trim().isEmpty) {
+    if (query.trim().isEmpty && !state.filter.browsesWithoutQuery) {
       state.reset();
       return;
     }
@@ -81,6 +96,11 @@ class SearchController {
   void setIncludeArchived(bool include) =>
       _refilter(state.filter.copyWith(includeArchived: include));
 
+  /// Add [target] to the "Linked to…" filter, or remove it when it is there
+  /// (the picker's toggle, a chip's ✕).
+  void toggleLinkedTo(SearchLinkTarget target) =>
+      _refilter(state.filter.toggleLinkedTo(target));
+
   /// Widen a scoped search to everything (the scope chip's ✕).
   void clearScope() {
     if (state.scope == null) return;
@@ -110,11 +130,20 @@ class SearchController {
   }
 
   /// Apply a changed filter or scope to the last submitted query: re-rank the
-  /// held documents, or re-run a failed search. Idle has nothing to re-run,
-  /// and a load in flight ranks with the new filter when it lands.
+  /// held documents, or re-run a failed search. A load in flight ranks with
+  /// the new filter when it lands. Idle has nothing to re-run until a
+  /// "Linked to…" target makes the empty query browse; dropping the last
+  /// target of a query-less browse goes back to idle.
   void _rerun() {
+    if (state.query.trim().isEmpty && !state.filter.browsesWithoutQuery) {
+      if (state.status != SearchStatus.idle) {
+        _requestToken++;
+        state.reset();
+      }
+      return;
+    }
     switch (state.status) {
-      case SearchStatus.ready:
+      case SearchStatus.ready || SearchStatus.idle:
         final documents = _documents;
         if (documents != null) {
           _showResults(documents);
@@ -123,15 +152,19 @@ class SearchController {
         }
       case SearchStatus.failed:
         unawaited(retry());
-      case SearchStatus.idle || SearchStatus.loading:
+      case SearchStatus.loading:
         break;
     }
   }
 
-  void _showResults(List<SearchDocument> documents) => state.showResults(
-    _ranker.rank(
-      state.query,
-      state.filter.narrow(documents, scope: state.scope),
-    ),
-  );
+  /// Rank the documents the filter and scope keep against the query — or,
+  /// with no query, list them newest first (a "Linked to…" browse).
+  void _showResults(List<SearchDocument> documents) {
+    final kept = state.filter.narrow(documents, scope: state.scope);
+    state.showResults(
+      state.query.trim().isEmpty
+          ? _ranker.browse(kept)
+          : _ranker.rank(state.query, kept),
+    );
+  }
 }

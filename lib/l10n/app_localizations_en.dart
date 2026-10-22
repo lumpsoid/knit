@@ -545,6 +545,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkPickerLinked => 'Linked';
 
   @override
+  String get linkPickerChoose => 'Choose';
+
+  @override
+  String get linkPickerChosen => 'Chosen';
+
+  @override
+  String linkPickerChooseCollection(String label) {
+    return 'Choose “$label”';
+  }
+
+  @override
   String get linkPickerNewCollection => 'New collection';
 
   @override
@@ -1124,6 +1135,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchIncludeArchived => 'Archived';
 
   @override
+  String get searchLinkedTo => 'Linked to…';
+
+  @override
+  String searchLinkedToChip(String label) {
+    return '→ $label';
+  }
+
+  @override
+  String get searchLinkedToRemove => 'Remove from filter';
+
+  @override
+  String get searchNothingLinked => 'Nothing linked matches';
+
+  @override
   String searchInCollection(String title) {
     return 'in $title';
   }
@@ -1295,6 +1320,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collectionMenuSearch => 'Search in collection';
+
+  @override
+  String get collectionMenuFindLinked => 'Find linked cards';
 
   @override
   String get collectionOutlineTitle => 'Outline';
