@@ -44,6 +44,7 @@ import 'package:knit/features/collection_edit/presentation/collection_edit_route
 import 'package:knit/features/collection_edit/presentation/collection_edit_scope.dart';
 import 'package:knit/features/collection_media/infra/sync_store_collection_media_read_repository.dart';
 import 'package:knit/features/collection_present/infra/shared_preferences_present_progress_repository.dart';
+import 'package:knit/features/collection_present/infra/shared_screen_awake.dart';
 import 'package:knit/features/collection_present/infra/sync_store_present_read_repository.dart';
 import 'package:knit/features/collection_present/infra/wakelock_plus_screen_awake.dart';
 import 'package:knit/features/collection_present/presentation/present_controller.dart';
@@ -397,23 +398,26 @@ void bootstrap(AppConfig config) {
 
   // Presenting a collection (§4.9), from the Collection app bar's ⋮ sheet: a
   // carrier names the collection, and a fresh controller per page plans it
-  // into slides. The slide it was left on is device-local, like pins.
+  // into slides. The slide it was left on is device-local, like pins. A
+  // followed link presents its target on top through the same carrier; the
+  // stacked presentations share one screen-awake hold.
   final presentRouteArgs = InMemoryPresentRouteArgsStore();
   const presentProgress = SharedPreferencesPresentProgressRepository();
-  CollectionScope.setPresentRouteArgsWriter(presentRouteArgs);
-  CollectionScope.setPresentFactory(
-    () => PresentController(
-      routeArgs: presentRouteArgs,
-      readRepository: SyncStorePresentReadRepository(graph: graph),
-      progressReadRepository: presentProgress,
-      progressWriteRepository: presentProgress,
-      imageCache: imageCache,
-      playback: playback,
-      linkLauncher: const UrlLauncherLinkLauncher(),
-      connectionsRouteArgs: connectionsRouteArgs,
-      screenAwake: const WakelockPlusScreenAwake(),
-    ),
+  final presentAwake = SharedScreenAwake(const WakelockPlusScreenAwake());
+  PresentController createPresent() => PresentController(
+    routeArgs: presentRouteArgs,
+    routeArgsWriter: presentRouteArgs,
+    createOnTop: createPresent,
+    readRepository: SyncStorePresentReadRepository(graph: graph),
+    progressReadRepository: presentProgress,
+    progressWriteRepository: presentProgress,
+    imageCache: imageCache,
+    playback: playback,
+    linkLauncher: const UrlLauncherLinkLauncher(),
+    screenAwake: presentAwake,
   );
+  CollectionScope.setPresentRouteArgsWriter(presentRouteArgs);
+  CollectionScope.setPresentFactory(createPresent);
   // Collection share by file (docs/collection_share.md), from the same ⋮
   // sheet: the collection's signed ops (and media) as a .knitc to send or save.
   CollectionScope.setShareExportFactory(

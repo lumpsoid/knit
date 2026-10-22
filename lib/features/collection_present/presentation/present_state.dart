@@ -27,11 +27,13 @@ class PresentState extends ChangeNotifier {
   /// Whether the thin overlay (close, progress) shows over the slides.
   bool get overlayVisible => _overlayVisible;
 
-  void showDeck(SlideDeck deck, {int? resumeIndex}) {
+  /// Show [deck] at [startIndex] (a followed link's slide, §4.9); the resume
+  /// offer only shows on the title slide.
+  void showDeck(SlideDeck deck, {int startIndex = 0, int? resumeIndex}) {
     _status = PresentStatus.ready;
     _deck = deck;
-    _index = 0;
-    _resumeIndex = resumeIndex;
+    _index = startIndex;
+    _resumeIndex = startIndex == 0 ? resumeIndex : null;
     notifyListeners();
   }
 

@@ -5,7 +5,7 @@ import 'package:knit/features/audio_playback/presentation/audio_playback_control
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/presentation/widgets/card_bubble.dart';
 import 'package:knit/features/collection_present/domain/present_models.dart';
-import 'package:knit/l10n/app_localizations.dart';
+import 'package:knit/features/collection_present/presentation/widgets/see_also_chips.dart';
 
 /// A slide's notes (§4.9): its text, link, audio and file cards in feed order,
 /// readable at a distance. An emphasized card reads as a heading with a warm
@@ -42,10 +42,12 @@ class SlideNotes extends StatelessWidget {
       children: [
         for (final card in notes) ...[
           _note(context, card),
-          if (card.links.isNotEmpty) _seeAlso(context, card.links),
+          if (card.links.isNotEmpty)
+            SeeAlsoChips(links: card.links, onOpen: onOpenLink),
           const SizedBox(height: 16),
         ],
-        if (photoLinks.isNotEmpty) _seeAlso(context, photoLinks),
+        if (photoLinks.isNotEmpty)
+          SeeAlsoChips(links: photoLinks, onOpen: onOpenLink),
       ],
     );
   }
@@ -107,42 +109,6 @@ class SlideNotes extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [chip, const SizedBox(height: 8), caption],
         );
-
-  Widget _seeAlso(BuildContext context, List<PresentLink> links) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Text(
-            l10n.presentSeeAlso,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          for (final link in links)
-            ActionChip(
-              avatar: Icon(
-                link.kind == PresentLinkKind.collection
-                    ? Icons.folder_outlined
-                    : Icons.notes,
-                size: 18,
-              ),
-              label: Text(
-                link.label.isEmpty ? '…' : link.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              onPressed: () => onOpenLink(link),
-            ),
-        ],
-      ),
-    );
-  }
 }
 
 /// A link card on a slide: its URL, tappable to open in the browser.

@@ -25,6 +25,22 @@ class FakePresentRead implements PresentReadRepository {
   ) async => result;
 }
 
+/// Serves each collection's source by id; any other fails to load.
+class FakePresentSources implements PresentReadRepository {
+  FakePresentSources(this.sources);
+  final Map<String, PresentSource> sources;
+
+  @override
+  Future<Result<PresentSource, PresentFailure>> loadSource(
+    String collectionId,
+  ) async {
+    final source = sources[collectionId];
+    return source == null
+        ? const Failure(PresentLoadFailure('not found'))
+        : Ok(source);
+  }
+}
+
 /// Serves every attachment and records which were read.
 class FakeAttachments implements AttachmentReadRepository {
   final List<String> reads = [];

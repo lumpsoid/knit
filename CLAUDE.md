@@ -530,6 +530,16 @@ the `lib/sync/` core below.
   links. The resume slide is device-local (`shared_preferences`, keyed by
   the slide's first card id). `SlideScroll` turns the vertical `PageView` when long
   notes overscroll. `ScreenAwakePort` (`wakelock_plus`) keeps the screen on.
+  A Connection card is a `LinkSlide` (`PresentCard.connection`, the feed's
+  `LinkTile.targetOf` rule). Links are followed through the pure `PresentFollow`:
+  jump in this deck (`SlideDeck.slideOfCard`, settled → nearest earlier
+  card), go back to a collection further down, or present on top. The
+  carrier holds `focusCardId` + `presentedBelow` (the stack), and
+  `PresentController.createOnTop` makes the next controller. Going back pops
+  with a `ReturnToPresentation` that each page takes or passes on.
+  A deep-linked open doesn't save the resume slide until the viewer turns.
+  `SharedScreenAwake` refcounts the wakelock, and the page counts its stacked
+  instances before it restores the system bars.
 
 - `collection_widget` (lightweight, **Android only**) is the home-screen widget
   that opens Knit on one collection. Native side (`android/.../knit/`):

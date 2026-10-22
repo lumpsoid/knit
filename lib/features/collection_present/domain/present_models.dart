@@ -4,6 +4,8 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
+import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// What a "See also" chip points at: the far end of a link touching a card.
 enum PresentLinkKind { card, collection }
@@ -17,11 +19,29 @@ class PresentLink {
     required this.kind,
     required this.id,
     required this.label,
+    required this.collectionId,
+    this.outgoing = true,
+    this.collectionTitle,
+    this.imageAttachmentId,
   });
 
   final PresentLinkKind kind;
   final String id;
   final String label;
+
+  /// The collection presented to follow this link: the target itself, or the
+  /// target card's collection.
+  final String collectionId;
+
+  /// Whether the presented card links out to the other end (a backlink when
+  /// false). Only a link out makes a Connection card (§4.2).
+  final bool outgoing;
+
+  /// A card target's collection title; null for a collection target.
+  final String? collectionTitle;
+
+  /// The target's picture: a collection's cover, an image card's first image.
+  final String? imageAttachmentId;
 }
 
 /// One card of the presented collection, in feed order.
@@ -58,6 +78,31 @@ class PresentCard {
   final bool settled;
   final bool emphasized;
   final List<PresentLink> links;
+
+  /// The link this card exists to point at — a Connection card (§4.2), by the
+  /// feed's [LinkTile.targetOf] rule — or null for any other card.
+  PresentLink? get connection {
+    final out = [
+      for (final l in links)
+        if (l.outgoing) l,
+    ];
+    final target = LinkTile.targetOf(
+      kind: kind,
+      text: text,
+      attachmentIds: [?attachmentId, ...moreAttachmentIds],
+      linksOut: [
+        for (final l in out) (targetKind: _entityKind(l.kind), targetId: l.id),
+      ],
+    );
+    if (target == null) return null;
+    return out.firstWhere((l) => l.id == target.targetId);
+  }
+
+  static ConnectedEntityKind _entityKind(PresentLinkKind kind) =>
+      switch (kind) {
+        PresentLinkKind.card => ConnectedEntityKind.card,
+        PresentLinkKind.collection => ConnectedEntityKind.collection,
+      };
 }
 
 /// Everything a presentation is planned from: the collection header and its
@@ -119,17 +164,60 @@ class CardSlide extends Slide {
   String get anchorCardId => cards.first.id;
 }
 
+/// A Connection card (§4.2) on a slide of its own: the [target]'s title and
+/// picture, the card's label as a caption, and an Open that follows the link.
+class LinkSlide extends Slide {
+  const LinkSlide({required this.card, required this.target});
+
+  final PresentCard card;
+  final PresentLink target;
+
+  /// The card's text, when it says more than the target's name; else null.
+  String? get caption {
+    final text = card.text?.trim() ?? '';
+    if (text.isEmpty || text.toLowerCase() == target.label.toLowerCase()) {
+      return null;
+    }
+    return text;
+  }
+
+  /// The card's other links (its backlinks), as "See also" chips.
+  List<PresentLink> get seeAlso => [
+    for (final l in card.links)
+      if (l.id != target.id) l,
+  ];
+}
+
 /// A planned presentation: the title slide, then the card slides.
 class SlideDeck {
-  SlideDeck(this.slides) : assert(slides.isNotEmpty);
+  /// [feedCardIds] is the whole feed in order, presented or not, so a card
+  /// left out can still be placed (see [slideOfCard]).
+  SlideDeck(this.slides, {List<String> feedCardIds = const []})
+    : _feedCardIds = feedCardIds,
+      assert(slides.isNotEmpty);
 
   final List<Slide> slides;
+  final List<String> _feedCardIds;
 
   int get length => slides.length;
 
   /// The slide [cardId] is on; null when it isn't presented (settled, or
   /// another collection's card).
   int? indexOfCard(String cardId) => _indexByCard[cardId];
+
+  /// The slide a link to [cardId] opens at (§4.9): the card's own slide; for
+  /// a card left out (settled), the slide of the nearest presented card
+  /// before it in the feed; else the title slide.
+  int slideOfCard(String cardId) {
+    final own = indexOfCard(cardId);
+    if (own != null) return own;
+    final at = _feedCardIds.indexOf(cardId);
+    for (var i = at - 1; i >= 0; i--) {
+      final index = indexOfCard(_feedCardIds[i]);
+      if (index != null) return index;
+    }
+    return 0;
+  }
 
   /// The slide remembered by [anchorCardId] (§4.9 resume), when it is still a
   /// card slide past the title.
@@ -142,12 +230,16 @@ class SlideDeck {
   /// The card a slide is remembered by; null for the title slide.
   String? anchorOf(int index) => switch (slides[index]) {
     CardSlide(:final anchorCardId) => anchorCardId,
+    LinkSlide(:final card) => card.id,
     TitleSlide() => null,
   };
 
   late final Map<String, int> _indexByCard = {
     for (var i = 0; i < slides.length; i++)
-      if (slides[i] case CardSlide(:final cards))
-        for (final c in cards) c.id: i,
+      ...switch (slides[i]) {
+        CardSlide(:final cards) => {for (final c in cards) c.id: i},
+        LinkSlide(:final card) => {card.id: i},
+        TitleSlide() => const <String, int>{},
+      },
   };
 }

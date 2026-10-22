@@ -11,6 +11,8 @@ import 'package:knit/features/collection_present/domain/present_models.dart';
 ///   follows that slide's images, where it heads them instead.
 /// - Images right after a lone heading join it rather than open a new slide.
 /// - Notes before any image or heading form a text slide of their own.
+/// - A Connection card (§4.2) is a link slide of its own: the cards around it
+///   stay on the slides before and after it.
 class SlidePlanner {
   const SlidePlanner();
 
@@ -31,11 +33,17 @@ class SlidePlanner {
 
     for (final card in source.cards) {
       if (card.settled) continue;
+      final target = card.connection;
+      if (target != null) {
+        close();
+        slides.add(LinkSlide(card: card, target: target));
+        continue;
+      }
       if (_opensSlide(current, card)) close();
       current.add(card);
     }
     close();
-    return SlideDeck(slides);
+    return SlideDeck(slides, feedCardIds: [for (final c in source.cards) c.id]);
   }
 
   /// Whether [card] starts a new slide after the [current] one's cards.

@@ -1,5 +1,6 @@
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/collection_present/domain/present_failure.dart';
 import 'package:knit/features/collection_present/domain/present_models.dart';
 import 'package:knit/features/collection_present/domain/present_read_repository.dart';
@@ -8,8 +9,9 @@ import 'package:result_dart/result_dart.dart';
 
 /// [PresentReadRepository] over the graph's [SyncStore]: the header, the whole
 /// live feed (§8.7), the audio/file names in one batched read, and each linked
-/// card's live links both ways (§4.4) with their far end's label. Broken links
-/// (§8.6.1) are left out.
+/// card's live links both ways (§4.4) with their far end's label, collection
+/// and picture. Broken links (§8.6.1) — a card in a deleted collection too —
+/// are left out.
 class SyncStorePresentReadRepository implements PresentReadRepository {
   SyncStorePresentReadRepository({required AppGraph graph}) : _graph = graph;
 
@@ -77,7 +79,50 @@ class SyncStorePresentReadRepository implements PresentReadRepository {
       if (kind == null || id == null || !seen.add(id)) return;
       final other = await store.get(_entityType(kind), id);
       if (other == null || other.deleted) return;
-      links.add(PresentLink(kind: kind, id: id, label: _label(kind, other)));
+      switch (kind) {
+        case PresentLinkKind.collection:
+          links.add(
+            PresentLink(
+              kind: kind,
+              id: id,
+              label: _label(other.content['title'] as String?),
+              collectionId: id,
+              outgoing: outgoing,
+              imageAttachmentId:
+                  other.content['cover_attachment_id'] as String?,
+            ),
+          );
+        case PresentLinkKind.card:
+          final collectionId = other.content['collection_id'] as String?;
+          final home = collectionId == null
+              ? null
+              : await store.get(EntityType.collection, collectionId);
+          if (collectionId == null || home == null || home.deleted) return;
+          final cardKind = CardKind.fromTag(other.content['kind'] as String?);
+          final attachmentId = other.content['attachment_id'] as String?;
+          final named = attachmentId != null && _needsMeta(other)
+              ? await store.get(EntityType.attachment, attachmentId)
+              : null;
+          links.add(
+            PresentLink(
+              kind: kind,
+              id: id,
+              label: _label(
+                CardLinkTile.previewOf(
+                  cardKind,
+                  other.content['text'] as String?,
+                  named?.content[AttachmentSchema.colName] as String?,
+                ),
+              ),
+              collectionId: collectionId,
+              outgoing: outgoing,
+              collectionTitle: home.content['title'] as String? ?? '',
+              imageAttachmentId: cardKind == CardKind.image
+                  ? attachmentId
+                  : null,
+            ),
+          );
+      }
     }
 
     for (final link in await store.linksOut(cardId)) {
@@ -128,11 +173,7 @@ class SyncStorePresentReadRepository implements PresentReadRepository {
     PresentLinkKind.collection => EntityType.collection,
   };
 
-  static String _label(PresentLinkKind kind, Snapshot other) {
-    final raw = switch (kind) {
-      PresentLinkKind.collection => other.content['title'] as String?,
-      PresentLinkKind.card => other.content['text'] as String?,
-    };
+  static String _label(String? raw) {
     final text = (raw ?? '').trim().replaceAll(RegExp(r'\s+'), ' ');
     return text.length > _labelLength
         ? '${text.substring(0, _labelLength)}…'

@@ -17,6 +17,24 @@ PresentCard _txt(String id, {bool emphasized = false, bool settled = false}) =>
 
 PresentCard _audio(String id) => PresentCard(id: id, kind: CardKind.audio);
 
+/// A Connection card (§4.2): a short label and one link out.
+PresentCard _connection(String id, {String? text, bool settled = false}) =>
+    PresentCard(
+      id: id,
+      kind: CardKind.text,
+      text: text,
+      settled: settled,
+      links: [
+        PresentLink(
+          kind: PresentLinkKind.collection,
+          id: 'museums',
+          label: 'Museums',
+          collectionId: 'museums',
+          imageAttachmentId: 'museums-cover',
+        ),
+      ],
+    );
+
 SlideDeck _plan(List<PresentCard> cards) => const SlidePlanner().plan(
   PresentSource(
     collectionId: 'col',
@@ -27,10 +45,15 @@ SlideDeck _plan(List<PresentCard> cards) => const SlidePlanner().plan(
   ),
 );
 
-/// The card ids of each card slide, title slide left out.
+/// The card ids of each card slide, title slide left out; a link slide is
+/// its card's id in angle brackets.
 List<List<String>> _ids(SlideDeck deck) => [
   for (final s in deck.slides.skip(1))
-    [for (final c in (s as CardSlide).cards) c.id],
+    switch (s) {
+      CardSlide(:final cards) => [for (final c in cards) c.id],
+      LinkSlide(:final card) => ['<${card.id}>'],
+      TitleSlide() => throw StateError('a second title slide'),
+    },
 ];
 
 void main() {
@@ -140,6 +163,68 @@ void main() {
     ]);
   });
 
+  group('Connection cards', () {
+    test('a Connection card is a link slide of its own', () {
+      final deck = _plan([
+        _img('gate'),
+        _txt('built'),
+        _connection('see', text: 'More inside'),
+        _txt('after'),
+        _img('square'),
+      ]);
+      expect(_ids(deck), [
+        ['gate', 'built'],
+        ['<see>'],
+        ['after'],
+        ['square'],
+      ]);
+      final link = deck.slides[2] as LinkSlide;
+      expect(link.target.id, 'museums');
+      expect(link.caption, 'More inside');
+      expect(link.seeAlso, isEmpty);
+      expect(deck.indexOfCard('see'), 2);
+      expect(deck.anchorOf(2), 'see');
+    });
+
+    test("a label that is just the target's name is no caption", () {
+      final deck = _plan([_connection('see', text: 'museums')]);
+      expect((deck.slides[1] as LinkSlide).caption, isNull);
+    });
+
+    test('a settled Connection card is left out', () {
+      final deck = _plan([_txt('a'), _connection('see', settled: true)]);
+      expect(_ids(deck), [
+        ['a'],
+      ]);
+    });
+
+    test('a card with more to say than a label stays a note', () {
+      final note = PresentCard(
+        id: 'long',
+        kind: CardKind.text,
+        text: 'line one\nline two',
+        links: _connection('x').links,
+      );
+      // A backlink alone doesn't make one either.
+      const back = PresentCard(
+        id: 'back',
+        kind: CardKind.text,
+        links: [
+          PresentLink(
+            kind: PresentLinkKind.card,
+            id: 'elsewhere',
+            label: 'elsewhere',
+            collectionId: 'other',
+            outgoing: false,
+          ),
+        ],
+      );
+      expect(_ids(_plan([note, back])), [
+        ['long', 'back'],
+      ]);
+    });
+  });
+
   group('SlideDeck', () {
     final deck = _plan([_img('gate'), _txt('built'), _img('square')]);
 
@@ -153,6 +238,21 @@ void main() {
       expect(deck.anchorOf(0), isNull);
       expect(deck.anchorOf(1), 'gate');
       expect(deck.anchorOf(2), 'square');
+    });
+
+    test("a linked card opens at its slide, a settled one at the nearest "
+        'presented card before it, else the title', () {
+      final deck = _plan([
+        _txt('early', settled: true),
+        _img('gate'),
+        _txt('built'),
+        _txt('old', settled: true),
+        _img('square'),
+      ]);
+      expect(deck.slideOfCard('square'), 2);
+      expect(deck.slideOfCard('old'), 1);
+      expect(deck.slideOfCard('early'), 0);
+      expect(deck.slideOfCard('elsewhere'), 0);
     });
 
     test('resumes only on a card slide that is still presented', () {

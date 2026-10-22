@@ -405,7 +405,10 @@ each place. **Present** in the Collection screen's ⋮ sheet opens it from the s
   - an **emphasized card opens a slide** as its heading. If it directly follows a
     slide's images it heads them instead, and images directly after a lone heading
     join it. This splits a text-only collection into sections;
-  - cards before any image or heading form a text slide.
+  - cards before any image or heading form a text slide;
+  - a **Connection card** (§4.2) is a **link slide** of its own: the target's cover (a
+    card's first image), its name (a card's preview, "in" its collection), the card's
+    label as a caption when it says more, and **Open**.
 - **Navigation:** slides sit one above the next and are swiped vertically. A slide's
   notes scroll first when they are long; pulling past their end turns the slide.
   Arrow keys, Page Up/Down and Space turn slides too. A tap shows or hides a thin
@@ -417,12 +420,21 @@ each place. **Present** in the Collection screen's ⋮ sheet opens it from the s
   images gives its notes the whole page in larger type.
 - **Card kinds:** text is shown as body text, and an emphasized card as a heading with a
   warm bar. Audio, link and file cards are inline chips (play, open in the browser,
-  name). A card's live links in either direction are **"See also"** chips: a card on
-  another slide jumps there, anything else opens Connections (§4.4).
+  name). A card's live links in either direction are **"See also"** chips.
+- **Following links:** a "See also" chip or a link slide's Open on a link to another
+  collection **presents that collection on top**; back returns to the exact slide it was
+  followed from. A link to a card presents the card's collection at the slide holding it
+  (a card left out, e.g. settled, opens at the nearest presented card before it, else the
+  title slide); a card in the presented collection turns this deck to it instead. A
+  collection already presented further down the stack is gone back to (closing the ones
+  above, turning to the card's slide) rather than presented twice. Broken links have no
+  chip.
 - **Resume:** the slide last shown is remembered **per device** (like pins: not synced,
   not signed), by its first card's id. The title slide then offers "Continue from slide
-  N". Returning to the title slide forgets it.
-- **While presenting** the system bars are hidden and the screen stays on.
+  N". Returning to the title slide forgets it. A presentation opened at a followed link's
+  slide leaves the remembered slide alone until the viewer turns a slide.
+- **While presenting** the system bars are hidden and the screen stays on, until the last
+  stacked presentation closes.
 
 ## 5. Identity
 

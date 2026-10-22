@@ -133,6 +133,41 @@ void main() {
       (PresentLinkKind.card, 'b', 'square'),
     ]);
     expect(cards['b']!.links.single.id, 'a');
+    // Each link knows where following it goes, and which way it points.
+    expect(aLinks.map((l) => (l.collectionId, l.outgoing)), [
+      ('other', true),
+      ('col', false),
+    ]);
+    expect(aLinks[1].collectionTitle, 'Old town');
+  });
+
+  test("carries a link target's picture, and drops a card in a deleted "
+      'collection', () async {
+    await addCollection('col', 'Old town');
+    await store.create(EntityType.collection, 'other', {
+      'title': 'Museums',
+      'cover_attachment_id': 'cover',
+    });
+    await addCollection('dropped', 'Gone');
+    await addCard('a', 'a1');
+    await addCard(
+      'pic',
+      'b1',
+      collectionId: 'other',
+      kind: 'image',
+      attachmentId: 'img',
+    );
+    await addCard('lost', 'c1', collectionId: 'dropped', text: 'lost');
+    await addLink('l1', 'a', 'collection', 'other');
+    await addLink('l2', 'a', 'card', 'pic');
+    await addLink('l3', 'a', 'card', 'lost');
+    await store.delete(EntityType.collection, 'dropped');
+
+    final links = (await load()).cards.single.links;
+    expect(links.map((l) => (l.id, l.imageAttachmentId)), [
+      ('other', 'cover'),
+      ('pic', 'img'),
+    ]);
   });
 
   test('a missing collection fails to load', () async {

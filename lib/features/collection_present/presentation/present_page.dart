@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:knit/features/collection/presentation/image_gallery_page.dart';
+import 'package:knit/features/collection_present/domain/present_follow.dart';
 import 'package:knit/features/collection_present/domain/present_models.dart';
 import 'package:knit/features/collection_present/presentation/present_controller.dart';
 import 'package:knit/features/collection_present/presentation/present_state.dart';
 import 'package:knit/features/collection_present/presentation/widgets/card_slide_view.dart';
+import 'package:knit/features/collection_present/presentation/widgets/link_slide_view.dart';
 import 'package:knit/features/collection_present/presentation/widgets/slide_photos.dart';
 import 'package:knit/features/collection_present/presentation/widgets/title_slide_view.dart';
-import 'package:knit/features/connections/presentation/connections_page.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// Presents a collection full screen (§4.9): its slides one above the next,
@@ -17,13 +18,18 @@ import 'package:knit/l10n/app_localizations.dart';
 /// hides the thin overlay (close, position, previous / next); arrow keys,
 /// Page Up / Down and Space turn slides too. The system bars stay hidden and
 /// the screen stays on while it shows.
+///
+/// A followed link to another collection presents it on top; back returns to
+/// the slide it was followed from. Going back to a presentation further down
+/// closes the ones above it, each popping with the [ReturnToPresentation] the
+/// one below either takes (turning to its card) or passes on down.
 class PresentPage extends StatefulWidget {
   const PresentPage({super.key, required this.controller});
 
   final PresentController controller;
 
-  static Route<void> route(PresentController controller) =>
-      MaterialPageRoute<void>(
+  static Route<ReturnToPresentation> route(PresentController controller) =>
+      MaterialPageRoute<ReturnToPresentation>(
         builder: (_) => PresentPage(controller: controller),
       );
 
@@ -34,13 +40,19 @@ class PresentPage extends StatefulWidget {
 class _PresentPageState extends State<PresentPage> {
   static const Duration _turnDuration = Duration(milliseconds: 350);
 
-  final PageController _pages = PageController();
+  /// How many presentations are open, stacked; the system bars come back only
+  /// when the last one closes.
+  static int _shown = 0;
+
+  /// Made once the deck shows, at the slide it opens at.
+  PageController? _pages;
 
   PresentController get _controller => widget.controller;
 
   @override
   void initState() {
     super.initState();
+    _shown++;
     unawaited(
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
     );
@@ -49,13 +61,15 @@ class _PresentPageState extends State<PresentPage> {
 
   @override
   void dispose() {
-    unawaited(
-      SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.manual,
-        overlays: SystemUiOverlay.values,
-      ),
-    );
-    _pages.dispose();
+    if (--_shown == 0) {
+      unawaited(
+        SystemChrome.setEnabledSystemUIMode(
+          SystemUiMode.manual,
+          overlays: SystemUiOverlay.values,
+        ),
+      );
+    }
+    _pages?.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -64,10 +78,11 @@ class _PresentPageState extends State<PresentPage> {
 
   void _goTo(int index) {
     final deck = _controller.state.deck;
+    final pages = _pages;
     if (deck == null || index < 0 || index >= deck.length) return;
-    if (!_pages.hasClients) return;
+    if (pages == null || !pages.hasClients) return;
     unawaited(
-      _pages.animateToPage(
+      pages.animateToPage(
         index,
         duration: _turnDuration,
         curve: Curves.easeOutCubic,
@@ -79,12 +94,28 @@ class _PresentPageState extends State<PresentPage> {
   void _previous() => _goTo(_controller.state.index - 1);
 
   Future<void> _openLink(PresentLink link) async {
-    final index = _controller.openLink(link);
-    if (index != null) {
-      _goTo(index);
-      return;
+    switch (_controller.followLink(link)) {
+      case JumpToSlide(:final index):
+        _goTo(index);
+      case PresentOnTop():
+        final back = await Navigator.of(
+          context,
+        ).push(PresentPage.route(_controller.presentOnTop()));
+        if (back != null && mounted) _cameBack(back);
+      case final ReturnToPresentation back:
+        Navigator.of(context).pop(back);
     }
-    await Navigator.of(context).push(ConnectionsPage.route());
+  }
+
+  /// A presentation above closed to go back to [back]: turn to its slide when
+  /// it is this one, else close this one too.
+  void _cameBack(ReturnToPresentation back) {
+    final index = _controller.returnedTo(back);
+    if (index == null) {
+      Navigator.of(context).pop(back);
+    } else {
+      _goTo(index);
+    }
   }
 
   Future<void> _openUrl(String url) async {
@@ -169,7 +200,7 @@ class _PresentPageState extends State<PresentPage> {
       children: [
         Positioned.fill(
           child: PageView.builder(
-            controller: _pages,
+            controller: _pages ??= PageController(initialPage: state.index),
             scrollDirection: Axis.vertical,
             itemCount: deck!.length,
             onPageChanged: _controller.pageChanged,
@@ -243,6 +274,20 @@ class _PresentPageState extends State<PresentPage> {
           onOpenPhoto: (i) => _openPhotos(photos, i),
           onOpenUrl: (url) => unawaited(_openUrl(url)),
           onToggleAudio: (card) => unawaited(_controller.toggleAudio(card)),
+          onOpenLink: (link) => unawaited(_openLink(link)),
+          onNext: _next,
+          onPrevious: _previous,
+        );
+      case LinkSlide(:final target, :final caption, :final seeAlso):
+        final image = target.imageAttachmentId;
+        return LinkSlideView(
+          target: target,
+          caption: caption,
+          picture: image == null
+              ? null
+              : SlidePhoto(id: 'link-${target.id}', bytes: images.of(image)),
+          seeAlso: seeAlso,
+          onOpen: () => unawaited(_openLink(target)),
           onOpenLink: (link) => unawaited(_openLink(link)),
           onNext: _next,
           onPrevious: _previous,
