@@ -320,6 +320,12 @@ the `lib/sync/` core below.
   The actions sheet's **Move to collection…** (`CardMoveRequested`) opens the
   same flow for one card: the picker moves `CollectionState.moveCardIds` (the
   selection, or that card), so it never enters selection mode.
+  **Link to…** opens `LinkPickerSheet` with card_links' `LinkSelection`
+  (`CollectionState.linkSelection`; per card the `LinkSource` rule, no ✓).
+  `SelectionLinkRequested` → `LinkCardsEffect` (the updater keeps only the
+  cards `sourcesFor` allows) → `CardLinksController.linkAll` →
+  `SyncStore.createLinks` (one transaction; skips linked pairs and repeats)
+  → `CollectionCardsLinkedUiEffect` ("Linked N cards", N = links written).
 - `collection` Outline (§4.2): the ⋮ sheet's **Outline** lists the emphasized
   cards as headings (the `SlidePlanner` meaning). `OutlineRequested` reads the
   whole feed through the narrow `CollectionOutlineReadRepository`, and the pure
@@ -374,6 +380,11 @@ the `lib/sync/` core below.
   Edit carries the card kind (`CardEditRouteArgs.initialKind`), and the pure
   `CardTextEdit` lets a Connection card (either target) save a blank label
   (→ `kind=link`, no text) and turns a label into a text card.
+  Composer text typed before "+" → Connection rides in the request
+  (`composerText`); the pure `ConnectionCardText` makes it the card's label
+  (`kind=text`; blank or a bare URL ⇒ none). The shell pushes
+  `CollectionComposerTextUsedUiEffect` only after the card is saved, and the
+  page then clears the input.
 - Settled cards (§3.3): a nullable, synced `card.settled_at` (v5 migration),
   written by `SyncStore.setCardsSettled` on the content clock. The domain's
   `SettleChange` decides settle vs unsettle (all settled → unsettle). The
@@ -478,6 +489,14 @@ the `lib/sync/` core below.
   `LinkPickerChoice`: `LinkTargetPicked`, or `LinkTargetUnpicked(linkId)` for a
   ✓ target tapped again (Collection: `UnlinkRequested`; Card Edit:
   `RemoveLinkRequested`).
+  Where `LinkPick.offersNewCollection` (all but `LinkFromMine`), the
+  collections level has a "New collection" row: `LinkPickerSheet.show` grows
+  it into `showNewCollectionBar` ("Link there" for a similar title) and pops
+  `LinkToNewCollection(title)`. Made in one transaction with its links:
+  `CardLinksController.linkToNewCollection` → `addLinksToNewCollection` →
+  `SyncStore.createLinks(newCollection:)` (a card's link, Card Edit,
+  multi-select), or `addConnectionCardToNewCollection` →
+  `createLinkedCard(newTargetContent:)` (the "+" Connection block).
 - `lib/core/recents/` — the pickers' "Recent" rows (§4.2/§4.4): the pure
   `RecentTargets` MRU (5 kept, 3 shown, `among` drops what the picker wouldn't
   offer) per `RecentPurpose` (move / link), behind narrow

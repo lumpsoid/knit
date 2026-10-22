@@ -59,7 +59,34 @@ class _FakeRead implements LinkTargetsReadRepository {
 class _FakeWrite implements CardLinksWriteRepository {
   final added = <(String, ConnectedEntityKind, String)>[];
   final removed = <String>[];
+  final made = <String>[];
   bool fail = false;
+
+  @override
+  Future<Result<LinksAdded, CardLinksFailure>> addLinks({
+    required List<String> sourceIds,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
+  }) async {
+    if (fail) return Failure(CardLinksWriteFailure(StateError('boom')));
+    for (final id in sourceIds) {
+      added.add((id, targetKind, targetId));
+    }
+    return Ok(LinksAdded(targetId: targetId, count: sourceIds.length));
+  }
+
+  @override
+  Future<Result<LinksAdded, CardLinksFailure>> addLinksToNewCollection({
+    required List<String> sourceIds,
+    required String title,
+  }) async {
+    if (fail) return Failure(CardLinksWriteFailure(StateError('boom')));
+    made.add(title);
+    for (final id in sourceIds) {
+      added.add((id, ConnectedEntityKind.collection, 'new-$title'));
+    }
+    return Ok(LinksAdded(targetId: 'new-$title', count: sourceIds.length));
+  }
 
   @override
   Future<Result<String, CardLinksFailure>> addLink({
@@ -272,6 +299,53 @@ void main() {
     test('unlink removes the link', () async {
       await controller.unlink('link-7');
       expect(write.removed, ['link-7']);
+    });
+  });
+
+  group('batched links', () {
+    test('linkAll links every source and remembers a collection', () async {
+      final result = await controller.linkAll(
+        sourceIds: ['c1', 'c2'],
+        targetKind: ConnectedEntityKind.collection,
+        targetId: 'col-2',
+      );
+      expect(result.value, const LinksAdded(targetId: 'col-2', count: 2));
+      expect(write.added, [
+        ('c1', ConnectedEntityKind.collection, 'col-2'),
+        ('c2', ConnectedEntityKind.collection, 'col-2'),
+      ]);
+      expect((await recents.load(RecentPurpose.link)).value!.ids, ['col-2']);
+    });
+
+    test('linkAll to a card is not remembered', () async {
+      await controller.linkAll(
+        sourceIds: ['c1'],
+        targetKind: ConnectedEntityKind.card,
+        targetId: 'c9',
+      );
+      expect((await recents.load(RecentPurpose.link)).value!.ids, isEmpty);
+    });
+
+    test('linkToNewCollection remembers the new collection', () async {
+      final result = await controller.linkToNewCollection(
+        sourceIds: ['c1'],
+        title: 'Trips',
+      );
+      expect(result.value?.targetId, 'new-Trips');
+      expect(write.made, ['Trips']);
+      expect((await recents.load(RecentPurpose.link)).value!.ids, [
+        'new-Trips',
+      ]);
+    });
+
+    test('a failed batch is reported and remembers nothing', () async {
+      write.fail = true;
+      final result = await controller.linkToNewCollection(
+        sourceIds: ['c1'],
+        title: 'Trips',
+      );
+      expect(result.isFailure, isTrue);
+      expect((await recents.load(RecentPurpose.link)).value!.ids, isEmpty);
     });
   });
 }

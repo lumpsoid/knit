@@ -50,6 +50,38 @@ void main() {
     expect((await store.linksOut('block')).single.sig, link.sig);
   }
 
+  Future<void> createsTheTarget(SyncStore store) async {
+    await seed(store);
+    final logged = await store.pendingCount();
+    final ops = await store.createLinkedCard(
+      cardId: 'block',
+      content: {'collection_id': 'here', 'kind': 'text', 'text': 'Trips'},
+      position: 'a0',
+      linkId: 'edge',
+      targetType: EntityType.collection,
+      targetId: 'fresh',
+      newTargetContent: {'title': 'Fresh', 'cover_attachment_id': null},
+      physicalNowMs: 2000,
+    );
+
+    expect(ops.map((op) => op.entityId), ['fresh', 'block', 'edge']);
+    expect(await store.pendingCount(), logged + 3);
+    final fresh = (await store.get(EntityType.collection, 'fresh'))!;
+    expect(fresh.content['title'], 'Fresh');
+    expect((await store.feed('here')).single.content['text'], 'Trips');
+    expect((await store.backlinks('fresh')).single.id, 'edge');
+
+    await store.rebuild();
+    expect((await store.get(EntityType.collection, 'fresh'))!.sig, fresh.sig);
+    expect((await store.backlinks('fresh')).single.id, 'edge');
+  }
+
+  test('in memory: a new target collection lands with them', () async {
+    final store = SyncStore.inMemory();
+    await store.open();
+    await createsTheTarget(store);
+  });
+
   test('in memory: card + link in one go, rebuild agrees', () async {
     final store = SyncStore.inMemory();
     await store.open();
@@ -73,5 +105,24 @@ void main() {
     );
     await store.open();
     await createsBoth(store);
+  });
+
+  test('sqflite: a new target collection lands with them', () async {
+    sqfliteFfiInit();
+    final dir = await Directory.systemTemp.createTemp('knit_linked_new_');
+    addTearDown(() => dir.delete(recursive: true));
+    final db = await databaseFactoryFfi.openDatabase('${dir.path}/knit.db');
+    addTearDown(db.close);
+    final store = SyncStore(
+      changeLog: SqfliteChangeLogStorage(db: db),
+      projection: SqfliteProjectionStorage(db: db),
+      deviceClock: SqfliteDeviceClockStorage(db: db),
+      localIdentity: SqfliteLocalIdentityStorage(db: db),
+      quarantine: SqfliteQuarantineStorage(db: db),
+      signer: FakeSigner(),
+      unitOfWork: SqfliteUnitOfWork(db),
+    );
+    await store.open();
+    await createsTheTarget(store);
   });
 }

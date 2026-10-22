@@ -33,6 +33,10 @@ sealed class LinkPick {
   /// ⇒ no checks.
   String? get linkedFrom => null;
 
+  /// Whether the collections level offers "New collection" (§4.4): link to a
+  /// collection made on the fly. Only where a collection may be the target.
+  bool get offersNewCollection => true;
+
   /// Whether the collection [id] itself may be picked.
   bool canLinkToCollection(String id);
 
@@ -84,6 +88,9 @@ class LinkFromMine extends LinkPick {
   bool lists(LinkTarget collection) => collection.own;
 
   @override
+  bool get offersNewCollection => false;
+
+  @override
   bool canLinkToCollection(String id) => false;
 
   @override
@@ -107,6 +114,60 @@ class NewConnection extends LinkPick {
 
   @override
   bool canLinkToCard(String id) => true;
+}
+
+/// Multi-select "Link to…" (§4.2): link every selected card of
+/// [collectionId] to one target. Each card follows the [LinkSource] rule on
+/// its own — never to itself, never to its own collection — so a card picked
+/// as the target links from the others. A target is offered while at least
+/// one card may link to it. A mixed selection has no single "linked" state,
+/// so the picker shows no ✓ (pairs already linked are skipped on write,
+/// §6.4).
+@immutable
+class LinkSelection extends LinkPick {
+  const LinkSelection({required this.cardIds, required this.collectionId});
+
+  /// The selected cards, in feed order.
+  final List<String> cardIds;
+
+  /// The collection every selected card is in.
+  final String collectionId;
+
+  /// The selected cards that may link to the [kind] entity [id], in order.
+  List<String> sourcesFor(ConnectedEntityKind kind, String id) => [
+    for (final cardId in cardIds)
+      if (LinkSource(
+        cardId: cardId,
+        collectionId: collectionId,
+      ).canLinkTo(kind, id))
+        cardId,
+  ];
+
+  @override
+  bool canLinkToCollection(String id) =>
+      sourcesFor(ConnectedEntityKind.collection, id).isNotEmpty;
+
+  @override
+  bool canLinkToCard(String id) =>
+      sourcesFor(ConnectedEntityKind.card, id).isNotEmpty;
+}
+
+/// What a batched link write did (§6.4): the target linked to (a collection
+/// made on the fly gets its new id here) and how many links it wrote — pairs
+/// already linked are skipped, so it can be fewer than asked, even zero.
+@immutable
+class LinksAdded {
+  const LinksAdded({required this.targetId, required this.count});
+
+  final String targetId;
+  final int count;
+
+  @override
+  bool operator ==(Object other) =>
+      other is LinksAdded && other.targetId == targetId && other.count == count;
+
+  @override
+  int get hashCode => Object.hash(targetId, count);
 }
 
 /// The targets a card already links to (§4.4), each with the id of the link
@@ -133,23 +194,32 @@ class LinkedTargets {
   };
 }
 
-/// What the link picker returns (§4.4): a target to link, or a linked one
-/// tapped again to remove its link.
+/// What the link picker returns (§4.4): a target to link, a linked one
+/// tapped again to remove its link, or a new collection to make and link to.
 @immutable
 sealed class LinkPickerChoice {
-  const LinkPickerChoice(this.target);
-
-  final LinkTarget target;
+  const LinkPickerChoice();
 }
 
 /// Link to [target].
 final class LinkTargetPicked extends LinkPickerChoice {
-  const LinkTargetPicked(super.target);
+  const LinkTargetPicked(this.target);
+
+  final LinkTarget target;
 }
 
 /// Remove the link [linkId] to the already linked [target].
 final class LinkTargetUnpicked extends LinkPickerChoice {
-  const LinkTargetUnpicked(super.target, this.linkId);
+  const LinkTargetUnpicked(this.target, this.linkId);
 
+  final LinkTarget target;
   final String linkId;
+}
+
+/// Create a collection titled [title] (trimmed, non-empty) and link to it —
+/// the picker's "New collection" row (§4.4).
+final class LinkToNewCollection extends LinkPickerChoice {
+  const LinkToNewCollection(this.title);
+
+  final String title;
 }

@@ -53,6 +53,19 @@ class _Read implements LinkTargetsReadRepository {
 
 class _UnusedWrite implements CardLinksWriteRepository {
   @override
+  Future<Result<LinksAdded, CardLinksFailure>> addLinks({
+    required List<String> sourceIds,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Result<LinksAdded, CardLinksFailure>> addLinksToNewCollection({
+    required List<String> sourceIds,
+    required String title,
+  }) => throw UnimplementedError();
+
+  @override
   Future<Result<String, CardLinksFailure>> addLink({
     required ConnectedEntityKind sourceKind,
     required String sourceId,
@@ -121,7 +134,7 @@ void main() {
     await tester.tap(find.text('Sibling'));
     await tester.pumpAndSettle();
 
-    expect(picked.single?.target.id, 'sib');
+    expect((picked.single! as LinkTargetPicked).target.id, 'sib');
   });
 
   testWidgets('the Recent row skips the own collection and links on tap', (
@@ -139,7 +152,7 @@ void main() {
 
     await tester.tap(chip);
     await tester.pumpAndSettle();
-    expect(picked.single?.target.id, 'other');
+    expect((picked.single! as LinkTargetPicked).target.id, 'other');
   });
 
   testWidgets('a new Connection picks a collection, never its own', (
@@ -163,7 +176,7 @@ void main() {
 
     await tester.tap(find.text('Link'));
     await tester.pumpAndSettle();
-    expect(picked.single?.target.id, 'other');
+    expect((picked.single! as LinkTargetPicked).target.id, 'other');
   });
 
   testWidgets('a new Connection drills in to pick any card, siblings too', (
@@ -181,8 +194,11 @@ void main() {
     expect(find.text('Self'), findsOneWidget);
     await tester.tap(find.text('Sibling'));
     await tester.pumpAndSettle();
-    expect(picked.single?.target.kind, ConnectedEntityKind.card);
-    expect(picked.single?.target.id, 'sib');
+    expect(
+      (picked.single! as LinkTargetPicked).target.kind,
+      ConnectedEntityKind.card,
+    );
+    expect((picked.single! as LinkTargetPicked).target.id, 'sib');
   });
 
   testWidgets('a new Connection drills into another collection too', (
@@ -197,8 +213,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Link to "Other"'));
     await tester.pumpAndSettle();
-    expect(picked.single?.target.kind, ConnectedEntityKind.collection);
-    expect(picked.single?.target.id, 'other');
+    expect(
+      (picked.single! as LinkTargetPicked).target.kind,
+      ConnectedEntityKind.collection,
+    );
+    expect((picked.single! as LinkTargetPicked).target.id, 'other');
   });
 
   group('✓ toggles', () {
@@ -266,6 +285,124 @@ void main() {
       await tester.tap(find.text('Link'));
       await tester.pumpAndSettle();
       expect(picked.single, isA<LinkTargetPicked>());
+    });
+  });
+
+  group('New collection', () {
+    testWidgets('grows into the title line and picks the new title', (
+      tester,
+    ) async {
+      final picked = await pumpPicker(tester);
+
+      await tester.tap(find.text('New collection'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '  Fresh  ');
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.pumpAndSettle();
+
+      expect((picked.single! as LinkToNewCollection).title, 'Fresh');
+    });
+
+    testWidgets('a title like a listed collection offers "Link there"', (
+      tester,
+    ) async {
+      final picked = await pumpPicker(tester);
+
+      await tester.tap(find.text('New collection'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'other');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Link there'));
+      await tester.pumpAndSettle();
+
+      expect((picked.single! as LinkTargetPicked).target.id, 'other');
+    });
+
+    testWidgets('never offers the source card\'s own collection', (
+      tester,
+    ) async {
+      final picked = await pumpPicker(tester);
+
+      await tester.tap(find.text('New collection'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'own');
+      await tester.pumpAndSettle();
+      expect(find.text('Link there'), findsNothing);
+      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.pumpAndSettle();
+
+      expect((picked.single! as LinkToNewCollection).title, 'own');
+    });
+
+    testWidgets('dismissing the line picks nothing', (tester) async {
+      final picked = await pumpPicker(tester);
+
+      await tester.tap(find.text('New collection'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10)); // the scrim
+      await tester.pumpAndSettle();
+
+      expect(picked.single, isNull);
+    });
+
+    testWidgets('"Link from my card…" has no New collection row', (
+      tester,
+    ) async {
+      await pumpPicker(
+        tester,
+        source: const LinkFromMine(targetCardId: 'theirs'),
+      );
+      expect(find.text('New collection'), findsNothing);
+    });
+  });
+
+  group('multi-select Link to…', () {
+    const selection = LinkSelection(
+      cardIds: ['self', 'sib'],
+      collectionId: 'own',
+    );
+
+    testWidgets('shows no ✓ and never links to its own collection', (
+      tester,
+    ) async {
+      final read = _Read(const {
+        (ConnectedEntityKind.collection, 'other'): 'l-other',
+      });
+      final picked = await pumpPicker(tester, read: read, source: selection);
+
+      expect(find.text('Link 2 cards to…'), findsOneWidget);
+      expect(read.linkedReads, isEmpty);
+      expect(find.text('Linked'), findsNothing);
+      expect(find.text('Link'), findsOneWidget); // Other only
+      await tester.tap(find.text('Link'));
+      await tester.pumpAndSettle();
+      expect((picked.single! as LinkTargetPicked).target.id, 'other');
+    });
+
+    testWidgets('a selected card may be the target of the others', (
+      tester,
+    ) async {
+      final picked = await pumpPicker(tester, source: selection);
+
+      await tester.tap(find.widgetWithText(ListTile, 'Own'));
+      await tester.pumpAndSettle();
+      expect(find.text('Self'), findsOneWidget);
+      await tester.tap(find.text('Self'));
+      await tester.pumpAndSettle();
+      expect((picked.single! as LinkTargetPicked).target.id, 'self');
+    });
+
+    testWidgets('one selected card is not its own target', (tester) async {
+      await pumpPicker(
+        tester,
+        source: const LinkSelection(cardIds: ['self'], collectionId: 'own'),
+      );
+
+      await tester.tap(find.widgetWithText(ListTile, 'Own'));
+      await tester.pumpAndSettle();
+      expect(find.text('Self'), findsNothing);
+      expect(find.text('Sibling'), findsOneWidget);
     });
   });
 }

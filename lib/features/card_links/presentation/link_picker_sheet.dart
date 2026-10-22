@@ -5,6 +5,7 @@ import 'package:knit/core/recents/presentation/recent_targets_row.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/card_links/presentation/card_links_state.dart';
+import 'package:knit/features/new_collection/new_collection.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// The one link picker (§4.4) the Collection screen and the Card Edit page both
@@ -13,33 +14,81 @@ import 'package:knit/l10n/app_localizations.dart';
 /// the shared [CardLinksState]; drilling asks for a collection's cards
 /// through [onOpenCollection]. A target the source card already links to shows
 /// a ✓, and tapping it again picks its removal. Pops the [LinkPickerChoice]
-/// (null when dismissed).
+/// (null when dismissed). With [onNewCollection], the collections level leads
+/// with a "New collection" row: tapping it closes the sheet and reports the
+/// row's global rect.
 class LinkPickerSheet extends StatefulWidget {
   const LinkPickerSheet({
     super.key,
     required this.state,
     required this.onOpenCollection,
+    this.onNewCollection,
   });
 
   final CardLinksState state;
   final ValueChanged<String> onOpenCollection;
+  final ValueChanged<Rect?>? onNewCollection;
 
   /// Open the picker for [source] over [links] and return the choice: a
-  /// target to link, or a ✓ one to unlink.
+  /// target to link, a ✓ one to unlink, or — when the [source] offers it — a
+  /// new collection: its row grows into the shared title line (§4.1), whose
+  /// similar-title offer picks that existing collection instead.
   static Future<LinkPickerChoice?> show(
     BuildContext context, {
     required CardLinksController links,
     required LinkPick source,
-  }) {
+  }) async {
     unawaited(links.openPicker(source));
-    return showModalBottomSheet<LinkPickerChoice>(
+    var wantsNew = false;
+    Rect? newFrom;
+    final choice = await showModalBottomSheet<LinkPickerChoice>(
       context: context,
       isScrollControlled: true,
       builder: (_) => LinkPickerSheet(
         state: links.state,
         onOpenCollection: (id) => unawaited(links.openCollection(id)),
+        onNewCollection: source.offersNewCollection
+            ? (origin) {
+                wantsNew = true;
+                newFrom = origin;
+              }
+            : null,
       ),
     );
+    if (!wantsNew || !context.mounted) return choice;
+    return _newCollection(context, links.state, newFrom);
+  }
+
+  /// The "New collection" line grown from [origin]: a title to create, or one
+  /// of the collections [state] may link to when the title reads like it.
+  static Future<LinkPickerChoice?> _newCollection(
+    BuildContext context,
+    CardLinksState state,
+    Rect? origin,
+  ) async {
+    final offered = [
+      for (final c in state.collections ?? const <LinkTarget>[])
+        if (state.canLinkToCollection(c.id)) c,
+    ];
+    final made = await showNewCollectionBar(
+      context,
+      origin: origin,
+      originColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      originRadius: 0,
+      existing: [
+        for (final c in offered)
+          CollectionTitle(collectionId: c.id, title: c.label),
+      ],
+      existingActionLabel: AppLocalizations.of(context).linkPickerLinkThere,
+    );
+    return switch (made) {
+      NewCollectionCreate(:final title) => LinkToNewCollection(title),
+      // Picked, never toggled: a ✓ collection stays linked (§6.4).
+      NewCollectionUseExisting(:final collectionId) => LinkTargetPicked(
+        offered.firstWhere((c) => c.id == collectionId),
+      ),
+      null => null,
+    };
   }
 
   @override
@@ -84,18 +133,22 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
     final collections = state.collections;
     if (collections == null) return const _SheetSpinner();
     final recents = state.recentCollections;
-    if (collections.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(l10n.collectionNothingToLink),
-      );
-    }
+    final onNew = widget.onNewCollection;
+    final nothingToLink = Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(l10n.collectionNothingToLink),
+    );
+    // With nothing to link to yet, a new collection is still offered.
+    if (collections.isEmpty && onNew == null) return nothingToLink;
     return ListView(
       shrinkWrap: true,
       children: [
         _SheetHeader(switch (state.source) {
           LinkFromMine() => l10n.collectionLinkFromMineTitle,
           NewConnection() => l10n.collectionConnectionPickerTitle,
+          LinkSelection(:final cardIds) => l10n.collectionLinkSelectedTitle(
+            cardIds.length,
+          ),
           _ => l10n.collectionLinkFinderTitle,
         }),
         RecentTargetsRow(
@@ -106,6 +159,23 @@ class _LinkPickerSheetState extends State<LinkPickerSheet> {
           },
           onSelected: (i) => _choose(recents[i]),
         ),
+        if (onNew != null)
+          Builder(
+            builder: (rowContext) => ListTile(
+              leading: const Icon(Icons.add),
+              title: Text(l10n.linkPickerNewCollection),
+              onTap: () {
+                final box = rowContext.findRenderObject() as RenderBox?;
+                onNew(
+                  box == null || !box.hasSize
+                      ? null
+                      : box.localToGlobal(Offset.zero) & box.size,
+                );
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
+        if (collections.isEmpty) nothingToLink,
         for (final c in collections)
           ListTile(
             leading: const Icon(Icons.workspaces_outline),

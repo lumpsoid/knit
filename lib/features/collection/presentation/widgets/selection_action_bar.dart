@@ -15,6 +15,7 @@ class SelectionActionBar extends StatelessWidget {
     required this.allEmphasized,
     required this.onEmphasize,
     required this.onCopy,
+    required this.onLink,
     required this.onMove,
     required this.onDelete,
   });
@@ -37,6 +38,9 @@ class SelectionActionBar extends StatelessWidget {
 
   /// Copies the selected cards' texts; null (disabled) when none has text.
   final VoidCallback? onCopy;
+
+  /// "Link to…" (§4.2): link every selected card to one target.
+  final VoidCallback onLink;
   final VoidCallback onMove;
   final VoidCallback onDelete;
 
@@ -64,24 +68,27 @@ class SelectionActionBar extends StatelessWidget {
                       icon: const Icon(Icons.deselect),
                       onPressed: onUnselectAll,
                     ),
-              // The actions hug the right edge. Move carries a short label (the
-              // full one is its tooltip) and still ellipsizes on a very narrow
-              // screen, so nothing leaves it.
+              // The actions hug the right edge, compact so seven fit. Move
+              // carries a short label (the full one is its tooltip) and still
+              // ellipsizes on a very narrow screen, so nothing leaves it.
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     IconButton(
+                      visualDensity: VisualDensity.compact,
                       tooltip: l10n.collectionDeleteSelectedTooltip,
                       icon: const Icon(Icons.delete_outline),
                       onPressed: onDelete,
                     ),
                     IconButton(
+                      visualDensity: VisualDensity.compact,
                       tooltip: l10n.collectionActionCopy,
                       icon: const Icon(Icons.copy),
                       onPressed: onCopy,
                     ),
                     IconButton(
+                      visualDensity: VisualDensity.compact,
                       tooltip: allSettled
                           ? l10n.collectionActionUnsettle
                           : l10n.collectionActionSettle,
@@ -89,6 +96,13 @@ class SelectionActionBar extends StatelessWidget {
                       onPressed: onSettle,
                     ),
                     IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: l10n.collectionLinkSelectedTooltip,
+                      icon: const Icon(Icons.add_link),
+                      onPressed: onLink,
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
                       tooltip: allEmphasized
                           ? l10n.collectionActionUnemphasize
                           : l10n.collectionActionEmphasize,
@@ -104,8 +118,8 @@ class SelectionActionBar extends StatelessWidget {
                       child: Tooltip(
                         message: l10n.collectionMoveTooltip,
                         child: FilledButton.tonalIcon(
-                          // Tighter than the default so six actions still fit
-                          // a 320px phone.
+                          // Tighter than the default so seven actions still
+                          // fit a 320px phone.
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                           ),

@@ -115,12 +115,44 @@ class CardLinksController {
       targetId: targetId,
     );
     if (result.isSuccess && targetKind == ConnectedEntityKind.collection) {
-      // Non-fatal: the link is written either way.
-      (await _recentsWrite.record(RecentPurpose.link, targetId)).onFailure(
-        (failure) =>
-            _log.warning('Recent link target save failed', failure.error),
-      );
+      await _recordRecent(targetId);
     }
+    return result;
+  }
+
+  /// Link every card of [sourceIds] to the [targetKind] entity [targetId] in
+  /// one write — multi-select "Link to…" (§4.2). Pairs already linked are
+  /// skipped (§6.4); the result counts the links written. A collection linked
+  /// to is remembered as recent.
+  Future<Result<LinksAdded, CardLinksFailure>> linkAll({
+    required List<String> sourceIds,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
+  }) async {
+    final result = await _write.addLinks(
+      sourceIds: sourceIds,
+      targetKind: targetKind,
+      targetId: targetId,
+    );
+    if (result.isSuccess && targetKind == ConnectedEntityKind.collection) {
+      await _recordRecent(targetId);
+    }
+    return result;
+  }
+
+  /// Create a collection titled [title] and link every card of [sourceIds]
+  /// to it in one write — the picker's "New collection" (§4.4). The new
+  /// collection is remembered as recent.
+  Future<Result<LinksAdded, CardLinksFailure>> linkToNewCollection({
+    required List<String> sourceIds,
+    required String title,
+  }) async {
+    final result = await _write.addLinksToNewCollection(
+      sourceIds: sourceIds,
+      title: title,
+    );
+    final added = result.value;
+    if (added != null) await _recordRecent(added.targetId);
     return result;
   }
 
@@ -129,4 +161,13 @@ class CardLinksController {
   /// clearing a broken link (§8.6.1).
   Future<Result<String, CardLinksFailure>> unlink(String linkId) =>
       _write.removeLink(linkId);
+
+  /// Remember [collectionId] as recently linked to. Non-fatal: the link is
+  /// written either way.
+  Future<void> _recordRecent(String collectionId) async {
+    (await _recentsWrite.record(RecentPurpose.link, collectionId)).onFailure(
+      (failure) =>
+          _log.warning('Recent link target save failed', failure.error),
+    );
+  }
 }

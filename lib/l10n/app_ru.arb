@@ -215,6 +215,14 @@
   },
   "collectionNoCardsToLink": "Здесь нет карточек для связи.",
   "linkPickerLinked": "Связано",
+  "linkPickerNewCollection": "Новая коллекция",
+  "linkPickerLinkThere": "Связать с ней",
+  "collectionLinkSelectedTitle": "{count, plural, =1{Связать 1 карточку с…} few{Связать {count} карточки с…} many{Связать {count} карточек с…} other{Связать {count} карточки с…}}",
+  "@collectionLinkSelectedTitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "collectionOrACardInIt": "Или карточку в ней",
 
   "collectionDescriptionEmpty": "Без описания",
@@ -463,6 +471,7 @@
   "collectionClearSelectionTooltip": "Отменить выбор",
   "collectionMoveTooltip": "Переместить в коллекцию",
   "collectionMoveShort": "Переместить",
+  "collectionLinkSelectedTooltip": "Связать с…",
   "collectionDeleteSelectedTooltip": "Удалить выбранные",
   "collectionDeleteSelectedTitle": "{count, plural, =1{Удалить 1 карточку?} few{Удалить {count} карточки?} many{Удалить {count} карточек?} other{Удалить {count} карточки?}}",
   "@collectionDeleteSelectedTitle": {
@@ -485,6 +494,19 @@
     }
   },
   "collectionCardsMovedOpen": "Открыть",
+  "collectionCardsLinked": "{count, plural, =1{1 карточка связана с «{title}»} few{{count} карточки связаны с «{title}»} many{{count} карточек связано с «{title}»} other{{count} карточки связаны с «{title}»}}",
+  "@collectionCardsLinked": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "title": { "type": "String" }
+    }
+  },
+  "collectionCardsAlreadyLinked": "Уже связано с «{title}»",
+  "@collectionCardsAlreadyLinked": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
   "shareCaptureTitle": "Сохранить в Knit",
   "shareCaptureSearchHint": "Найти коллекцию",
   "shareCaptureNewCollection": "Новая коллекция",

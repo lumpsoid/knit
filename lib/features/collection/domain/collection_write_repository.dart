@@ -23,15 +23,30 @@ abstract interface class CollectionWriteRepository {
     List<String> moreAttachmentIds = const [],
   });
 
-  /// Append a Connection card at [position] (§4.2): a `link`-kind card with
-  /// no text and one link out to the [targetKind] entity [targetId], a
-  /// collection or a card (the §6.4 link block), written together in one
-  /// transaction. Returns the new card id.
+  /// Append a Connection card at [position] (§4.2): a card of [kind] with
+  /// [text] and one link out to the [targetKind] entity [targetId], a
+  /// collection or a card, written together in one transaction. The default
+  /// is the §6.4 link block: a `link`-kind card with no text; a label makes it
+  /// a text card. Returns the new card id.
   Future<Result<String, CollectionFailure>> addConnectionCard({
     required String collectionId,
     required String position,
     required ConnectedEntityKind targetKind,
     required String targetId,
+    CardKind kind = CardKind.link,
+    String? text,
+  });
+
+  /// Create a collection titled [title] and append a Connection card to it
+  /// at [position] (as [addConnectionCard]), all in one transaction — the
+  /// Connection picker's "New collection" (§4.4). Returns the new
+  /// collection's id.
+  Future<Result<String, CollectionFailure>> addConnectionCardToNewCollection({
+    required String collectionId,
+    required String position,
+    required String title,
+    CardKind kind = CardKind.link,
+    String? text,
   });
 
   /// Soft-delete a card (§6.1). Links to it become broken chips, never vanish.

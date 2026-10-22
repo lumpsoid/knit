@@ -545,6 +545,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkPickerLinked => 'Linked';
 
   @override
+  String get linkPickerNewCollection => 'New collection';
+
+  @override
+  String get linkPickerLinkThere => 'Link there';
+
+  @override
+  String collectionLinkSelectedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Link $count cards to…',
+      one: 'Link 1 card to…',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get collectionOrACardInIt => 'Or a card in it';
 
   @override
@@ -1132,6 +1149,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collectionMoveShort => 'Move';
 
   @override
+  String get collectionLinkSelectedTooltip => 'Link to…';
+
+  @override
   String get collectionDeleteSelectedTooltip => 'Delete selected';
 
   @override
@@ -1180,6 +1200,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collectionCardsMovedOpen => 'Open';
+
+  @override
+  String collectionCardsLinked(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Linked $count cards to “$title”',
+      one: 'Linked 1 card to “$title”',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String collectionCardsAlreadyLinked(String title) {
+    return 'Already linked to “$title”';
+  }
 
   @override
   String get shareCaptureTitle => 'Save to Knit';

@@ -110,6 +110,9 @@ class _CardEditPageState extends State<CardEditPage> {
       ),
       // A ✓ target tapped again: the same remove as a link row's.
       LinkTargetUnpicked(:final linkId) => RemoveLinkRequested(linkId),
+      LinkToNewCollection(:final title) => AddLinkToNewCollectionRequested(
+        title,
+      ),
     });
   }
 

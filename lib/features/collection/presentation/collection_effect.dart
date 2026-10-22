@@ -2,6 +2,7 @@ import 'package:knit/core/attachments/domain/picked_audio.dart';
 import 'package:knit/core/attachments/domain/picked_file.dart';
 import 'package:knit/core/attachments/domain/picked_image.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
+import 'package:knit/features/collection/domain/connection_card_text.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 
 /// Async-work descriptors for the Collection screen (fcis.md §6.4). Positions
@@ -74,20 +75,39 @@ class AddCardEffect extends CollectionEffect {
   final bool closesQuickInput;
 }
 
-/// Append a Connection card at [position] (§4.2): a text-less link block
-/// whose one link out points at the [targetKind] entity [targetId] (§6.4), a
-/// collection or a card, card and link in one write.
+/// Append a Connection card at [position] (§4.2): a card whose one link out
+/// points at the [targetKind] entity [targetId] (§6.4), a collection or a
+/// card, card and link in one write. [cardText] is its label from the
+/// composer, or none (the text-less link block).
 class AddConnectionCardEffect extends CollectionEffect {
   const AddConnectionCardEffect({
     required this.collectionId,
     required this.position,
     required this.targetKind,
     required this.targetId,
+    this.cardText = ConnectionCardText.none,
   });
   final String collectionId;
   final String position;
   final ConnectedEntityKind targetKind;
   final String targetId;
+  final ConnectionCardText cardText;
+}
+
+/// Create a collection titled [title] and append a Connection card to it at
+/// [position], all in one write (§4.4 "New collection"). [cardText] as in
+/// [AddConnectionCardEffect].
+class AddConnectionCardToNewCollectionEffect extends CollectionEffect {
+  const AddConnectionCardToNewCollectionEffect({
+    required this.collectionId,
+    required this.position,
+    required this.title,
+    this.cardText = ConnectionCardText.none,
+  });
+  final String collectionId;
+  final String position;
+  final String title;
+  final ConnectionCardText cardText;
 }
 
 /// Store the already-picked [images] (§7.4.8), then append one image card at
@@ -236,6 +256,37 @@ class LinkEffect extends CollectionEffect {
   final String cardId;
   final ConnectedEntityKind targetKind;
   final String targetId;
+}
+
+/// Link each of [cardIds] to the [targetKind] entity [targetId] in one write
+/// (§4.2 multi-select "Link to…"), through the shared card links; pairs
+/// already linked are skipped (§6.4). [targetTitle] names it in the
+/// confirmation.
+class LinkCardsEffect extends CollectionEffect {
+  const LinkCardsEffect({
+    required this.cardIds,
+    required this.targetKind,
+    required this.targetId,
+    required this.targetTitle,
+  });
+  final List<String> cardIds;
+  final ConnectedEntityKind targetKind;
+  final String targetId;
+  final String targetTitle;
+}
+
+/// Create a collection titled [title] and link each of [cardIds] to it, in
+/// one write (§4.4 "New collection"), through the shared card links.
+/// [announce] confirms it with the selection's "Linked N cards" message.
+class LinkCardsToNewCollectionEffect extends CollectionEffect {
+  const LinkCardsToNewCollectionEffect({
+    required this.cardIds,
+    required this.title,
+    this.announce = false,
+  });
+  final List<String> cardIds;
+  final String title;
+  final bool announce;
 }
 
 /// Remove the link [linkId] and its pair's duplicates (§4.4/§6.4), through

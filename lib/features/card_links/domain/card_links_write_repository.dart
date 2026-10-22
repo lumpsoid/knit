@@ -1,4 +1,5 @@
 import 'package:knit/features/card_links/domain/card_links_failure.dart';
+import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -16,6 +17,23 @@ abstract interface class CardLinksWriteRepository {
     required String sourceId,
     required ConnectedEntityKind targetKind,
     required String targetId,
+  });
+
+  /// Link each card of [sourceIds] to the [targetKind] entity [targetId], all
+  /// in one transaction. Pairs already linked, and repeats, are skipped
+  /// (§6.4); [LinksAdded.count] says how many links were written.
+  Future<Result<LinksAdded, CardLinksFailure>> addLinks({
+    required List<String> sourceIds,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
+  });
+
+  /// Create a collection titled [title] and link each card of [sourceIds] to
+  /// it, all in one transaction (§4.4 "New collection"). [LinksAdded.targetId]
+  /// is the new collection's id.
+  Future<Result<LinksAdded, CardLinksFailure>> addLinksToNewCollection({
+    required List<String> sourceIds,
+    required String title,
   });
 
   /// Delete the link [linkId] and every duplicate of its pair (§6.4) — both

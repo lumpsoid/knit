@@ -174,6 +174,17 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
         );
         _afterLinkWrite(result, 'add link', dispatch);
 
+      case AddLinkToNewCollectionEffect(:final cardId, :final title):
+        final result = await _cardLinks.linkToNewCollection(
+          sourceIds: [cardId],
+          title: title,
+        );
+        // Home lists the new collection.
+        if (result.isSuccess) {
+          _timelineChannel.emit(const RefreshChannelEvent());
+        }
+        _afterLinkWrite(result, 'add link to a new collection', dispatch);
+
       case RemoveLinkEffect(:final linkId):
         final result = await _cardLinks.unlink(linkId);
         _afterLinkWrite(result, 'remove link', dispatch);
@@ -259,7 +270,7 @@ class CardEditShell extends Shell<CardEditEffect, CardEditAction> {
   /// Resync the link list whether the write succeeded or failed (a failure also
   /// surfaces a message); the reload clears the in-flight spinner either way.
   void _afterLinkWrite(
-    Result<String, CardLinksFailure> result,
+    Result<Object, CardLinksFailure> result,
     String label,
     void Function(CardEditAction) dispatch,
   ) {

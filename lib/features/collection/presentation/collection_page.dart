@@ -147,6 +147,23 @@ class _CollectionPageState extends State<CollectionPage> {
             ),
           ),
         );
+      case CollectionCardsLinkedUiEffect(:final count, :final targetTitle):
+        final l10n = AppLocalizations.of(context);
+        // A card target is named by its first line.
+        final name = targetTitle.trim().split('\n').first.trim();
+        final title = name.isEmpty ? l10n.labelUntitled : name;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              count == 0
+                  ? l10n.collectionCardsAlreadyLinked(title)
+                  : l10n.collectionCardsLinked(count, title),
+            ),
+          ),
+        );
+      case CollectionComposerTextUsedUiEffect(:final text):
+        // Typed on meanwhile: the input is the user's again, so it stays.
+        if (_composer.text.trim() == text) _composer.clear();
       case CollectionQuickInputSentUiEffect():
         Navigator.of(context).pop(true);
       case CollectionDeletedUiEffect():
@@ -193,8 +210,10 @@ class _CollectionPageState extends State<CollectionPage> {
     }
   }
 
-  /// The Connection block (§4.2): pick another collection, or a card in any
-  /// collection, then append a card pointing at it.
+  /// The Connection block (§4.2): pick another collection, a card in any
+  /// collection, or a new collection, then append a card pointing at it. The
+  /// text typed in the composer may become its label; the input then clears
+  /// once the card is saved, and stays when the picker is dismissed.
   Future<void> _pickConnection() async {
     final picked = await LinkPickerSheet.show(
       context,
@@ -203,11 +222,25 @@ class _CollectionPageState extends State<CollectionPage> {
         collectionId: _controller.stateHolder.value.collectionId,
       ),
     );
-    // A new card has no links yet, so the choice is always a pick.
-    if (picked is! LinkTargetPicked || !mounted) return;
-    _controller.dispatch(
-      ConnectionCardRequested(picked.target.kind, picked.target.id),
-    );
+    if (!mounted) return;
+    final composerText = _composer.text;
+    switch (picked) {
+      case LinkTargetPicked(:final target):
+        _controller.dispatch(
+          ConnectionCardRequested(
+            target.kind,
+            target.id,
+            composerText: composerText,
+          ),
+        );
+      case LinkToNewCollection(:final title):
+        _controller.dispatch(
+          ConnectionToNewCollectionRequested(title, composerText: composerText),
+        );
+      // A new card has no links yet, so nothing is ever unpicked.
+      case LinkTargetUnpicked() || null:
+        break;
+    }
   }
 
   Future<void> _openCardActions(FeedCard card) async {
@@ -651,7 +684,38 @@ class _CollectionPageState extends State<CollectionPage> {
         targetId: target.id,
       ),
       LinkTargetUnpicked(:final linkId) => UnlinkRequested(linkId),
+      LinkToNewCollection(:final title) => LinkToNewCollectionRequested(
+        cardId: card.id,
+        title: title,
+      ),
     });
+  }
+
+  /// The selection's "Link to…" (§4.2): pick one target — a collection, a
+  /// card, or a new collection — and link every selected card to it. No ✓:
+  /// a mixed selection has no single linked state.
+  Future<void> _openSelectionLinkPicker() async {
+    final picked = await LinkPickerSheet.show(
+      context,
+      links: CollectionScope.cardLinks,
+      source: _controller.stateHolder.value.linkSelection,
+    );
+    if (!mounted) return;
+    switch (picked) {
+      case LinkTargetPicked(:final target):
+        _controller.dispatch(
+          SelectionLinkRequested(
+            targetKind: target.kind,
+            targetId: target.id,
+            targetTitle: target.label,
+          ),
+        );
+      case LinkToNewCollection(:final title):
+        _controller.dispatch(SelectionLinkToNewCollectionRequested(title));
+      // No ✓ to tap again here.
+      case LinkTargetUnpicked() || null:
+        break;
+    }
   }
 
   /// Hand the collection to the Collection Edit carrier (cross_feature.md §2),
@@ -757,6 +821,7 @@ class _CollectionPageState extends State<CollectionPage> {
             onCopy: state.selectionCopyText.isEmpty
                 ? null
                 : () => unawaited(_copySelection(state.selectionCopyText)),
+            onLink: () => unawaited(_openSelectionLinkPicker()),
             onMove: _openMovePicker,
             onDelete: () => unawaited(
               _confirmDeleteSelection(state.selectedCardIds.length),

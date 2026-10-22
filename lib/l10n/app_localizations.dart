@@ -1022,6 +1022,24 @@ abstract class AppLocalizations {
   /// **'Linked'**
   String get linkPickerLinked;
 
+  /// No description provided for @linkPickerNewCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'New collection'**
+  String get linkPickerNewCollection;
+
+  /// No description provided for @linkPickerLinkThere.
+  ///
+  /// In en, this message translates to:
+  /// **'Link there'**
+  String get linkPickerLinkThere;
+
+  /// No description provided for @collectionLinkSelectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Link 1 card to…} other{Link {count} cards to…}}'**
+  String collectionLinkSelectedTitle(int count);
+
   /// No description provided for @collectionOrACardInIt.
   ///
   /// In en, this message translates to:
@@ -2030,6 +2048,12 @@ abstract class AppLocalizations {
   /// **'Move'**
   String get collectionMoveShort;
 
+  /// No description provided for @collectionLinkSelectedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to…'**
+  String get collectionLinkSelectedTooltip;
+
   /// No description provided for @collectionDeleteSelectedTooltip.
   ///
   /// In en, this message translates to:
@@ -2095,6 +2119,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open'**
   String get collectionCardsMovedOpen;
+
+  /// No description provided for @collectionCardsLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Linked 1 card to “{title}”} other{Linked {count} cards to “{title}”}}'**
+  String collectionCardsLinked(int count, String title);
+
+  /// No description provided for @collectionCardsAlreadyLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Already linked to “{title}”'**
+  String collectionCardsAlreadyLinked(String title);
 
   /// No description provided for @shareCaptureTitle.
   ///

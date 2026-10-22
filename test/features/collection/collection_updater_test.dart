@@ -8,6 +8,7 @@ import 'package:knit/core/ordering/fractional_index.dart';
 import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_outline.dart';
+import 'package:knit/features/collection/domain/connection_card_text.dart';
 import 'package:knit/features/collection/domain/link_tile.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
@@ -430,6 +431,69 @@ void main() {
       }
     });
 
+    test('the composer text becomes the Connection card\'s label', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const ConnectionCardRequested(
+          ConnectedEntityKind.collection,
+          'trips',
+          composerText: '  Trip ideas ',
+        ),
+      );
+      final effect = effects!.single as AddConnectionCardEffect;
+      expect(effect.cardText.label, 'Trip ideas');
+      expect(effect.cardText.kind, CardKind.text);
+    });
+
+    test('a bare URL in the composer is no label', () {
+      final (_, effects) = updater.update(
+        ready(const []),
+        const ConnectionCardRequested(
+          ConnectedEntityKind.collection,
+          'trips',
+          composerText: 'https://example.com',
+        ),
+      );
+      expect(
+        (effects!.single as AddConnectionCardEffect).cardText,
+        ConnectionCardText.none,
+      );
+    });
+
+    test('a Connection to a new collection makes both, labelled', () {
+      final (_, effects) = updater.update(
+        ready([card('c1', 'a0')]),
+        const ConnectionToNewCollectionRequested(
+          '  Trips ',
+          composerText: 'Ideas',
+        ),
+      );
+      final effect = effects!.single as AddConnectionCardToNewCollectionEffect;
+      expect(effect.collectionId, 'col');
+      expect(effect.title, 'Trips');
+      expect(effect.cardText.label, 'Ideas');
+      expect(effect.position.compareTo('a0') > 0, isTrue);
+
+      expect(
+        updater
+            .update(
+              ready(const []),
+              const ConnectionToNewCollectionRequested('  '),
+            )
+            .$2,
+        isNull,
+      );
+      expect(
+        updater
+            .update(
+              ready(const []).copyWith(ownership: CollectionOwnership.imported),
+              const ConnectionToNewCollectionRequested('Trips'),
+            )
+            .$2,
+        isNull,
+      );
+    });
+
     test('no Connection card in an imported (read-only) collection', () {
       final (_, effects) = updater.update(
         ready(const []).copyWith(ownership: CollectionOwnership.imported),
@@ -848,6 +912,117 @@ void main() {
       expect(CardKind.forText('ftp://x.y'), CardKind.text);
       expect(CardKind.forText('https://'), CardKind.text);
       expect(CardKind.forText('hello'), CardKind.text);
+    });
+  });
+
+  group('multi-select Link to… (§4.2)', () {
+    final cards = [card('c1', 'a0'), card('c2', 'a1'), card('c3', 'a2')];
+
+    CollectionState selecting(Set<String> ids) =>
+        ready(cards).copyWith(selectedCardIds: ids);
+
+    test('links every selected card, in feed order, and leaves selection', () {
+      final (next, effects) = updater.update(
+        selecting({'c3', 'c1'}),
+        const SelectionLinkRequested(
+          targetKind: ConnectedEntityKind.collection,
+          targetId: 'trips',
+          targetTitle: 'Trips',
+        ),
+      );
+      expect(next.selecting, isFalse);
+      final effect = effects!.single as LinkCardsEffect;
+      expect(effect.cardIds, ['c1', 'c3']);
+      expect(effect.targetKind, ConnectedEntityKind.collection);
+      expect(effect.targetId, 'trips');
+      expect(effect.targetTitle, 'Trips');
+    });
+
+    test('a selected card picked as the target links from the others', () {
+      final (_, effects) = updater.update(
+        selecting({'c1', 'c2'}),
+        const SelectionLinkRequested(
+          targetKind: ConnectedEntityKind.card,
+          targetId: 'c2',
+          targetTitle: 'c2',
+        ),
+      );
+      expect((effects!.single as LinkCardsEffect).cardIds, ['c1']);
+    });
+
+    test('its own collection links nothing, and says so', () {
+      final (next, effects) = updater.update(
+        selecting({'c1', 'c2'}),
+        const SelectionLinkRequested(
+          targetKind: ConnectedEntityKind.collection,
+          targetId: 'col',
+          targetTitle: 'Here',
+        ),
+      );
+      expect(next.selecting, isFalse);
+      expect((effects!.single as LinkCardsEffect).cardIds, isEmpty);
+    });
+
+    test('a new collection links every selected card, announced', () {
+      final (next, effects) = updater.update(
+        selecting({'c2', 'c1'}),
+        const SelectionLinkToNewCollectionRequested('  Fresh '),
+      );
+      expect(next.selecting, isFalse);
+      final effect = effects!.single as LinkCardsToNewCollectionEffect;
+      expect(effect.cardIds, ['c1', 'c2']);
+      expect(effect.title, 'Fresh');
+      expect(effect.announce, isTrue);
+    });
+
+    test('a blank new title, or no selection, does nothing', () {
+      final selected = selecting({'c1'});
+      final (kept, effects) = updater.update(
+        selected,
+        const SelectionLinkToNewCollectionRequested('   '),
+      );
+      expect(kept, same(selected));
+      expect(effects, isNull);
+      expect(
+        updater
+            .update(
+              ready(cards),
+              const SelectionLinkRequested(
+                targetKind: ConnectedEntityKind.collection,
+                targetId: 'trips',
+                targetTitle: 'Trips',
+              ),
+            )
+            .$2,
+        isNull,
+      );
+    });
+
+    test('nothing is linked from a read-only (imported) collection', () {
+      final imported = selecting({
+        'c1',
+      }).copyWith(ownership: CollectionOwnership.imported);
+      for (final action in const <CollectionAction>[
+        SelectionLinkRequested(
+          targetKind: ConnectedEntityKind.collection,
+          targetId: 'trips',
+          targetTitle: 'Trips',
+        ),
+        SelectionLinkToNewCollectionRequested('Fresh'),
+      ]) {
+        expect(updater.update(imported, action).$2, isNull);
+      }
+    });
+
+    test('one card links to a new collection, unannounced', () {
+      final (_, effects) = updater.update(
+        ready(cards),
+        const LinkToNewCollectionRequested(cardId: 'c2', title: ' Trips '),
+      );
+      final effect = effects!.single as LinkCardsToNewCollectionEffect;
+      expect(effect.cardIds, ['c2']);
+      expect(effect.title, 'Trips');
+      expect(effect.announce, isFalse);
     });
   });
 

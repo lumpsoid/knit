@@ -27,6 +27,7 @@ void main() {
               allEmphasized: false,
               onEmphasize: () {},
               onCopy: () {},
+              onLink: () {},
               onMove: () {},
               onDelete: () {},
             ),
@@ -37,6 +38,8 @@ void main() {
       expect(tester.takeException(), isNull);
       final move = tester.getRect(find.byType(FilledButton));
       expect(move.right, lessThanOrEqualTo(320));
+      // Move keeps room for its icon.
+      expect(move.width, greaterThanOrEqualTo(48));
     });
   }
 }

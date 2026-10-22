@@ -580,6 +580,71 @@ class SyncStore {
     });
   }
 
+  /// Link many pairs at once (§6.4): each of [links] — a new link id and the
+  /// pair it joins — is written unless a live link already joins its pair, or
+  /// an earlier one of the batch does, so the batch dedupes against the store
+  /// and within itself. With [newCollection], that collection is created
+  /// first (a picker's "New collection" and the links to it land together).
+  /// Everything commits in **one** transaction. Returns the ops written, in
+  /// [links] order after the collection's.
+  Future<List<PersistedOp>> createLinks(
+    List<({String linkId, LinkPair pair})> links, {
+    ({String id, Map<String, Object?> content})? newCollection,
+    int? physicalNowMs,
+  }) async {
+    final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final identity = await _identity();
+    return _unitOfWork.run((ctx) async {
+      final ops = <PersistedOp>[];
+      if (newCollection != null) {
+        ops.add(
+          await _writeOne(
+            ctx: ctx,
+            identity: identity,
+            now: now,
+            type: EntityType.collection,
+            id: newCollection.id,
+            build: _creation(
+              EntityType.collection,
+              newCollection.id,
+              newCollection.content,
+              null,
+            ),
+          ),
+        );
+      }
+      final joined = <LinkPair>{};
+      for (final sourceId in {for (final l in links) l.pair.sourceId}) {
+        joined.addAll(
+          distinctLinks(
+            await projection.linksOut(sourceId, ctx: ctx),
+          ).map(LinkPair.of),
+        );
+      }
+      for (final (:linkId, :pair) in links) {
+        if (!joined.add(pair)) continue;
+        ops.add(
+          await _writeOne(
+            ctx: ctx,
+            identity: identity,
+            now: now,
+            type: EntityType.link,
+            id: linkId,
+            build: _creation(EntityType.link, linkId, {
+              'source_type': pair.sourceType,
+              'source_id': pair.sourceId,
+              'target_type': pair.targetType,
+              'target_id': pair.targetId,
+              'label': null,
+            }, null),
+          ),
+        );
+      }
+      if (ops.isNotEmpty) await deviceClock.save(_clock.now, ctx: ctx);
+      return ops;
+    });
+  }
+
   /// Remove the link [linkId] and every live duplicate of its pair (§6.4) —
   /// a signed delete each, all in **one** transaction, so a duplicate can't
   /// make the link reappear. Both endpoints are left untouched. Returns the
@@ -632,7 +697,9 @@ class SyncStore {
   /// transaction: the card [cardId] at [position] with [content], then the
   /// `link` record [linkId] from it to the [targetType] entity [targetId].
   /// Either both land or neither does, so no half-made block is ever seen or
-  /// synced. Returns the ops in that order (card, link).
+  /// synced. With [newTargetContent], the target is a collection made on the
+  /// fly: it is created first, in the same transaction. Returns the ops in
+  /// that order ([newTargetContent]'s collection, card, link).
   Future<List<PersistedOp>> createLinkedCard({
     required String cardId,
     required Map<String, Object?> content,
@@ -640,11 +707,31 @@ class SyncStore {
     required String linkId,
     required EntityType targetType,
     required String targetId,
+    Map<String, Object?>? newTargetContent,
     int? physicalNowMs,
   }) async {
+    assert(
+      newTargetContent == null || targetType == EntityType.collection,
+      'only a collection target is made on the fly',
+    );
     final now = physicalNowMs ?? DateTime.now().millisecondsSinceEpoch;
     final identity = await _identity();
     return _unitOfWork.run((ctx) async {
+      final target = newTargetContent == null
+          ? null
+          : await _writeOne(
+              ctx: ctx,
+              identity: identity,
+              now: now,
+              type: EntityType.collection,
+              id: targetId,
+              build: _creation(
+                EntityType.collection,
+                targetId,
+                newTargetContent,
+                null,
+              ),
+            );
       final card = await _writeOne(
         ctx: ctx,
         identity: identity,
@@ -668,7 +755,7 @@ class SyncStore {
         }, null),
       );
       await deviceClock.save(_clock.now, ctx: ctx);
-      return [card, link];
+      return [?target, card, link];
     });
   }
 

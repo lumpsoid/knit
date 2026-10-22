@@ -51,21 +51,40 @@ class SyncStoreCollectionWriteRepository implements CollectionWriteRepository {
     required String position,
     required ConnectedEntityKind targetKind,
     required String targetId,
+    CardKind kind = CardKind.link,
+    String? text,
   }) => _write(() async {
     final id = _ids.newId();
     await _graph.store.createLinkedCard(
       cardId: id,
-      content: {
-        'collection_id': collectionId,
-        'kind': CardKind.link.tag,
-        'text': null,
-      },
+      content: {'collection_id': collectionId, 'kind': kind.tag, 'text': text},
       position: position,
       linkId: _ids.newId(),
       targetType: EntityType.fromTag(targetKind.tag),
       targetId: targetId,
     );
     return id;
+  });
+
+  @override
+  Future<Result<String, CollectionFailure>> addConnectionCardToNewCollection({
+    required String collectionId,
+    required String position,
+    required String title,
+    CardKind kind = CardKind.link,
+    String? text,
+  }) => _write(() async {
+    final targetId = _ids.newId();
+    await _graph.store.createLinkedCard(
+      cardId: _ids.newId(),
+      content: {'collection_id': collectionId, 'kind': kind.tag, 'text': text},
+      position: position,
+      linkId: _ids.newId(),
+      targetType: EntityType.collection,
+      targetId: targetId,
+      newTargetContent: {'title': title, 'cover_attachment_id': null},
+    );
+    return targetId;
   });
 
   @override

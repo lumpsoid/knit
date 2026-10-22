@@ -208,6 +208,22 @@ void main() {
       );
     });
 
+    test('a new collection is made and linked to, by its trimmed title', () {
+      const state = CardEditState(cardId: 'c1');
+      final (next, effects) = updater.update(
+        state,
+        const AddLinkToNewCollectionRequested('  Trips '),
+      );
+      expect(next.linksLoading, isTrue);
+      final effect = effects!.single as AddLinkToNewCollectionEffect;
+      expect((effect.cardId, effect.title), ('c1', 'Trips'));
+
+      expect(
+        updater.update(state, const AddLinkToNewCollectionRequested(' ')).$2,
+        isNull,
+      );
+    });
+
     test('RemoveLinkRequested emits RemoveLinkEffect', () {
       const state = CardEditState(cardId: 'c1');
       final (_, effects) = updater.update(

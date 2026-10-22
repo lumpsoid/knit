@@ -7,6 +7,7 @@ import 'package:knit/core/recents/domain/recent_targets.dart';
 import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_outline.dart';
+import 'package:knit/features/collection/domain/connection_card_text.dart';
 import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_state.dart';
@@ -229,7 +230,11 @@ class CollectionUpdater
           ],
         );
 
-      case ConnectionCardRequested(:final targetKind, :final targetId):
+      case ConnectionCardRequested(
+        :final targetKind,
+        :final targetId,
+        :final composerText,
+      ):
         // A collection or a card, never this collection itself: the picker's
         // own rule (NewConnection, after LinkSource).
         final pick = NewConnection(collectionId: state.collectionId);
@@ -242,6 +247,25 @@ class CollectionUpdater
               position: _appendPosition(state.cards),
               targetKind: targetKind,
               targetId: targetId,
+              cardText: ConnectionCardText.of(composerText),
+            ),
+          ],
+        );
+
+      case ConnectionToNewCollectionRequested(
+        :final title,
+        :final composerText,
+      ):
+        final trimmed = title.trim();
+        if (trimmed.isEmpty) return (state, null);
+        return (
+          state,
+          [
+            AddConnectionCardToNewCollectionEffect(
+              collectionId: state.collectionId,
+              position: _appendPosition(state.cards),
+              title: trimmed,
+              cardText: ConnectionCardText.of(composerText),
             ),
           ],
         );
@@ -289,6 +313,16 @@ class CollectionUpdater
               targetKind: targetKind,
               targetId: targetId,
             ),
+          ],
+        );
+
+      case LinkToNewCollectionRequested(:final cardId, :final title):
+        final trimmed = title.trim();
+        if (trimmed.isEmpty) return (state, null);
+        return (
+          state,
+          [
+            LinkCardsToNewCollectionEffect(cardIds: [cardId], title: trimmed),
           ],
         );
 
@@ -357,6 +391,42 @@ class CollectionUpdater
             for (final c in state.cards)
               if (state.selectedCardIds.contains(c.id)) c,
           ]),
+        );
+
+      case SelectionLinkRequested(
+        :final targetKind,
+        :final targetId,
+        :final targetTitle,
+      ):
+        if (!state.selecting) return (state, null);
+        // Each card by the LinkSource rule: none links to itself or to this
+        // collection. Pairs already linked are the write's to skip (§6.4).
+        return (
+          state.copyWith(selectedCardIds: const {}),
+          [
+            LinkCardsEffect(
+              cardIds: state.linkSelection.sourcesFor(targetKind, targetId),
+              targetKind: targetKind,
+              targetId: targetId,
+              targetTitle: targetTitle,
+            ),
+          ],
+        );
+
+      case SelectionLinkToNewCollectionRequested(:final title):
+        final trimmed = title.trim();
+        if (!state.selecting || trimmed.isEmpty) return (state, null);
+        // A new collection is none of the cards, nor this collection: every
+        // selected card links to it.
+        return (
+          state.copyWith(selectedCardIds: const {}),
+          [
+            LinkCardsToNewCollectionEffect(
+              cardIds: state.linkSelection.cardIds,
+              title: trimmed,
+              announce: true,
+            ),
+          ],
         );
 
       case SelectionCleared():
@@ -661,6 +731,7 @@ class CollectionUpdater
   static bool _writesHere(CollectionAction action) => switch (action) {
     ComposerSubmitted() ||
     ConnectionCardRequested() ||
+    ConnectionToNewCollectionRequested() ||
     CardDeleteRequested() ||
     CollectionDeleteRequested() ||
     CardSettleToggled() ||
@@ -672,6 +743,8 @@ class CollectionUpdater
     SelectionSettleRequested() ||
     SelectionDeleteRequested() ||
     SelectionEmphasisRequested() ||
+    SelectionLinkRequested() ||
+    SelectionLinkToNewCollectionRequested() ||
     MoveTargetsRequested() ||
     CardMoveRequested() ||
     MoveTargetChosen() ||

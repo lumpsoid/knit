@@ -11,6 +11,8 @@ import 'package:knit/features/collection/domain/collection_failure.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
+import 'package:knit/features/collection/domain/collection_write_repository.dart';
+import 'package:knit/features/collection/domain/connection_card_text.dart';
 import 'package:knit/features/collection/infra/sync_store_card_move_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_outline_read_repository.dart';
 import 'package:knit/features/collection/infra/sync_store_collection_read_repository.dart';
@@ -19,6 +21,9 @@ import 'package:knit/features/collection/presentation/collection_action.dart';
 import 'package:knit/features/collection/presentation/collection_effect.dart';
 import 'package:knit/features/collection/presentation/collection_ui_effect.dart';
 import 'package:knit/features/collection/presentation/collection_shell.dart';
+import 'package:knit/features/card_links/domain/card_links_failure.dart';
+import 'package:knit/features/card_links/domain/card_links_models.dart';
+import 'package:knit/features/card_links/domain/card_links_write_repository.dart';
 import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/card_links/infra/sync_store_link_targets_read_repository.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
@@ -57,6 +62,45 @@ class _FakeTimelineChannel implements TimelineChannelEmitter {
   }
 }
 
+/// A collection write whose Connection writes fail (a full disk, say).
+class _FailingConnectionWrite extends Fake
+    implements CollectionWriteRepository {
+  @override
+  Future<Result<String, CollectionFailure>> addConnectionCard({
+    required String collectionId,
+    required String position,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
+    CardKind kind = CardKind.link,
+    String? text,
+  }) async => const Failure(CollectionWriteFailure('disk full'));
+
+  @override
+  Future<Result<String, CollectionFailure>> addConnectionCardToNewCollection({
+    required String collectionId,
+    required String position,
+    required String title,
+    CardKind kind = CardKind.link,
+    String? text,
+  }) async => const Failure(CollectionWriteFailure('disk full'));
+}
+
+/// Card-link writes that fail.
+class _FailingLinksWrite extends Fake implements CardLinksWriteRepository {
+  @override
+  Future<Result<LinksAdded, CardLinksFailure>> addLinks({
+    required List<String> sourceIds,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
+  }) async => const Failure(CardLinksWriteFailure('disk full'));
+
+  @override
+  Future<Result<LinksAdded, CardLinksFailure>> addLinksToNewCollection({
+    required List<String> sourceIds,
+    required String title,
+  }) async => const Failure(CardLinksWriteFailure('disk full'));
+}
+
 void main() {
   const ids = UuidIdGenerator();
   late AppGraph graph;
@@ -69,6 +113,49 @@ void main() {
   late List<CollectionUiEffect> uiEffects;
   late _FakeTimelineChannel timelineChannel;
   late InMemoryRecentTargetsRepository recents;
+
+  /// The shell over the real storage, with [writeRepository] or
+  /// [linksWriteRepository] standing in for a failing write.
+  CollectionShell makeShell({
+    CollectionWriteRepository? writeRepository,
+    CardLinksWriteRepository? linksWriteRepository,
+  }) {
+    final attachmentRead = SyncStoreAttachmentReadRepository(graph: graph);
+    return CollectionShell(
+      readRepository: SyncStoreCollectionReadRepository(graph: graph),
+      writeRepository: writeRepository ?? write,
+      moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
+      recentsReadRepository: recents,
+      recentsWriteRepository: recents,
+      outlineReadRepository: SyncStoreCollectionOutlineReadRepository(
+        graph: graph,
+      ),
+      attachmentReadRepository: attachmentRead,
+      attachmentWriteRepository: attachmentWrite,
+      imageCache: AttachmentImageCache(
+        attachmentReadRepository: attachmentRead,
+      ),
+      shareRepository: _UnusedShare(),
+      linkLauncher: _UnusedLinkLauncher(),
+      collectionDetails: CollectionDetailsController(
+        writeRepository: SyncStoreCollectionDetailsWriteRepository(
+          graph: graph,
+        ),
+        attachmentWriteRepository: attachmentWrite,
+      ),
+      cardLinks: CardLinksController(
+        readRepository: SyncStoreLinkTargetsReadRepository(graph: graph),
+        writeRepository:
+            linksWriteRepository ??
+            SyncStoreCardLinksWriteRepository(graph: graph, ids: ids),
+        recentsReadRepository: recents,
+        recentsWriteRepository: recents,
+      ),
+      effectEmitter: EffectEmitter<CollectionUiEffect>()..attach(uiEffects.add),
+      timelineChannel: timelineChannel,
+      logger: Logger('test.collection'),
+    );
+  }
 
   setUp(() async {
     uiEffects = [];
@@ -86,43 +173,7 @@ void main() {
       graph: graph,
       ids: ids,
     );
-    shell = CollectionShell(
-      readRepository: SyncStoreCollectionReadRepository(graph: graph),
-      writeRepository: write,
-      moveReadRepository: SyncStoreCardMoveReadRepository(graph: graph),
-      recentsReadRepository: recents,
-      recentsWriteRepository: recents,
-      outlineReadRepository: SyncStoreCollectionOutlineReadRepository(
-        graph: graph,
-      ),
-      attachmentReadRepository: SyncStoreAttachmentReadRepository(graph: graph),
-      attachmentWriteRepository: attachmentWrite,
-      imageCache: AttachmentImageCache(
-        attachmentReadRepository: SyncStoreAttachmentReadRepository(
-          graph: graph,
-        ),
-      ),
-      shareRepository: _UnusedShare(),
-      linkLauncher: _UnusedLinkLauncher(),
-      collectionDetails: CollectionDetailsController(
-        writeRepository: SyncStoreCollectionDetailsWriteRepository(
-          graph: graph,
-        ),
-        attachmentWriteRepository: attachmentWrite,
-      ),
-      cardLinks: CardLinksController(
-        readRepository: SyncStoreLinkTargetsReadRepository(graph: graph),
-        writeRepository: SyncStoreCardLinksWriteRepository(
-          graph: graph,
-          ids: ids,
-        ),
-        recentsReadRepository: recents,
-        recentsWriteRepository: recents,
-      ),
-      effectEmitter: EffectEmitter<CollectionUiEffect>()..attach(uiEffects.add),
-      timelineChannel: timelineChannel,
-      logger: Logger('test.collection'),
-    );
+    shell = makeShell();
   });
 
   PickedImage png(List<int> b) =>
@@ -449,6 +500,278 @@ void main() {
       expect(uiEffects, isEmpty);
     },
   );
+
+  group('Connection card label from the composer (§4.2)', () {
+    test('a label makes a text card, then clears the composer', () async {
+      final index = (await timelineWrite.createCollection(
+        'Index',
+      )).getOrThrow();
+      final trips = (await timelineWrite.createCollection(
+        'Trips',
+      )).getOrThrow();
+      await shell.run(
+        AddConnectionCardEffect(
+          collectionId: index,
+          position: 'a0',
+          targetKind: ConnectedEntityKind.collection,
+          targetId: trips,
+          cardText: ConnectionCardText.of('Trip ideas'),
+        ),
+        dispatch: (_) {},
+      );
+
+      final card = (await store.feed(index)).single;
+      expect(card.content['kind'], 'text');
+      expect(card.content['text'], 'Trip ideas');
+      expect(
+        (await store.linksOut(card.id)).single.content['target_id'],
+        trips,
+      );
+      expect(
+        (uiEffects.single as CollectionComposerTextUsedUiEffect).text,
+        'Trip ideas',
+      );
+    });
+
+    test('a failed write keeps the composer text', () async {
+      shell = makeShell(writeRepository: _FailingConnectionWrite());
+      final actions = <CollectionAction>[];
+      await shell.run(
+        AddConnectionCardEffect(
+          collectionId: 'index',
+          position: 'a0',
+          targetKind: ConnectedEntityKind.collection,
+          targetId: 'trips',
+          cardText: ConnectionCardText.of('Trip ideas'),
+        ),
+        dispatch: actions.add,
+      );
+      expect(actions.single, isA<ReloadRequested>());
+      expect(
+        (uiEffects.single as CollectionShowMessageUiEffect).message,
+        CollectionMessage.saveFailed,
+      );
+    });
+
+    test(
+      'a new collection, its Connection card and link land together',
+      () async {
+        final index = (await timelineWrite.createCollection(
+          'Index',
+        )).getOrThrow();
+        final actions = <CollectionAction>[];
+        await shell.run(
+          AddConnectionCardToNewCollectionEffect(
+            collectionId: index,
+            position: 'a0',
+            title: 'Trips',
+            cardText: ConnectionCardText.of('Ideas'),
+          ),
+          dispatch: actions.add,
+        );
+
+        final card = (await store.feed(index)).single;
+        expect(card.content['text'], 'Ideas');
+        final link = (await store.linksOut(card.id)).single;
+        final made = link.content['target_id'] as String;
+        expect(
+          (await store.get(EntityType.collection, made))!.content['title'],
+          'Trips',
+        );
+        expect(actions.single, isA<ReloadRequested>());
+        expect(timelineChannel.emits, 1);
+        expect((await recents.load(RecentPurpose.link)).getOrThrow().ids, [
+          made,
+        ]);
+        expect(
+          (uiEffects.single as CollectionComposerTextUsedUiEffect).text,
+          'Ideas',
+        );
+      },
+    );
+
+    test(
+      'a failed new-collection Connection writes and clears nothing',
+      () async {
+        shell = makeShell(writeRepository: _FailingConnectionWrite());
+        await shell.run(
+          AddConnectionCardToNewCollectionEffect(
+            collectionId: 'index',
+            position: 'a0',
+            title: 'Trips',
+            cardText: ConnectionCardText.of('Ideas'),
+          ),
+          dispatch: (_) {},
+        );
+        expect(
+          (uiEffects.single as CollectionShowMessageUiEffect).message,
+          CollectionMessage.saveFailed,
+        );
+        expect(
+          (await recents.load(RecentPurpose.link)).getOrThrow().ids,
+          isEmpty,
+        );
+      },
+    );
+  });
+
+  group('multi-select Link to… (§4.2)', () {
+    late String index;
+    late String trips;
+    late String a;
+    late String b;
+
+    setUp(() async {
+      index = (await timelineWrite.createCollection('Index')).getOrThrow();
+      trips = (await timelineWrite.createCollection('Trips')).getOrThrow();
+      a = (await write.addCard(
+        collectionId: index,
+        kind: CardKind.text,
+        position: 'a0',
+        text: 'a',
+      )).getOrThrow();
+      b = (await write.addCard(
+        collectionId: index,
+        kind: CardKind.text,
+        position: 'a1',
+        text: 'b',
+      )).getOrThrow();
+    });
+
+    test('links every card, says how many, remembers the target', () async {
+      final actions = <CollectionAction>[];
+      await shell.run(
+        LinkCardsEffect(
+          cardIds: [a, b],
+          targetKind: ConnectedEntityKind.collection,
+          targetId: trips,
+          targetTitle: 'Trips',
+        ),
+        dispatch: actions.add,
+      );
+
+      expect(await store.backlinks(trips), hasLength(2));
+      final linked = uiEffects.single as CollectionCardsLinkedUiEffect;
+      expect(linked.count, 2);
+      expect(linked.targetTitle, 'Trips');
+      expect(actions.single, isA<ReloadRequested>());
+      expect((await recents.load(RecentPurpose.link)).getOrThrow().ids, [
+        trips,
+      ]);
+    });
+
+    test('pairs already linked are skipped; all skipped says so', () async {
+      await shell.run(
+        LinkCardsEffect(
+          cardIds: [a],
+          targetKind: ConnectedEntityKind.collection,
+          targetId: trips,
+          targetTitle: 'Trips',
+        ),
+        dispatch: (_) {},
+      );
+      uiEffects.clear();
+      await shell.run(
+        LinkCardsEffect(
+          cardIds: [a, b],
+          targetKind: ConnectedEntityKind.collection,
+          targetId: trips,
+          targetTitle: 'Trips',
+        ),
+        dispatch: (_) {},
+      );
+      expect((uiEffects.single as CollectionCardsLinkedUiEffect).count, 1);
+
+      uiEffects.clear();
+      await shell.run(
+        LinkCardsEffect(
+          cardIds: [a, b],
+          targetKind: ConnectedEntityKind.collection,
+          targetId: trips,
+          targetTitle: 'Trips',
+        ),
+        dispatch: (_) {},
+      );
+      expect((uiEffects.single as CollectionCardsLinkedUiEffect).count, 0);
+      expect(await store.backlinks(trips), hasLength(2));
+    });
+
+    test('a failed batch surfaces a message and resyncs', () async {
+      shell = makeShell(linksWriteRepository: _FailingLinksWrite());
+      final actions = <CollectionAction>[];
+      await shell.run(
+        LinkCardsEffect(
+          cardIds: [a, b],
+          targetKind: ConnectedEntityKind.collection,
+          targetId: trips,
+          targetTitle: 'Trips',
+        ),
+        dispatch: actions.add,
+      );
+      expect(actions.single, isA<ReloadRequested>());
+      expect(
+        (uiEffects.single as CollectionShowMessageUiEffect).message,
+        CollectionMessage.saveFailed,
+      );
+      expect(
+        (await recents.load(RecentPurpose.link)).getOrThrow().ids,
+        isEmpty,
+      );
+    });
+
+    test('a new collection is made and linked to in one go', () async {
+      await shell.run(
+        LinkCardsToNewCollectionEffect(
+          cardIds: [a, b],
+          title: 'Fresh',
+          announce: true,
+        ),
+        dispatch: (_) {},
+      );
+
+      final made = (await store.readAll(
+        EntityType.collection,
+      )).singleWhere((c) => c.content['title'] == 'Fresh');
+      expect(await store.backlinks(made.id), hasLength(2));
+      final linked = uiEffects.single as CollectionCardsLinkedUiEffect;
+      expect(linked.count, 2);
+      expect(linked.targetTitle, 'Fresh');
+      expect(timelineChannel.emits, 1);
+      expect((await recents.load(RecentPurpose.link)).getOrThrow().ids, [
+        made.id,
+      ]);
+    });
+
+    test('one card to a new collection is linked quietly', () async {
+      await shell.run(
+        LinkCardsToNewCollectionEffect(cardIds: [a], title: 'Fresh'),
+        dispatch: (_) {},
+      );
+      expect(uiEffects, isEmpty);
+      expect(
+        (await store.linksOut(a)).single.content['target_type'],
+        'collection',
+      );
+    });
+
+    test('a failed new collection leaves nothing behind', () async {
+      shell = makeShell(linksWriteRepository: _FailingLinksWrite());
+      final before = (await store.readAll(EntityType.collection)).length;
+      await shell.run(
+        LinkCardsToNewCollectionEffect(
+          cardIds: [a],
+          title: 'Fresh',
+          announce: true,
+        ),
+        dispatch: (_) {},
+      );
+      expect(
+        (uiEffects.single as CollectionShowMessageUiEffect).message,
+        CollectionMessage.saveFailed,
+      );
+      expect((await store.readAll(EntityType.collection)).length, before);
+    });
+  });
 
   group('quick input', () {
     test('a saved quick card asks the page to close, then resyncs', () async {

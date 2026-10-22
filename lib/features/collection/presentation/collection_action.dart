@@ -79,11 +79,29 @@ class ComposerSubmitted extends CollectionAction {
 
 /// The "+" sheet's Connection block picked the [targetKind] entity
 /// [targetId] — a collection or a card (§4.2): append a Connection card
-/// pointing at it.
+/// pointing at it. [composerText] is what the composer input held: it may
+/// become the card's label (`ConnectionCardText`).
 class ConnectionCardRequested extends CollectionAction {
-  const ConnectionCardRequested(this.targetKind, this.targetId);
+  const ConnectionCardRequested(
+    this.targetKind,
+    this.targetId, {
+    this.composerText = '',
+  });
   final ConnectedEntityKind targetKind;
   final String targetId;
+  final String composerText;
+}
+
+/// The Connection block's "New collection" line sent [title] (§4.4): create
+/// that collection and append a Connection card pointing at it, in one go.
+/// [composerText] as in [ConnectionCardRequested].
+class ConnectionToNewCollectionRequested extends CollectionAction {
+  const ConnectionToNewCollectionRequested(
+    this.title, {
+    this.composerText = '',
+  });
+  final String title;
+  final String composerText;
 }
 
 /// Actions sheet → delete a card (§4.2). Links to it become broken, not gone.
@@ -137,6 +155,17 @@ class LinkRequested extends CollectionAction {
   final String targetId;
 }
 
+/// Finder → "New collection" sent [title]: create it and link [cardId] to
+/// it, in one go (§4.4).
+class LinkToNewCollectionRequested extends CollectionAction {
+  const LinkToNewCollectionRequested({
+    required this.cardId,
+    required this.title,
+  });
+  final String cardId;
+  final String title;
+}
+
 /// Finder → a ✓ target tapped again: remove the link [linkId] (§4.4).
 class UnlinkRequested extends CollectionAction {
   const UnlinkRequested(this.linkId);
@@ -188,6 +217,27 @@ class SelectionDeleteRequested extends CollectionAction {
 /// Leaves selection mode.
 class SelectionEmphasisRequested extends CollectionAction {
   const SelectionEmphasisRequested();
+}
+
+/// The selection's "Link to…" (§4.2) picked the [targetKind] entity
+/// [targetId], titled [targetTitle]: link every selected card that may link
+/// there (`LinkSelection`). Leaves selection mode.
+class SelectionLinkRequested extends CollectionAction {
+  const SelectionLinkRequested({
+    required this.targetKind,
+    required this.targetId,
+    required this.targetTitle,
+  });
+  final ConnectedEntityKind targetKind;
+  final String targetId;
+  final String targetTitle;
+}
+
+/// The selection's "Link to…" → "New collection" sent [title]: create it and
+/// link every selected card to it, in one go. Leaves selection mode.
+class SelectionLinkToNewCollectionRequested extends CollectionAction {
+  const SelectionLinkToNewCollectionRequested(this.title);
+  final String title;
 }
 
 /// Leave multi-select mode (the app-bar "✕" or system back).

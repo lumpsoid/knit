@@ -33,6 +33,25 @@ class CollectionCardsMovedUiEffect extends CollectionUiEffect {
   final String targetTitle;
 }
 
+/// The selection's cards were linked (§4.2): a snackbar naming [count] (the
+/// links written; zero when every pair was already linked) and
+/// [targetTitle].
+class CollectionCardsLinkedUiEffect extends CollectionUiEffect {
+  const CollectionCardsLinkedUiEffect({
+    required this.count,
+    required this.targetTitle,
+  });
+  final int count;
+  final String targetTitle;
+}
+
+/// The composer's [text] became a saved Connection card's label (§4.2):
+/// clear the input, if it still holds that text.
+class CollectionComposerTextUsedUiEffect extends CollectionUiEffect {
+  const CollectionComposerTextUsedUiEffect(this.text);
+  final String text;
+}
+
 /// The collection was deleted: leave its page.
 class CollectionDeletedUiEffect extends CollectionUiEffect {
   const CollectionDeletedUiEffect();

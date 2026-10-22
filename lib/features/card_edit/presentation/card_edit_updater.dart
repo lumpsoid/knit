@@ -111,6 +111,14 @@ class CardEditUpdater
           ],
         );
 
+      case AddLinkToNewCollectionRequested(:final title):
+        final trimmed = title.trim();
+        if (trimmed.isEmpty) return (state, null);
+        return (
+          state.copyWith(linksLoading: true),
+          [AddLinkToNewCollectionEffect(cardId: state.cardId, title: trimmed)],
+        );
+
       case RemoveLinkRequested(:final linkId):
         return (state.copyWith(linksLoading: true), [RemoveLinkEffect(linkId)]);
 

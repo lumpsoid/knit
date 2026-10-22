@@ -553,6 +553,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get linkPickerLinked => 'Связано';
 
   @override
+  String get linkPickerNewCollection => 'Новая коллекция';
+
+  @override
+  String get linkPickerLinkThere => 'Связать с ней';
+
+  @override
+  String collectionLinkSelectedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Связать $count карточки с…',
+      many: 'Связать $count карточек с…',
+      few: 'Связать $count карточки с…',
+      one: 'Связать 1 карточку с…',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get collectionOrACardInIt => 'Или карточку в ней';
 
   @override
@@ -1152,6 +1171,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get collectionMoveShort => 'Переместить';
 
   @override
+  String get collectionLinkSelectedTooltip => 'Связать с…';
+
+  @override
   String get collectionDeleteSelectedTooltip => 'Удалить выбранные';
 
   @override
@@ -1204,6 +1226,24 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get collectionCardsMovedOpen => 'Открыть';
+
+  @override
+  String collectionCardsLinked(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count карточки связаны с «$title»',
+      many: '$count карточек связано с «$title»',
+      few: '$count карточки связаны с «$title»',
+      one: '1 карточка связана с «$title»',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String collectionCardsAlreadyLinked(String title) {
+    return 'Уже связано с «$title»';
+  }
 
   @override
   String get shareCaptureTitle => 'Сохранить в Knit';

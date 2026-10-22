@@ -80,6 +80,13 @@ class AddLinkRequested extends CardEditAction {
   final String targetId;
 }
 
+/// The link picker's "New collection" sent [title] (§4.4): create it and
+/// link this card to it, in one go.
+class AddLinkToNewCollectionRequested extends CardEditAction {
+  const AddLinkToNewCollectionRequested(this.title);
+  final String title;
+}
+
 /// Remove one of the card's links.
 class RemoveLinkRequested extends CardEditAction {
   const RemoveLinkRequested(this.linkId);

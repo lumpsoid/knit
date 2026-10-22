@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:knit/core/ownership/collection_ownership.dart';
+import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_outline.dart';
 
@@ -121,6 +122,13 @@ class CollectionState {
   /// What copying the selection puts on the clipboard: the selected cards'
   /// texts in feed order, one per line; empty when none has text.
   String get selectionCopyText => CardsCopyText.of(_selectedCards);
+
+  /// What the selection's "Link to…" links from (§4.2): the selected cards,
+  /// in feed order, each by the [LinkSource] rule.
+  LinkSelection get linkSelection => LinkSelection(
+    cardIds: [for (final c in _selectedCards) c.id],
+    collectionId: collectionId,
+  );
 
   Iterable<FeedCard> get _selectedCards =>
       cards.where((c) => selectedCardIds.contains(c.id));

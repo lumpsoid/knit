@@ -57,6 +57,20 @@ class _UnusedTargets implements LinkTargetsReadRepository {
 
 class _FakeLinkWrite implements CardLinksWriteRepository {
   _FakeLinkWrite({this.fail = false});
+
+  @override
+  Future<Result<LinksAdded, CardLinksFailure>> addLinks({
+    required List<String> sourceIds,
+    required ConnectedEntityKind targetKind,
+    required String targetId,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Result<LinksAdded, CardLinksFailure>> addLinksToNewCollection({
+    required List<String> sourceIds,
+    required String title,
+  }) => throw UnimplementedError();
+
   final bool fail;
   final added = <(String, ConnectedEntityKind, String)>[];
   final sourceKinds = <ConnectedEntityKind>[];

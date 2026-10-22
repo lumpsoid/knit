@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:knit/app/app_graph.dart';
 import 'package:knit/core/ids/uuid_id_generator.dart';
+import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/infra/sync_store_card_links_write_repository.dart';
 import 'package:knit/features/card_links/infra/sync_store_link_targets_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_models.dart';
@@ -70,6 +71,50 @@ void main() {
     expect(level.first.kind, ConnectedEntityKind.card);
     expect(level.first.label, 'pour-over');
   });
+
+  test('addLinks links each card once, skipping linked pairs', () async {
+    final col = await newCollection('Espresso');
+    final other = await newCollection('Recipes');
+    final a = await newCard(col, 'a', 'a0');
+    final b = await newCard(col, 'b', 'a1');
+    await links.addLink(
+      sourceKind: ConnectedEntityKind.card,
+      sourceId: a,
+      targetKind: ConnectedEntityKind.collection,
+      targetId: other,
+    );
+
+    final added = (await links.addLinks(
+      sourceIds: [a, b, b],
+      targetKind: ConnectedEntityKind.collection,
+      targetId: other,
+    )).getOrThrow();
+    expect(added, LinksAdded(targetId: other, count: 1));
+    expect((await store.backlinks(other)).length, 2);
+  });
+
+  test(
+    'addLinksToNewCollection makes the collection and links to it',
+    () async {
+      final col = await newCollection('Espresso');
+      final a = await newCard(col, 'a', 'a0');
+      final b = await newCard(col, 'b', 'a1');
+
+      final added = (await links.addLinksToNewCollection(
+        sourceIds: [a, b],
+        title: 'Trips',
+      )).getOrThrow();
+      expect(added.count, 2);
+      final made = (await store.get(EntityType.collection, added.targetId))!;
+      expect(made.content['title'], 'Trips');
+      expect(
+        (await store.backlinks(
+          added.targetId,
+        )).map((l) => l.content['source_id']),
+        unorderedEquals([a, b]),
+      );
+    },
+  );
 
   test('addLink writes a card link; removeLink deletes only it', () async {
     final col = await newCollection('Espresso');

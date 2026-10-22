@@ -183,9 +183,14 @@ deleted. Archiving takes it off the home timeline without losing anything.
   (collections only): link a collection directly, or drill into one, this collection
   included, and pick a card in it. Never this collection itself; any card, siblings
   included, since the new card doesn't exist yet. Imported collections and their cards
-  are valid targets. Picking one appends a **Connection card** at the feed tail: a
-  `kind=link` card with no text plus its one `link` to that collection or card, written in
-  one transaction (§6.4 link block), drawn as the link tile below. A collection target is
+  are valid targets, and so is a **new collection** (§4.4). Picking one appends a
+  **Connection card** at the feed tail: a `kind=link` card with no text plus its one `link`
+  to that collection or card, written in one transaction (§6.4 link block), drawn as the
+  link tile below; a new collection is created in that same transaction. Text typed in the
+  composer becomes the card's label: trimmed, it makes a `kind=text` card (still the tile
+  with a caption while short and one line, else a plain card with a link chip), and the
+  input clears once the card is saved — a dismissed picker or a failed write leaves it. A
+  bare URL is never a label: it stays in the input. A collection target is
   remembered for the Recent row. Photo, audio and file stage an attachment for the
   composer. An imported (read-only) collection has no composer, so no "+".
 - **Optimize size** (opt-in): a staged photo shows its size and an *Optimize size* chip.
@@ -263,7 +268,14 @@ deleted. Archiving takes it off the home timeline without losing anything.
   **Reorder applies only to cards within this collection**; there is no reordering on Home.
 - **Multi-select mode** — long-press a card to select it; while selecting, a tap toggles a
   card, the app bar shows the count, and the bottom bar offers *select all*, **Settle /
-  Unsettle**, **Emphasize / Unemphasize** (§3.3) and **Move to collection**. Move opens a
+  Unsettle**, **Emphasize / Unemphasize** (§3.3), **Link to…** and **Move to collection**.
+  **Link to…** opens the link picker (§4.4, both levels, its Recent row and "New
+  collection") and links every selected card to the one target picked, in **one
+  transaction**: a card is never linked to itself (a selected card picked as the target
+  links from the others), nor to its own collection, and pairs already linked — or repeated
+  — are skipped (§6.4). A mixed selection has no single linked state, so the picker shows
+  no ✓. A snackbar says "Linked N cards to …" (or that all were already linked) and the
+  mode ends. A collection target joins the link Recent row. Move opens a
   picker of the other live collections (most recently updated first), topped by a **Recent**
   row: up to 3 collections last moved into that the picker offers anyway (never this one, a
   deleted one or an imported one), with no row when there are none. Recents are
@@ -309,6 +321,13 @@ link to (never its own collection); a tap links to that collection. Targets the 
 links to — collections, cards, Recent chips — show a ✓ ("Linked"); tapping one again removes
 that link (the same signed delete as Card Edit's). The "+" Connection block has no source
 card yet, so it shows no ✓.
+
+Below the Recent row, a **New collection** row (as in Move's picker) grows into the shared
+title line (§4.1); a title like a collection the picker offers suggests **Link there**
+instead. Sending creates the collection and links to it in **one transaction**, then
+remembers it as recent. It is offered for a card's link, Card Edit, the "+" Connection block
+and multi-select Link to…, never for "Link from my card…", whose targets are the user's
+cards.
 
 **Managing links.** On the Connections view, each live links-out row has a ⋮ with **Remove**,
 and so does each backlink whose source is the user's own card or collection (never an

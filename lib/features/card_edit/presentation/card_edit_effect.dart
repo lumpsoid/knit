@@ -67,6 +67,16 @@ class AddLinkEffect extends CardEditEffect {
   final String targetId;
 }
 
+/// Create a collection titled [title] and link [cardId] to it, in one write.
+class AddLinkToNewCollectionEffect extends CardEditEffect {
+  const AddLinkToNewCollectionEffect({
+    required this.cardId,
+    required this.title,
+  });
+  final String cardId;
+  final String title;
+}
+
 /// Delete a link record.
 class RemoveLinkEffect extends CardEditEffect {
   const RemoveLinkEffect(this.linkId);

@@ -17,7 +17,10 @@ import 'package:knit/features/collection/domain/collection_models.dart';
 import 'package:knit/features/collection/domain/collection_outline_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_read_repository.dart';
 import 'package:knit/features/collection/domain/collection_write_repository.dart';
+import 'package:knit/features/collection/domain/connection_card_text.dart';
 import 'package:knit/features/collection/domain/link_launcher.dart';
+import 'package:knit/features/card_links/domain/card_links_failure.dart';
+import 'package:knit/features/card_links/domain/card_links_models.dart';
 import 'package:knit/features/card_links/presentation/card_links_controller.dart';
 import 'package:knit/features/collection_details/domain/collection_details.dart';
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
@@ -184,6 +187,7 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         :final position,
         :final targetKind,
         :final targetId,
+        :final cardText,
       ):
         await _runWrite(
           () => _write.addConnectionCard(
@@ -191,13 +195,45 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
             position: position,
             targetKind: targetKind,
             targetId: targetId,
+            kind: cardText.kind,
+            text: cardText.label,
           ),
           'add connection card',
           dispatch,
-          // The Recent row lists collections only.
-          onSuccess: targetKind == ConnectedEntityKind.collection
-              ? () => _recordRecent(RecentPurpose.link, targetId)
-              : null,
+          onSuccess: () async {
+            // The Recent row lists collections only.
+            if (targetKind == ConnectedEntityKind.collection) {
+              await _recordRecent(RecentPurpose.link, targetId);
+            }
+            _composerTextUsed(cardText);
+          },
+        );
+
+      case AddConnectionCardToNewCollectionEffect(
+        :final collectionId,
+        :final position,
+        :final title,
+        :final cardText,
+      ):
+        String? madeId;
+        await _runWrite(
+          () async {
+            final result = await _write.addConnectionCardToNewCollection(
+              collectionId: collectionId,
+              position: position,
+              title: title,
+              kind: cardText.kind,
+              text: cardText.label,
+            );
+            madeId = result.value;
+            return result;
+          },
+          'add connection card to a new collection',
+          dispatch,
+          onSuccess: () async {
+            await _recordRecent(RecentPurpose.link, madeId!);
+            _composerTextUsed(cardText);
+          },
         );
 
       case AddPhotoCardEffect(
@@ -339,6 +375,36 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
               ),
           'create link',
           dispatch,
+        );
+
+      case LinkCardsEffect(
+        :final cardIds,
+        :final targetKind,
+        :final targetId,
+        :final targetTitle,
+      ):
+        await _linkCards(
+          () => _cardLinks.linkAll(
+            sourceIds: cardIds,
+            targetKind: targetKind,
+            targetId: targetId,
+          ),
+          'link cards',
+          dispatch,
+          announceTitle: targetTitle,
+        );
+
+      case LinkCardsToNewCollectionEffect(
+        :final cardIds,
+        :final title,
+        :final announce,
+      ):
+        await _linkCards(
+          () =>
+              _cardLinks.linkToNewCollection(sourceIds: cardIds, title: title),
+          'link cards to a new collection',
+          dispatch,
+          announceTitle: announce ? title : null,
         );
 
       case UnlinkEffect(:final linkId):
@@ -646,6 +712,41 @@ class CollectionShell extends Shell<CollectionEffect, CollectionAction> {
         dispatch(const ReloadRequested());
       },
     );
+  }
+
+  /// Run a batched link write through the shared card links, as a
+  /// [_runWrite]. With [announceTitle], a success confirms how many links
+  /// were written to that target (§4.2).
+  Future<void> _linkCards(
+    Future<Result<LinksAdded, CardLinksFailure>> Function() op,
+    String label,
+    void Function(CollectionAction) dispatch, {
+    String? announceTitle,
+  }) async {
+    LinksAdded? added;
+    await _runWrite(
+      () async => (await op()).fold((links) {
+        added = links;
+        return Ok(links.targetId);
+      }, (f) => Failure(CollectionWriteFailure(f.error, f.stackTrace))),
+      label,
+      dispatch,
+      onSuccess: announceTitle == null
+          ? null
+          : () async => _effectEmitter.push(
+              CollectionCardsLinkedUiEffect(
+                count: added!.count,
+                targetTitle: announceTitle,
+              ),
+            ),
+    );
+  }
+
+  /// The composer's text became the saved card's label: let the page clear
+  /// the input. Nothing when the card took no text from it.
+  void _composerTextUsed(ConnectionCardText cardText) {
+    if (!cardText.usesInput) return;
+    _effectEmitter.push(CollectionComposerTextUsedUiEffect(cardText.label!));
   }
 
   /// The collections recently moved into (device-local, §4.2); none when the
