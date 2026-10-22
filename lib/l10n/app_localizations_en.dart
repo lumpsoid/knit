@@ -1400,6 +1400,36 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String shareExportOutsideLinks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count connections point outside this collection',
+      one: '1 connection points outside this collection',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareExportNotOwnedLinks(int count) {
+    return '$count can\'t be included (not yours)';
+  }
+
+  @override
+  String get shareExportIncludeLinked => 'Include linked collections';
+
+  @override
+  String shareExportLinkedSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count of your collections, as read-only copies',
+      one: '1 of your collections, as a read-only copy',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String shareExportSize(String size) {
     return 'File size: $size';
   }
@@ -1439,6 +1469,17 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '1 card',
     );
     return '$_temp0 · from $handle';
+  }
+
+  @override
+  String shareImportLinked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+ $count linked collections',
+      one: '+ 1 linked collection',
+    );
+    return '$_temp0';
   }
 
   @override

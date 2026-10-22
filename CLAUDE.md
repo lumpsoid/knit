@@ -447,6 +447,13 @@ the `lib/sync/` core below.
   no widget quick input. Its ⋮ sheet offers Save a copy
   (`ForkPlanner` → `forkCollection`) and Remove (`purgeCollection` + blob GC)
   through the app-wide `ImportedCollectionController`.
+  Sharing an index: the pure `ShareReach` (`lib/sync/storage/share/`) counts
+  the live outside links for the sheet's warning, and **Include linked
+  collections** (`shareSet(id, includeLinked: true)`) bundles each reached
+  *own* collection whole, one level deep (a card target brings its
+  collection). The manifest lists them in `included` (version 2; a
+  single-collection file stays version 1); the policy validates each one
+  against its own owner and scope, and the import opens the primary.
 - `share_capture` (§4.7, lightweight, **Android only**) takes text, photos and
   files shared from other apps (`receive_sharing_intent`; `ACTION_SEND` /
   `SEND_MULTIPLE` filters, activity `singleTask`). The app-wide

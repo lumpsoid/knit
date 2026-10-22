@@ -13,6 +13,7 @@ import 'package:result_dart/result_dart.dart';
 /// [CollectionShareExportRepository] over the graph's [SyncStore] share set
 /// and blob store. Never re-signs: the ops ship as they sit in the log. A
 /// missing blob is skipped, so its card shows "media not included" there.
+/// With linked collections the manifest lists each one (format version 2).
 class SyncStoreCollectionShareExportRepository
     implements CollectionShareExportRepository {
   SyncStoreCollectionShareExportRepository({
@@ -35,22 +36,22 @@ class SyncStoreCollectionShareExportRepository
     String collectionId,
   ) async {
     try {
-      final set = await _graph.store.shareSet(collectionId);
-      var mediaBytes = 0;
-      for (final MapEntry(key: hash, value: size) in set.media.entries) {
-        mediaBytes +=
-            size ?? (await _graph.blobStore.readBytes(hash))?.length ?? 0;
-      }
+      final alone = await _graph.store.shareSet(collectionId);
+      final aloneSize = await _sizeOf(alone);
       return Ok(
         CollectionShareEstimate(
-          title: _titleOf(set),
-          cardCount: set.liveCardCount,
-          baseBytes: set.ops.fold(
-            0,
-            (sum, op) => sum + utf8.encode(jsonEncode(op.toDb())).length,
-          ),
-          mediaBytes: mediaBytes,
-          mediaCount: set.media.length,
+          title: _titleOf(alone.collection),
+          cardCount: alone.liveCardCount,
+          alone: aloneSize,
+          withLinked: alone.reach.linkedCollectionIds.isEmpty
+              ? aloneSize
+              : await _sizeOf(
+                  await _graph.store.shareSet(
+                    collectionId,
+                    includeLinked: true,
+                  ),
+                ),
+          reach: alone.reach,
         ),
       );
     } catch (e, st) {
@@ -58,13 +59,33 @@ class SyncStoreCollectionShareExportRepository
     }
   }
 
+  Future<ShareSize> _sizeOf(ShareSet set) async {
+    var mediaBytes = 0;
+    for (final MapEntry(key: hash, value: size) in set.media.entries) {
+      mediaBytes +=
+          size ?? (await _graph.blobStore.readBytes(hash))?.length ?? 0;
+    }
+    return ShareSize(
+      baseBytes: set.ops.fold(
+        0,
+        (sum, op) => sum + utf8.encode(jsonEncode(op.toDb())).length,
+      ),
+      mediaBytes: mediaBytes,
+      mediaCount: set.media.length,
+    );
+  }
+
   @override
   Future<Result<OutgoingFile, CollectionShareFailure>> export(
     String collectionId, {
     required bool includeMedia,
+    bool includeLinked = false,
   }) async {
     try {
-      final set = await _graph.store.shareSet(collectionId);
+      final set = await _graph.store.shareSet(
+        collectionId,
+        includeLinked: includeLinked,
+      );
       final blobs = <String, Uint8List>{};
       if (includeMedia) {
         for (final hash in set.media.keys) {
@@ -72,7 +93,7 @@ class SyncStoreCollectionShareExportRepository
           if (bytes != null) blobs[hash] = bytes;
         }
       }
-      final title = _titleOf(set);
+      final title = _titleOf(set.collection);
       final bytes = _codec.encode(
         CollectionShareBundle(
           manifest: CollectionShareManifest(
@@ -84,6 +105,15 @@ class SyncStoreCollectionShareExportRepository
             opCount: set.ops.length,
             blobCount: blobs.length,
             mediaIncluded: includeMedia,
+            included: [
+              for (final linked in set.included)
+                CollectionShareEntry(
+                  collectionId: linked.collection.id,
+                  owner: linked.collection.createdBy,
+                  title: _titleOf(linked.collection),
+                  cardCount: linked.liveCardCount,
+                ),
+            ],
           ),
           ops: set.ops,
           blobs: blobs,
@@ -102,9 +132,8 @@ class SyncStoreCollectionShareExportRepository
     }
   }
 
-  static String _titleOf(ShareSet set) =>
-      (set.collection.content[CollectionSchema.colTitle] as String?)?.trim() ??
-      '';
+  static String _titleOf(Snapshot collection) =>
+      (collection.content[CollectionSchema.colTitle] as String?)?.trim() ?? '';
 
   static String _fileStem(String title) {
     final stem = title.replaceAll(_unsafeName, ' ').trim();

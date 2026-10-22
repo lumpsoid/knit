@@ -8,7 +8,8 @@ import 'package:knit/l10n/app_localizations.dart';
 
 /// The Collection ⋮ → "Share as file" sheet (docs/collection_share.md
 /// "Export"): the collection, its file size, the **Include media** toggle,
-/// then **Send** (the OS share sheet) or **Save to file**. Owns and disposes
+/// the outside-links warning with **Include linked collections**, then
+/// **Send** (the OS share sheet) or **Save to file**. Owns and disposes
 /// its [controller]; pops with the [ShareExportOutcome] once the file went
 /// out.
 class CollectionShareExportSheet extends StatefulWidget {
@@ -100,6 +101,7 @@ class _CollectionShareExportSheetState
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final estimate = state.estimate!;
+    final sizes = state.sizes!;
     final title = estimate.title.isEmpty ? l10n.labelUntitled : estimate.title;
     return [
       Text(
@@ -115,12 +117,49 @@ class _CollectionShareExportSheetState
           title: Text(l10n.shareExportIncludeMedia),
           subtitle: Text(
             l10n.shareExportMediaSummary(
-              estimate.mediaCount,
-              formatByteSize(estimate.mediaBytes),
+              sizes.mediaCount,
+              formatByteSize(sizes.mediaBytes),
             ),
           ),
           value: state.includeMedia,
           onChanged: state.busy ? null : _controller.setIncludeMedia,
+        ),
+      if (state.outsideCount > 0)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.link,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  [
+                    l10n.shareExportOutsideLinks(state.outsideCount),
+                    if (state.notOwnedCount > 0)
+                      l10n.shareExportNotOwnedLinks(state.notOwnedCount),
+                  ].join(' · '),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      if (state.linkedCollectionCount > 0)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.shareExportIncludeLinked),
+          subtitle: Text(
+            l10n.shareExportLinkedSummary(state.linkedCollectionCount),
+          ),
+          value: state.includeLinked,
+          onChanged: state.busy ? null : _controller.setIncludeLinked,
         ),
       Text(l10n.shareExportSize(formatByteSize(state.size ?? 0))),
       const SizedBox(height: 8),

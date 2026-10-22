@@ -15,7 +15,7 @@ replaces the file as the transport; the read-only model, fork and purge stay.
 | Payload | The sender's **signed ops verbatim** (like the backup bundle); verified on import |
 | History | **Winning ops only**: per entity, the content winner (+ the placement winner for a card), incl. tombstones. No edit history, no deleted content |
 | Re-import | Same ids → normal LWW merge: a newer file updates the read-only copy, an older one changes nothing |
-| Outside links | Shipped as-is; missing targets render as §8.6.1 broken-link chips and come alive if the target is imported later |
+| Outside links | Shipped as-is; missing targets render as §8.6.1 broken-link chips and come alive if the target is imported later. The sheet warns "N connections point outside this collection" and offers **Include linked collections** (see "Linked collections") |
 | Media | Sender toggle **Include media** (default on, size shown). Without it, cards show a "media not included" placeholder; a later file with media fills it by `content_hash` |
 | Card marks | Settled / emphasized / archived travel as-is (they are signed fields) |
 | Protection | None. A plain signed zip; the transport is the boundary |
@@ -30,15 +30,23 @@ replaces the file as the transport; the read-only model, fork and purge stay.
 the backup (`BackupArchiveCodec`), its own format tag:
 
 ```
-manifest.json   { format: "knit-collection", version: 1, createdAtMs,
+manifest.json   { format: "knit-collection", version: 1 | 2, createdAtMs,
                   collectionId, owner: <pubkey>, title, cardCount,
-                  opCount, blobCount, mediaIncluded: bool }
+                  opCount, blobCount, mediaIncluded: bool,
+                  included?: [ { collectionId, owner, title, cardCount } ] }
 log.jsonl       one signed PersistedOp row per line, verbatim
 blobs/<hash>    attachment bytes (absent when mediaIncluded = false)
 ```
 
 `title` and `cardCount` are an unsigned preview for the import sheet only. The
 import never trusts them; it reads the verified ops.
+
+`collectionId` / `owner` name the **primary** collection. `included` lists the
+linked collections the file also carries (version 2). A file without them is
+still written as version 1 with no `included` key, byte for byte the first
+release's shape, so an older Knit opens it. An older Knit refuses a version-2
+file through its existing check (`version > 1` → "This file is from a newer
+Knit") instead of misreading it; this one reads both.
 
 ### The share set (export)
 
@@ -57,6 +65,29 @@ per entity** using the merge-core comparators (`compareContent`,
 Tombstones keep re-import honest: a card the sender deleted disappears on the
 recipient's side.
 
+### Linked collections (sharing an index)
+
+An index is a collection whose cards link to other collections or cards. Alone,
+it reaches the recipient as broken chips. The pure `ShareReach`
+(`lib/sync/storage/share/`) reads the collection's live links (one per pair,
+§6.4; sourced at the collection or a live card) whose target lies outside its
+`ShareScope`:
+
+- **Warning**: "N connections point outside this collection", plus "M can't be
+  included (not yours)" for targets in a collection whose `created_by` is not
+  this identity (an imported one). A target already missing here counts as
+  outside but is neither.
+- **Include linked collections** (default off, shown when there is an own
+  collection to bundle): each reached **own** collection rides along whole
+  (collection, cards, links sourced in it, attachments per the media toggle,
+  authors' profiles), each by its own `ShareScope`. A card target brings its
+  collection, so the card arrives in context. One level deep: the linked
+  collections' own outside links are not followed. The size shown follows the
+  switch (`CollectionShareEstimate.alone` / `withLinked`).
+- `SyncStore.shareSet(id, includeLinked: true)` unions the scopes, picks the
+  winners once (an op ships once) and lists the bundled ones in
+  `ShareSet.included`.
+
 ## Import
 
 1. **Decode** the zip and check `format` / `version`. A mismatch is refused
@@ -65,23 +96,35 @@ recipient's side.
    `CollectionShareImportPolicy` takes the parsed ops plus the recipient's
    current `created_by` for the touched ids, and rejects the file if:
    - any signature fails (verify over the payload bytes, §7.0)
-   - any non-profile op's payload author ≠ `manifest.owner`
-   - a card's `collection_id` ≠ `manifest.collectionId`, or a link's source
-     is outside the set
+   - a collection is declared twice, or a declared one has no collection op
+   - an op belongs to no declared collection: a card's `collection_id` is not
+     the primary or an `included` one, or a link's source is neither such a
+     collection nor one of their cards in the file
+   - an op's author or `created_by` is not the owner of the collection it
+     belongs to (a profile is self-signed; an attachment is one of the
+     owners'), so each collection's ops stay within its own scope
    - **any op targets an id that exists locally with a different
      `created_by`.** This is the security rule: without it a crafted file
      could out-rank, by LWW, the recipient's own cards.
-3. **Preview sheet**: "Trip to Kyoto · 24 cards · from mira#9f86 · media not
-   included" → **Import** (or **Update** when the collection is already here).
+3. **Preview sheet**: "Trip to Kyoto · 24 cards · from mira#9f86 · + 2 linked
+   collections · media not included" → **Import** (or **Update** when the
+   primary collection is already here).
 4. **Apply** each op through `SyncStore.applyRemote` (dedup → verify → skew →
    one-txn merge). It records ops as `remote/acked`, so the sync indicator
    never counts them. The blobs go into the blob store by hash (the backup
    import path). A crash mid-apply leaves a partial import; importing again
    completes it (dedup by `op_id`).
-5. Open the collection (`CollectionRouteArgs`) and ping `TimelineChannel`.
+5. Open the primary collection (`CollectionRouteArgs`) and ping
+   `TimelineChannel`. Linked collections arrive as imported, read-only
+   collections like any other; each is removed on its own (Remove purges one
+   collection's scope).
 
 Importing your **own** file (same identity) passes the same checks and merges
-into an editable collection. It is a mini-restore.
+into an editable collection. It is a mini-restore. The same holds for a linked
+collection that already exists here: it passes only when its local
+`created_by` matches (it came back to its author, who gets a mini-restore of
+it, still editable); one that exists under another creator refuses the whole
+file by the foreign-overwrite rule.
 
 ## Read-only
 

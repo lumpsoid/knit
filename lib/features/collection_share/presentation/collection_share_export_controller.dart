@@ -11,9 +11,9 @@ enum ShareExportDestination { send, save }
 enum ShareExportOutcome { sent, saved, cancelled, failed }
 
 /// The "Share as file" sheet's input object (docs/collection_share.md
-/// "Export"): reads the size estimate, holds the media toggle, builds the
-/// `.knitc` and hands it to the share sheet or a save dialog. One per sheet;
-/// the sheet disposes it.
+/// "Export"): reads the size estimate, holds the media and linked-collections
+/// toggles, builds the `.knitc` and hands it to the share sheet or a save
+/// dialog. One per sheet; the sheet disposes it.
 class CollectionShareExportController {
   CollectionShareExportController({
     required this.collectionId,
@@ -48,6 +48,9 @@ class CollectionShareExportController {
 
   void setIncludeMedia(bool include) => state.setIncludeMedia(include);
 
+  /// "Include linked collections": the size estimate follows the switch.
+  void setIncludeLinked(bool include) => state.setIncludeLinked(include);
+
   /// Build the file and deliver it to [destination]. Null while one is
   /// already running.
   Future<ShareExportOutcome?> deliver(
@@ -67,6 +70,7 @@ class CollectionShareExportController {
     switch (await _export.export(
       collectionId,
       includeMedia: state.includeMedia && state.hasMedia,
+      includeLinked: state.linked,
     )) {
       case Ok(:final value):
         file = value;

@@ -642,6 +642,25 @@
       "size": { "type": "String" }
     }
   },
+  "shareExportOutsideLinks": "{count, plural, =1{1 connection points outside this collection} other{{count} connections point outside this collection}}",
+  "@shareExportOutsideLinks": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "shareExportNotOwnedLinks": "{count} can't be included (not yours)",
+  "@shareExportNotOwnedLinks": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "shareExportIncludeLinked": "Include linked collections",
+  "shareExportLinkedSummary": "{count, plural, =1{1 of your collections, as a read-only copy} other{{count} of your collections, as read-only copies}}",
+  "@shareExportLinkedSummary": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "shareExportSize": "File size: {size}",
   "@shareExportSize": {
     "placeholders": {
@@ -661,6 +680,12 @@
     "placeholders": {
       "count": { "type": "int" },
       "handle": { "type": "String" }
+    }
+  },
+  "shareImportLinked": "{count, plural, =1{+ 1 linked collection} other{+ {count} linked collections}}",
+  "@shareImportLinked": {
+    "placeholders": {
+      "count": { "type": "int" }
     }
   },
   "shareImportNoMedia": "Media not included",

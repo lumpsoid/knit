@@ -1436,6 +1436,46 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String shareExportOutsideLinks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count связи ведут за пределы этой коллекции',
+      many: '$count связей ведут за пределы этой коллекции',
+      few: '$count связи ведут за пределы этой коллекции',
+      one: '1 связь ведёт за пределы этой коллекции',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareExportNotOwnedLinks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count нельзя включить (не ваши)',
+      one: '1 нельзя включить (не ваша)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shareExportIncludeLinked => 'Включить связанные коллекции';
+
+  @override
+  String shareExportLinkedSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ваши коллекции, только для чтения',
+      many: '$count ваших коллекций, только для чтения',
+      few: '$count ваши коллекции, только для чтения',
+      one: '1 ваша коллекция, только для чтения',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String shareExportSize(String size) {
     return 'Размер файла: $size';
   }
@@ -1477,6 +1517,19 @@ class AppLocalizationsRu extends AppLocalizations {
       one: '1 карточка',
     );
     return '$_temp0 · от $handle';
+  }
+
+  @override
+  String shareImportLinked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+ $count связанные коллекции',
+      many: '+ $count связанных коллекций',
+      few: '+ $count связанные коллекции',
+      one: '+ 1 связанная коллекция',
+    );
+    return '$_temp0';
   }
 
   @override

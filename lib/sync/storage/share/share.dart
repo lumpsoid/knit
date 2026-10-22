@@ -3,4 +3,5 @@
 library;
 
 export 'fork_plan.dart';
+export 'share_reach.dart';
 export 'share_set.dart';

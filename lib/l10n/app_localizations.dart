@@ -2402,6 +2402,30 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 file} other{{count} files}} · {size}'**
   String shareExportMediaSummary(int count, String size);
 
+  /// No description provided for @shareExportOutsideLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 connection points outside this collection} other{{count} connections point outside this collection}}'**
+  String shareExportOutsideLinks(int count);
+
+  /// No description provided for @shareExportNotOwnedLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} can\'t be included (not yours)'**
+  String shareExportNotOwnedLinks(int count);
+
+  /// No description provided for @shareExportIncludeLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Include linked collections'**
+  String get shareExportIncludeLinked;
+
+  /// No description provided for @shareExportLinkedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 of your collections, as a read-only copy} other{{count} of your collections, as read-only copies}}'**
+  String shareExportLinkedSummary(int count);
+
   /// No description provided for @shareExportSize.
   ///
   /// In en, this message translates to:
@@ -2461,6 +2485,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 card} other{{count} cards}} · from {handle}'**
   String shareImportSummary(int count, String handle);
+
+  /// No description provided for @shareImportLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{+ 1 linked collection} other{+ {count} linked collections}}'**
+  String shareImportLinked(int count);
 
   /// No description provided for @shareImportNoMedia.
   ///

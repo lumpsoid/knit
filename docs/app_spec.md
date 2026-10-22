@@ -1314,9 +1314,17 @@ Full design: **`docs/collection_share.md`**.
 - **Payload** — the sender's signed ops **verbatim**, winning ops only: per entity the
   content winner (+ a card's placement winner), tombstones included, plus each author's
   `profile`. Never re-signed. **Include media** (default on) adds the blobs.
-- **Import** = the §10.5 *subscription*: the whole file is validated first (signatures,
-  author = owner, scope, and no op may target a local id with a different `created_by`),
-  then every op goes through `applyRemote` (`remote/acked`). Same ids, so a newer file
+- **Linked collections** — the export sheet warns when the collection's live links point
+  outside it ("N connections point outside this collection · M can't be included (not
+  yours)"). **Include linked collections** (default off) also ships each reached collection
+  that is the sender's own, whole and one level deep (a card target brings its collection);
+  someone else's stays a broken link. Such a file is manifest version 2 (`included`); a
+  single-collection file stays version 1, and an older app refuses version 2 as "from a
+  newer Knit".
+- **Import** = the §10.5 *subscription*: the whole file is validated first, every
+  collection in it alike (signatures, author = that collection's owner, each op within its
+  own collection's scope, and no op may target a local id with a different `created_by`),
+  then every op goes through `applyRemote` (`remote/acked`) and the primary opens. Same ids, so a newer file
   updates the copy by LWW and an older one changes nothing. Your own file is a mini-restore.
 - **Read-only** is derived: `collection.created_by ≠` this device's key. No composer,
   reorder, selection or header edit; Archive is a local-only flag; it is never a move or

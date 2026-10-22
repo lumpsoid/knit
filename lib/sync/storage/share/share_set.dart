@@ -2,6 +2,7 @@ import 'package:knit/sync/merge.dart';
 import 'package:knit/sync/snapshot.dart';
 import 'package:knit/sync/storage/change_log/domain/domain.dart';
 import 'package:knit/sync/storage/projection/domain/domain.dart';
+import 'package:knit/sync/storage/share/share_reach.dart';
 
 /// The entities one collection's share covers (docs/collection_share.md "The
 /// share set"), read off the projection. Pure, so the share and the purge
@@ -109,13 +110,16 @@ class ShareSetSelector {
 
 /// One collection's share, ready to package: the winning signed [ops]
 /// (collection, cards, links, attachments and the authors' profiles) plus what
-/// the export sheet and manifest show.
+/// the export sheet and manifest show. With linked collections bundled, the
+/// [ops] and [media] cover those too, and [included] lists them.
 class ShareSet {
   const ShareSet({
     required this.collection,
     required this.liveCardCount,
     required this.ops,
     required this.media,
+    this.reach = ShareReach.none,
+    this.included = const [],
   });
 
   /// The collection's projected row.
@@ -130,4 +134,19 @@ class ShareSet {
   /// The live attachments' bytes to ship: `content_hash` → size in bytes
   /// (null when the attachment record carries none).
   final Map<String, int?> media;
+
+  /// Where the collection's links point outside it.
+  final ShareReach reach;
+
+  /// The linked collections bundled alongside, one level deep.
+  final List<IncludedShare> included;
+}
+
+/// A linked collection a [ShareSet] carries whole: its projected row and its
+/// live card count.
+class IncludedShare {
+  const IncludedShare({required this.collection, required this.liveCardCount});
+
+  final Snapshot collection;
+  final int liveCardCount;
 }

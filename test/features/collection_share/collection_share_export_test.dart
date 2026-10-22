@@ -40,9 +40,14 @@ void main() {
       final estimate = (await repository.estimate('trip')).getOrThrow();
       expect(estimate.title, 'Trip: Kyoto/Osaka');
       expect(estimate.cardCount, 3);
-      expect(estimate.mediaCount, 1);
-      expect(estimate.mediaBytes, 3);
-      expect(estimate.sizeWith(media: true), estimate.baseBytes + 3);
+      expect(estimate.alone.mediaCount, 1);
+      expect(estimate.alone.mediaBytes, 3);
+      expect(
+        estimate.alone.sizeWith(media: true),
+        estimate.alone.baseBytes + 3,
+      );
+      expect(estimate.reach.outsideCount, 0);
+      expect(estimate.withLinked, same(estimate.alone));
     });
 
     test('export with media round-trips through the codec', () async {
@@ -103,9 +108,9 @@ void main() {
       expect(c.state.status, ShareExportStatus.ready);
       expect(c.state.includeMedia, isTrue);
       expect(c.state.hasMedia, isTrue);
-      expect(c.state.size, c.state.estimate!.sizeWith(media: true));
+      expect(c.state.size, c.state.estimate!.alone.sizeWith(media: true));
       c.setIncludeMedia(false);
-      expect(c.state.size, c.state.estimate!.baseBytes);
+      expect(c.state.size, c.state.estimate!.alone.baseBytes);
     });
 
     test('send hands the file to the share sheet', () async {

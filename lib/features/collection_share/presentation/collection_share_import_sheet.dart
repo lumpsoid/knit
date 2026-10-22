@@ -7,7 +7,8 @@ import 'package:knit/features/collection_share/presentation/collection_share_imp
 import 'package:knit/l10n/app_localizations.dart';
 
 /// The import preview (docs/collection_share.md "Import" step 3): "Trip to
-/// Kyoto · 24 cards · from mira#9f86 · media not included", then **Import**
+/// Kyoto · 24 cards · from mira#9f86 · + 2 linked collections · media not
+/// included", then **Import**
 /// (or **Update** when the collection is already here). Owns and disposes
 /// its [controller]; pops with the imported collection id.
 class CollectionShareImportSheet extends StatefulWidget {
@@ -129,6 +130,8 @@ class _CollectionShareImportSheetState
         ),
         style: muted,
       ),
+      if (plan.linkedCollectionCount > 0)
+        Text(l10n.shareImportLinked(plan.linkedCollectionCount), style: muted),
       if (!plan.mediaIncluded) Text(l10n.shareImportNoMedia, style: muted),
       const SizedBox(height: 12),
       Text(

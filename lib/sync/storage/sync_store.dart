@@ -935,21 +935,38 @@ class SyncStore {
   /// share set"): per entity of its [ShareScope] the winning op(s), picked by
   /// [ShareSetSelector], plus the winning `profile` op of every author and
   /// creator among them, so nicknames resolve. Ops are verbatim, never
-  /// re-signed. Throws [StateError] for an unknown collection.
-  Future<ShareSet> shareSet(String collectionId) async {
+  /// re-signed. The set's [ShareReach] says where its links point outside;
+  /// with [includeLinked] the own collections they reach ride along whole,
+  /// each by its own [ShareScope], one level deep. Throws [StateError] for an
+  /// unknown collection.
+  Future<ShareSet> shareSet(
+    String collectionId, {
+    bool includeLinked = false,
+  }) async {
     final rows = await projection.readAll();
+    Snapshot? collectionOf(String id) => rows
+        .where((s) => s.type == EntityType.collection && s.id == id)
+        .firstOrNull;
     final collection =
-        rows
-            .where(
-              (s) => s.type == EntityType.collection && s.id == collectionId,
-            )
-            .firstOrNull ??
+        collectionOf(collectionId) ??
         (throw StateError('share of missing collection $collectionId'));
     final scope = ShareScope.of(collectionId, rows);
+    final me = await hasIdentity() ? await authorPubkey() : null;
+    final reach = ShareReach.of(scope, rows, me: me);
+    final linked = [
+      if (includeLinked)
+        for (final id in reach.linkedCollectionIds) ShareScope.of(id, rows),
+    ];
+    final entityIds = {
+      ...scope.entityIds,
+      for (final s in linked) ...s.entityIds,
+    };
+    final attachmentIds = {
+      ...scope.attachmentIds,
+      for (final s in linked) ...s.attachmentIds,
+    };
     const selector = ShareSetSelector();
-    final ops = selector.winners(
-      await changeLog.readForEntities(scope.entityIds),
-    );
+    final ops = selector.winners(await changeLog.readForEntities(entityIds));
     final people = {
       for (final op in ops) ...[
         op.toSnapshot().author,
@@ -967,10 +984,18 @@ class SyncStore {
         for (final s in rows)
           if (s.type == EntityType.attachment &&
               !s.deleted &&
-              scope.attachmentIds.contains(s.id))
+              attachmentIds.contains(s.id))
             if (s.content[AttachmentSchema.colContentHash] case final String h)
               h: (s.content[AttachmentSchema.colSize] as num?)?.toInt(),
       },
+      reach: reach,
+      included: [
+        for (final s in linked)
+          IncludedShare(
+            collection: collectionOf(s.collectionId)!,
+            liveCardCount: s.liveCardIds.length,
+          ),
+      ],
     );
   }
 

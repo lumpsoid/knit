@@ -57,7 +57,10 @@ void main() {
     test('a newer version is refused as such', () {
       expect(
         () => codec.decode(
-          zipWith({'format': kCollectionShareFormat, 'version': 2}),
+          zipWith({
+            'format': kCollectionShareFormat,
+            'version': kCollectionShareVersion + 1,
+          }),
         ),
         throwsA(isA<NewerShareVersionException>()),
       );
