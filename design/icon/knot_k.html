@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Knit — app icon gallery, the knotted k</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="gallery.css">
+<style>
+  .ref { display: flex; gap: 20px; align-items: center; padding: 20px 32px 0; flex-wrap: wrap; }
+  .ref figure { margin: 0; text-align: center; font-size: 12.5px; color: var(--muted); }
+  .ref .box { width: 200px; height: 200px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #fff; position: relative; }
+  .ref .box img, .ref .box svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<header>
+  <nav class="nav"><a href="gallery.html">Knot → line</a><a href="beyond.html">Beyond the knot</a><a href="k_thread.html">K as a thread</a><a class="here" href="knot_k.html">Knotted k</a></nav>
+  <h1>Knit: the knotted k</h1>
+  <p>Built from your reference. The stem is one straight strand; the second strand comes down as the arm,
+     loops around the stem and leaves as the leg. Its three crossings alternate over and under, like a real knot, with real gaps (no painted halos), so the same strokes work on a transparent layer.
+     Every variant shares one traced geometry; only weight, colour and finish change.</p>
+</header>
+
+<section class="ref">
+  <figure><div class="box"><img src="ref_k.png" alt="reference"></div>Reference</figure>
+  <figure><div class="box"><img src="ref_k.png" alt=""><svg id="overlay" viewBox="0 0 350 350"></svg></div>Trace over reference (coral)</figure>
+  <figure><div class="box"><svg id="trace" viewBox="0 0 350 350"></svg></div>Trace alone</figure>
+</section>
+
+<div class="controls">
+  <div class="chips" id="palettes"></div>
+  <label>Rope weight <input type="range" id="weight" min="3" max="8" step="0.5" value="5"></label>
+  <label>Glyph size <input type="range" id="glyph" min="0.28" max="0.44" step="0.005" value="0.33"> <span id="glyphNote"></span></label>
+  <label><input type="checkbox" id="favOnly"> Favourites only</label>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<section class="home">
+  <h3>On a home screen</h3>
+  <div class="row" id="home"></div>
+</section>
+
+<p class="foot">Prototype only: nothing in the app has changed.</p>
+
+<script src="gallery.js"></script>
+<script src="knot.js"></script>
+<script>
+// Map the traced box (x 127-220, y 78-270) into the 108 adaptive grid, centred.
+// Android keeps only a 66-unit circle under every mask; the leg ends leave it above scale 0.335.
+const SAFE_SCALE = .335;
+let S = .33;
+const place = inner => `<g transform="translate(54 54) scale(${S}) translate(-173.5 -174)">${inner}</g>`;
+const glyph = document.getElementById('glyph'), note = document.getElementById('glyphNote');
+const showNote = () => { note.textContent = S <= SAFE_SCALE ? 'inside Android safe zone' : 'clips on circle masks'; note.style.color = S <= SAFE_SCALE ? '' : '#d9534f'; };
+glyph.addEventListener('input', () => { S = +glyph.value; showNote(); document.getElementById('weight').dispatchEvent(new Event('input')); });
+showNote();
+const rope = w => w * 2.4;
+
+const CONCEPTS = [
+  {
+    id: 'trace', name: 'Knotted k',
+    idea: 'The reference, traced: one colour, rounded rope ends, the crossings alternating over and under.',
+    draw: (p, w) => place(knot({ fg: p.fg, bg: p.bg, rope: rope(w) })),
+  },
+  {
+    id: 'two-tone', name: 'Two strands',
+    idea: 'The straight stem and the knotting strand in different colours, so you can see one thread tie around the other.',
+    draw: (p, w) => place(knot({ fg: p.fg, strandColor: p.accent, bg: p.bg, rope: rope(w) })),
+  },
+  {
+    id: 'two-tone-soft', name: 'Two strands, soft',
+    idea: 'A calmer pairing: a pale stem and a white knotting strand.',
+    draw: (p, w) => place(knot({ fg: p.soft, strandColor: p.fg, bg: p.bg, rope: rope(w) })),
+  },
+  {
+    id: 'bold', name: 'Heavy rope',
+    idea: 'A thicker rope with tighter gaps: built to hold up at 32px and below.',
+    draw: (p, w) => place(knot({ fg: p.fg, bg: p.bg, rope: rope(w) * 1.45, gap: .55 })),
+  },
+  {
+    id: 'fine', name: 'Fine thread',
+    idea: 'Fine sewing thread instead of rope: elegant at large sizes, fragile when small.',
+    draw: (p, w) => place(knot({ fg: p.fg, bg: p.bg, rope: rope(w) * .6, gap: 1.1 })),
+  },
+  {
+    id: 'loose-end', name: 'Loose end',
+    idea: 'The leg runs out into a long straight thread: the knot becomes a clear line, as in your first idea.',
+    draw: (p, w) => `<g transform="translate(-4 0)">${place(knot({ fg: p.fg, strandColor: p.fg, bg: p.bg, rope: rope(w), strand: STRAND_TAIL }))}</g>`,
+  },
+  {
+    id: 'stitched', name: 'Stitched',
+    idea: 'A dashed seam down the middle of each strand, like yarn plies or a stitched cord.',
+    draw: (p, w) => {
+      const r = rope(w) * 1.25, seam = `stroke-dasharray="${f(r * .35)} ${f(r * .55)}"`;
+      const sd = sample(STRAND), st = sample(STEM);
+      const seams = [poly(st), slice(sd, 0, 3.6), slice(sd, 3.6, 16)]
+        .map(d => `<path d="${d}" ${stroke(p.bg, r * .16, seam + ' opacity=".55"')}/>`).join('');
+      return place(knot({ fg: p.fg, bg: p.bg, rope: r, gap: .55, finish: seams }));
+    },
+  },
+  {
+    id: 'gradient', name: 'Lit tile',
+    idea: 'The plain knot on a softly lit tile, brighter at the top left like a launcher icon.',
+    draw: (p, w) => {
+      const id = 'lg' + Math.random().toString(36).slice(2);
+      return `<defs><radialGradient id="${id}" cx="28%" cy="22%" r="95%">
+          <stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></radialGradient></defs>
+        <rect width="108" height="108" fill="url(#${id})"/>
+        ${place(knot({ fg: p.fg, bg: p.bg, rope: rope(w) * 1.15, gap: .65 }))}`;
+    },
+  },
+  {
+    id: 'disc', name: 'Knot on a ball',
+    idea: 'The knot set on a round, yarn-ball-coloured disc: reads as a badge in a rounded-square mask.',
+    draw: (p, w) => `<circle cx="54" cy="54" r="38" fill="${p.accent}"/>
+      <g transform="translate(54 54) scale(.86) translate(-54 -54)">${place(knot({ fg: p.bg, bg: p.accent, rope: rope(w) * 1.15, gap: .65 }))}</g>`,
+  },
+];
+
+mountGallery(CONCEPTS, 'knit-icon-favs-knot');
+
+// Reference comparison: the trace in the image's own coordinates.
+document.getElementById('overlay').innerHTML = knot({ fg: 'rgba(255,90,60,.6)', bg: 'transparent', rope: 12, gap: 0 });
+document.getElementById('trace').innerHTML = knot({ fg: '#222', bg: '#fff', rope: 12 });
+</script>
+</body>
+</html>

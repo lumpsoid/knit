@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Knit — app icon gallery, beyond the knot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+<header>
+  <nav class="nav"><a href="gallery.html">Knot → line</a><a class="here" href="beyond.html">Beyond the knot</a><a href="k_thread.html">K as a thread</a><a href="knot_k.html">Knotted k</a></nav>
+  <h1>Knit: app icon concepts, beyond the knot</h1>
+  <p>These concepts set the thread metaphor aside and start from what Knit is: cards captured in a chat-style feed,
+     links that join them, collections that act as hubs, a private identity on your own device, and ideas that grow.
+     They use the same 108-unit adaptive grid, palettes and previews as the first gallery.
+     Tap ★ to mark favourites.</p>
+</header>
+
+<div class="controls">
+  <div class="chips" id="palettes"></div>
+  <label>Line weight <input type="range" id="weight" min="3" max="8" step="0.5" value="5"></label>
+  <label><input type="checkbox" id="favOnly"> Favourites only</label>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<section class="home">
+  <h3>On a home screen</h3>
+  <div class="row" id="home"></div>
+</section>
+
+<p class="foot">Prototype only: nothing in the app has changed.</p>
+
+<script src="gallery.js"></script>
+<script>
+const dot = (x, y, r, c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`;
+
+const CONCEPTS = [
+  {
+    id: 'feed', name: 'Bubble feed',
+    idea: 'The Collection screen in miniature: notes captured as chat bubbles, the newest one highlighted.',
+    draw: (p) => `
+      <rect x="26" y="28" width="44" height="13" rx="6.5" fill="${p.soft}"/>
+      <rect x="26" y="46" width="34" height="13" rx="6.5" fill="${p.fg}"/>
+      <rect x="26" y="64" width="56" height="13" rx="6.5" fill="${p.accent}"/>
+      <path d="M30 76 L26 83 L38 76 Z" fill="${p.accent}"/>`,
+  },
+  {
+    id: 'thought', name: 'Linked thought',
+    idea: 'One chat bubble that holds three connected points: capturing and connecting in one mark.',
+    draw: (p, w) => `
+      <path d="M38 26 H70 A14 14 0 0 1 84 40 V60 A14 14 0 0 1 70 74 H44 L30 84 L32 72 A14 14 0 0 1 24 60 V40 A14 14 0 0 1 38 26 Z" fill="${p.fg}"/>
+      <path d="M38 58 L52 42 L70 54" ${stroke(p.bg, w * .7)}/>
+      ${dot(38, 58, 4.5, p.bg)}${dot(52, 42, 4.5, p.bg)}${dot(70, 54, 5.5, p.accent)}`,
+  },
+  {
+    id: 'cards', name: 'Linked cards',
+    idea: 'Two cards, slightly askew, joined by a link: the two basic pieces of the app.',
+    draw: (p, w) => `
+      <rect x="24" y="30" width="30" height="40" rx="6" fill="${p.fg}" transform="rotate(-8 39 50)"/>
+      <rect x="54" y="38" width="30" height="40" rx="6" fill="${p.soft}" transform="rotate(8 69 58)"/>
+      <path d="M40 50 L68 58" ${stroke(p.accent, w * .8)}/>
+      ${dot(40, 50, w * 1.1, p.accent)}${dot(68, 58, w * 1.1, p.accent)}`,
+  },
+  {
+    id: 'constellation', name: 'Constellation',
+    idea: 'Separate ideas joined into a shape of their own, like stars into a constellation.',
+    draw: (p, w) => {
+      const n = [[30, 42], [50, 30], [76, 38], [66, 62], [40, 74], [56, 50]];
+      const e = [[0, 1], [1, 2], [2, 3], [3, 5], [5, 1], [3, 4], [4, 0]];
+      return `<g ${stroke(p.fg, w * .45, 'opacity=".75"')}>${e.map(([a, b]) => `<path d="M${n[a]} L${n[b]}"/>`).join('')}</g>
+        ${n.map(([x, y], i) => dot(x, y, i === 5 ? 6.5 : 4, i === 5 ? p.accent : p.fg)).join('')}`;
+    },
+  },
+  {
+    id: 'hub', name: 'Hub',
+    idea: 'One collection at the centre with the things linked to it around it.',
+    draw: (p, w) => {
+      const sat = [0, 1, 2, 3, 4].map(i => {
+        const a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+        return [54 + 28 * Math.cos(a), 54 + 28 * Math.sin(a)];
+      });
+      return `<g ${stroke(p.fg, w * .5)}>${sat.map(([x, y]) => `<path d="M54 54 L${f(x)} ${f(y)}"/>`).join('')}</g>
+        ${sat.map(([x, y]) => dot(f(x), f(y), 5, p.fg)).join('')}
+        ${dot(54, 54, 12, p.accent)}`;
+    },
+  },
+  {
+    id: 'monogram', name: 'K of cards',
+    idea: 'A bold "K" built from three rounded bars, like cards, with one arm in the accent colour.',
+    draw: (p) => `
+      <path d="M36 28 V80" ${stroke(p.fg, 13)}/>
+      <path d="M50 54 L74 30" ${stroke(p.fg, 13)}/>
+      <path d="M50 54 L74 78" ${stroke(p.accent, 13)}/>`,
+  },
+  {
+    id: 'monogram-node', name: 'k with a node',
+    idea: 'A light lowercase "k" whose arms meet at a node, where a link would join.',
+    draw: (p, w) => `
+      <path d="M38 24 V84" ${stroke(p.fg, w * 1.3)}/>
+      <path d="M72 42 L50 60 L74 84" ${stroke(p.fg, w * 1.3)}/>
+      ${dot(50, 60, 8, p.accent)}`,
+  },
+  {
+    id: 'sprout', name: 'Sprout',
+    idea: 'An idea planted and growing: two leaves rising from a line of soil.',
+    draw: (p, w) => `
+      <path d="M54 80 V50" ${stroke(p.fg, w)}/>
+      <path d="M54 62 C40 62 30 52 30 38 C44 38 54 46 54 62 Z" fill="${p.fg}"/>
+      <path d="M54 52 C66 52 78 44 78 30 C64 30 54 38 54 52 Z" fill="${p.accent}"/>
+      <path d="M32 80 H76" ${stroke(p.soft, w)}/>`,
+  },
+  {
+    id: 'cairn', name: 'Cairn',
+    idea: 'Stones stacked in balance: things kept in order, quietly, by hand.',
+    draw: (p) => `
+      <ellipse cx="54" cy="74" rx="24" ry="9.5" fill="${p.fg}"/>
+      <ellipse cx="52" cy="57" rx="17" ry="8" fill="${p.soft}"/>
+      <ellipse cx="56" cy="42" rx="11" ry="6.5" fill="${p.accent}"/>`,
+  },
+  {
+    id: 'pocket', name: 'Pocket',
+    idea: 'A pocket with cards tucked in: everything you capture, kept with you and on your device.',
+    draw: (p) => `
+      <rect x="32" y="24" width="26" height="34" rx="4" fill="${p.soft}" transform="rotate(-10 45 41)"/>
+      <rect x="50" y="22" width="26" height="34" rx="4" fill="${p.accent}" transform="rotate(8 63 39)"/>
+      <path d="M26 44 H82 V66 A18 18 0 0 1 64 84 H44 A18 18 0 0 1 26 66 Z" fill="${p.fg}"/>
+      <path d="M36 54 H72" fill="none" stroke="${p.bg}" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="1 5"/>`,
+  },
+  {
+    id: 'fingerprint', name: 'Own mark',
+    idea: 'Fingerprint arcs on a card: your identity, signed and kept on your device.',
+    draw: (p, w) => {
+      const arcs = [6, 12, 18, 24].map((r, i) => {
+        const a0 = Math.PI * (1.05 + i * .04), a1 = Math.PI * (1.95 - i * .03) + (i % 2) * .6;
+        const x0 = 54 + r * Math.cos(a0), y0 = 62 + r * Math.sin(a0), x1 = 54 + r * Math.cos(a1), y1 = 62 + r * Math.sin(a1);
+        return `<path d="M${f(x0)} ${f(y0)} A${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${f(x1)} ${f(y1)}"/>`;
+      }).join('');
+      return `<g ${stroke(p.fg, w * .8)}>${arcs}</g><path d="M30 74 V62 M78 70 V62" ${stroke(p.fg, w * .8)}/>${dot(54, 62, 3.5, p.accent)}`;
+    },
+  },
+  {
+    id: 'venn', name: 'Overlap',
+    idea: 'Two ideas overlapping, with the part they share lit up: where connections happen.',
+    draw: (p) => {
+      const id = 'v' + Math.random().toString(36).slice(2);
+      return `<defs><clipPath id="${id}"><circle cx="44" cy="54" r="20"/></clipPath></defs>
+        <circle cx="44" cy="54" r="20" fill="${p.fg}"/>
+        <circle cx="64" cy="54" r="20" fill="${p.soft}"/>
+        <circle cx="64" cy="54" r="20" fill="${p.accent}" clip-path="url(#${id})"/>`;
+    },
+  },
+];
+
+mountGallery(CONCEPTS, 'knit-icon-favs-beyond');
+</script>
+</body>
+</html>

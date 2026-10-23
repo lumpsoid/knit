@@ -566,6 +566,15 @@ the `lib/sync/` core below.
   graph). `effect_emitter/` — the `EffectEmitter` UI side-effect seam
   (cross_feature.md §4).
 
+### `design/icon/` — the app icon (source of truth)
+- The knotted k ("Two strands": white stem, peach strand on `#5B6CFF`). `knot.js` is
+  the one geometry, with real gaps cut at the crossings, so layers can be transparent.
+  The HTML galleries are the design previews (`knot_k.html` is the chosen one).
+  `node design/icon/build_icons.mjs` (needs `resvg` + `magick`) regenerates every
+  platform icon: the Android adaptive vector foreground + monochrome layers, the legacy
+  mipmaps, iOS/macOS asset catalogs, web, and the Windows `.ico`. Never edit those
+  outputs by hand.
+
 ## Key invariants (don't break)
 
 - **One transaction per apply:** projection write + `change_log` insert +

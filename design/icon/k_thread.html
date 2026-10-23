@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Knit — app icon gallery, K as a thread</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+<header>
+  <nav class="nav"><a href="gallery.html">Knot → line</a><a href="beyond.html">Beyond the knot</a><a class="here" href="k_thread.html">K as a thread</a><a href="knot_k.html">Knotted k</a></nav>
+  <h1>Knit: the K as a knot or a thread</h1>
+  <p>The monogram from the second gallery, spun from yarn: a K written in one thread, knotted where its arms meet,
+     wrapped around its stem, or made of twisted plies. The stem is the clear, straight line; the arms carry the knot.
+     Tap ★ to mark favourites.</p>
+</header>
+
+<div class="controls">
+  <div class="chips" id="palettes"></div>
+  <label>Thread weight <input type="range" id="weight" min="3" max="8" step="0.5" value="5"></label>
+  <label><input type="checkbox" id="favOnly"> Favourites only</label>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<section class="home">
+  <h3>On a home screen</h3>
+  <div class="row" id="home"></div>
+</section>
+
+<p class="foot">Prototype only: nothing in the app has changed.</p>
+
+<script src="gallery.js"></script>
+<script>
+const dot = (x, y, r, c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`;
+const STEM = 'M38 26 V82';
+// The thread crossing in front of another gets a background-coloured halo, so the over/under reads.
+const over = (d, c, w, bg) => `<path d="${d}" ${stroke(bg, w + 5, 'stroke-linecap="butt"')}/><path d="${d}" ${stroke(c, w)}/>`;
+
+// Points of an ellipse arc (local angle t0..t1), rotated by rot degrees.
+function ellipseArc(cx, cy, rx, ry, rot, t0, t1, n = 40) {
+  const r = rot * Math.PI / 180, pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = t0 + (t1 - t0) * i / n, x = rx * Math.cos(t), y = ry * Math.sin(t);
+    pts.push([cx + x * Math.cos(r) - y * Math.sin(r), cy + x * Math.sin(r) + y * Math.cos(r)]);
+  }
+  return poly(pts);
+}
+
+const CONCEPTS = [
+  {
+    id: 'wrapped', name: 'Wrapped stem',
+    idea: 'A straight stem; one thread comes down as the upper arm, wraps once around the stem, and leaves as the lower arm.',
+    draw: (p, w) => `
+      <path d="M74 26 L46 50 C40 55 30 51 30 56" ${stroke(p.accent, w)}/>
+      <path d="${STEM}" ${stroke(p.fg, w * 1.4)}/>
+      ${over('M30 56 C30 62 40 64 46 62 L76 82', p.accent, w, p.bg)}`,
+  },
+  {
+    id: 'wrapped-mono', name: 'Wrapped stem, one colour',
+    idea: 'The same wrap in a single colour: quieter, and ready for Android\'s monochrome themed icons.',
+    draw: (p, w) => `
+      <path d="M74 26 L46 50 C40 55 30 51 30 56" ${stroke(p.fg, w)}/>
+      <path d="${STEM}" ${stroke(p.fg, w * 1.4)}/>
+      ${over('M30 56 C30 62 40 64 46 62 L76 82', p.fg, w, p.bg)}`,
+  },
+  {
+    id: 'junction-knot', name: 'Knot at the joint',
+    idea: 'The arms are one thread that ties a small loose loop where they meet the stem.',
+    draw: (p, w) => `
+      <path d="${STEM}" ${stroke(p.fg, w * 1.4)}/>
+      <path d="M76 26 L54 47 C44 56 44 72 57 72 C70 72 70 53 57 52" ${stroke(p.fg, w)}/>
+      ${over('M57 52 C47 51 43 60 50 65 L76 82', p.fg, w, p.bg)}`,
+  },
+  {
+    id: 'tangled-arm', name: 'Tangled arm',
+    idea: 'The lower arm starts as a tangle and straightens as it reaches the stem: the knot-to-line idea inside the letter.',
+    draw: (p, w) => {
+      const ang = Math.atan2(56 - 82, 44 - 77) * 180 / Math.PI;
+      return `<path d="${STEM}" ${stroke(p.fg, w * 1.4)}/>
+        <path d="M74 26 L44 56" ${stroke(p.fg, w)}/>
+        <g transform="translate(77 82) rotate(${f(ang)})">
+          <path d="${loopsToLine({ x0: 6, y0: 0, loops: 2, B: 11, a: 1.7, xEnd: 42, pow: 1 })}" ${stroke(p.accent, w * .85)}/></g>`;
+    },
+  },
+  {
+    id: 'cursive', name: 'Written in one thread',
+    idea: 'A handwritten k drawn in a single unbroken line: a looped ascender, a small bowl, a kick out.',
+    draw: (p, w) => `<path d="M24 84 C36 70 50 40 47 28 C45 19 35 21 36 32 L36 82
+      C37 66 46 54 58 52 C70 50 72 62 60 64 C52 66 46 62 47 60 C56 66 64 84 82 82" ${stroke(p.fg, w * 1.2)}/>`,
+  },
+  {
+    id: 'plied', name: 'Yarn K',
+    idea: 'A bold K cut from twisted yarn: the diagonal plies are the only texture.',
+    draw: (p, w) => {
+      const id = 'm' + Math.random().toString(36).slice(2);
+      let hatch = '';
+      for (let x = -70; x <= 180; x += 5.5) hatch += `<path d="M${x} 0 L${x - 50} 108"/>`;
+      return `<defs><mask id="${id}"><rect width="108" height="108" fill="#000"/>
+          <g ${stroke('#fff', 14)}><path d="M36 28 V80"/><path d="M50 54 L74 30"/><path d="M50 54 L74 78"/></g></mask></defs>
+        <g mask="url(#${id})"><rect width="108" height="108" fill="${p.fg}"/>
+          <g ${stroke(p.bg, w * .32, 'opacity=".45"')}>${hatch}</g></g>`;
+    },
+  },
+  {
+    id: 'tail', name: 'K with a loose end',
+    idea: 'A bold K whose lower arm runs out as a thin thread, loops once, and carries on straight.',
+    draw: (p, w) => `
+      <path d="M36 28 V80" ${stroke(p.fg, 13)}/>
+      <path d="M50 54 L74 30" ${stroke(p.fg, 13)}/>
+      <path d="M50 54 L60 64" ${stroke(p.fg, 13)}/>
+      <path d="M60 64 C66 72 76 70 74 63 C72 56 63 60 67 68 C70 75 78 80 90 80" ${stroke(p.accent, w * .8)}/>`,
+  },
+  {
+    id: 'needle', name: 'Cast on',
+    idea: 'The stem is a knitting needle; two stitches are cast on it, and their threads become the arms.',
+    draw: (p, w) => {
+      const loops = [[42, 48, -32], [42, 64, 32]];
+      const back = loops.map(([cx, cy, r]) => `<path d="${ellipseArc(cx, cy, 9, 4.5, r, Math.PI, 2 * Math.PI)}" ${stroke(p.accent, w * .75)}/>`).join('');
+      const front = loops.map(([cx, cy, r]) => over(ellipseArc(cx, cy, 9, 4.5, r, 0, Math.PI), p.accent, w * .75, p.bg)).join('');
+      return `${back}
+        <path d="M38 30 V80" ${stroke(p.fg, w * 1.3)}/>
+        <path d="M38 80 L38 86" ${stroke(p.fg, w * .6)}/>
+        ${dot(38, 26, 5.5, p.fg)}
+        ${front}
+        <path d="M50 44 L76 26" ${stroke(p.accent, w * .75)}/>
+        <path d="M50 68 L76 84" ${stroke(p.accent, w * .75)}/>`;
+    },
+  },
+  {
+    id: 'ball-joint', name: 'Ball at the joint',
+    idea: 'A small ball of yarn sits where the arms meet the stem; both arms are threads drawn from it.',
+    draw: (p, w) => {
+      const id = 'c' + Math.random().toString(36).slice(2), cx = 52, cy = 55, r = 11;
+      const wraps = [[-35, 4], [-35, 8], [50, 6]]
+        .map(([rot, ry]) => `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${ry}" transform="rotate(${rot} ${cx} ${cy})"/>`).join('');
+      return `<path d="${STEM}" ${stroke(p.fg, w * 1.4)}/>
+        <path d="M58 46 L78 26 M58 64 L78 84" ${stroke(p.fg, w * .8)}/>
+        <defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath></defs>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="${p.accent}"/>
+        <g clip-path="url(#${id})" ${stroke(p.bg, w * .35, 'opacity=".5"')}>${wraps}</g>`;
+    },
+  },
+];
+
+mountGallery(CONCEPTS, 'knit-icon-favs-k');
+</script>
+</body>
+</html>

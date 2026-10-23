@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Knit — app icon gallery</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+<header>
+  <nav class="nav"><a class="here" href="gallery.html">Knot → line</a><a href="beyond.html">Beyond the knot</a><a href="k_thread.html">K as a thread</a><a href="knot_k.html">Knotted k</a></nav>
+  <h1>Knit: app icon concepts</h1>
+  <p>The idea: a tangle becomes a clear line, the way a messy ball of yarn unwinds into one straight thread.
+     Each concept is drawn on Android's 108-unit adaptive-icon grid, with the artwork kept inside the 66-unit safe zone.
+     Previews show a rounded-square mask, a circle mask, launcher sizes, and the icon on light and dark wallpapers.
+     Tap ★ to mark favourites; they are highlighted on the home-screen strip at the bottom.</p>
+</header>
+
+<div class="controls">
+  <div class="chips" id="palettes"></div>
+  <label>Thread weight <input type="range" id="weight" min="3" max="8" step="0.5" value="5"></label>
+  <label><input type="checkbox" id="favOnly"> Favourites only</label>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<section class="home">
+  <h3>On a home screen</h3>
+  <div class="row" id="home"></div>
+</section>
+
+<p class="foot">Prototype only: nothing in the app has changed. Once a concept is picked, it becomes an adaptive icon
+  (foreground + background layers) plus the legacy PNG sizes and a monochrome layer for themed icons.</p>
+
+<script src="gallery.js"></script>
+<script>
+const CONCEPTS = [
+  {
+    id: 'unwind', name: 'Unwind',
+    idea: 'One thread coils in three loops that relax, smaller each time, into a straight line.',
+    draw: (p, w) => `<path d="${loopsToLine({ x0: 30, B: 17, a: 2.1, xEnd: 90 })}" ${stroke(p.fg, w)}/>`,
+  },
+  {
+    id: 'unwind-warm', name: 'Unwind, warming',
+    idea: 'The same thread, coloured from the warm tangle to the calm straight end.',
+    draw: (p, w) => {
+      const id = 'g' + uid++;
+      return `<defs><linearGradient id="${id}" x1="16" x2="88" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="${p.accent}"/><stop offset=".75" stop-color="${p.fg}"/></linearGradient></defs>
+        <path d="${loopsToLine({ loops: 4, B: 14, a: 1.55, x0: 26 })}" ${stroke(`url(#${id})`, w)}/>`;
+    },
+  },
+  {
+    id: 'ball', name: 'Yarn ball',
+    idea: 'A wound ball of yarn with one strand running off it, straight.',
+    draw: (p, w) => {
+      const id = 'c' + uid++, cx = 46, cy = 50, r = 21;
+      const wraps = [[-35, 7], [-35, 14], [-35, 20], [55, 10], [55, 18]]
+        .map(([rot, ry]) => `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${ry}" transform="rotate(${rot} ${cx} ${cy})"/>`).join('');
+      return `<defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath></defs>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="${p.fg}"/>
+        <g clip-path="url(#${id})" ${stroke(p.bg, w * .5, 'opacity=".55"')}>${wraps}</g>
+        <path d="M58 67.2 C61 73 66 75 72 75 L90 75" ${stroke(p.fg, w)}/>`;
+    },
+  },
+  {
+    id: 'ball-min', name: 'Ball & strand',
+    idea: 'The yarn ball reduced to its plainest form: a disc, one wrap and a line.',
+    draw: (p, w) => `<circle cx="42" cy="48" r="19" fill="${p.fg}"/>
+      <path d="M30 36 C38 44 44 54 42 66" ${stroke(p.bg, w * .55)}/>
+      <path d="M40 31 C50 40 58 48 58 58" ${stroke(p.bg, w * .55)}/>
+      <path d="M42 67 C48 70 56 71 64 71 L88 71" ${stroke(p.fg, w)}/>`,
+  },
+  {
+    id: 'tangle', name: 'Tangle',
+    idea: 'An honest mess: a scribbled snarl that pulls out into a clean thread.',
+    draw: (p, w) => {
+      const rand = rng(11), cx = 42, cy = 48, R = 18, pts = [];
+      let ang = 0;
+      for (let i = 0; i < 22; i++) {
+        ang += 1.1 + rand() * 1.4; const rr = R * (.55 + .45 * rand());
+        pts.push([cx + rr * Math.cos(ang), cy + rr * Math.sin(ang)]);
+      }
+      pts.push([56, 64], [66, 70], [76, 71], [88, 71]);
+      return `<path d="${smooth(pts)}" ${stroke(p.fg, w * .8)}/>`;
+    },
+  },
+  {
+    id: 'loop', name: 'Single loop',
+    idea: 'A line that makes one loose loop and carries on: the knot already undone.',
+    draw: (p, w) => `
+      <path d="M16 70 C44 70 70 62 64 42 C60 28 42 30 44 46" ${stroke(p.fg, w)}/>
+      <path d="M44 46 C46 60 66 70 92 70" ${stroke(p.bg, w + 5, 'stroke-linecap="butt"')}/>
+      <path d="M44 46 C46 60 66 70 92 70" ${stroke(p.fg, w)}/>`,
+  },
+  {
+    id: 'spiral', name: 'Spiral out',
+    idea: 'A tight coil winds outward and leaves as a straight line.',
+    draw: (p, w) => {
+      const cx = 48, cy = 45, R = 22, tMax = 4.5 * Math.PI, k = R / tMax, pts = [];
+      for (let t = 0.6; t <= tMax + 1e-9; t += 0.04) pts.push([cx - k * t * Math.cos(t), cy + k * t * Math.sin(t)]);
+      pts.push([cx, cy + R], [88, cy + R]);
+      return `<path d="${poly(pts)}" ${stroke(p.fg, w * .8)}/>`;
+    },
+  },
+  {
+    id: 'threads', name: 'Three threads',
+    idea: 'Three strands cross and wander, then settle into parallel lines: things put in order.',
+    draw: (p, w) => {
+      const cols = [p.accent, p.fg, p.soft];
+      return [0, 1, 2].map(i => {
+        const yF = 42 + i * 12, pts = [];
+        for (let x = 16; x <= 62; x += 0.5) {
+          const A = 14 * Math.pow(Math.max(0, 1 - (x - 16) / 46), 1.5);
+          pts.push([x, yF + A * Math.sin(0.28 * (x - 16) + i * 2.1)]);
+        }
+        pts.push([90, yF]);
+        return `<path d="${poly(pts)}" ${stroke(cols[i], w * .75)}/>`;
+      }).join('');
+    },
+  },
+  {
+    id: 'stitch', name: 'Stitch column',
+    idea: 'Knit stitches (the "V" of a knitted row) stacked into a column, ending in a loose thread.',
+    draw: (p, w) => {
+      const v = y => [-1, 1].map(s =>
+        `<ellipse cx="${54 + s * 5.5}" cy="${y}" rx="5.5" ry="10.5" transform="rotate(${s * 28} ${54 + s * 5.5} ${y})"/>`).join('');
+      return `<g ${stroke(p.fg, w * .75)}>${v(34)}${v(52)}${v(70)}</g>
+        <path d="M54 80 C54 86 60 88 64 92" ${stroke(p.accent, w * .75)}/>`;
+    },
+  },
+  {
+    id: 'cards', name: 'Cards on a thread',
+    idea: 'The app itself: a thread untangles and then strings cards in order, like a collection.',
+    draw: (p, w) => {
+      const cards = [28, 44, 60].map(cy => `
+        <path d="M34 ${cy} L44 ${cy}" ${stroke(p.fg, w * .6)}/>
+        <rect x="44" y="${cy - 6.5}" width="38" height="13" rx="4" fill="${p.fg}"/>`).join('');
+      return `<g transform="rotate(-90 54 54)"><path d="${loopsToLine({ x0: 25, y0: 34, loops: 2, B: 7, a: 1.4, xEnd: 80 })}" ${stroke(p.accent, w * .75)}/></g>${cards}`;
+    },
+  },
+  {
+    id: 'dots', name: 'Points in line',
+    idea: 'Scattered ideas, joined by one thread, end up as an orderly row.',
+    draw: (p, w) => {
+      const zig = [[22, 34], [38, 70], [28, 50], [50, 56]], row = [[50, 56], [64, 56], [78, 56]];
+      const dot = ([x, y], c) => `<circle cx="${x}" cy="${y}" r="${w * 1.15}" fill="${c}"/>`;
+      return `<path d="${poly(zig)} L88 56" ${stroke(p.fg, w * .6)}/>
+        ${zig.slice(0, 3).map(q => dot(q, p.accent)).join('')}${row.map(q => dot(q, p.fg)).join('')}`;
+    },
+  },
+];
+
+mountGallery(CONCEPTS, 'knit-icon-favs');
+</script>
+</body>
+</html>
