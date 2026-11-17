@@ -598,10 +598,11 @@ the `lib/sync/` core below.
 This repo's full gate (the whole test suite, every lint, release builds) is
 too heavy for the machine agents work on. It runs on GitHub Actions instead.
 
-- **Per step, per commit:** only the narrow local gate, the tests of what
-  changed (`agent-check -- -p <crate> <filter>`, or this repo's own narrow
+- **Per step, per commit:** only the minimal local gate: format and lint of
+  what changed, plus the tests the step adds or edits
+  (`agent-check -- -p <crate> <filter>`, or this repo's own narrow
   command). Never the whole suite locally.
-- **Full gate** (the baseline before work, before landing, after a rebase):
+- **Full gate** (once, before landing; again after a rebase):
   commit, then run `agent-ci`. It pushes the current work branch to GitHub,
   waits for every workflow run on that commit, and prints one line per run.
   For a red run it also prints the log's tail and path. It takes as long as
