@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How to contribute
+    url: https://github.com/lumpsoid/knit_mobile/blob/master/CONTRIBUTING.md
+    about: The proposal-first flow, setup and the checks a pull request needs.

@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # actions/checkout fetches the tag as a lightweight ref; fetch the
+      # annotated tag itself to read its message (the CHANGELOG section).
+      - name: Read the tag
+        id: tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          VERSION="$(scripts/version.sh show)"
+          if [ "v${VERSION%%+*}" != "${TAG}" ]; then
+            echo "::error::tag ${TAG} does not match pubspec.yaml version ${VERSION}"
+            exit 1
+          fi
+          git tag -l --format='%(contents:body)' "${TAG}" > "${RUNNER_TEMP}/notes.md"
+          echo "name=${TAG}" >> "$GITHUB_OUTPUT"
+
+      # Never publish a debug-signed build.
+      - name: Write the signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::secret ANDROID_${name} is not set"
+              exit 1
+            fi
+          done
+          echo "${KEYSTORE_BASE64}" | base64 -d > "${RUNNER_TEMP}/release.jks"
+          {
+            echo "storeFile=${RUNNER_TEMP}/release.jks"
+            echo "storePassword=${KEYSTORE_PASSWORD}"
+            echo "keyAlias=${KEY_ALIAS}"
+            echo "keyPassword=${KEY_PASSWORD}"
+          } > android/key.properties
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Read the pinned Flutter version
+        id: flutter
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter.outputs.version }}
+          channel: stable
+          cache: true
+
+      - name: Build
+        run: scripts/release_apk.sh prod
+
+      - name: Check the signature
+        run: |
+          APKSIGNER="$(ls -d "${ANDROID_HOME}"/build-tools/* | sort -V | tail -1)/apksigner"
+          CERT="$("${APKSIGNER}" verify --print-certs dist/*.apk)"
+          echo "${CERT}"
+          if echo "${CERT}" | grep -q 'CN=Android Debug'; then
+            echo "::error::the APK is debug-signed"
+            exit 1
+          fi
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Knit ${{ steps.tag.outputs.name }}
+          body_path: ${{ runner.temp }}/notes.md
+          files: |
+            dist/*.apk
+            dist/*.apk.sha256
