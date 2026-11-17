@@ -143,7 +143,10 @@ the `lib/sync/` core below.
 - **DB package is `sqflite`** (not Drift). `sqflite_common_ffi` is a dev dep so
   the few real-DB tests run on desktop/CI. Most tests use the in-memory impls.
 - **Tests** live under `test/sync/...`; run `flutter test test/sync/`. Keep
-  `flutter analyze lib test` clean.
+  `flutter analyze lib test` clean. `scripts/check.sh` runs every CI gate
+  (version, format, analyze, all tests incl. `packages/`); run it before a
+  push. Releases: `scripts/version.sh bump X.Y.Z` → `scripts/release.sh`
+  (`docs/maintaining.md`).
 - **HLC is integers compared by a comparator, never string-sorted.** The only
   intentional string ordering is `position` (fractional index) in card feeds.
 
