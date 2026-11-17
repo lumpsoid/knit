@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/features/timeline/domain/timeline_order.dart';
 import 'package:knit/features/timeline/domain/timeline_sections.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -83,5 +84,74 @@ void main() {
     final s = TimelineSections.split(feed, const {});
     expect(s.hasArchived, isFalse);
     expect(s.archived, isEmpty);
+  });
+
+  group('TimelineSections order', () {
+    test('split with an order arranges pinned and others, not archived', () {
+      final collections = [
+        summary('a'),
+        summary('b', archived: true),
+        summary('c'),
+        summary('d'),
+        summary('e', archived: true),
+        summary('f'),
+      ];
+      final s = TimelineSections.split(collections, const {
+        'd',
+        'f',
+      }, order: const TimelineOrder(['f', 'd', 'c', 'a', 'e', 'b']));
+      expect(ids(s.pinned), ['f', 'd']);
+      expect(ids(s.others), ['c', 'a']);
+      // Archived keeps its incoming order even though the order lists it.
+      expect(ids(s.archived), ['b', 'e']);
+    });
+
+    test('moved within others uses section-local indices after pinned', () {
+      final collections = [
+        summary('a'),
+        summary('b'),
+        summary('c'),
+        summary('d'),
+        summary('e'),
+      ];
+      final s = TimelineSections.split(collections, const {'a'});
+      // Flat [a, b, c, d, e]: drag c (flat 2) to its final slot 4.
+      final next = s.moved(2, 4);
+      expect(next, isNotNull);
+      expect(next!.ids, ['b', 'd', 'e', 'c']);
+
+      final again = TimelineSections.split(collections, const {
+        'a',
+      }, order: next);
+      expect(ids(again.others), ['b', 'd', 'e', 'c']);
+    });
+
+    test(
+      'moved from pinned clamps a drop past the section to its last slot',
+      () {
+        final s = TimelineSections.split(feed, const {'a', 'b'});
+        // Flat index 3 is in the rest; the drop clamps to pinned slot 1.
+        final next = s.moved(0, 3);
+        expect(next, isNotNull);
+        expect(next!.ids, ['b', 'a']);
+      },
+    );
+
+    test('moved returns null when the drop lands on the same slot', () {
+      final s = TimelineSections.split(feed, const {'a', 'b'});
+      // Positive control: a real move in the rest is not null.
+      expect(s.moved(3, 0), isNotNull);
+      // Last pinned row dropped past its section clamps onto itself.
+      expect(s.moved(1, 9), isNull);
+      // First rest row dragged up over the boundary clamps to its own slot.
+      expect(s.moved(2, 1), isNull);
+      expect(s.moved(0, 0), isNull);
+    });
+
+    test('moved returns null for an out-of-range old index', () {
+      final s = TimelineSections.split(feed, const {'b'});
+      expect(s.moved(4, 0), isNull);
+      expect(s.moved(-1, 0), isNull);
+    });
   });
 }
