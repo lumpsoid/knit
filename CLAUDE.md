@@ -591,3 +591,24 @@ the `lib/sync/` core below.
   the projection is a cache — verify via `change_log`, not the blended row.
 - **Rebuild-from-log is the correctness gate** (§8.9): replay in `seq` order
   through the merge-core → identical projection regardless of arrival order.
+
+<!-- agent-kit:gates begin. Written by agent-kit-repo-setup --full-gate ci from agent-kit/conventions/gates-ci.md; edit it there, not here. `--full-gate local` removes it. -->
+## Gates: the full gate runs on GitHub Actions
+
+This repo's full gate (the whole test suite, every lint, release builds) is
+too heavy for the machine agents work on. It runs on GitHub Actions instead.
+
+- **Per step, per commit:** only the narrow local gate, the tests of what
+  changed (`agent-check -- -p <crate> <filter>`, or this repo's own narrow
+  command). Never the whole suite locally.
+- **Full gate** (the baseline before work, before landing, after a rebase):
+  commit, then run `agent-ci`. It pushes the current work branch to GitHub,
+  waits for every workflow run on that commit, and prints one line per run.
+  For a red run it also prints the log's tail and path. It takes as long as
+  CI does, so run it in the background and wait for it to finish. Code that
+  already passed is reported `cached`, with no push.
+- `agent-ci` is the one push allowed without asking: a work branch, to the
+  CI remote. It refuses the main branch. Never push the main branch yourself.
+- Red CI is a failed gate like any other: read the log it names, fix it in a
+  new commit, and run `agent-ci` again.
+<!-- agent-kit:gates end -->
