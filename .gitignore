@@ -47,7 +47,7 @@ app.*.map.json
 # FVM Version Cache
 .fvm/
 
-# Release artifacts from scripts/build_release.sh
+# Release artifacts from scripts/release_apk.sh
 /dist/
 # Local working notes and editor settings, kept out of the repo
 /TASK.md
