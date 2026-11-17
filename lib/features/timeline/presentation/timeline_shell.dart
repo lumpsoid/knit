@@ -7,6 +7,8 @@ import 'package:knit/features/collection_details/domain/collection_details.dart'
 import 'package:knit/features/collection_details/presentation/collection_details_controller.dart';
 import 'package:knit/features/collection_share/domain/local_archive_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_hub_read_repository.dart';
+import 'package:knit/features/timeline/domain/timeline_order.dart';
+import 'package:knit/features/timeline/domain/timeline_order_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_owner_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
@@ -26,6 +28,8 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
     required TimelineWriteRepository writeRepository,
     required TimelinePinReadRepository pinReadRepository,
     required TimelinePinWriteRepository pinWriteRepository,
+    required TimelineOrderReadRepository orderReadRepository,
+    required TimelineOrderWriteRepository orderWriteRepository,
     required TimelineOwnerReadRepository ownerReadRepository,
     required TimelineHubReadRepository hubReadRepository,
     required LocalArchiveReadRepository localArchiveReadRepository,
@@ -38,6 +42,8 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
        _write = writeRepository,
        _pinRead = pinReadRepository,
        _pinWrite = pinWriteRepository,
+       _orderRead = orderReadRepository,
+       _orderWrite = orderWriteRepository,
        _ownerRead = ownerReadRepository,
        _hubRead = hubReadRepository,
        _localArchiveRead = localArchiveReadRepository,
@@ -51,6 +57,8 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
   final TimelineWriteRepository _write;
   final TimelinePinReadRepository _pinRead;
   final TimelinePinWriteRepository _pinWrite;
+  final TimelineOrderReadRepository _orderRead;
+  final TimelineOrderWriteRepository _orderWrite;
   final TimelineOwnerReadRepository _ownerRead;
   final TimelineHubReadRepository _hubRead;
   final LocalArchiveReadRepository _localArchiveRead;
@@ -75,6 +83,14 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
           _log.warning('Pinned collections load failed', failure.error);
           return null;
         });
+        // The manual order is a view preference too: unreadable keeps the last.
+        final order = (await _orderRead.loadOrder()).fold<TimelineOrder?>(
+          (order) => order,
+          (failure) {
+            _log.warning('Home order load failed', failure.error);
+            return null;
+          },
+        );
         // Like pins, the local archive flag is a view preference: an
         // unreadable store keeps the last known set.
         final localArchived = (await _localArchiveRead.loadArchived())
@@ -122,6 +138,7 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
                 importedOwners: owners,
                 localArchivedIds: localArchived,
                 hubs: hubs,
+                order: order,
               ),
             );
           },
@@ -224,9 +241,16 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
           dispatch(const PinUpdateFailed());
         });
 
-      case SaveOrderEffect():
-        // TODO(collection-reorder): persist through TimelineOrderWriteRepository.
-        break;
+      case SaveOrderEffect(:final order):
+        final result = await _orderWrite.saveOrder(order);
+        result.onTap((order) => dispatch(OrderChanged(order)), (failure) {
+          _log.severe(
+            'Home order update failed',
+            failure.error,
+            failure.stackTrace,
+          );
+          dispatch(const OrderUpdateFailed());
+        });
     }
   }
 }

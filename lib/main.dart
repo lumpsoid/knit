@@ -95,6 +95,7 @@ import 'package:knit/features/settings/presentation/settings_state.dart';
 import 'package:knit/features/sync_status/infra/sync_store_sync_status_read_repository.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_module.dart';
 import 'package:knit/features/sync_status/presentation/sync_status_scope.dart';
+import 'package:knit/features/timeline/infra/shared_preferences_timeline_order_repository.dart';
 import 'package:knit/features/timeline/infra/shared_preferences_timeline_pin_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_hub_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_owner_repository.dart';
@@ -336,6 +337,8 @@ void bootstrap(AppConfig config) {
   // Pinned collections (§4.1): a device-local view preference, persisted in
   // shared_preferences like Settings — never synced or signed.
   const timelinePins = SharedPreferencesTimelinePinRepository();
+  // The manual Home order (§4.1): device-local like pins, never synced.
+  const timelineOrder = SharedPreferencesTimelineOrderRepository();
   // An imported collection is archived with a device-local flag, like a pin
   // (docs/collection_share.md); its row names who it is from.
   const localArchive = SharedPreferencesLocalArchiveRepository();
@@ -345,6 +348,8 @@ void bootstrap(AppConfig config) {
       writeRepository: SyncStoreTimelineWriteRepository(graph: graph, ids: ids),
       pinReadRepository: timelinePins,
       pinWriteRepository: timelinePins,
+      orderReadRepository: timelineOrder,
+      orderWriteRepository: timelineOrder,
       ownerReadRepository: SyncStoreTimelineOwnerRepository(graph: graph),
       hubReadRepository: SyncStoreTimelineHubRepository(graph: graph),
       localArchiveReadRepository: localArchive,
