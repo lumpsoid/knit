@@ -49,3 +49,9 @@ app.*.map.json
 
 # Release artifacts from scripts/build_release.sh
 /dist/
+# Local working notes and editor settings, kept out of the repo
+/TASK.md
+/tasks/
+/docs/guides/
+/.vscode/
+/design/icon/ref_k.png

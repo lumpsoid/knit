@@ -40,7 +40,7 @@ push-on-change refresh for the sync indicator is also deferred to the relay
 (cross_feature §1 `ExternalSignalListener`). The app runs on the **in-memory
 graph by default**; flip
 `main.dart` to `AppConfig.prod` for the persistent sqflite graph (the §9.1
-gate-5 persistence check needs it). Current status + next step: **`TASK.md`**.
+gate-5 persistence check needs it). Current status + next step: **`TASK.md`** (local, untracked).
 
 ## Presentation architecture (UI layer)
 
