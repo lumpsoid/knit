@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-11-17
+
 The first public release. Earlier private builds (1.0.x) are not listed.
 
 ### Added
@@ -31,3 +33,10 @@ The first public release. Earlier private builds (1.0.x) are not listed.
 - A per-device signing identity (`nickname#fingerprint`); every change is a
   signed record in a local log.
 - Settings → About shows the version with its commit hash.
+- Signed Android APKs on GitHub Releases, each with its SHA-256 checksum.
+
+### Changed
+- The app id is now `io.github.lumpsoid.knit` on every platform, so this
+  build installs beside a private 1.0.x build rather than over it. To carry
+  your data across, make a backup in the old app and restore it in this one.
+- Versions restart at 0.x for the public releases.
