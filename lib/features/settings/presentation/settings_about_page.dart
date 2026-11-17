@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:knit/features/settings/domain/app_version.dart';
 import 'package:knit/l10n/app_localizations.dart';
 
 /// The About subpage (§4 settings): app name, tagline, and the version/build.
@@ -55,7 +56,10 @@ class SettingsAboutPage extends StatelessWidget {
               final info = snapshot.data;
               final version = info == null
                   ? '—'
-                  : '${info.version} (${info.buildNumber})';
+                  : AppVersion(
+                      info.version,
+                      commit: AppVersion.buildCommit,
+                    ).label;
               return ListTile(
                 leading: const Icon(Icons.tag_outlined),
                 title: Text(l10n.settingsAboutVersionLabel),
