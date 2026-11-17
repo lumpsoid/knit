@@ -25,3 +25,8 @@ class TimelineWriteFailure extends TimelineFailure {
 class TimelinePinFailure extends TimelineFailure {
   const TimelinePinFailure(super.error, [super.stackTrace]);
 }
+
+/// Reading or writing the device-local manual Home order failed.
+class TimelineOrderFailure extends TimelineFailure {
+  const TimelineOrderFailure(super.error, [super.stackTrace]);
+}
