@@ -3,7 +3,7 @@
      configure activity, which hands the collection pick to the app; on
      Android 12+ "reconfigurable" lets the launcher re-run it later. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:configure="com.example.knit.CollectionWidgetConfigureActivity"
+    android:configure="io.github.lumpsoid.knit.CollectionWidgetConfigureActivity"
     android:description="@string/collection_widget_description"
     android:initialLayout="@layout/collection_widget"
     android:minWidth="110dp"

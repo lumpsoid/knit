@@ -1,4 +1,4 @@
-package com.example.knit
+package io.github.lumpsoid.knit
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -26,10 +26,10 @@ class CollectionWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        const val ACTION_OPEN = "com.example.knit.action.OPEN_COLLECTION"
-        const val ACTION_CONFIGURE = "com.example.knit.action.CONFIGURE_WIDGET"
-        const val ACTION_QUICK_INPUT = "com.example.knit.action.QUICK_INPUT"
-        const val EXTRA_COLLECTION_ID = "com.example.knit.extra.COLLECTION_ID"
+        const val ACTION_OPEN = "io.github.lumpsoid.knit.action.OPEN_COLLECTION"
+        const val ACTION_CONFIGURE = "io.github.lumpsoid.knit.action.CONFIGURE_WIDGET"
+        const val ACTION_QUICK_INPUT = "io.github.lumpsoid.knit.action.QUICK_INPUT"
+        const val EXTRA_COLLECTION_ID = "io.github.lumpsoid.knit.extra.COLLECTION_ID"
 
         /** Every placed collection widget. */
         fun placedIds(context: Context): IntArray =

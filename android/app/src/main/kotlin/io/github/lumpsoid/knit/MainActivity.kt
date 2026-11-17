@@ -1,4 +1,4 @@
-package com.example.knit
+package io.github.lumpsoid.knit
 
 import android.content.Intent
 import android.os.Bundle

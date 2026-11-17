@@ -11,7 +11,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.example.knit"
+    namespace = "io.github.lumpsoid.knit"
     // API 37 ships as a minor-versioned platform (platforms/android-37.0).
     compileSdk {
         version = release(37) { minorApiLevel = 0 }
@@ -24,8 +24,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.knit"
+        applicationId = "io.github.lumpsoid.knit"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // record (audio capture) requires API 23+; floor the Flutter default to it.

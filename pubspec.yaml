@@ -1,5 +1,5 @@
 name: knit
-description: "A new Flutter project."
+description: "Local-first cards in chat-style collections, woven together with links."
 publish_to: 'none'
 
 # The following defines the version and build number for your application.
