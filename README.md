@@ -1,6 +1,6 @@
 # Knit
 
-[![CI](https://github.com/lumpsoid/knit_mobile/actions/workflows/ci.yml/badge.svg)](https://github.com/lumpsoid/knit_mobile/actions/workflows/ci.yml)
+[![CI](https://github.com/lumpsoid/knit/actions/workflows/ci.yml/badge.svg)](https://github.com/lumpsoid/knit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Knit is a place to put things down and tie them together. You write **cards**
@@ -41,7 +41,7 @@ Android app has no internet permission.
 Knit is released for **Android 7.0 or newer**.
 
 1. Download `knit-<version>.apk` from the
-   [latest release](https://github.com/lumpsoid/knit_mobile/releases/latest).
+   [latest release](https://github.com/lumpsoid/knit/releases/latest).
 2. Optionally check it against the `.sha256` file next to it:
    `sha256sum -c knit-<version>.apk.sha256`.
 3. Open the APK on your phone and allow installing from that source.
@@ -56,8 +56,8 @@ You need [Flutter](https://docs.flutter.dev/get-started/install) (the version
 in `.fvmrc`) and the Android SDK.
 
 ```sh
-git clone https://github.com/lumpsoid/knit_mobile.git
-cd knit_mobile
+git clone https://github.com/lumpsoid/knit.git
+cd knit
 flutter pub get
 flutter run --flavor prod -t lib/main_prod.dart
 ```

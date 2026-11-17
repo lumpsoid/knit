@@ -6,13 +6,13 @@ conversation before code saves everyone time.
 ## Start with an issue
 
 My wish, not a rule: for a feature or a larger change, open a
-[proposal](https://github.com/lumpsoid/knit_mobile/issues/new?template=proposal.yml)
+[proposal](https://github.com/lumpsoid/knit/issues/new?template=proposal.yml)
 first. We agree on the problem and the shape of the fix, and then a pull
 request links the issue (`Closes #12`). Small, obvious fixes like typos,
 crashes with a clear cause or broken docs links can go straight to a PR.
 
 Found a bug? Open a
-[bug report](https://github.com/lumpsoid/knit_mobile/issues/new?template=bug_report.yml)
+[bug report](https://github.com/lumpsoid/knit/issues/new?template=bug_report.yml)
 with the version from Settings → About.
 
 ## Setup

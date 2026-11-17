@@ -11,7 +11,7 @@ cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
 die() { echo "error: $*" >&2; exit 1; }
 
-[ "$(git branch --show-current)" = master ] || die "not on master"
+[ "$(git branch --show-current)" = main ] || die "not on main"
 [ -z "$(git status --porcelain)" ] || die "working tree not clean"
 
 VERSION="$(scripts/version.sh show)"
@@ -36,4 +36,4 @@ printf 'Knit %s\n\n%s\n' "${NAME}" "${NOTES}" | git tag -a --cleanup=verbatim -F
 
 echo
 echo "Tagged ${TAG} (${VERSION}). Publish it with:"
-echo "  git push origin master ${TAG}"
+echo "  git push origin main ${TAG}"

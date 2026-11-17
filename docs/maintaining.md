@@ -5,7 +5,7 @@ The jobs, in the order you meet them.
 ## Fresh checkout
 
 ```sh
-git clone git@github.com:lumpsoid/knit_mobile.git && cd knit_mobile
+git clone git@github.com:lumpsoid/knit.git && cd knit
 flutter pub get          # Flutter at the version in .fvmrc
 scripts/check.sh
 ```
@@ -41,12 +41,12 @@ The app shows `0.1.0 (2391c1d)` in Settings → About. The hash comes from
 
 ## Release
 
-1. On `master`, with a clean tree:
+1. On `main`, with a clean tree:
    `scripts/version.sh bump X.Y.Z`, review the CHANGELOG section, then
    `git commit -am 'chore(release): X.Y.Z'`.
 2. `scripts/release.sh` runs every gate, then makes the annotated tag `vX.Y.Z`
    with the CHANGELOG section as its message. It never pushes.
-3. `git push origin master vX.Y.Z`.
+3. `git push origin main vX.Y.Z`.
 4. The **Release** workflow checks the tag against `pubspec.yaml`, builds the
    signed APK, refuses a debug signature, and publishes
    `knit-X.Y.Z.apk` + `.sha256` with the tag notes.
@@ -83,10 +83,10 @@ the DN must be yours, not `CN=Android Debug`.
 CI signs from four repository secrets:
 
 ```sh
-base64 -w0 ~/keys/knit-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 -R lumpsoid/knit_mobile
-gh secret set ANDROID_KEYSTORE_PASSWORD -R lumpsoid/knit_mobile
-gh secret set ANDROID_KEY_ALIAS -R lumpsoid/knit_mobile
-gh secret set ANDROID_KEY_PASSWORD -R lumpsoid/knit_mobile
+base64 -w0 ~/keys/knit-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 -R lumpsoid/knit
+gh secret set ANDROID_KEYSTORE_PASSWORD -R lumpsoid/knit
+gh secret set ANDROID_KEY_ALIAS -R lumpsoid/knit
+gh secret set ANDROID_KEY_PASSWORD -R lumpsoid/knit
 ```
 
 ## Dependency updates
@@ -114,4 +114,4 @@ Move together, by hand:
 - Settings → Code security: turn on Dependabot alerts and security updates.
 - Settings → Actions → General: workflow permissions "Read repository
   contents" (the release workflow asks for `contents: write` itself).
-- Optional: protect `master` and require the **CI / check** job.
+- Optional: protect `main` and require the **CI / check** job.
