@@ -90,8 +90,9 @@ class LegacyAttachmentSplitMigration {
       if (cardIds.length < 2) continue; // uniquely owned → already 1:1.
 
       final content = await _port.attachmentContent(entry.key);
-      if (content == null)
+      if (content == null) {
         continue; // broken/dangling reference → nothing to split.
+      }
 
       // Keep the first card on the original record; give every other card its
       // own fresh record (same blob, ref-counted) so each ends up 1:1.

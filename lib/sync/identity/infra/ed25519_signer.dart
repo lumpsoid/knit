@@ -39,7 +39,7 @@ class Ed25519Signer implements Signer {
         hexDecode(publicKeyHex),
         type: KeyPairType.ed25519,
       );
-      return _ed.verify(
+      return await _ed.verify(
         bytes,
         signature: Signature(hexDecode(sigHex), publicKey: publicKey),
       );

@@ -142,7 +142,7 @@ class RelayCollectionPublisher implements CollectionPublisher {
     try {
       final existing = await _store.loadPublication(collectionId);
       if (existing == null) return const Ok<PublishedRef?, RelayFailure>(null);
-      return _client.getPublication(
+      return await _client.getPublication(
         topic: existing.topicId,
         writeToken: existing.writeToken,
       );
