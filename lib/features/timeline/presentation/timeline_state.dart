@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:knit/core/ownership/collection_ownership.dart';
+import 'package:knit/features/timeline/domain/timeline_order.dart';
 import 'package:knit/features/timeline/domain/timeline_sections.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -14,6 +15,8 @@ class TimelineState {
     this.importedOwners = const {},
     this.localArchivedIds = const {},
     this.hubs = const {},
+    this.order = const TimelineOrder(),
+    this.reordering = false,
   });
 
   final TimelineStatus status;
@@ -39,6 +42,13 @@ class TimelineState {
   /// it, shown as the row's "in:" line. Absent ⇒ none.
   final Map<String, List<CollectionHub>> hubs;
 
+  /// The user's manual Home order (device-local, §4.1); empty is the recency
+  /// order.
+  final TimelineOrder order;
+
+  /// Whether Home is in drag-to-reorder mode.
+  final bool reordering;
+
   /// The hubs over [collectionId], in hub order; empty when none.
   List<CollectionHub> hubsOf(String collectionId) =>
       hubs[collectionId] ?? const [];
@@ -50,6 +60,7 @@ class TimelineState {
     collections,
     pinnedIds,
     localArchivedIds: localArchivedIds,
+    order: order,
   );
 
   bool isPinned(String collectionId) => pinnedIds.contains(collectionId);
@@ -73,6 +84,8 @@ class TimelineState {
     Map<String, String>? importedOwners,
     Set<String>? localArchivedIds,
     Map<String, List<CollectionHub>>? hubs,
+    TimelineOrder? order,
+    bool? reordering,
   }) => TimelineState(
     status: status ?? this.status,
     collections: collections ?? this.collections,
@@ -80,5 +93,7 @@ class TimelineState {
     importedOwners: importedOwners ?? this.importedOwners,
     localArchivedIds: localArchivedIds ?? this.localArchivedIds,
     hubs: hubs ?? this.hubs,
+    order: order ?? this.order,
+    reordering: reordering ?? this.reordering,
   );
 }

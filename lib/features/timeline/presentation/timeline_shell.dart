@@ -223,6 +223,10 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
           );
           dispatch(const PinUpdateFailed());
         });
+
+      case SaveOrderEffect():
+        // TODO(collection-reorder): persist through TimelineOrderWriteRepository.
+        break;
     }
   }
 }

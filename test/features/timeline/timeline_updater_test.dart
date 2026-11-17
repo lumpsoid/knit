@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:knit/features/timeline/domain/timeline_order.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_effect.dart';
 import 'package:knit/features/timeline/presentation/timeline_state.dart';
@@ -311,6 +312,155 @@ void main() {
       );
       expect(next, same(ready));
       expect(effects, isNull);
+    });
+  });
+
+  group('manual order (§4.1)', () {
+    TimelineState abcReady() => TimelineState(
+      status: TimelineStatus.ready,
+      collections: [summary('a'), summary('b'), summary('c')],
+    );
+    List<String> idsOf(List<CollectionSummary> list) => [
+      for (final c in list) c.collectionId,
+    ];
+
+    test('ReorderStarted and ReorderEnded toggle reorder mode', () {
+      final (started, startEffects) = updater.update(
+        abcReady(),
+        const ReorderStarted(),
+      );
+      expect(started.reordering, isTrue);
+      expect(startEffects, isNull);
+
+      final (ended, endEffects) = updater.update(started, const ReorderEnded());
+      expect(ended.reordering, isFalse);
+      expect(endEffects, isNull);
+    });
+
+    test('a drag moves the collection and persists the new order', () {
+      final (next, effects) = updater.update(
+        abcReady(),
+        const CollectionMoved(0, 2),
+      );
+      expect(next.order.ids, ['b', 'c', 'a']);
+      expect(idsOf(next.sections.others), ['b', 'c', 'a']);
+      final save = effects!.single as SaveOrderEffect;
+      expect(save.order.ids, ['b', 'c', 'a']);
+    });
+
+    test('a drag that moves nothing returns the same state', () {
+      final ready = abcReady();
+      final (next, effects) = updater.update(
+        ready,
+        const CollectionMoved(1, 1),
+      );
+      expect(next, same(ready));
+      expect(effects, isNull);
+    });
+
+    test('reset clears a manual order and persists the empty one', () {
+      final (manual, _) = updater.update(
+        abcReady(),
+        const CollectionMoved(0, 2),
+      );
+      final (reset, effects) = updater.update(
+        manual,
+        const OrderResetRequested(),
+      );
+      expect(reset.order.isManual, isFalse);
+      expect(idsOf(reset.sections.others), ['a', 'b', 'c']);
+      final save = effects!.single as SaveOrderEffect;
+      expect(save.order.isManual, isFalse);
+    });
+
+    test('reset with no manual order is a no-op', () {
+      final ready = abcReady();
+      final (next, effects) = updater.update(
+        ready,
+        const OrderResetRequested(),
+      );
+      expect(next, same(ready));
+      expect(effects, isNull);
+    });
+
+    test('OrderChanged replaces the order without an effect', () {
+      final (next, effects) = updater.update(
+        abcReady(),
+        const OrderChanged(TimelineOrder(['c', 'a', 'b'])),
+      );
+      expect(next.order.ids, ['c', 'a', 'b']);
+      expect(effects, isNull);
+    });
+
+    test('OrderUpdateFailed keeps the dragged order', () {
+      final (manual, _) = updater.update(
+        abcReady(),
+        const CollectionMoved(0, 2),
+      );
+      final (next, effects) = updater.update(manual, const OrderUpdateFailed());
+      expect(next, same(manual));
+      expect(effects, isNull);
+    });
+
+    test('CollectionsLoaded with no order keeps the last known order', () {
+      final (manual, _) = updater.update(
+        abcReady(),
+        const CollectionMoved(0, 2),
+      );
+      final (reloaded, _) = updater.update(
+        manual,
+        CollectionsLoaded([summary('a'), summary('b'), summary('c')]),
+      );
+      expect(reloaded.order.ids, ['b', 'c', 'a']);
+      expect(idsOf(reloaded.sections.others), ['b', 'c', 'a']);
+    });
+
+    test('CollectionsLoaded with an order replaces the last known one', () {
+      final (manual, _) = updater.update(
+        abcReady(),
+        const CollectionMoved(0, 2),
+      );
+      final (reordered, _) = updater.update(
+        manual,
+        CollectionsLoaded([
+          summary('a'),
+          summary('b'),
+          summary('c'),
+        ], order: const TimelineOrder(['a', 'b', 'c'])),
+      );
+      expect(reordered.order.ids, ['a', 'b', 'c']);
+
+      // An empty order is a real value too: it clears the manual order.
+      final (cleared, _) = updater.update(
+        reordered,
+        CollectionsLoaded([
+          summary('a'),
+          summary('b'),
+          summary('c'),
+        ], order: const TimelineOrder()),
+      );
+      expect(cleared.order.isManual, isFalse);
+    });
+
+    test('CollectionsLoaded keeps reorder mode across a reload', () {
+      final (reordering, _) = updater.update(
+        abcReady(),
+        const ReorderStarted(),
+      );
+      final (reloaded, _) = updater.update(
+        reordering,
+        CollectionsLoaded([summary('a'), summary('b'), summary('c')]),
+      );
+      expect(reloaded.reordering, isTrue);
+    });
+
+    test('DeactivateFeature leaves reorder mode and releases the covers', () {
+      final (next, effects) = updater.update(
+        const TimelineState(status: TimelineStatus.ready, reordering: true),
+        const DeactivateFeature(),
+      );
+      expect(next.reordering, isFalse);
+      expect(effects!.single, isA<ReleaseCoversEffect>());
     });
   });
 }

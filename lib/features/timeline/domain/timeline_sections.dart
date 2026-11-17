@@ -20,7 +20,7 @@ class TimelineSections {
     List<CollectionSummary> collections,
     Set<String> pinnedIds, {
     Set<String> localArchivedIds = const {},
-    TimelineOrder order = const TimelineOrder(),
+    required TimelineOrder order,
   }) {
     final pinned = <CollectionSummary>[];
     final others = <CollectionSummary>[];

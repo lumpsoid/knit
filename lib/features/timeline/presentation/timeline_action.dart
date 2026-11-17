@@ -1,3 +1,4 @@
+import 'package:knit/features/timeline/domain/timeline_order.dart';
 import 'package:knit/sync/sync.dart';
 
 /// Intents + async-result deliveries for Timeline (fcis.md §6.4).
@@ -23,6 +24,7 @@ class CollectionsLoaded extends TimelineAction {
     this.importedOwners = const {},
     this.localArchivedIds,
     this.hubs = const {},
+    this.order,
   });
   final List<CollectionSummary> collections;
   final Set<String>? pinnedIds;
@@ -35,6 +37,9 @@ class CollectionsLoaded extends TimelineAction {
 
   /// The hubs over each collection (§8.6.4), for the rows' "in:" line.
   final Map<String, List<CollectionHub>> hubs;
+
+  /// The device-local manual order; null keeps the last known.
+  final TimelineOrder? order;
 }
 
 class TimelineLoadFailed extends TimelineAction {
@@ -96,6 +101,40 @@ class PinsChanged extends TimelineAction {
 
 class PinUpdateFailed extends TimelineAction {
   const PinUpdateFailed();
+}
+
+/// Long-press → Reorder on the Home sheet: enter drag-to-reorder mode.
+class ReorderStarted extends TimelineAction {
+  const ReorderStarted();
+}
+
+/// Done in reorder mode: leave drag-to-reorder mode.
+class ReorderEnded extends TimelineAction {
+  const ReorderEnded();
+}
+
+/// A reorder-mode drag over the flat `[...pinned, ...others]` list, with
+/// `onReorderItem` semantics (the drop index is the final slot).
+class CollectionMoved extends TimelineAction {
+  const CollectionMoved(this.oldIndex, this.newIndex);
+  final int oldIndex;
+  final int newIndex;
+}
+
+/// "Reset to recent" in reorder mode: clear the manual order.
+class OrderResetRequested extends TimelineAction {
+  const OrderResetRequested();
+}
+
+/// The manual order was persisted; [order] is the order after the write.
+class OrderChanged extends TimelineAction {
+  const OrderChanged(this.order);
+  final TimelineOrder order;
+}
+
+/// Saving the manual order failed; the dragged order stays on screen.
+class OrderUpdateFailed extends TimelineAction {
+  const OrderUpdateFailed();
 }
 
 /// Long-press → Archive / Unarchive on a collection row (§3.4, synced).

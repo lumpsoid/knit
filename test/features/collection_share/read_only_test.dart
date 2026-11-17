@@ -17,6 +17,7 @@ import 'package:knit/features/collection_widget/domain/collection_widget_tile_pl
 import 'package:knit/features/collection_widget/infra/sync_store_collection_widget_read_repository.dart';
 import 'package:knit/features/connections/domain/connections_models.dart';
 import 'package:knit/features/share_capture/infra/sync_store_share_capture_read_repository.dart';
+import 'package:knit/features/timeline/domain/timeline_order.dart';
 import 'package:knit/features/timeline/domain/timeline_sections.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_owner_repository.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
@@ -226,6 +227,7 @@ void main() {
         summaries,
         const {'trip'},
         localArchivedIds: const {'trip'},
+        order: const TimelineOrder(),
       );
       expect(sections.archived.map((c) => c.collectionId), ['trip']);
       expect(sections.pinned, isEmpty);
