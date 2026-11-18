@@ -1095,8 +1095,8 @@ SELECT 1 FROM <collection|card> WHERE id=:endpoint_id AND deleted=0;  -- 0 rows 
 **8.6.3 Home timeline (per collection).** A local view, computed on read for MVP (no cache
 table → no invalidation bugs):
 - `card_count` = `COUNT(*) WHERE collection_id=:c AND deleted=0`
-- `last_card` = the live card with the greatest `created_at`; preview = its text or a
-  kind-based summary (image/audio/link). *(Most-recently-added, pairing with the sort below —
+- `last_card` = the live card with the greatest `created_at` (a tie: the later HLC, then
+  the greater id); preview = its text or a kind-based summary (image/audio/link). *(Most-recently-added, pairing with the sort below —
   not the bottom-of-feed card, which reorder could make an old one.)*
 - `last_updated` = `MAX(created_at)` over live cards, else the collection's own `created_at`.
 

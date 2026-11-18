@@ -204,6 +204,23 @@ void main() {
           expect(row.lastCard!.settled, isTrue);
           expect(row.lastCard!.text, 'pulled the shot');
         });
+
+        test(
+          'a created_at tie goes to the later HLC, not the greater id',
+          () async {
+            await store.upsert(collection(id: 'col-1', hlcMs: 1));
+            // Same created_at (same ms). 'z' sorts after 'a', but 'a' was
+            // stamped later: back-to-back local creates tick the HLC, not the id.
+            await store.upsert(
+              card(id: 'z', collectionId: 'col-1', hlcMs: 1, createdAt: 500),
+            );
+            await store.upsert(
+              card(id: 'a', collectionId: 'col-1', hlcMs: 2, createdAt: 500),
+            );
+            final row = (await build()).single;
+            expect(row.lastCard!.id, 'a');
+          },
+        );
       });
     });
   }
