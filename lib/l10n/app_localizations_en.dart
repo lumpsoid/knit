@@ -36,6 +36,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionDone => 'Done';
 
   @override
+  String get actionReorder => 'Reorder';
+
+  @override
   String get actionLink => 'Link';
 
   @override
@@ -255,6 +258,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get timelineArchiveFailed =>
       'Couldn\'t update the archive. Please try again.';
+
+  @override
+  String get timelineOrderFailed =>
+      'Couldn\'t save the order. Please try again.';
+
+  @override
+  String get timelineResetOrder => 'Reset to recent';
 
   @override
   String get timelineArchiveRow => 'Archive';

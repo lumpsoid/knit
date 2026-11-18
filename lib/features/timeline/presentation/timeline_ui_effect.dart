@@ -12,7 +12,13 @@ class TimelineOpenCollectionUiEffect extends TimelineUiEffect {
 
 /// A semantic, locale-independent message the shell can raise without reaching
 /// for `BuildContext` — the View maps it to localized text (l10n).
-enum TimelineMessage { createFailed, deleteFailed, pinFailed, archiveFailed }
+enum TimelineMessage {
+  createFailed,
+  deleteFailed,
+  pinFailed,
+  archiveFailed,
+  orderFailed,
+}
 
 /// Show a transient message (e.g. create failed) — a snackbar. Carries a
 /// semantic [TimelineMessage] key, not display text; the View localizes it.

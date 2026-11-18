@@ -71,6 +71,7 @@ class _TimelinePageState extends State<TimelinePage> {
           TimelineMessage.deleteFailed => l10n.timelineDeleteFailed,
           TimelineMessage.pinFailed => l10n.timelinePinFailed,
           TimelineMessage.archiveFailed => l10n.timelineArchiveFailed,
+          TimelineMessage.orderFailed => l10n.timelineOrderFailed,
         };
         ScaffoldMessenger.of(
           context,

@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get actionDone;
 
+  /// No description provided for @actionReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder'**
+  String get actionReorder;
+
   /// No description provided for @actionLink.
   ///
   /// In en, this message translates to:
@@ -535,6 +541,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update the archive. Please try again.'**
   String get timelineArchiveFailed;
+
+  /// No description provided for @timelineOrderFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the order. Please try again.'**
+  String get timelineOrderFailed;
+
+  /// No description provided for @timelineResetOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to recent'**
+  String get timelineResetOrder;
 
   /// No description provided for @timelineArchiveRow.
   ///

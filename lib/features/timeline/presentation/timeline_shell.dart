@@ -249,6 +249,9 @@ class TimelineShell extends Shell<TimelineEffect, TimelineAction> {
             failure.error,
             failure.stackTrace,
           );
+          _effectEmitter.push(
+            const TimelineShowMessageUiEffect(TimelineMessage.orderFailed),
+          );
           dispatch(const OrderUpdateFailed());
         });
     }

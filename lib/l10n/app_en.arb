@@ -14,6 +14,7 @@
   "actionClear": "Clear",
   "actionRemove": "Remove",
   "actionDone": "Done",
+  "actionReorder": "Reorder",
   "actionLink": "Link",
   "actionContinue": "Continue",
   "actionOpen": "Open",
@@ -102,6 +103,8 @@
   "timelineRecentSection": "Recent",
   "timelinePinFailed": "Couldn't update the pin. Please try again.",
   "timelineArchiveFailed": "Couldn't update the archive. Please try again.",
+  "timelineOrderFailed": "Couldn't save the order. Please try again.",
+  "timelineResetOrder": "Reset to recent",
   "timelineArchiveRow": "Archive",
   "timelineArchiveCount": "{count, plural, =1{1 collection} other{{count} collections}}",
   "@timelineArchiveCount": {
