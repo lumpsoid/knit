@@ -497,6 +497,14 @@ the `lib/sync/` core below.
   a pull, and the row opens `TimelineArchivePage`, a view over the Timeline's
   own state. Archive and Unarchive live in the shared long-press sheet
   (`widgets/timeline_collection_actions.dart`).
+- Home manual order (§4.1): a device-local `timeline.collectionOrder` id list,
+  like pins (not synced). The pure `TimelineOrder` is applied per section by
+  `TimelineSections.split(order:)`; collections not in it come first, in recency
+  order. Long-press sheet **Reorder** (Home only) → `ReorderStarted`, then a flat
+  `ReorderableListView` of `TimelineReorderRow`s. `CollectionMoved` is clamped to
+  the source section (`TimelineSections.moved`) and saved per drop
+  (`SaveOrderEffect`; failure → `TimelineMessage.orderFailed`). App bar: Reset to
+  recent (`OrderResetRequested`) and Done.
 - `card_links` is the shared owner of card links (§4.4): `CardLinksController`
   + `CardLinksState` + the one `LinkPickerSheet` (lazy two-level picker).
   Collection and Card Edit open the picker and add links through it; Card Edit
