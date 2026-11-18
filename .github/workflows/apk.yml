@@ -15,7 +15,7 @@ jobs:
   android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Sign with the release key when its secrets are set, so the APK can
       # update an installed build; otherwise the debug key.
