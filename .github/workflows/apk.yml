@@ -1,0 +1,65 @@
+name: APK
+
+# A test APK on demand (Actions → APK → Run workflow), downloadable as a run
+# artifact. Release APKs come from release.yml on a version tag.
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: Flavor (dev and staging install beside prod)
+        type: choice
+        options: [staging, dev, prod]
+        default: staging
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sign with the release key when its secrets are set, so the APK can
+      # update an installed build; otherwise the debug key.
+      - name: Write the signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "${KEYSTORE_BASE64}" ]; then
+            echo "::warning::no signing secrets, signing with the debug key"
+            exit 0
+          fi
+          echo "${KEYSTORE_BASE64}" | base64 -d > "${RUNNER_TEMP}/release.jks"
+          {
+            echo "storeFile=${RUNNER_TEMP}/release.jks"
+            echo "storePassword=${KEYSTORE_PASSWORD}"
+            echo "keyAlias=${KEY_ALIAS}"
+            echo "keyPassword=${KEY_PASSWORD}"
+          } > android/key.properties
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Read the pinned Flutter version
+        id: flutter
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter.outputs.version }}
+          channel: stable
+          cache: true
+
+      - name: Build
+        run: scripts/release_apk.sh "${{ inputs.flavor }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knit-${{ inputs.flavor }}-${{ github.sha }}
+          path: |
+            dist/*.apk
+            dist/*.apk.sha256
+          retention-days: 14

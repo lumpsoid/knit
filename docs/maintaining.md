@@ -54,6 +54,11 @@ The app shows `0.1.0 (2391c1d)` in Settings → About. The hash comes from
 To build an APK locally: `scripts/release_apk.sh` (prod) or
 `scripts/release_apk.sh dev`. It lands in `dist/` with its checksum.
 
+To build a test APK on CI: Actions → **APK** → Run workflow (or
+`gh workflow run apk.yml -f flavor=staging`), then download it from the run's
+artifacts (kept 14 days). It uses the release key when its secrets are set,
+else the debug key.
+
 ## Signing key
 
 One key signs every release. **Lose it and no installed copy can update
