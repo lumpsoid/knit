@@ -41,7 +41,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # Local-first store — one SQLite DB file per device (spec §6.1).
-  sqflite: ^2.4.1
+  sqflite: ^2.4.6
 
   # Schema migrations for the sqflite storages — local package.
   sql_migrator:
@@ -78,42 +78,42 @@ dependencies:
       url: "https://github.com/lumpsoid/fetch_dart"
       ref: "0a6ee659f98292e8fec1627645c6cebe63a62e1e"
   # UUIDv7 minting behind the IdGenerator port (spec §6.1) — time-ordered ids.
-  uuid: ^4.5.3
+  uuid: ^4.6.0
 
   # Attachment capture + storage foundation (spec §6.4/§7.4.8). image_picker sits
   # behind the ImagePickerPort; path_provider locates the on-disk blob dir; record
   # sits behind the AudioRecorderPort (audio-message capture); audioplayers sits
   # behind the AudioPlayerPort (audio-message playback); file_picker sits behind
   # the FilePickerPort (arbitrary-file attachment capture).
-  image_picker: ^1.1.2
+  image_picker: ^1.2.4
   path_provider: ^2.1.4
-  record: ^7.1.0
-  audioplayers: ^6.1.0
+  record: ^7.2.0
+  audioplayers: ^6.8.1
   file_picker: ^12.0.0-beta.7
   # Pure-Dart decode/resize/re-encode behind the ImageOptimizerPort (the opt-in
   # "Optimise size" for a photo added to a card).
-  image: ^4.11.0
+  image: ^4.13.1
 
   # Device-local preference persistence (theme + language). These are this
   # device's UI settings, not synced graph data — so they live in
   # shared_preferences, never the SQLite/change-log store.
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
 
   # App name + version/build number for the About screen.
-  package_info_plus: ^10.1.0
-  share_plus: ^13.1.0
+  package_info_plus: ^10.2.2
+  share_plus: ^13.3.1
 
   # Zip encode/decode for the backup bundle (export/import — settings §4 Data).
   # Pure Dart, no platform channel, so the codec round-trips in unit tests.
-  archive: ^4.0.0
+  archive: ^4.7.1
 
   # Hand a link card's URL to the system browser (§4.2) — tapping a link card
   # opens it externally via the platform's default handler.
-  url_launcher: ^6.3.0
+  url_launcher: ^6.3.3
   receive_sharing_intent: ^1.9.0
 
   # Keep the screen on while a collection is presented (§4.9).
-  wakelock_plus: ^1.7.0
+  wakelock_plus: ^1.8.0
 
 dev_dependencies:
   flutter_test:
@@ -121,7 +121,7 @@ dev_dependencies:
 
   # Desktop/CI SQLite for tests that need a real DB (the sync storages are
   # abstracted, so most tests use the in-memory impl and need neither).
-  sqflite_common_ffi: ^2.3.4
+  sqflite_common_ffi: ^2.4.7
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
