@@ -16,7 +16,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The real-DB tests load the system SQLite through sqflite_common_ffi.
       - name: Install SQLite
