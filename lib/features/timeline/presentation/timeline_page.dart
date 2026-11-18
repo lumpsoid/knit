@@ -17,6 +17,7 @@ import 'package:knit/features/timeline/presentation/timeline_ui_effect.dart';
 import 'package:knit/features/timeline/presentation/widgets/timeline_archive_row.dart';
 import 'package:knit/features/timeline/presentation/widgets/timeline_collection_actions.dart';
 import 'package:knit/features/timeline/presentation/widgets/timeline_collection_tile.dart';
+import 'package:knit/features/timeline/presentation/widgets/timeline_reorder_row.dart';
 import 'package:knit/features/timeline/presentation/widgets/pull_reveal_list.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -71,6 +72,7 @@ class _TimelinePageState extends State<TimelinePage> {
           TimelineMessage.deleteFailed => l10n.timelineDeleteFailed,
           TimelineMessage.pinFailed => l10n.timelinePinFailed,
           TimelineMessage.archiveFailed => l10n.timelineArchiveFailed,
+          TimelineMessage.orderFailed => l10n.timelineOrderFailed,
         };
         ScaffoldMessenger.of(
           context,
@@ -148,36 +150,68 @@ class _TimelinePageState extends State<TimelinePage> {
       child: IncomingShareGate(
         mode: IncomingShareGateMode.capture,
         child: Scaffold(
-          appBar: AppBar(
-            title: Text(l10n.appTitle),
-            actions: [
-              IconButton(
-                tooltip: l10n.searchOpen,
-                icon: const Icon(Icons.search),
-                onPressed: () => Navigator.of(
-                  context,
-                ).push(SearchPage.route(TimelineScope.createSearch())),
-              ),
-              IconButton(
-                tooltip: l10n.profileOpen,
-                icon: const Icon(Icons.account_circle_outlined),
-                onPressed: () =>
-                    Navigator.of(context).push(ProfilePage.route()),
-              ),
-              IconButton(
-                tooltip: l10n.settingsOpen,
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () =>
-                    Navigator.of(context).push(SettingsPage.route()),
-              ),
-              const SyncStatusIndicator(),
-            ],
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: ListenableBuilder(
+              listenable: _controller.stateHolder,
+              builder: (context, _) {
+                final state = _controller.stateHolder.value;
+                return AppBar(
+                  title: Text(l10n.appTitle),
+                  actions: state.reordering
+                      ? [
+                          IconButton(
+                            tooltip: l10n.timelineResetOrder,
+                            icon: const Icon(Icons.restart_alt),
+                            onPressed: state.order.isManual
+                                ? () => _controller.dispatch(
+                                    const OrderResetRequested(),
+                                  )
+                                : null,
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                _controller.dispatch(const ReorderEnded()),
+                            child: Text(l10n.actionDone),
+                          ),
+                        ]
+                      : [
+                          IconButton(
+                            tooltip: l10n.searchOpen,
+                            icon: const Icon(Icons.search),
+                            onPressed: () => Navigator.of(context).push(
+                              SearchPage.route(TimelineScope.createSearch()),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: l10n.profileOpen,
+                            icon: const Icon(Icons.account_circle_outlined),
+                            onPressed: () =>
+                                Navigator.of(context).push(ProfilePage.route()),
+                          ),
+                          IconButton(
+                            tooltip: l10n.settingsOpen,
+                            icon: const Icon(Icons.settings_outlined),
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).push(SettingsPage.route()),
+                          ),
+                          const SyncStatusIndicator(),
+                        ],
+                );
+              },
+            ),
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            key: _fabKey,
-            onPressed: _createCollection,
-            icon: const Icon(Icons.add),
-            label: Text(l10n.timelineCollectionFab),
+          floatingActionButton: ListenableBuilder(
+            listenable: _controller.stateHolder,
+            builder: (context, _) => _controller.stateHolder.value.reordering
+                ? const SizedBox.shrink()
+                : FloatingActionButton.extended(
+                    key: _fabKey,
+                    onPressed: _createCollection,
+                    icon: const Icon(Icons.add),
+                    label: Text(l10n.timelineCollectionFab),
+                  ),
           ),
           body: ListenableBuilder(
             listenable: Listenable.merge([
@@ -211,6 +245,7 @@ class _TimelinePageState extends State<TimelinePage> {
   }
 
   Widget _list(TimelineState state) {
+    if (state.reordering) return _reorderList(state);
     final l10n = AppLocalizations.of(context);
     final sections = state.sections;
     // Section headers only appear once something is pinned; with no pins the
@@ -242,6 +277,43 @@ class _TimelinePageState extends State<TimelinePage> {
       alwaysShowHeader: sections.homeIsEmpty,
       onRefresh: () async => _controller.dispatch(const RefreshRequested()),
       children: rows,
+    );
+  }
+
+  /// Home reorder mode (§4.1): one flat list, pinned first; the updater keeps
+  /// each drag in its section.
+  Widget _reorderList(TimelineState state) {
+    final sections = state.sections;
+    final rows = [...sections.pinned, ...sections.others];
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _controller.dispatch(const ReorderEnded());
+      },
+      child: ReorderableListView.builder(
+        buildDefaultDragHandles: false,
+        itemCount: rows.length,
+        onReorderItem: (oldIndex, newIndex) =>
+            _controller.dispatch(CollectionMoved(oldIndex, newIndex)),
+        itemBuilder: (context, i) {
+          final summary = rows[i];
+          final header = TimelineScope.collectionDetails.of(
+            summary.collectionId,
+          );
+          final coverId = header == null
+              ? summary.coverAttachmentId
+              : header.coverAttachmentId;
+          return TimelineReorderRow(
+            key: ValueKey(summary.collectionId),
+            collectionId: summary.collectionId,
+            title: header?.title ?? summary.title,
+            coverBytes: coverId == null
+                ? null
+                : TimelineScope.images.of(coverId),
+            index: i,
+          );
+        },
+      ),
     );
   }
 

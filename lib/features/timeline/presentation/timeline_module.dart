@@ -7,6 +7,7 @@ import 'package:knit/features/collection_details/presentation/collection_details
 import 'package:knit/features/timeline/domain/timeline_channel.dart';
 import 'package:knit/features/collection_share/domain/local_archive_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_hub_read_repository.dart';
+import 'package:knit/features/timeline/domain/timeline_order_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_owner_read_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_pin_repository.dart';
 import 'package:knit/features/timeline/domain/timeline_read_repository.dart';
@@ -28,6 +29,8 @@ class TimelineModule {
     required TimelineWriteRepository writeRepository,
     required TimelinePinReadRepository pinReadRepository,
     required TimelinePinWriteRepository pinWriteRepository,
+    required TimelineOrderReadRepository orderReadRepository,
+    required TimelineOrderWriteRepository orderWriteRepository,
     required TimelineOwnerReadRepository ownerReadRepository,
     required TimelineHubReadRepository hubReadRepository,
     required LocalArchiveReadRepository localArchiveReadRepository,
@@ -46,6 +49,8 @@ class TimelineModule {
       writeRepository: writeRepository,
       pinReadRepository: pinReadRepository,
       pinWriteRepository: pinWriteRepository,
+      orderReadRepository: orderReadRepository,
+      orderWriteRepository: orderWriteRepository,
       ownerReadRepository: ownerReadRepository,
       hubReadRepository: hubReadRepository,
       localArchiveReadRepository: localArchiveReadRepository,

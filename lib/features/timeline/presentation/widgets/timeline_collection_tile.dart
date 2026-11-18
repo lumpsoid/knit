@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:knit/core/attachments/presentation/attachment_image.dart';
 import 'package:knit/core/previews/card_preview_label.dart';
 import 'package:knit/core/settled/settled_palette.dart';
 import 'package:knit/features/timeline/domain/timeline_hub_line.dart';
 import 'package:knit/features/timeline/presentation/timeline_scope.dart';
+import 'package:knit/features/timeline/presentation/widgets/timeline_collection_avatar.dart';
 import 'package:knit/l10n/app_localizations.dart';
 import 'package:knit/sync/sync.dart';
 
@@ -114,7 +114,11 @@ class TimelineCollectionTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
-      leading: _leading(title),
+      leading: TimelineCollectionAvatar(
+        collectionId: summary.collectionId,
+        title: title,
+        coverBytes: coverBytes,
+      ),
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: fromHandle == null && hubLine == null
           ? preview
@@ -147,37 +151,6 @@ class TimelineCollectionTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  /// A collection row's leading glyph: its cover image (clipped to the avatar
-  /// circle) when its bytes are loaded, otherwise the lettered-avatar
-  /// placeholder tinted from the collection id.
-  Widget _leading(String title) {
-    final bytes = coverBytes;
-    if (bytes != null) {
-      return ClipOval(
-        child: AttachmentImage(
-          bytes: bytes,
-          width: 40,
-          height: 40,
-          placeholder: _letterAvatar(title),
-        ),
-      );
-    }
-    return _letterAvatar(title);
-  }
-
-  Widget _letterAvatar(String title) => CircleAvatar(
-    backgroundColor: _tint(summary.collectionId),
-    child: Text(
-      title.substring(0, 1).toUpperCase(),
-      style: const TextStyle(color: Colors.white),
-    ),
-  );
-
-  Color _tint(String seed) {
-    final h = seed.codeUnits.fold<int>(0, (a, c) => (a * 31 + c) & 0xFFFF);
-    return HSLColor.fromAHSL(1, (h % 360).toDouble(), 0.5, 0.5).toColor();
   }
 
   /// "in: House · Trips", with "+N" past the first names.

@@ -1,3 +1,5 @@
+import 'package:knit/features/timeline/domain/timeline_order.dart';
+
 /// Async-work descriptors for Timeline (fcis.md §6.4).
 sealed class TimelineEffect {
   const TimelineEffect();
@@ -45,6 +47,13 @@ class SetPinnedEffect extends TimelineEffect {
   const SetPinnedEffect(this.collectionId, {required this.pinned});
   final String collectionId;
   final bool pinned;
+}
+
+/// Persist the manual Home order in the device-local store (§4.1); an empty
+/// order clears it.
+class SaveOrderEffect extends TimelineEffect {
+  const SaveOrderEffect(this.order);
+  final TimelineOrder order;
 }
 
 /// Archive or unarchive a collection (§3.4), then reload the home feed.

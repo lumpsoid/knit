@@ -139,7 +139,8 @@ deleted. Archiving takes it off the home timeline without losing anything.
 
 ### 4.1 Home / Collections Timeline (root)
 - Vertical list of **collections**, **sorted latest-updated first (descending)** — recency
-  order, like a messenger's chat list. **Not reorderable.**
+  order, like a messenger's chat list. The user can set a **manual order** instead (see
+  **Reorder** below the pins).
 - Each row shows: cover image (if set), title, last-card preview, card count, last-updated.
   When the newest card is a Connection card (§4.2), the preview names its target: "→ Trips"
   for a collection, "→" and the first line of a card (else its kind, "→ Photo"). If the
@@ -172,9 +173,21 @@ deleted. Archiving takes it off the home timeline without losing anything.
   targets re-filters it without a reload.
 - **Pinned collections:** long-press a row → actions sheet → **Pin / Unpin**. Pinned
   collections sit in a **"Pinned"** section above a **"Recent"** section; both keep the
-  recency order, with no cap on pins. Headers appear only once something is pinned. Pins are a
-  **device-local view preference**: not synced, not signed, not part of the §6.4 schema.
-  Deleting a collection drops its pin.
+  recency order (or the manual order, below), with no cap on pins. Headers appear only
+  once something is pinned. Pins are a **device-local view preference**: not synced, not
+  signed, not part of the §6.4 schema. Deleting a collection drops its pin.
+- **Reorder:** long-press a row → actions sheet → **Reorder** (Home only, not on the
+  Archive page). Reorder mode is a state of this screen: one drag list, pinned first, with
+  the app bar's **Reset to recent** (enabled only once a manual order exists; it clears the
+  order) and **Done**. The FAB hides, and system back leaves the mode. A drag stays within
+  its section (Pinned or Recent); pinning stays a sheet action. Collections not in the
+  stored order (e.g. newly created) come first in their section, in recency order, so a
+  new collection is never buried. Ids of deleted collections are ignored. The order is a
+  **device-local view preference** like pins: one list of collection ids in shared
+  preferences key `timeline.collectionOrder`, not synced, not signed, not part of the §6.4
+  schema. Empty means recency order. Each drop saves at once (no staging until Done); if
+  the save fails, "Couldn't save the order. Please try again." shows and the dragged order
+  stays on screen. Archived collections (the Archive page) stay in recency order.
 - **Archive** (§3.4): the same long-press sheet offers **Archive**, which takes the collection
   off Home. An **Archive** row (with the archived count) hides above the first row: a short
   pull down at the top reveals it and it stays, a longer pull also refreshes, and scrolling it
@@ -280,7 +293,8 @@ deleted. Archiving takes it off the home timeline without losing anything.
   highlight, loading older cards down to it first when needed. It is read-only navigation,
   so imported collections offer it too.
 - **Reorder mode** — drag-to-reorder, a *state of this screen*, not a separate screen.
-  **Reorder applies only to cards within this collection**; there is no reordering on Home.
+  **Reorder applies only to cards within this collection**; Home has its own collection
+  reorder (§4.1).
 - **Multi-select mode** — long-press a card to select it; while selecting, a tap toggles a
   card, the app bar shows the count, and the bottom bar offers *select all*, **Settle /
   Unsettle**, **Emphasize / Unemphasize** (§3.3), **Link to…** and **Move to collection**.
@@ -1081,13 +1095,14 @@ SELECT 1 FROM <collection|card> WHERE id=:endpoint_id AND deleted=0;  -- 0 rows 
 **8.6.3 Home timeline (per collection).** A local view, computed on read for MVP (no cache
 table → no invalidation bugs):
 - `card_count` = `COUNT(*) WHERE collection_id=:c AND deleted=0`
-- `last_card` = the live card with the greatest `created_at`; preview = its text or a
-  kind-based summary (image/audio/link). *(Most-recently-added, pairing with the sort below —
+- `last_card` = the live card with the greatest `created_at` (a tie: the later HLC, then
+  the greater id); preview = its text or a kind-based summary (image/audio/link). *(Most-recently-added, pairing with the sort below —
   not the bottom-of-feed card, which reorder could make an old one.)*
 - `last_updated` = `MAX(created_at)` over live cards, else the collection's own `created_at`.
 
-**Home sort:** collections ordered `last_updated DESC` (latest-updated first), **not
-reorderable**. *(Adding a card resurfaces its collection; like a messenger chat list.)*
+**Home sort:** collections ordered `last_updated DESC` (latest-updated first). The Timeline
+then applies the device-local manual order within each section (§4.1); this derivation is
+unchanged. *(Adding a card resurfaces its collection; like a messenger chat list.)*
 
 > **Flagged limitation — `last_updated` tracks adds, not edits.** `created_at` is immutable
 > and the HLC has no display duty, so there is no wall-clock "modified" time; editing an

@@ -6,24 +6,27 @@ import 'package:knit/l10n/app_localizations.dart';
 enum TimelineCollectionAction {
   pin,
   unpin,
+  reorder,
   archive,
   unarchive,
   delete;
 
-  /// The Timeline intent this choice dispatches for [collectionId].
+  /// The Timeline intent this choice dispatches for [collectionId]. Reorder is
+  /// a mode over the whole Home list, so it ignores the id.
   TimelineAction toAction(String collectionId) => switch (this) {
     pin => PinToggled(collectionId, pinned: true),
     unpin => PinToggled(collectionId, pinned: false),
+    reorder => const ReorderStarted(),
     archive => ArchiveToggled(collectionId, archived: true),
     unarchive => ArchiveToggled(collectionId, archived: false),
     delete => DeleteCollectionRequested(collectionId),
   };
 }
 
-/// Long-press a collection row → actions sheet (§4.1): Pin / Unpin (Home
-/// only), Archive / Unarchive (§3.4), and Delete — guarded by a confirmation
-/// dialog since it's destructive. Resolves to the chosen action, or null when
-/// the sheet or the confirmation was dismissed.
+/// Long-press a collection row → actions sheet (§4.1): Pin / Unpin and Reorder
+/// (Home only), Archive / Unarchive (§3.4), and Delete — guarded by a
+/// confirmation dialog since it's destructive. Resolves to the chosen action,
+/// or null when the sheet or the confirmation was dismissed.
 Future<TimelineCollectionAction?> showTimelineCollectionActions(
   BuildContext context, {
   required String title,
@@ -105,6 +108,13 @@ class _CollectionActionsSheet extends StatelessWidget {
                     ? TimelineCollectionAction.unpin
                     : TimelineCollectionAction.pin,
               ),
+            ),
+          if (!isArchived)
+            ListTile(
+              leading: const Icon(Icons.reorder),
+              title: Text(l10n.actionReorder),
+              onTap: () =>
+                  Navigator.of(context).pop(TimelineCollectionAction.reorder),
             ),
           ListTile(
             leading: Icon(

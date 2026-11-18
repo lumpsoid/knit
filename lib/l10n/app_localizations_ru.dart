@@ -36,6 +36,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionDone => 'Готово';
 
   @override
+  String get actionReorder => 'Изменить порядок';
+
+  @override
   String get actionLink => 'Связать';
 
   @override
@@ -258,6 +261,13 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get timelineArchiveFailed =>
       'Не удалось обновить архив. Попробуйте ещё раз.';
+
+  @override
+  String get timelineOrderFailed =>
+      'Не удалось сохранить порядок. Попробуйте ещё раз.';
+
+  @override
+  String get timelineResetOrder => 'Сбросить порядок';
 
   @override
   String get timelineArchiveRow => 'Архив';

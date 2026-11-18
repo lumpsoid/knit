@@ -11,6 +11,7 @@
   "actionClear": "Очистить",
   "actionRemove": "Убрать",
   "actionDone": "Готово",
+  "actionReorder": "Изменить порядок",
   "actionLink": "Связать",
   "actionContinue": "Продолжить",
   "actionOpen": "Открыть",
@@ -99,6 +100,8 @@
   "timelineRecentSection": "Недавние",
   "timelinePinFailed": "Не удалось изменить закрепление. Попробуйте ещё раз.",
   "timelineArchiveFailed": "Не удалось обновить архив. Попробуйте ещё раз.",
+  "timelineOrderFailed": "Не удалось сохранить порядок. Попробуйте ещё раз.",
+  "timelineResetOrder": "Сбросить порядок",
   "timelineArchiveRow": "Архив",
   "timelineArchiveCount": "{count, plural, =1{1 коллекция} few{{count} коллекции} many{{count} коллекций} other{{count} коллекции}}",
   "@timelineArchiveCount": {

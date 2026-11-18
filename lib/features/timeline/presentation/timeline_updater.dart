@@ -1,5 +1,6 @@
 import 'package:knit/core/ownership/collection_ownership.dart';
 import 'package:fcis_core/fcis_core.dart';
+import 'package:knit/features/timeline/domain/timeline_order.dart';
 import 'package:knit/features/timeline/presentation/timeline_action.dart';
 import 'package:knit/features/timeline/presentation/timeline_effect.dart';
 import 'package:knit/features/timeline/presentation/timeline_state.dart';
@@ -28,6 +29,7 @@ class TimelineUpdater
         :final importedOwners,
         :final localArchivedIds,
         :final hubs,
+        :final order,
       ):
         // The covers load through the shared image cache (it skips the ones
         // it already holds).
@@ -39,6 +41,8 @@ class TimelineUpdater
             importedOwners: importedOwners,
             localArchivedIds: localArchivedIds ?? state.localArchivedIds,
             hubs: hubs,
+            order: order ?? state.order,
+            reordering: state.reordering,
           ),
           [ShowCoversEffect(_covers(collections))],
         );
@@ -84,6 +88,26 @@ class TimelineUpdater
       case PinUpdateFailed():
         // The shell surfaces a message; nothing changes in state.
         return (state, null);
+      case ReorderStarted():
+        return (state.copyWith(reordering: true), null);
+      case ReorderEnded():
+        return (state.copyWith(reordering: false), null);
+      case CollectionMoved(:final oldIndex, :final newIndex):
+        // The drag applies at once; the shell persists the new order.
+        final next = state.sections.moved(oldIndex, newIndex);
+        if (next == null) return (state, null);
+        return (state.copyWith(order: next), [SaveOrderEffect(next)]);
+      case OrderResetRequested():
+        if (!state.order.isManual) return (state, null);
+        return (
+          state.copyWith(order: const TimelineOrder()),
+          const [SaveOrderEffect(TimelineOrder())],
+        );
+      case OrderChanged(:final order):
+        return (state.copyWith(order: order), null);
+      case OrderUpdateFailed():
+        // The shell surfaces a message; the dragged order stays.
+        return (state, null);
       case ArchiveToggled(:final collectionId, :final archived):
         if (state.isArchived(collectionId) == archived) return (state, null);
         return (
@@ -116,7 +140,10 @@ class TimelineUpdater
         // The shell surfaces a message; nothing changes in state.
         return (state, null);
       case DeactivateFeature():
-        return (state, const [ReleaseCoversEffect()]);
+        return (
+          state.copyWith(reordering: false),
+          const [ReleaseCoversEffect()],
+        );
     }
   }
 

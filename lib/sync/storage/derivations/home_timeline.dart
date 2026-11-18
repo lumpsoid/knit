@@ -159,20 +159,27 @@ List<CollectionSummary> buildHomeTimeline(List<Snapshot> all) {
 }
 
 /// The card a collection's home-timeline row previews (spec §8.6.3): the
-/// most-recently-added of [liveCards], ties broken by id (UUIDv7) for
-/// determinism. Null when there are none. Placement (`position`) plays no part,
-/// so a reorder never changes it.
+/// most-recently-added of [liveCards]. A `created_at` tie (same ms) goes to the
+/// later HLC, then to the greater id, so the order is deterministic. Null when
+/// there are none. Placement (`position`) plays no part, so a reorder never
+/// changes it.
 Snapshot? latestCard(Iterable<Snapshot> liveCards) {
   Snapshot? latest;
   for (final card in liveCards) {
-    if (latest == null ||
-        card.createdAt > latest.createdAt ||
-        (card.createdAt == latest.createdAt &&
-            card.id.compareTo(latest.id) > 0)) {
-      latest = card;
-    }
+    if (latest == null || _addedLater(card, latest)) latest = card;
   }
   return latest;
+}
+
+/// Whether [card] was added after [other]: a later `created_at`; on a tie, a
+/// later HLC (back-to-back local creates in one ms still tick it, while their
+/// UUIDv7 ids are random within the ms); on a tie of both, the greater id.
+bool _addedLater(Snapshot card, Snapshot other) {
+  final byCreated = card.createdAt.compareTo(other.createdAt);
+  if (byCreated != 0) return byCreated > 0;
+  final byHlc = card.hlc.compareTo(other.hlc);
+  if (byHlc != 0) return byHlc > 0;
+  return card.id.compareTo(other.id) > 0;
 }
 
 CollectionSummary _summarize(Snapshot collection, List<Snapshot> liveCards) {

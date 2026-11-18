@@ -25,6 +25,7 @@ import 'package:knit/features/settings/infra/sync_store_settings_identity_reposi
 import 'package:knit/features/settings/infra/sync_store_settings_wipe_repository.dart';
 import 'package:knit/features/settings/presentation/settings_module.dart';
 import 'package:knit/features/settings/presentation/settings_scope.dart';
+import 'package:knit/features/timeline/infra/shared_preferences_timeline_order_repository.dart';
 import 'package:knit/features/timeline/infra/shared_preferences_timeline_pin_repository.dart';
 import 'package:knit/features/collection_share/infra/shared_preferences_local_archive_repository.dart';
 import 'package:knit/features/timeline/infra/sync_store_timeline_hub_repository.dart';
@@ -80,6 +81,8 @@ void main() {
         ),
         pinReadRepository: const SharedPreferencesTimelinePinRepository(),
         pinWriteRepository: const SharedPreferencesTimelinePinRepository(),
+        orderReadRepository: const SharedPreferencesTimelineOrderRepository(),
+        orderWriteRepository: const SharedPreferencesTimelineOrderRepository(),
         ownerReadRepository: SyncStoreTimelineOwnerRepository(graph: graph),
         hubReadRepository: SyncStoreTimelineHubRepository(graph: graph),
         localArchiveReadRepository: InMemoryLocalArchiveRepository(),
