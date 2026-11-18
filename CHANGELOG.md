@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-11-18
+
+### Added
+- Home: put collections in your own order. Long-press a collection →
+  **Reorder**, then drag. Pinned and Recent keep their own order, new
+  collections show up on top, and **Reset to recent** goes back to the
+  latest-updated order. The order is kept on this device only, like pins.
+- A test APK can be built on demand from GitHub Actions (the **APK** workflow).
+
+### Fixed
+- A collection's preview on Home could show the wrong newest card when two
+  cards were added within the same millisecond.
+
 ## [0.1.1] — 2026-11-17
 
 The first public release. Earlier private builds (1.0.x) are not listed.
