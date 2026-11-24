@@ -56,7 +56,7 @@ jobs:
       - name: Build
         run: scripts/release_apk.sh "${{ inputs.flavor }}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: knit-${{ inputs.flavor }}-${{ github.sha }}
           path: |
